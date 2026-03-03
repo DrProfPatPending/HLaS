@@ -74,12 +74,16 @@
       </form>
       <div v-if="lookupError" style="color: red;">{{ lookupError }}</div>
       <table v-if="lookupResult">
-        <tr>
-          <th v-for="(value, key) in lookupResult" :key="key">{{ key }}</th>
-        </tr>
-        <tr>
-          <td v-for="(value, key) in lookupResult" :key="key">{{ value }}</td>
-        </tr>
+        <thead>
+          <tr>
+            <th v-for="(value, key) in lookupResult" :key="key">{{ key }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td v-for="(value, key) in lookupResult" :key="key">{{ value }}</td>
+          </tr>
+        </tbody>
       </table>
     </div>
     </div>
