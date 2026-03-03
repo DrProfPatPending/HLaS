@@ -63,7 +63,7 @@ def get_members():
     else:
         print('DEBUG: No rows returned from members table.')
     members = [dict(row) for row in rows]
-    # Get total count for pagination
+    # No need to add Row field; use 'ID' from the database
     c.execute('SELECT COUNT(*) FROM members')
     total = c.fetchone()[0]
     conn.close()

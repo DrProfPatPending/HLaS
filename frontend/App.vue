@@ -15,6 +15,11 @@
       <thead>
         <tr>
           <th>
+            ID
+            <span class="sort-arrow" @click="setSort('ID', 'desc')">&#8595;</span>
+            <span class="sort-arrow" @click="setSort('ID', 'asc')">&#8593;</span>
+          </th>
+          <th>
             Number
             <span class="sort-arrow" @click="setSort('Number', 'desc')">&#8595;</span>
             <span class="sort-arrow" @click="setSort('Number', 'asc')">&#8593;</span>
@@ -35,7 +40,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="member in sortedMembers" :key="member.id || member.Number">
+        <tr v-for="member in sortedMembers" :key="member.ID || member.id || member.Number">
+          <td>{{ member.ID }}</td>
           <td>{{ member.Number }}</td>
           <td>{{ member.Members_Name }}</td>
           <td>{{ member.Member_Type }}</td>
