@@ -40,7 +40,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="member in sortedMembers" :key="member.ID || member.id || member.Number">
+        <tr v-for="member in sortedMembers" :key="member.id || member.ID || member.Number">
           <td>{{ member.ID }}</td>
           <td>{{ member.Number }}</td>
           <td>{{ member.Members_Name }}</td>

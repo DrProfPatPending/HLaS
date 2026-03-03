@@ -12,6 +12,9 @@ def import_csv_to_sqlite(csv_path, db_path):
     with open(csv_path, newline='', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
         headers = next(reader)
+        # Strip BOM from first header if present
+        if headers and headers[0].startswith('\ufeff'):
+            headers[0] = headers[0].replace('\ufeff', '')
         columns = [h.strip().replace(' ', '_').replace('-', '_') for h in headers]
         # Add username and password fields
         columns += ['username', 'password']
