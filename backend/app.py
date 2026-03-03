@@ -51,20 +51,31 @@ init_db()
 # CRUD endpoints
 @app.route('/members', methods=['GET'])
 def get_members():
+    limit = int(request.args.get('limit', 10))
+    offset = int(request.args.get('offset', 0))
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute('SELECT * FROM members')
-    members = [dict(id=row[0], name=row[1], email=row[2], phone=row[3], membership_type=row[4]) for row in c.fetchall()]
+    c.execute('SELECT * FROM members LIMIT ? OFFSET ?', (limit, offset))
+    rows = c.fetchall()
+    if rows:
+        print('DEBUG: First row returned from members:', dict(rows[0]))
+    else:
+        print('DEBUG: No rows returned from members table.')
+    members = [dict(row) for row in rows]
+    # Get total count for pagination
+    c.execute('SELECT COUNT(*) FROM members')
+    total = c.fetchone()[0]
     conn.close()
-    return jsonify(members)
+    return jsonify({'members': members, 'total': total})
 
 @app.route('/members', methods=['POST'])
 def add_member():
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('INSERT INTO members (name, email, phone, membership_type) VALUES (?, ?, ?, ?)',
-              (data['name'], data.get('email'), data.get('phone'), data.get('membership_type')))
+    c.execute('INSERT INTO members (Members_Name, Number, Member_Type, Paid_Up_2026) VALUES (?, ?, ?, ?)',
+              (data.get('Members_Name'), data.get('Number'), data.get('Member_Type'), data.get('Paid_Up_2026')))
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})
@@ -74,8 +85,8 @@ def update_member(member_id):
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('UPDATE members SET name=?, email=?, phone=?, membership_type=? WHERE id=?',
-              (data['name'], data.get('email'), data.get('phone'), data.get('membership_type'), member_id))
+    c.execute('UPDATE members SET Members_Name=?, Number=?, Member_Type=?, Paid_Up_2026=? WHERE id=?',
+              (data.get('Members_Name'), data.get('Number'), data.get('Member_Type'), data.get('Paid_Up_2026'), member_id))
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})

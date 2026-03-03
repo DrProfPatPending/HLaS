@@ -19,7 +19,7 @@ def import_csv_to_sqlite(csv_path, db_path):
 
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
-        c.execute(f'DROP TABLE IF EXISTS members')
+        c.execute('DROP TABLE IF EXISTS members')
         c.execute(f'CREATE TABLE members ({col_defs})')
 
         for row in reader:
