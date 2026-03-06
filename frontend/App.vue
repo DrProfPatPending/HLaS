@@ -2,7 +2,7 @@
   <div id="app">
     <img src="./HLaS_logo_100x100.png" alt="HLaS logo" class="app-logo" />
     <div v-if="!loggedIn" class="login-container">
-      <h2>Login</h2>
+      <h2>Welcome to HLaS - please provide your credentials to login</h2>
       <form @submit.prevent="login">
         <input v-model="loginUsername" placeholder="Username" required />
         <input v-model="loginPassword" placeholder="Password" type="password" required />
@@ -19,24 +19,57 @@
             ID
             <span class="sort-arrow" @click="setSort('ID', 'desc')">&#8595;</span>
             <span class="sort-arrow" @click="setSort('ID', 'asc')">&#8593;</span>
+            <input v-model="columnFilters.ID" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
             Number
             <span class="sort-arrow" @click="setSort('Number', 'desc')">&#8595;</span>
             <span class="sort-arrow" @click="setSort('Number', 'asc')">&#8593;</span>
+            <input v-model="columnFilters.Number" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
             Members_Name
             <span class="sort-arrow" @click="setSort('Members_Name', 'asc')">&#8593;</span>
             <span class="sort-arrow" @click="setSort('Members_Name', 'desc')">&#8595;</span>
+            <input v-model="columnFilters.Members_Name" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
             Member_Type
             <span class="sort-arrow" @click="setSort('Member_Type', 'asc')">&#8593;</span>
             <span class="sort-arrow" @click="setSort('Member_Type', 'desc')">&#8595;</span>
+            <input v-model="columnFilters.Member_Type" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
             Paid_Up_2026
+            <input v-model="columnFilters.Paid_Up_2026" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
+            Paused
+            <input v-model="columnFilters.Paused" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
+            E_Mail
+            <span class="sort-arrow" @click="setSort('E_Mail', 'asc')">&#8593;</span>
+            <span class="sort-arrow" @click="setSort('E_Mail', 'desc')">&#8595;</span>
+            <input v-model="columnFilters.E_Mail" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
+            Mobile
+            <span class="sort-arrow" @click="setSort('Mobile', 'asc')">&#8593;</span>
+            <span class="sort-arrow" @click="setSort('Mobile', 'desc')">&#8595;</span>
+            <input v-model="columnFilters.Mobile" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
+            Car_Reg
+            <span class="sort-arrow" @click="setSort('Car_Reg', 'asc')">&#8593;</span>
+            <span class="sort-arrow" @click="setSort('Car_Reg', 'desc')">&#8595;</span>
+            <input v-model="columnFilters.Car_Reg" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
+            EA_Licence
+            <span class="sort-arrow" @click="setSort('EA_Licence', 'asc')">&#8593;</span>
+            <span class="sort-arrow" @click="setSort('EA_Licence', 'desc')">&#8595;</span>
+            <input v-model="columnFilters.EA_Licence" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
         </tr>
       </thead>
@@ -47,6 +80,11 @@
           <td>{{ member.Members_Name }}</td>
           <td>{{ member.Member_Type }}</td>
           <td>{{ member.Paid_Up_2026 }}</td>
+          <td>{{ member.Paused }}</td>
+          <td>{{ member.E_Mail }}</td>
+          <td>{{ member.Mobile }}</td>
+          <td>{{ member.Car_Reg }}</td>
+          <td>{{ member.EA_Licence }}</td>
         </tr>
       </tbody>
     </table>
@@ -54,6 +92,13 @@
       <button :disabled="currentPage === 1" @click="prevPage">Previous Page</button>
       <span>Page {{ currentPage }} of {{ totalPages }}</span>
       <button :disabled="currentPage === totalPages" @click="nextPage">Next Page</button>
+    </div>
+    <div class="page-numbers">
+      <button v-for="pageNum in visiblePages" :key="pageNum" 
+              :class="{ 'active': pageNum === currentPage }" 
+              @click="goToPage(pageNum)">
+        {{ pageNum }}
+      </button>
     </div>
     <div v-if="editing">
       <h2>Edit Member</h2>
@@ -77,12 +122,14 @@
       <table v-if="lookupResult">
         <thead>
           <tr>
-            <th v-for="(value, key) in lookupResult" :key="key">{{ key }}</th>
+            <th>Field</th>
+            <th>Value</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td v-for="(value, key) in lookupResult" :key="key">{{ value }}</td>
+          <tr v-for="(value, key) in lookupResult" :key="key">
+            <td>{{ key }}</td>
+            <td>{{ value }}</td>
           </tr>
         </tbody>
       </table>
@@ -114,12 +161,27 @@ export default {
       loginPassword: '',
       loginError: '',
       loggedIn: false,
-      loggedInUser: null
+      loggedInUser: null,
+      filterDebounceTimer: null,
+      filterDebounceMs: 250,
+      columnFilters: {
+        ID: '',
+        Number: '',
+        Members_Name: '',
+        Member_Type: '',
+        Paid_Up_2026: '',
+        Paused: '',
+        E_Mail: '',
+        Mobile: '',
+        Car_Reg: '',
+        EA_Licence: ''
+      }
     };
   },
   computed: {
     sortedMembers() {
       if (!this.members || !this.members.length) return [];
+
       const key = this.sortKey;
       const order = this.sortOrder;
       return [...this.members].sort((a, b) => {
@@ -140,6 +202,21 @@ export default {
     },
     totalPages() {
       return Math.max(1, Math.ceil(this.totalMembers / this.pageSize));
+    },
+    visiblePages() {
+      const current = this.currentPage;
+      const total = this.totalPages;
+      const pageCount = 5;
+      let start = current;
+      let end = Math.min(current + pageCount - 1, total);
+      if (end - start < pageCount - 1) {
+        start = Math.max(1, end - pageCount + 1);
+      }
+      const pages = [];
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      return pages;
     }
   },
   created() {
@@ -147,15 +224,43 @@ export default {
       this.fetchMembers();
     }
   },
+  beforeUnmount() {
+    if (this.filterDebounceTimer) {
+      clearTimeout(this.filterDebounceTimer);
+    }
+  },
   methods: {
+    onFilterChange() {
+      this.currentPage = 1;
+      if (this.filterDebounceTimer) {
+        clearTimeout(this.filterDebounceTimer);
+      }
+      this.filterDebounceTimer = setTimeout(() => {
+        this.fetchMembers();
+      }, this.filterDebounceMs);
+    },
     setSort(key, order) {
       this.sortKey = key;
       this.sortOrder = order;
     },
     fetchMembers() {
       const offset = (this.currentPage - 1) * this.pageSize;
+      const activeFilters = Object.fromEntries(
+        Object.entries(this.columnFilters)
+          .filter(([, value]) => value && value.trim() !== '')
+          .map(([key, value]) => {
+            const trimmed = value.trim();
+            if (trimmed === '[BLANK]') {
+              return [key, '[BLANK]'];
+            }
+            const hasWildcard = trimmed.includes('*') || trimmed.includes('?');
+            const filterValue = hasWildcard ? trimmed : `*${trimmed}*`;
+            return [key, filterValue];
+          })
+      );
+
       axios.get('http://localhost:5000/members', {
-        params: { limit: this.pageSize, offset }
+        params: { limit: this.pageSize, offset, ...activeFilters }
       }).then(res => {
         this.members = res.data.members;
         this.totalMembers = res.data.total;
@@ -172,6 +277,10 @@ export default {
         this.currentPage--;
         this.fetchMembers();
       }
+    },
+    goToPage(pageNum) {
+      this.currentPage = pageNum;
+      this.fetchMembers();
     },
     login() {
       this.loginError = '';
@@ -247,14 +356,48 @@ export default {
   cursor: not-allowed;
 }
 #app .member-table {
-  width: 100%;
+  width: 90%;
   border-collapse: collapse;
   margin-bottom: 20px;
+  font-family: Helvetica, Arial, sans-serif;
 }
 #app .member-table th, #app .member-table td {
   border: 1px solid #ccc;
   padding: 8px;
   text-align: left;
+}
+#app .member-table th {
+  vertical-align: top;
+  font-size: 10pt;
+}
+#app .member-table td {
+  font-size: 8pt;
+}
+#app .column-filter {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+#app .page-numbers {
+  margin-top: 15px;
+  text-align: center;
+}
+#app .page-numbers button {
+  margin: 0 4px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+#app .page-numbers button:hover {
+  background-color: #f0f0f0;
+}
+#app .page-numbers button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
 }
 #app .member-table th {
   background: #f0f0f0;
@@ -280,6 +423,10 @@ export default {
   max-width: 600px;
   margin: auto;
   font-family: Arial, sans-serif;
+}
+#app h2 {
+  font-size: 14pt;
+  font-family: Helvetica, Arial, sans-serif;
 }
 form {
   margin-bottom: 20px;

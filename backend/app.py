@@ -7,6 +7,15 @@ app = Flask(__name__)
 CORS(app)
 DB_PATH = os.path.join(os.path.dirname(__file__), 'members.db')
 
+FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence']
+
+
+def wildcard_to_sql_like(value):
+    escaped = value.replace('\\', '\\\\')
+    escaped = escaped.replace('%', '\\%').replace('_', '\\_')
+    escaped = escaped.replace('*', '%').replace('?', '_')
+    return escaped
+
 # Database setup
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -53,10 +62,31 @@ init_db()
 def get_members():
     limit = int(request.args.get('limit', 10))
     offset = int(request.args.get('offset', 0))
+
+    where_clauses = []
+    where_params = []
+    for column in FILTERABLE_COLUMNS:
+        raw_filter = request.args.get(column)
+        if raw_filter is None:
+            continue
+        filter_value = raw_filter.strip()
+        if not filter_value:
+            continue
+
+        if filter_value == '[BLANK]':
+            where_clauses.append(f'("{column}" IS NULL OR CAST("{column}" AS TEXT) = \'\')')
+        else:
+            where_clauses.append(f'CAST("{column}" AS TEXT) LIKE ? ESCAPE "\\" COLLATE NOCASE')
+            where_params.append(wildcard_to_sql_like(filter_value))
+
+    where_sql = ''
+    if where_clauses:
+        where_sql = ' WHERE ' + ' AND '.join(where_clauses)
+
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute('SELECT * FROM members LIMIT ? OFFSET ?', (limit, offset))
+    c.execute(f'SELECT * FROM members{where_sql} LIMIT ? OFFSET ?', (*where_params, limit, offset))
     rows = c.fetchall()
     if rows:
         print('DEBUG: First row returned from members:', dict(rows[0]))
@@ -64,7 +94,7 @@ def get_members():
         print('DEBUG: No rows returned from members table.')
     members = [dict(row) for row in rows]
     # No need to add Row field; use 'ID' from the database
-    c.execute('SELECT COUNT(*) FROM members')
+    c.execute(f'SELECT COUNT(*) FROM members{where_sql}', where_params)
     total = c.fetchone()[0]
     conn.close()
     return jsonify({'members': members, 'total': total})
