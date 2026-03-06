@@ -1,0 +1,2 @@
+# My .gitignore at the root level - avoid __pycache__
+__pycache__/
