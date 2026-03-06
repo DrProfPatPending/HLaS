@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <img src="./HLaS_logo_100x100.png" alt="HLaS logo" class="app-logo" />
     <div v-if="!loggedIn" class="login-container">
       <h2>Login</h2>
       <form @submit.prevent="login">
@@ -270,6 +271,10 @@ export default {
   border: 1px solid #ccc;
   border-radius: 8px;
   background: #f9f9f9;
+}
+#app .app-logo {
+  display: block;
+  margin: 20px auto;
 }
 #app {
   max-width: 600px;
