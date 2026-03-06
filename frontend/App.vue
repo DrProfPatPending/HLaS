@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <img src="./HLaS_logo_100x100.png" alt="HLaS logo" class="app-logo" />
+    <img src="./HLaS_logo_50x50.png" alt="HLaS logo" class="app-logo" />
     <div v-if="!loggedIn" class="login-container">
       <h2>Welcome to HLaS - please provide your credentials to login</h2>
       <form @submit.prevent="login">
@@ -16,39 +16,39 @@
       <thead>
         <tr>
           <th>
-            ID
+            Rank
             <span class="sort-arrow" @click="setSort('ID', 'desc')">&#8595;</span>
             <span class="sort-arrow" @click="setSort('ID', 'asc')">&#8593;</span>
             <input v-model="columnFilters.ID" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
-            Number
+            Num
             <span class="sort-arrow" @click="setSort('Number', 'desc')">&#8595;</span>
             <span class="sort-arrow" @click="setSort('Number', 'asc')">&#8593;</span>
             <input v-model="columnFilters.Number" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
-            Members_Name
+            Name
             <span class="sort-arrow" @click="setSort('Members_Name', 'asc')">&#8593;</span>
             <span class="sort-arrow" @click="setSort('Members_Name', 'desc')">&#8595;</span>
             <input v-model="columnFilters.Members_Name" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
-            Member_Type
+            Type
             <span class="sort-arrow" @click="setSort('Member_Type', 'asc')">&#8593;</span>
             <span class="sort-arrow" @click="setSort('Member_Type', 'desc')">&#8595;</span>
             <input v-model="columnFilters.Member_Type" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
-            Paid_Up_2026
+            Paid Up?
             <input v-model="columnFilters.Paid_Up_2026" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
-            Paused
+            Paused?
             <input v-model="columnFilters.Paused" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
-            E_Mail
+            E-Mail
             <span class="sort-arrow" @click="setSort('E_Mail', 'asc')">&#8593;</span>
             <span class="sort-arrow" @click="setSort('E_Mail', 'desc')">&#8595;</span>
             <input v-model="columnFilters.E_Mail" @input="onFilterChange" class="column-filter" placeholder="Filter" />
@@ -76,7 +76,7 @@
       <tbody>
         <tr v-for="member in sortedMembers" :key="member.id || member.ID || member.Number">
           <td>{{ member.ID }}</td>
-          <td>{{ member.Number }}</td>
+          <td><a href="#" @click.prevent="lookupMemberByNumber(member.Number)" class="member-link">{{ member.Number }}</a></td>
           <td>{{ member.Members_Name }}</td>
           <td>{{ member.Member_Type }}</td>
           <td>{{ member.Paid_Up_2026 }}</td>
@@ -113,13 +113,13 @@
     </div>
     <hr />
     <div>
-      <h2>Lookup Member by Number</h2>
+      <h2>Membership Details</h2>
       <form @submit.prevent="lookupMember">
         <input v-model="lookupNumber" placeholder="Membership Number" required />
         <button type="submit">Lookup</button>
       </form>
       <div v-if="lookupError" style="color: red;">{{ lookupError }}</div>
-      <table v-if="lookupResult">
+      <table v-if="lookupResult" class="lookup-table">
         <thead>
           <tr>
             <th>Field</th>
@@ -148,8 +148,8 @@ export default {
       totalMembers: 0,
       currentPage: 1,
       pageSize: 10,
-      sortKey: 'Number',
-      sortOrder: 'desc',
+      sortKey: 'ID',
+      sortOrder: 'asc',
       newMember: { name: '', email: '', phone: '', membership_type: '' },
       editing: false,
       editMemberData: {},
@@ -207,11 +207,25 @@ export default {
       const current = this.currentPage;
       const total = this.totalPages;
       const pageCount = 5;
-      let start = current;
-      let end = Math.min(current + pageCount - 1, total);
-      if (end - start < pageCount - 1) {
-        start = Math.max(1, end - pageCount + 1);
+      
+      let start, end;
+      
+      if (current <= 3) {
+        // For pages 1-3, show 1-5 (or fewer if doesn't exist)
+        start = 1;
+        end = Math.min(pageCount, total);
+      } else {
+        // Center the current page with 2 on each side
+        start = current - 2;
+        end = current + 2;
+        
+        // Adjust if end exceeds total
+        if (end > total) {
+          end = total;
+          start = Math.max(1, end - pageCount + 1);
+        }
       }
+      
       const pages = [];
       for (let i = start; i <= end; i++) {
         pages.push(i);
@@ -342,6 +356,11 @@ export default {
           this.lookupError = err.response && err.response.data && err.response.data.error ? err.response.data.error : 'Error retrieving member';
         });
     }
+      ,
+    lookupMemberByNumber(number) {
+      this.lookupNumber = number;
+      this.lookupMember();
+    },
   }
 };
 </script>
@@ -373,6 +392,17 @@ export default {
 #app .member-table td {
   font-size: 8pt;
 }
+/* Column minimum widths */
+#app .member-table th:nth-child(1), #app .member-table td:nth-child(1) { min-width: 60px; } /* ID */
+#app .member-table th:nth-child(2), #app .member-table td:nth-child(2) { min-width: 60px; } /* Number */
+#app .member-table th:nth-child(3), #app .member-table td:nth-child(3) { min-width: 140px; } /* Members_Name */
+#app .member-table th:nth-child(4), #app .member-table td:nth-child(4) { min-width: 100px; } /* Member_Type */
+#app .member-table th:nth-child(5), #app .member-table td:nth-child(5) { min-width: 90px; } /* Paid_Up_2026 */
+#app .member-table th:nth-child(6), #app .member-table td:nth-child(6) { min-width: 70px; } /* Paused */
+#app .member-table th:nth-child(7), #app .member-table td:nth-child(7) { min-width: 160px; } /* E_Mail */
+#app .member-table th:nth-child(8), #app .member-table td:nth-child(8) { min-width: 100px; } /* Mobile */
+#app .member-table th:nth-child(9), #app .member-table td:nth-child(9) { min-width: 90px; } /* Car_Reg */
+#app .member-table th:nth-child(10), #app .member-table td:nth-child(10) { min-width: 100px; } /* EA_Licence */
 #app .column-filter {
   display: block;
   width: 100%;
@@ -398,6 +428,24 @@ export default {
   background-color: #007bff;
   color: white;
   border-color: #0056b3;
+}
+#app .member-link {
+  color: #007bff;
+  text-decoration: none;
+  cursor: pointer;
+}
+#app .member-link:hover {
+  text-decoration: underline;
+}
+#app .lookup-table th,
+#app .lookup-table td {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 8pt;
+  border: 2px solid #ccc;
+}
+#app .lookup-table {
+  border-collapse: collapse;
+  border: 2px solid #ccc;
 }
 #app .member-table th {
   background: #f0f0f0;
@@ -436,5 +484,13 @@ input {
 }
 button {
   margin-right: 5px;
+}
+#app .member-link {
+  color: #007bff;
+  text-decoration: none;
+  cursor: pointer;
+}
+#app .member-link:hover {
+  text-decoration: underline;
 }
 </style>
