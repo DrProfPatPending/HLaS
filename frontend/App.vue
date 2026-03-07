@@ -106,6 +106,10 @@
             Paused?
             <input v-model="columnFilters.Paused" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
+          <th>
+            Resigned?
+            <input v-model="columnFilters.Resigned" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -120,6 +124,7 @@
           <td>{{ member.EA_Licence }}</td>
           <td>{{ member.Paid_Up_2026 }}</td>
           <td>{{ member.Paused }}</td>
+          <td>{{ member.Resigned }}</td>
         </tr>
       </tbody>
     </table>
@@ -227,7 +232,8 @@ export default {
         E_Mail: '',
         Mobile: '',
         Car_Reg: '',
-        EA_Licence: ''
+        EA_Licence: '',
+        Resigned: ''
       }
     };
   },
@@ -307,7 +313,7 @@ export default {
           })
       );
 
-      const params = { limit: this.pageSize, offset, ...activeFilters };
+      const params = { club: this.loggedInClub, limit: this.pageSize, offset, ...activeFilters };
       
       // Add sorting parameters if a sort is active
       if (this.sortKey) {
@@ -376,11 +382,10 @@ export default {
     },
     login() {
       this.loginError = '';
-      // Note: selectedClub value is captured but not yet used for database selection
-      console.log('Logging in to club:', this.selectedClub);
       axios.post('http://localhost:5000/login', {
         username: this.loginUsername,
-        password: this.loginPassword
+        password: this.loginPassword,
+        club: this.selectedClub
       })
         .then(res => {
           if (res.data.success) {
@@ -390,6 +395,7 @@ export default {
             this.loggedInClub = this.selectedClub;
             this.activeSection = 'home';
             this.currentPage = 1;
+            this.fetchMembers();
           } else {
             this.loginError = res.data.error || 'Login failed';
           }
@@ -412,7 +418,8 @@ export default {
       this.lookupError = '';
     },
     addMember() {
-      axios.post('http://localhost:5000/members', this.newMember).then(() => {
+      const memberData = { ...this.newMember, club: this.loggedInClub };
+      axios.post('http://localhost:5000/members', memberData).then(() => {
         this.fetchMembers();
         this.newMember = { name: '', email: '', phone: '', membership_type: '' };
       });
@@ -423,7 +430,8 @@ export default {
       this.editMemberId = member.id;
     },
     updateMember() {
-      axios.put(`http://localhost:5000/members/${this.editMemberId}`, this.editMemberData).then(() => {
+      const memberData = { ...this.editMemberData, club: this.loggedInClub };
+      axios.put(`http://localhost:5000/members/${this.editMemberId}`, memberData).then(() => {
         this.fetchMembers();
         this.editing = false;
         this.editMemberData = {};
@@ -436,14 +444,14 @@ export default {
       this.editMemberId = null;
     },
     deleteMember(id) {
-      axios.delete(`http://localhost:5000/members/${id}`).then(() => {
+      axios.delete(`http://localhost:5000/members/${id}?club=${this.loggedInClub}`).then(() => {
         this.fetchMembers();
       });
     },
     lookupMember() {
       this.lookupResult = null;
       this.lookupError = '';
-      axios.get(`http://localhost:5000/member_by_number/${encodeURIComponent(this.lookupNumber)}`)
+      axios.get(`http://localhost:5000/member_by_number/${encodeURIComponent(this.lookupNumber)}?club=${this.loggedInClub}`)
         .then(res => {
           this.lookupResult = res.data;
         })
@@ -532,6 +540,7 @@ export default {
 #app .member-table th:nth-child(8), #app .member-table td:nth-child(8) { min-width: 100px; } /* EA_Licence */
 #app .member-table th:nth-child(9), #app .member-table td:nth-child(9) { min-width: 90px; } /* Paid_Up_2026 */
 #app .member-table th:nth-child(10), #app .member-table td:nth-child(10) { min-width: 70px; } /* Paused */
+#app .member-table th:nth-child(11), #app .member-table td:nth-child(11) { min-width: 80px; } /* Resigned */
 #app .column-filter {
   display: block;
   width: 100%;

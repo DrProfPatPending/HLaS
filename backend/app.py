@@ -22,37 +22,63 @@ import time
 
 app = Flask(__name__)
 CORS(app)
-DB_PATH = os.path.join(os.path.dirname(__file__), 'members.db')
-DEFAULT_DATABASE_URL = f"sqlite:///{DB_PATH.replace(os.sep, '/')}"
-DATABASE_URL = os.getenv('DATABASE_URL', DEFAULT_DATABASE_URL)
 
-FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence']
+# Store database configurations per club in Flask's g object
+DB_DIR = os.path.dirname(__file__)
+FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Resigned']
 
-engine = create_engine(DATABASE_URL, future=True)
-session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-SessionLocal = scoped_session(session_factory)
+# Cache for club database engines and metadata
+_club_db_cache = {}
 
-mapper_registry = registry()
-metadata = mapper_registry.metadata
+def get_db_for_club(club):
+    """Get or create database engine and session for the specified club."""
+    if club not in _club_db_cache:
+        db_path = os.path.join(DB_DIR, f'{club}.db')
+        database_url = f"sqlite:///{db_path.replace(os.sep, '/')}"
+        engine = create_engine(database_url, future=True)
+        session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+        
+        # Load metadata for this club's database
+        mapper_registry = registry()
+        metadata = mapper_registry.metadata
+        members_table = Table('members', metadata, autoload_with=engine)
+        
+        if len(members_table.primary_key.columns) == 0:
+            fallback_primary_key = None
+            for candidate_key in ('ID', 'id', 'Number', 'username'):
+                if candidate_key in members_table.c:
+                    fallback_primary_key = candidate_key
+                    break
+            if fallback_primary_key is None:
+                raise RuntimeError(f'Could not determine a primary key for members table in {club}.db')
+            members_table.append_constraint(PrimaryKeyConstraint(members_table.c[fallback_primary_key]))
+        
+        class Member:
+            pass
+        
+        mapper_registry.map_imperatively(Member, members_table)
+        
+        _club_db_cache[club] = {
+            'engine': engine,
+            'session_factory': session_factory,
+            'mapper_registry': mapper_registry,
+            'metadata': metadata,
+            'members_table': members_table,
+            'Member': Member
+        }
+    
+    cache = _club_db_cache[club]
+    session = cache['session_factory']()
+    return {
+        'session': session,
+        'members_table': cache['members_table'],
+        'Member': cache['Member'],
+        'mapper_registry': cache['mapper_registry']
+    }
 
-members_table = Table('members', metadata, autoload_with=engine)
-
-if len(members_table.primary_key.columns) == 0:
-    fallback_primary_key = None
-    for candidate_key in ('ID', 'id', 'Number', 'username'):
-        if candidate_key in members_table.c:
-            fallback_primary_key = candidate_key
-            break
-    if fallback_primary_key is None:
-        raise RuntimeError('Could not determine a primary key for members table')
-    members_table.append_constraint(PrimaryKeyConstraint(members_table.c[fallback_primary_key]))
-
-
-class Member:
-    pass
-
-
-mapper_registry.map_imperatively(Member, members_table)
+def get_column(column_name, members_table):
+    """Get column from members table."""
+    return members_table.c.get(column_name)
 
 
 def wildcard_to_sql_like(value):
@@ -62,7 +88,11 @@ def wildcard_to_sql_like(value):
     return escaped
 
 
-def initialize_database():
+def initialize_database(club):
+    """Initialize database for a club if it doesn't exist."""
+    db_path = os.path.join(DB_DIR, f'{club}.db')
+    database_url = f"sqlite:///{db_path.replace(os.sep, '/')}"
+    engine = create_engine(database_url, future=True)
     bootstrap_metadata = MetaData()
     Table(
         'members',
@@ -87,25 +117,26 @@ def configure_logging():
     werkzeug_logger.setLevel(logging.ERROR)
 
 
-def log_database_target():
-    safe_database_url = engine.url.render_as_string(hide_password=True)
+def log_database_target(club):
     app.logger.info(json.dumps({
-        'event': 'startup.database_target',
-        'database_url': safe_database_url,
+        'event': 'database.selected',
+        'club': club,
+        'db_path': os.path.join(DB_DIR, f'{club}.db'),
     }))
 
 
-def member_to_dict(member):
+def member_to_dict(member, members_table):
     return {column.name: getattr(member, column.name) for column in members_table.columns}
 
 
-def get_column(column_name):
+def get_column(column_name, members_table):
+    """Get column from members table."""
     return members_table.c.get(column_name)
 
 
 @app.teardown_appcontext
 def remove_session(exception=None):
-    SessionLocal.remove()
+    pass  # Individual sessions are managed per request
 
 
 @app.before_request
@@ -136,13 +167,20 @@ def login():
     data = request.json or {}
     username = data.get('username')
     password = data.get('password')
+    club = data.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
 
-    session = SessionLocal()
-    password_column = get_column('password')
-    name_column = get_column('Members_Name')
-    username_column = get_column('username')
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
+    
+    password_column = get_column('password', members_table)
+    name_column = get_column('Members_Name', members_table)
+    username_column = get_column('username', members_table)
 
     if password_column is None or (name_column is None and username_column is None):
         return jsonify({'success': False, 'error': 'Login columns are missing from members table'}), 500
@@ -152,7 +190,7 @@ def login():
         query = query.where(name_column == username, password_column == password)
         user = session.scalars(query).first()
         if user:
-            user_dict = member_to_dict(user)
+            user_dict = member_to_dict(user, members_table)
             user_dict.pop('password', None)
             return jsonify({'success': True, 'user': user_dict})
 
@@ -160,7 +198,7 @@ def login():
         query = select(Member).where(username_column == username, password_column == password)
         user = session.scalars(query).first()
         if user:
-            user_dict = member_to_dict(user)
+            user_dict = member_to_dict(user, members_table)
             user_dict.pop('password', None)
             return jsonify({'success': True, 'user': user_dict})
 
@@ -169,10 +207,17 @@ def login():
 
 @app.route('/members', methods=['GET'])
 def get_members():
+    club = request.args.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
     limit = int(request.args.get('limit', 10))
     offset = int(request.args.get('offset', 0))
     sort_by = request.args.get('sort_by')
     sort_order = request.args.get('sort_order', 'asc')
+
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
 
     filters = []
     for column_name in FILTERABLE_COLUMNS:
@@ -184,7 +229,7 @@ def get_members():
         if not filter_value:
             continue
 
-        column = get_column(column_name)
+        column = get_column(column_name, members_table)
         if column is None:
             continue
 
@@ -193,7 +238,6 @@ def get_members():
         else:
             filters.append(cast(column, String).ilike(wildcard_to_sql_like(filter_value), escape='\\'))
 
-    session = SessionLocal()
     members_query = select(Member)
     total_query = select(func.count()).select_from(members_table)
 
@@ -204,7 +248,7 @@ def get_members():
 
     # Apply sorting if requested
     if sort_by:
-        sort_column = get_column(sort_by)
+        sort_column = get_column(sort_by, members_table)
         if sort_column is not None:
             # Cast numeric columns to Integer for proper numeric sorting
             if sort_by in ('Number', 'ID'):
@@ -221,17 +265,23 @@ def get_members():
     members = session.scalars(members_query).all()
     total = session.execute(total_query).scalar_one()
 
-    members_payload = [member_to_dict(member) for member in members]
+    members_payload = [member_to_dict(member, members_table) for member in members]
     return jsonify({'members': members_payload, 'total': total})
 
 
 @app.route('/members', methods=['POST'])
 def add_member():
     data = request.json or {}
-    session = SessionLocal()
+    club = data.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
+    
     member = Member()
     for field_name in ('Members_Name', 'Number', 'Member_Type', 'Paid_Up_2026'):
-        if get_column(field_name) is not None:
+        if get_column(field_name, members_table) is not None:
             setattr(member, field_name, data.get(field_name))
 
     session.add(member)
@@ -242,8 +292,14 @@ def add_member():
 @app.route('/members/<int:member_id>', methods=['PUT'])
 def update_member(member_id):
     data = request.json or {}
-    session = SessionLocal()
-    id_column = get_column('id') or get_column('ID')
+    club = data.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
+    
+    id_column = get_column('id', members_table) or get_column('ID', members_table)
     if id_column is None:
         return jsonify({'error': 'No ID column available for update'}), 400
 
@@ -252,7 +308,7 @@ def update_member(member_id):
         return jsonify({'error': 'Member not found'}), 404
 
     for field_name in ('Members_Name', 'Number', 'Member_Type', 'Paid_Up_2026'):
-        if get_column(field_name) is not None:
+        if get_column(field_name, members_table) is not None:
             setattr(member, field_name, data.get(field_name))
 
     session.commit()
@@ -261,8 +317,14 @@ def update_member(member_id):
 
 @app.route('/members/<int:member_id>', methods=['DELETE'])
 def delete_member(member_id):
-    session = SessionLocal()
-    id_column = get_column('id') or get_column('ID')
+    club = request.args.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
+    
+    id_column = get_column('id', members_table) or get_column('ID', members_table)
     if id_column is None:
         return jsonify({'error': 'No ID column available for delete'}), 400
 
@@ -277,8 +339,14 @@ def delete_member(member_id):
 
 @app.route('/member_by_number/<number>', methods=['GET'])
 def get_member_by_number(number):
-    session = SessionLocal()
-    number_column = get_column('Number')
+    club = request.args.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
+    
+    number_column = get_column('Number', members_table)
     if number_column is None:
         return jsonify({'error': 'Number column not found'}), 500
 
@@ -286,11 +354,10 @@ def get_member_by_number(number):
     if member is None:
         return jsonify({'error': 'Member not found'}), 404
 
-    return jsonify(member_to_dict(member))
+    return jsonify(member_to_dict(member, members_table))
 
 
 if __name__ == '__main__':
     configure_logging()
-    log_database_target()
-    initialize_database()
+    # Databases are now initialized on-demand per club
     app.run(debug=True)

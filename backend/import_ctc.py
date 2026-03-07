@@ -1,14 +1,11 @@
+#!/usr/bin/env python
+"""
+Script to import CTC_Members_2026.csv into CTC.db
+"""
+
 import csv
 import os
-import pandas as pd
 from sqlalchemy import create_engine, text
-
-DB_PATH = os.path.join(os.path.dirname(__file__), 'members.db')
-DATABASE_URL = f"sqlite:///{DB_PATH}"
-EXCEL_FILE = 'members.xlsx'
-CSV_FILE = 'GAAFFS_Members_2026.csv'
-DB_FILE = 'members.db'
-
 
 def import_csv_to_sqlite(csv_path, db_path):
     database_url = f"sqlite:///{db_path}"
@@ -38,23 +35,11 @@ def import_csv_to_sqlite(csv_path, db_path):
             insert_parameters = {str(index): value for index, value in enumerate(row_extended)}
             connection.execute(insert_sql, insert_parameters)
 
-
-def import_members_from_excel(excel_file=EXCEL_FILE):
-    dataframe = pd.read_excel(excel_file)
-    engine = create_engine(DATABASE_URL, future=True)
-
-    members_dataframe = dataframe.rename(columns={
-        'name': 'Members_Name',
-        'email': 'E_Mail',
-        'phone': 'Mobile',
-        'membership_type': 'Member_Type',
-    })
-
-    members_dataframe.to_sql('members', con=engine, if_exists='append', index=False)
-    print('Import complete.')
-
-
 if __name__ == '__main__':
-    csv_path = os.path.join(os.path.dirname(__file__), CSV_FILE)
-    db_path = os.path.join(os.path.dirname(__file__), DB_FILE)
+    backend_dir = os.path.dirname(__file__)
+    csv_path = os.path.join(backend_dir, 'CTC_Members_2026.csv')
+    db_path = os.path.join(backend_dir, 'CTC.db')
+    
+    print(f"Importing {csv_path} into {db_path}...")
     import_csv_to_sqlite(csv_path, db_path)
+    print(f"✓ Successfully imported CTC_Members_2026.csv into CTC.db")

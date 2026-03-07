@@ -48,7 +48,8 @@ This project is a simple web application for managing the membership of a fishin
    ```
 
 ### Excel Import
-- Place your Excel file in the `backend/` directory and run the import script (to be provided).
+- The backend import script uses `backend/GAAFFS_Members_2026.csv`.
+- If you want to import a different file, update `CSV_FILE` in `backend/import_excel.py`.
 
 ---
 
