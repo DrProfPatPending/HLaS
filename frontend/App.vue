@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" />
+    <img v-if="loggedIn" :src="`./logos/${loggedInClub}_Logo_50px.png`" :alt="`${loggedInClub} logo`" class="club-logo" />
     <div v-if="!loggedIn" class="login-container">
       <h2>Welcome to HLaS - please provide your credentials to login</h2>
       <form @submit.prevent="login">
@@ -170,6 +171,7 @@ export default {
       loggedIn: false,
       loggedInUser: null,
       selectedClub: 'GAAFFS',
+      loggedInClub: 'GAAFFS',
       filterDebounceTimer: null,
       filterDebounceMs: 250,
       columnFilters: {
@@ -305,6 +307,7 @@ export default {
           if (res.data.success) {
             this.loggedIn = true;
             this.loggedInUser = res.data.user;
+            this.loggedInClub = this.selectedClub;
             this.currentPage = 1;
             this.fetchMembers();
           } else {
@@ -508,6 +511,16 @@ export default {
   left: 10px;
   margin: 0;
   z-index: 1000;
+}
+#app .club-logo {
+  display: block;
+  position: fixed;
+  top: 10px;
+  left: 70px;
+  margin: 0;
+  z-index: 1000;
+  max-height: 50px;
+  max-width: 50px;
 }
 #app {
   max-width: none;
