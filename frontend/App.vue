@@ -3,10 +3,15 @@
     <table class="logo-table">
       <tr>
         <td class="logo-cell">
-          <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" />
+          <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" @click="goHome" />
         </td>
         <td class="logo-cell">
           <img v-if="loggedIn" :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
+        </td>
+        <td class="logo-spacer"></td>
+        <td v-if="loggedIn" class="login-info-cell">Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})</td>
+        <td v-if="loggedIn" class="logout-cell">
+          <button type="button" class="logout-button" @click="logout">Log Out</button>
         </td>
       </tr>
     </table>
@@ -27,6 +32,20 @@
       <div v-if="loginError" style="color: red;">{{ loginError }}</div>
     </div>
     <div v-else>
+    <div v-if="activeSection === 'home'" class="home-container">
+      <h2>Hello {{ loggedInUsername }} {{ loggedInClub }} - welcomes to HookLineandSinker your one-stop shop for fishing club management</h2>
+      <table class="home-nav-table">
+        <tr>
+          <td><button type="button" class="home-nav-button" @click="navigateToSection('membership-admin')">Membership Admin</button></td>
+          <td><button type="button" class="home-nav-button" @click="navigateToSection('club-information')">Club Information</button></td>
+        </tr>
+        <tr>
+          <td><button type="button" class="home-nav-button" @click="navigateToSection('my-club')">My Club</button></td>
+          <td><button type="button" class="home-nav-button" @click="navigateToSection('club-store')">Club Store</button></td>
+        </tr>
+      </table>
+    </div>
+    <div v-else-if="activeSection === 'membership-admin'">
     <h1>{{ selectedClub }} Members</h1>
     <table class="member-table">
       <thead>
@@ -50,20 +69,6 @@
             <input v-model="columnFilters.Members_Name" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
-            Type
-            <span class="sort-arrow" @click="setSort('Member_Type', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Member_Type', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Member_Type" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Paid Up?
-            <input v-model="columnFilters.Paid_Up_2026" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Paused?
-            <input v-model="columnFilters.Paused" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
             E-Mail
             <span class="sort-arrow" @click="setSort('E_Mail', 'asc')">&#8593;</span>
             <span class="sort-arrow" @click="setSort('E_Mail', 'desc')">&#8595;</span>
@@ -82,10 +87,24 @@
             <input v-model="columnFilters.Car_Reg" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
+            Type
+            <span class="sort-arrow" @click="setSort('Member_Type', 'asc')">&#8593;</span>
+            <span class="sort-arrow" @click="setSort('Member_Type', 'desc')">&#8595;</span>
+            <input v-model="columnFilters.Member_Type" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
             EA_Licence
             <span class="sort-arrow" @click="setSort('EA_Licence', 'asc')">&#8593;</span>
             <span class="sort-arrow" @click="setSort('EA_Licence', 'desc')">&#8595;</span>
             <input v-model="columnFilters.EA_Licence" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
+            Paid Up?
+            <input v-model="columnFilters.Paid_Up_2026" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
+            Paused?
+            <input v-model="columnFilters.Paused" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
         </tr>
       </thead>
@@ -94,20 +113,28 @@
           <td>{{ member.ID }}</td>
           <td><a href="#" @click.prevent="lookupMemberByNumber(member.Number)" class="member-link">{{ member.Number }}</a></td>
           <td>{{ member.Members_Name }}</td>
-          <td>{{ member.Member_Type }}</td>
-          <td>{{ member.Paid_Up_2026 }}</td>
-          <td>{{ member.Paused }}</td>
           <td>{{ member.E_Mail }}</td>
           <td>{{ member.Mobile }}</td>
           <td>{{ member.Car_Reg }}</td>
+          <td>{{ member.Member_Type }}</td>
           <td>{{ member.EA_Licence }}</td>
+          <td>{{ member.Paid_Up_2026 }}</td>
+          <td>{{ member.Paused }}</td>
         </tr>
       </tbody>
     </table>
     <div class="pagination-controls">
+      <button :disabled="currentPage === 1" @click="firstPage">First Page</button>
       <button :disabled="currentPage === 1" @click="prevPage">Previous Page</button>
-      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+      <span>Page {{ currentPage }} of {{ totalPages }}&nbsp;</span> 
       <button :disabled="currentPage === totalPages" @click="nextPage">Next Page</button>
+      <button :disabled="currentPage === totalPages" @click="lastPage">Last Page</button>
+      <select v-model.number="pageSize" @change="onPageSizeChange" class="records-per-page-select">
+        <option value="10">10 per page</option>
+        <option value="25">25 per page</option>
+        <option value="50">50 per page</option>
+        <option value="100">100 per page</option>
+      </select>
     </div>
     <div class="page-numbers">
       <button v-for="pageNum in visiblePages" :key="pageNum" 
@@ -151,6 +178,12 @@
       </table>
     </div>
     </div>
+    <div v-else class="section-placeholder">
+      <h2>{{ sectionDisplayName(activeSection) }}</h2>
+      <p>This section is coming soon.</p>
+      <button type="button" @click="activeSection = 'home'">Back to Home</button>
+    </div>
+    </div>
   </div>
 </template>
 
@@ -178,6 +211,8 @@ export default {
       loginError: '',
       loggedIn: false,
       loggedInUser: null,
+      loggedInUsername: '',
+      activeSection: 'home',
       selectedClub: 'GAAFFS',
       loggedInClub: 'GAAFFS',
       filterDebounceTimer: null,
@@ -299,9 +334,45 @@ export default {
         this.fetchMembers();
       }
     },
+    firstPage() {
+      this.currentPage = 1;
+      this.fetchMembers();
+    },
+    lastPage() {
+      this.currentPage = this.totalPages;
+      this.fetchMembers();
+    },
     goToPage(pageNum) {
       this.currentPage = pageNum;
       this.fetchMembers();
+    },
+    goHome() {
+      this.activeSection = 'home';
+    },
+    onPageSizeChange() {
+      this.currentPage = 1;
+      this.fetchMembers();
+    },
+    navigateToSection(sectionKey) {
+      if (sectionKey === 'membership-admin') {
+        this.activeSection = 'membership-admin';
+        this.currentPage = 1;
+        this.fetchMembers();
+        return;
+      }
+      this.activeSection = sectionKey;
+    },
+    sectionDisplayName(sectionKey) {
+      if (sectionKey === 'club-information') {
+        return 'Club Information';
+      }
+      if (sectionKey === 'my-club') {
+        return 'My Club';
+      }
+      if (sectionKey === 'club-store') {
+        return 'Club Store';
+      }
+      return 'Home';
     },
     login() {
       this.loginError = '';
@@ -315,9 +386,10 @@ export default {
           if (res.data.success) {
             this.loggedIn = true;
             this.loggedInUser = res.data.user;
+            this.loggedInUsername = this.loginUsername;
             this.loggedInClub = this.selectedClub;
+            this.activeSection = 'home';
             this.currentPage = 1;
-            this.fetchMembers();
           } else {
             this.loginError = res.data.error || 'Login failed';
           }
@@ -325,6 +397,19 @@ export default {
         .catch(err => {
           this.loginError = err.response && err.response.data && err.response.data.error ? err.response.data.error : 'Login failed';
         });
+    },
+    logout() {
+      this.loggedIn = false;
+      this.loggedInUser = null;
+      this.loggedInUsername = '';
+      this.activeSection = 'home';
+      this.loginPassword = '';
+      this.members = [];
+      this.totalMembers = 0;
+      this.currentPage = 1;
+      this.lookupNumber = '';
+      this.lookupResult = null;
+      this.lookupError = '';
     },
     addMember() {
       axios.post('http://localhost:5000/members', this.newMember).then(() => {
@@ -376,9 +461,43 @@ export default {
 </script>
 
 <style>
+#app .home-container {
+  max-width: 900px;
+  margin: 40px auto;
+  font-family: Helvetica, Arial, sans-serif;
+}
+#app .home-nav-table {
+  margin-top: 20px;
+  border-collapse: separate;
+  border-spacing: 12px;
+}
+#app .home-nav-button {
+  width: 220px;
+  padding: 12px 10px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  cursor: pointer;
+}
+#app .section-placeholder {
+  max-width: 900px;
+  margin: 40px auto;
+  font-family: Helvetica, Arial, sans-serif;
+}
 #app .pagination-controls {
   margin-bottom: 20px;
   text-align: center;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
+}
+#app .records-per-page-select {
+  margin-left: 12px;
+  padding: 4px 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background-color: white;
+  cursor: pointer;
 }
 #app .pagination-controls button[disabled] {
   opacity: 0.5;
@@ -406,13 +525,13 @@ export default {
 #app .member-table th:nth-child(1), #app .member-table td:nth-child(1) { min-width: 60px; } /* ID */
 #app .member-table th:nth-child(2), #app .member-table td:nth-child(2) { min-width: 60px; } /* Number */
 #app .member-table th:nth-child(3), #app .member-table td:nth-child(3) { min-width: 140px; } /* Members_Name */
-#app .member-table th:nth-child(4), #app .member-table td:nth-child(4) { min-width: 100px; } /* Member_Type */
-#app .member-table th:nth-child(5), #app .member-table td:nth-child(5) { min-width: 90px; } /* Paid_Up_2026 */
-#app .member-table th:nth-child(6), #app .member-table td:nth-child(6) { min-width: 70px; } /* Paused */
-#app .member-table th:nth-child(7), #app .member-table td:nth-child(7) { min-width: 160px; } /* E_Mail */
-#app .member-table th:nth-child(8), #app .member-table td:nth-child(8) { min-width: 100px; } /* Mobile */
-#app .member-table th:nth-child(9), #app .member-table td:nth-child(9) { min-width: 90px; } /* Car_Reg */
-#app .member-table th:nth-child(10), #app .member-table td:nth-child(10) { min-width: 100px; } /* EA_Licence */
+#app .member-table th:nth-child(4), #app .member-table td:nth-child(4) { min-width: 160px; } /* E_Mail */
+#app .member-table th:nth-child(5), #app .member-table td:nth-child(5) { min-width: 100px; } /* Mobile */
+#app .member-table th:nth-child(6), #app .member-table td:nth-child(6) { min-width: 90px; } /* Car_Reg */
+#app .member-table th:nth-child(7), #app .member-table td:nth-child(7) { min-width: 100px; } /* Member_Type */
+#app .member-table th:nth-child(8), #app .member-table td:nth-child(8) { min-width: 100px; } /* EA_Licence */
+#app .member-table th:nth-child(9), #app .member-table td:nth-child(9) { min-width: 90px; } /* Paid_Up_2026 */
+#app .member-table th:nth-child(10), #app .member-table td:nth-child(10) { min-width: 70px; } /* Paused */
 #app .column-filter {
   display: block;
   width: 100%;
@@ -516,6 +635,7 @@ export default {
   position: fixed;
   top: 10px;
   left: 10px;
+  right: 10px;
   border-collapse: collapse;
   z-index: 1000;
   background: white;
@@ -524,9 +644,33 @@ export default {
   padding: 5px;
   border: none;
 }
+#app .logo-spacer {
+  width: 100%;
+}
+#app .login-info-cell {
+  padding: 5px;
+  border: none;
+  text-align: right;
+  white-space: nowrap;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
+}
+#app .logout-cell {
+  padding: 5px;
+  border: none;
+  text-align: right;
+  white-space: nowrap;
+}
+#app .logout-button {
+  margin-right: 0;
+  padding: 6px 10px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
+}
 #app .app-logo {
   display: block;
   margin: 0;
+  cursor: pointer;
   max-height: 100px;
   max-width: 100px;
 }
