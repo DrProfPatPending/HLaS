@@ -4,6 +4,13 @@
     <div v-if="!loggedIn" class="login-container">
       <h2>Welcome to HLaS - please provide your credentials to login</h2>
       <form @submit.prevent="login">
+        <div class="form-field">
+          <label for="club-select">Select Club:</label>
+          <select id="club-select" v-model="selectedClub" class="club-select">
+            <option value="GAAFFS">GAAFFS</option>
+            <option value="CTC">CTC</option>
+          </select>
+        </div>
         <input v-model="loginUsername" placeholder="Username" required />
         <input v-model="loginPassword" placeholder="Password" type="password" required />
         <button type="submit">Login</button>
@@ -11,7 +18,7 @@
       <div v-if="loginError" style="color: red;">{{ loginError }}</div>
     </div>
     <div v-else>
-    <h1>GAAFFS Members</h1>
+    <h1>{{ selectedClub }} Members</h1>
     <table class="member-table">
       <thead>
         <tr>
@@ -74,7 +81,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="member in sortedMembers" :key="member.id || member.ID || member.Number">
+        <tr v-for="member in members" :key="member.id || member.ID || member.Number">
           <td>{{ member.ID }}</td>
           <td><a href="#" @click.prevent="lookupMemberByNumber(member.Number)" class="member-link">{{ member.Number }}</a></td>
           <td>{{ member.Members_Name }}</td>
@@ -162,6 +169,7 @@ export default {
       loginError: '',
       loggedIn: false,
       loggedInUser: null,
+      selectedClub: 'GAAFFS',
       filterDebounceTimer: null,
       filterDebounceMs: 250,
       columnFilters: {
@@ -179,27 +187,6 @@ export default {
     };
   },
   computed: {
-    sortedMembers() {
-      if (!this.members || !this.members.length) return [];
-
-      const key = this.sortKey;
-      const order = this.sortOrder;
-      return [...this.members].sort((a, b) => {
-        let aVal = a[key];
-        let bVal = b[key];
-        // Try to parse as number if possible
-        if (!isNaN(parseFloat(aVal)) && !isNaN(parseFloat(bVal))) {
-          aVal = parseFloat(aVal);
-          bVal = parseFloat(bVal);
-        } else {
-          aVal = (aVal || '').toString().toLowerCase();
-          bVal = (bVal || '').toString().toLowerCase();
-        }
-        if (aVal < bVal) return order === 'asc' ? -1 : 1;
-        if (aVal > bVal) return order === 'asc' ? 1 : -1;
-        return 0;
-      });
-    },
     totalPages() {
       return Math.max(1, Math.ceil(this.totalMembers / this.pageSize));
     },
@@ -256,6 +243,8 @@ export default {
     setSort(key, order) {
       this.sortKey = key;
       this.sortOrder = order;
+      this.currentPage = 1; // Reset to first page when sorting
+      this.fetchMembers();
     },
     fetchMembers() {
       const offset = (this.currentPage - 1) * this.pageSize;
@@ -273,8 +262,16 @@ export default {
           })
       );
 
+      const params = { limit: this.pageSize, offset, ...activeFilters };
+      
+      // Add sorting parameters if a sort is active
+      if (this.sortKey) {
+        params.sort_by = this.sortKey;
+        params.sort_order = this.sortOrder;
+      }
+
       axios.get('http://localhost:5000/members', {
-        params: { limit: this.pageSize, offset, ...activeFilters }
+        params: params
       }).then(res => {
         this.members = res.data.members;
         this.totalMembers = res.data.total;
@@ -298,6 +295,8 @@ export default {
     },
     login() {
       this.loginError = '';
+      // Note: selectedClub value is captured but not yet used for database selection
+      console.log('Logging in to club:', this.selectedClub);
       axios.post('http://localhost:5000/login', {
         username: this.loginUsername,
         password: this.loginPassword
@@ -462,6 +461,45 @@ export default {
   border: 1px solid #ccc;
   border-radius: 8px;
   background: #f9f9f9;
+}
+#app .login-container .form-field {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+#app .login-container .form-field label {
+  margin-bottom: 5px;
+  font-weight: bold;
+  font-size: 14px;
+}
+#app .login-container .club-select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+}
+#app .login-container input {
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+#app .login-container button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+#app .login-container button:hover {
+  background-color: #0056b3;
 }
 #app .app-logo {
   display: block;

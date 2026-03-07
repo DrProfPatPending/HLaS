@@ -171,6 +171,8 @@ def login():
 def get_members():
     limit = int(request.args.get('limit', 10))
     offset = int(request.args.get('offset', 0))
+    sort_by = request.args.get('sort_by')
+    sort_order = request.args.get('sort_order', 'asc')
 
     filters = []
     for column_name in FILTERABLE_COLUMNS:
@@ -199,6 +201,21 @@ def get_members():
         filter_expression = and_(*filters)
         members_query = members_query.where(filter_expression)
         total_query = total_query.where(filter_expression)
+
+    # Apply sorting if requested
+    if sort_by:
+        sort_column = get_column(sort_by)
+        if sort_column is not None:
+            # Cast numeric columns to Integer for proper numeric sorting
+            if sort_by in ('Number', 'ID'):
+                sort_expression = cast(sort_column, Integer)
+            else:
+                sort_expression = sort_column
+            
+            if sort_order == 'desc':
+                members_query = members_query.order_by(sort_expression.desc())
+            else:
+                members_query = members_query.order_by(sort_expression.asc())
 
     members_query = members_query.limit(limit).offset(offset)
     members = session.scalars(members_query).all()
