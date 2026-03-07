@@ -1,22 +1,56 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import sqlite3
+from sqlalchemy import (
+    create_engine,
+    MetaData,
+    Table,
+    Column,
+    Integer,
+    String,
+    PrimaryKeyConstraint,
+    cast,
+    func,
+    select,
+    and_,
+    or_,
+)
+from sqlalchemy.orm import registry, scoped_session, sessionmaker
 import os
-import atexit
 
 app = Flask(__name__)
 CORS(app)
 DB_PATH = os.path.join(os.path.dirname(__file__), 'members.db')
-conn = sqlite3.connect(DB_PATH)
-conn.row_factory = sqlite3.Row
+DEFAULT_DATABASE_URL = f"sqlite:///{DB_PATH.replace(os.sep, '/')}"
+DATABASE_URL = os.getenv('DATABASE_URL', DEFAULT_DATABASE_URL)
 
 FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence']
 
-def cleanup():
-    # Remove the global database connection object
-    conn.close()
+engine = create_engine(DATABASE_URL, future=True)
+session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+SessionLocal = scoped_session(session_factory)
 
-atexit.register(cleanup)
+mapper_registry = registry()
+metadata = mapper_registry.metadata
+
+members_table = Table('members', metadata, autoload_with=engine)
+
+if len(members_table.primary_key.columns) == 0:
+    fallback_primary_key = None
+    for candidate_key in ('ID', 'id', 'Number', 'username'):
+        if candidate_key in members_table.c:
+            fallback_primary_key = candidate_key
+            break
+    if fallback_primary_key is None:
+        raise RuntimeError('Could not determine a primary key for members table')
+    members_table.append_constraint(PrimaryKeyConstraint(members_table.c[fallback_primary_key]))
+
+
+class Member:
+    pass
+
+
+mapper_registry.map_imperatively(Member, members_table)
+
 
 def wildcard_to_sql_like(value):
     escaped = value.replace('\\', '\\\\')
@@ -24,119 +58,176 @@ def wildcard_to_sql_like(value):
     escaped = escaped.replace('*', '%').replace('?', '_')
     return escaped
 
-# Database setup
-def init_db():
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS members (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT,
-        phone TEXT,
-        membership_type TEXT,
-        password TEXT
-    )''')
-    conn.commit()
 
-# CRUD endpoints
-# Login endpoint (by username)
+def initialize_database():
+    bootstrap_metadata = MetaData()
+    Table(
+        'members',
+        bootstrap_metadata,
+        Column('id', Integer, primary_key=True, autoincrement=True),
+        Column('name', String, nullable=False),
+        Column('email', String),
+        Column('phone', String),
+        Column('membership_type', String),
+        Column('password', String),
+    )
+    bootstrap_metadata.create_all(bind=engine)
+
+
+def member_to_dict(member):
+    return {column.name: getattr(member, column.name) for column in members_table.columns}
+
+
+def get_column(column_name):
+    return members_table.c.get(column_name)
+
+
+@app.teardown_appcontext
+def remove_session(exception=None):
+    SessionLocal.remove()
+
+
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.json
+    data = request.json or {}
     username = data.get('username')
     password = data.get('password')
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    # Try both Members Name and name fields for compatibility
-    c.execute('SELECT * FROM members WHERE "Members_Name" = ? AND password = ? COLLATE BINARY', (username, password))
-    user = c.fetchone()
-    if not user:
-        c.execute('SELECT * FROM members WHERE username = ? AND password = ? COLLATE BINARY', (username, password))
-        user = c.fetchone()
-    if user:
-        user_dict = dict(user)
-        user_dict.pop('password', None)
-        return jsonify({'success': True, 'user': user_dict})
-    else:
-        return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+
+    session = SessionLocal()
+    password_column = get_column('password')
+    name_column = get_column('Members_Name')
+    username_column = get_column('username')
+
+    if password_column is None or (name_column is None and username_column is None):
+        return jsonify({'success': False, 'error': 'Login columns are missing from members table'}), 500
+
+    query = select(Member)
+    if name_column is not None:
+        query = query.where(name_column == username, password_column == password)
+        user = session.scalars(query).first()
+        if user:
+            user_dict = member_to_dict(user)
+            user_dict.pop('password', None)
+            return jsonify({'success': True, 'user': user_dict})
+
+    if username_column is not None:
+        query = select(Member).where(username_column == username, password_column == password)
+        user = session.scalars(query).first()
+        if user:
+            user_dict = member_to_dict(user)
+            user_dict.pop('password', None)
+            return jsonify({'success': True, 'user': user_dict})
+
+    return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+
 
 @app.route('/members', methods=['GET'])
 def get_members():
     limit = int(request.args.get('limit', 10))
     offset = int(request.args.get('offset', 0))
 
-    where_clauses = []
-    where_params = []
-    for column in FILTERABLE_COLUMNS:
-        raw_filter = request.args.get(column)
+    filters = []
+    for column_name in FILTERABLE_COLUMNS:
+        raw_filter = request.args.get(column_name)
         if raw_filter is None:
             continue
+
         filter_value = raw_filter.strip()
         if not filter_value:
             continue
 
+        column = get_column(column_name)
+        if column is None:
+            continue
+
         if filter_value == '[BLANK]':
-            where_clauses.append(f'("{column}" IS NULL OR CAST("{column}" AS TEXT) = \'\')')
+            filters.append(or_(column.is_(None), cast(column, String) == ''))
         else:
-            where_clauses.append(f'CAST("{column}" AS TEXT) LIKE ? ESCAPE "\\" COLLATE NOCASE')
-            where_params.append(wildcard_to_sql_like(filter_value))
+            filters.append(cast(column, String).ilike(wildcard_to_sql_like(filter_value), escape='\\'))
 
-    where_sql = ''
-    if where_clauses:
-        where_sql = ' WHERE ' + ' AND '.join(where_clauses)
+    session = SessionLocal()
+    members_query = select(Member)
+    total_query = select(func.count()).select_from(members_table)
 
-    c = conn.cursor()
-    c.execute(f'SELECT * FROM members{where_sql} LIMIT ? OFFSET ?', (*where_params, limit, offset))
-    rows = c.fetchall()
-    if rows:
-        print('DEBUG: First row returned from members:', dict(rows[0]))
-    else:
-        print('DEBUG: No rows returned from members table.')
-    members = [dict(row) for row in rows]
-    # No need to add Row field; use 'ID' from the database
-    c.execute(f'SELECT COUNT(*) FROM members{where_sql}', where_params)
-    total = c.fetchone()[0]
-    return jsonify({'members': members, 'total': total})
+    if filters:
+        filter_expression = and_(*filters)
+        members_query = members_query.where(filter_expression)
+        total_query = total_query.where(filter_expression)
+
+    members_query = members_query.limit(limit).offset(offset)
+    members = session.scalars(members_query).all()
+    total = session.execute(total_query).scalar_one()
+
+    members_payload = [member_to_dict(member) for member in members]
+    return jsonify({'members': members_payload, 'total': total})
+
 
 @app.route('/members', methods=['POST'])
 def add_member():
-    data = request.json
-    c = conn.cursor()
-    c.execute('INSERT INTO members (Members_Name, Number, Member_Type, Paid_Up_2026) VALUES (?, ?, ?, ?)',
-              (data.get('Members_Name'), data.get('Number'), data.get('Member_Type'), data.get('Paid_Up_2026')))
-    conn.commit()
+    data = request.json or {}
+    session = SessionLocal()
+    member = Member()
+    for field_name in ('Members_Name', 'Number', 'Member_Type', 'Paid_Up_2026'):
+        if get_column(field_name) is not None:
+            setattr(member, field_name, data.get(field_name))
+
+    session.add(member)
+    session.commit()
     return jsonify({'status': 'success'})
+
 
 @app.route('/members/<int:member_id>', methods=['PUT'])
 def update_member(member_id):
-    data = request.json
-    c = conn.cursor()
-    c.execute('UPDATE members SET Members_Name=?, Number=?, Member_Type=?, Paid_Up_2026=? WHERE id=?',
-              (data.get('Members_Name'), data.get('Number'), data.get('Member_Type'), data.get('Paid_Up_2026'), member_id))
-    conn.commit()
+    data = request.json or {}
+    session = SessionLocal()
+    id_column = get_column('id') or get_column('ID')
+    if id_column is None:
+        return jsonify({'error': 'No ID column available for update'}), 400
+
+    member = session.scalars(select(Member).where(id_column == member_id)).first()
+    if member is None:
+        return jsonify({'error': 'Member not found'}), 404
+
+    for field_name in ('Members_Name', 'Number', 'Member_Type', 'Paid_Up_2026'):
+        if get_column(field_name) is not None:
+            setattr(member, field_name, data.get(field_name))
+
+    session.commit()
     return jsonify({'status': 'success'})
+
 
 @app.route('/members/<int:member_id>', methods=['DELETE'])
 def delete_member(member_id):
-    c = conn.cursor()
-    c.execute('DELETE FROM members WHERE id=?', (member_id,))
-    conn.commit()
+    session = SessionLocal()
+    id_column = get_column('id') or get_column('ID')
+    if id_column is None:
+        return jsonify({'error': 'No ID column available for delete'}), 400
+
+    member = session.scalars(select(Member).where(id_column == member_id)).first()
+    if member is None:
+        return jsonify({'error': 'Member not found'}), 404
+
+    session.delete(member)
+    session.commit()
     return jsonify({'status': 'success'})
 
 
-# Retrieve all data for a member by membership number
 @app.route('/member_by_number/<number>', methods=['GET'])
 def get_member_by_number(number):
-    c = conn.cursor()
-    c.execute('SELECT * FROM members WHERE Number = ?', (number,))
-    row = c.fetchone()
-    if row:
-        return jsonify(dict(row))
-    else:
+    session = SessionLocal()
+    number_column = get_column('Number')
+    if number_column is None:
+        return jsonify({'error': 'Number column not found'}), 500
+
+    member = session.scalars(select(Member).where(number_column == number)).first()
+    if member is None:
         return jsonify({'error': 'Member not found'}), 404
 
+    return jsonify(member_to_dict(member))
+
+
 if __name__ == '__main__':
-    init_db()
+    initialize_database()
     app.run(debug=True)

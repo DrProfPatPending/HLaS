@@ -19,9 +19,18 @@ This project is a simple web application for managing the membership of a fishin
    cd backend
    python3 -m venv venv
    source venv/bin/activate
-   pip install flask flask-cors pandas openpyxl
+   pip install -r requirements.txt
    ```
-2. Run the Flask server:
+2. (Optional) Set a database URL. If not set, the app uses local SQLite at `backend/members.db`.
+   - PowerShell:
+   ```powershell
+   $env:DATABASE_URL = "sqlite:///D:/OneDrive/Development/HLAS/HLaS/backend/members.db"
+   ```
+   - PostgreSQL example:
+   ```powershell
+   $env:DATABASE_URL = "postgresql+psycopg://username:password@localhost:5432/hlas"
+   ```
+3. Run the Flask server:
    ```bash
    flask run
    ```
