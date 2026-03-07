@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from sqlalchemy import (
     create_engine,
@@ -16,6 +16,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import registry, scoped_session, sessionmaker
 import os
+import json
+import logging
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -74,6 +77,24 @@ def initialize_database():
     bootstrap_metadata.create_all(bind=engine)
 
 
+def configure_logging():
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+    app.logger.setLevel(log_level)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+    for handler in app.logger.handlers:
+        handler.setFormatter(formatter)
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.ERROR)
+
+
+def log_database_target():
+    safe_database_url = engine.url.render_as_string(hide_password=True)
+    app.logger.info(json.dumps({
+        'event': 'startup.database_target',
+        'database_url': safe_database_url,
+    }))
+
+
 def member_to_dict(member):
     return {column.name: getattr(member, column.name) for column in members_table.columns}
 
@@ -85,6 +106,29 @@ def get_column(column_name):
 @app.teardown_appcontext
 def remove_session(exception=None):
     SessionLocal.remove()
+
+
+@app.before_request
+def start_request_timer():
+    g.request_start_time = time.perf_counter()
+
+
+@app.after_request
+def log_request(response):
+    start_time = getattr(g, 'request_start_time', None)
+    duration_ms = None
+    if start_time is not None:
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+
+    app.logger.info(json.dumps({
+        'event': 'http.request',
+        'method': request.method,
+        'path': request.path,
+        'query_string': request.query_string.decode('utf-8'),
+        'status_code': response.status_code,
+        'duration_ms': duration_ms,
+    }))
+    return response
 
 
 @app.route('/login', methods=['POST'])
@@ -229,5 +273,7 @@ def get_member_by_number(number):
 
 
 if __name__ == '__main__':
+    configure_logging()
+    log_database_target()
     initialize_database()
     app.run(debug=True)

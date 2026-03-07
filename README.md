@@ -22,6 +22,7 @@ This project is a simple web application for managing the membership of a fishin
    pip install -r requirements.txt
    ```
 2. (Optional) Set a database URL. If not set, the app uses local SQLite at `backend/members.db`.
+   - PostgreSQL driver support is provided via `psycopg[binary]` in `backend/requirements.txt`.
    - PowerShell:
    ```powershell
    $env:DATABASE_URL = "sqlite:///D:/OneDrive/Development/HLAS/HLaS/backend/members.db"
