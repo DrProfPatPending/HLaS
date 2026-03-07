@@ -465,11 +465,17 @@ export default {
 }
 #app .app-logo {
   display: block;
-  margin: 20px auto;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  margin: 0;
+  z-index: 1000;
 }
 #app {
-  max-width: 600px;
-  margin: auto;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 70px 12px 12px 12px;
   font-family: Arial, sans-serif;
 }
 #app h2 {

@@ -1,2 +1,8 @@
 # My .gitignore at the root level - avoid __pycache__
 __pycache__/
+venv/
+*.pyc
+.vscode/
+dist/
+build/
+.github/
