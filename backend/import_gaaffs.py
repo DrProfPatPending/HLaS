@@ -1,15 +1,12 @@
+#!/usr/bin/env python
+"""
+Script to import GAAFFS_Members_2026.csv into GAAFFS.db with hashed passwords
+"""
+
 import csv
 import os
-import pandas as pd
 from sqlalchemy import create_engine, text
 from werkzeug.security import generate_password_hash
-
-DB_PATH = os.path.join(os.path.dirname(__file__), 'members.db')
-DATABASE_URL = f"sqlite:///{DB_PATH}"
-EXCEL_FILE = 'members.xlsx'
-CSV_FILE = 'GAAFFS_Members_2026.csv'
-DB_FILE = 'members.db'
-
 
 def import_csv_to_sqlite(csv_path, db_path):
     database_url = f"sqlite:///{db_path}"
@@ -33,6 +30,9 @@ def import_csv_to_sqlite(csv_path, db_path):
         insert_sql = text(f'INSERT INTO members VALUES ({placeholders_sql})')
 
         email_index = headers.index('E-Mail') if 'E-Mail' in headers else None
+        
+        print(f"Importing records with password hashing...")
+        row_count = 0
         for row in reader:
             username = row[email_index] if email_index is not None and email_index < len(row) else ''
             # Hash the default password for security
@@ -40,24 +40,17 @@ def import_csv_to_sqlite(csv_path, db_path):
             row_extended = row + [username, hashed_password]
             insert_parameters = {str(index): value for index, value in enumerate(row_extended)}
             connection.execute(insert_sql, insert_parameters)
-
-
-def import_members_from_excel(excel_file=EXCEL_FILE):
-    dataframe = pd.read_excel(excel_file)
-    engine = create_engine(DATABASE_URL, future=True)
-
-    members_dataframe = dataframe.rename(columns={
-        'name': 'Members_Name',
-        'email': 'E_Mail',
-        'phone': 'Mobile',
-        'membership_type': 'Member_Type',
-    })
-
-    members_dataframe.to_sql('members', con=engine, if_exists='append', index=False)
-    print('Import complete.')
-
+            row_count += 1
+            if row_count % 10 == 0:
+                print(f"  Processed {row_count} records...")
+        
+        print(f"✓ Completed: {row_count} records imported with hashed passwords")
 
 if __name__ == '__main__':
-    csv_path = os.path.join(os.path.dirname(__file__), CSV_FILE)
-    db_path = os.path.join(os.path.dirname(__file__), DB_FILE)
+    backend_dir = os.path.dirname(__file__)
+    csv_path = os.path.join(backend_dir, 'GAAFFS_Members_2026.csv')
+    db_path = os.path.join(backend_dir, 'GAAFFS.db')
+    
+    print(f"Importing {csv_path} into {db_path}...")
     import_csv_to_sqlite(csv_path, db_path)
+    print(f"✓ Successfully imported GAAFFS_Members_2026.csv into GAAFFS.db")

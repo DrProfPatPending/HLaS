@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import (
     create_engine,
     MetaData,
@@ -185,22 +186,30 @@ def login():
     if password_column is None or (name_column is None and username_column is None):
         return jsonify({'success': False, 'error': 'Login columns are missing from members table'}), 500
 
-    query = select(Member)
+    # Try matching by Members_Name
+    user = None
     if name_column is not None:
-        query = query.where(name_column == username, password_column == password)
+        query = select(Member).where(name_column == username)
         user = session.scalars(query).first()
         if user:
-            user_dict = member_to_dict(user, members_table)
-            user_dict.pop('password', None)
-            return jsonify({'success': True, 'user': user_dict})
+            stored_password = getattr(user, password_column.name)
+            if check_password_hash(stored_password, password):
+                user_dict = member_to_dict(user, members_table)
+                user_dict.pop('password', None)
+                return jsonify({'success': True, 'user': user_dict})
+            else:
+                user = None  # Password didn't match, reset user
 
-    if username_column is not None:
-        query = select(Member).where(username_column == username, password_column == password)
+    # Try matching by username column
+    if username_column is not None and user is None:
+        query = select(Member).where(username_column == username)
         user = session.scalars(query).first()
         if user:
-            user_dict = member_to_dict(user, members_table)
-            user_dict.pop('password', None)
-            return jsonify({'success': True, 'user': user_dict})
+            stored_password = getattr(user, password_column.name)
+            if check_password_hash(stored_password, password):
+                user_dict = member_to_dict(user, members_table)
+                user_dict.pop('password', None)
+                return jsonify({'success': True, 'user': user_dict})
 
     return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
 

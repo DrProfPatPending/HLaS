@@ -6,6 +6,7 @@ Script to import CTC_Members_2026.csv into CTC.db
 import csv
 import os
 from sqlalchemy import create_engine, text
+from werkzeug.security import generate_password_hash
 
 def import_csv_to_sqlite(csv_path, db_path):
     database_url = f"sqlite:///{db_path}"
@@ -31,7 +32,9 @@ def import_csv_to_sqlite(csv_path, db_path):
         email_index = headers.index('E-Mail') if 'E-Mail' in headers else None
         for row in reader:
             username = row[email_index] if email_index is not None and email_index < len(row) else ''
-            row_extended = row + [username, 'password']
+            # Hash the default password for security
+            hashed_password = generate_password_hash('password')
+            row_extended = row + [username, hashed_password]
             insert_parameters = {str(index): value for index, value in enumerate(row_extended)}
             connection.execute(insert_sql, insert_parameters)
 

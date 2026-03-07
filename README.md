@@ -51,6 +51,15 @@ This project is a simple web application for managing the membership of a fishin
 - The backend import script uses `backend/GAAFFS_Members_2026.csv`.
 - If you want to import a different file, update `CSV_FILE` in `backend/import_excel.py`.
 
+## Security
+
+### Password Encryption
+- All passwords are encrypted using Werkzeug's `scrypt` algorithm before storage
+- Passwords are never stored as plain text in the database
+- The default password for imported members is `password` (hashed)
+- Password hashes are automatically generated during CSV import
+- Migration script available: `backend/migrate_passwords.py` to hash existing plain-text passwords
+
 ---
 
 For further details, see the documentation in each folder.
