@@ -1,7 +1,15 @@
 <template>
   <div id="app">
-    <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" />
-    <img v-if="loggedIn" :src="`./logos/${loggedInClub}_Logo_50px.png`" :alt="`${loggedInClub} logo`" class="club-logo" />
+    <table class="logo-table">
+      <tr>
+        <td class="logo-cell">
+          <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" />
+        </td>
+        <td class="logo-cell">
+          <img v-if="loggedIn" :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
+        </td>
+      </tr>
+    </table>
     <div v-if="!loggedIn" class="login-container">
       <h2>Welcome to HLaS - please provide your credentials to login</h2>
       <form @submit.prevent="login">
@@ -504,23 +512,29 @@ export default {
 #app .login-container button:hover {
   background-color: #0056b3;
 }
-#app .app-logo {
-  display: block;
+#app .logo-table {
   position: fixed;
   top: 10px;
   left: 10px;
-  margin: 0;
+  border-collapse: collapse;
   z-index: 1000;
+  background: white;
+}
+#app .logo-cell {
+  padding: 5px;
+  border: none;
+}
+#app .app-logo {
+  display: block;
+  margin: 0;
+  max-height: 100px;
+  max-width: 100px;
 }
 #app .club-logo {
   display: block;
-  position: fixed;
-  top: 10px;
-  left: 70px;
   margin: 0;
-  z-index: 1000;
-  max-height: 50px;
-  max-width: 50px;
+  max-height: 100px;
+  max-width: 100px;
 }
 #app {
   max-width: none;
