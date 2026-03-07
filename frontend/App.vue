@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <img src="./HLaS_logo_50x50.png" alt="HLaS logo" class="app-logo" />
+    <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" />
     <div v-if="!loggedIn" class="login-container">
       <h2>Welcome to HLaS - please provide your credentials to login</h2>
       <form @submit.prevent="login">
