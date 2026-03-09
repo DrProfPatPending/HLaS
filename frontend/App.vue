@@ -215,6 +215,8 @@
 <script>
 import axios from 'axios';
 
+const API_BASE_URL = process.env.VUE_APP_BACKEND_URL || 'http://localhost:5050';
+
 export default {
   data() {
     return {
@@ -340,7 +342,7 @@ export default {
         params.sort_order = this.sortOrder;
       }
 
-      axios.get('http://localhost:5000/members', {
+      axios.get(`${API_BASE_URL}/members`, {
         params: params
       }).then(res => {
         this.members = res.data.members;
@@ -404,7 +406,7 @@ export default {
     },
     login() {
       this.loginError = '';
-      axios.post('http://localhost:5000/login', {
+      axios.post(`${API_BASE_URL}/login`, {
         username: this.loginUsername,
         password: this.loginPassword,
         club: this.selectedClub
@@ -441,7 +443,7 @@ export default {
     },
     addMember() {
       const memberData = { ...this.newMember, club: this.loggedInClub };
-      axios.post('http://localhost:5000/members', memberData).then(() => {
+      axios.post(`${API_BASE_URL}/members`, memberData).then(() => {
         this.fetchMembers();
         this.newMember = { name: '', email: '', phone: '', membership_type: '' };
       });
@@ -453,7 +455,7 @@ export default {
     },
     updateMember() {
       const memberData = { ...this.editMemberData, club: this.loggedInClub };
-      axios.put(`http://localhost:5000/members/${this.editMemberId}`, memberData).then(() => {
+      axios.put(`${API_BASE_URL}/members/${this.editMemberId}`, memberData).then(() => {
         this.fetchMembers();
         this.activeSection = 'membership-admin';
         this.editMemberData = {};
@@ -466,14 +468,14 @@ export default {
       this.editMemberId = null;
     },
     deleteMember(id) {
-      axios.delete(`http://localhost:5000/members/${id}?club=${this.loggedInClub}`).then(() => {
+      axios.delete(`${API_BASE_URL}/members/${id}?club=${this.loggedInClub}`).then(() => {
         this.fetchMembers();
       });
     },
     lookupMember() {
       this.lookupResult = null;
       this.lookupError = '';
-      axios.get(`http://localhost:5000/member_by_number/${encodeURIComponent(this.lookupNumber)}?club=${this.loggedInClub}`)
+      axios.get(`${API_BASE_URL}/member_by_number/${encodeURIComponent(this.lookupNumber)}?club=${this.loggedInClub}`)
         .then(res => {
           this.lookupResult = res.data;
         })
