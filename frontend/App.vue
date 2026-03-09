@@ -181,6 +181,7 @@
       <div class="member-edit-actions">
         <button type="button" @click="updateMember">Update Member</button>
         <button type="button" @click="cancelEdit">Cancel</button>
+        <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
       </div>
       <br />
       <table class="member-detail-table">
@@ -191,12 +192,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="key in orderedEditMemberKeys" :key="key">
-            <td>{{ formatFieldName(key) }}</td>
+          <tr v-if="editMemberData.username !== undefined">
+            <td>{{ formatFieldName('username') }}</td>
             <td>
               <input
-                v-model="editMemberData[key]"
-                :disabled="key === 'ID' || key === 'id'"
+                v-model="editMemberData.username"
                 class="member-detail-input"
               />
             </td>
@@ -218,6 +218,16 @@
               <input
                 v-model="confirmPassword"
                 type="password"
+                class="member-detail-input"
+              />
+            </td>
+          </tr>
+          <tr v-for="key in remainingEditMemberKeys" :key="key">
+            <td>{{ formatFieldName(key) }}</td>
+            <td>
+              <input
+                v-model="editMemberData[key]"
+                :disabled="key === 'ID' || key === 'id'"
                 class="member-detail-input"
               />
             </td>
@@ -330,6 +340,11 @@ export default {
       const topKeys = priorityKeys.filter(key => keys.includes(key));
       const remainingKeys = keys.filter(key => !priorityKeys.includes(key) && !excludeKeys.includes(key));
       return [...topKeys, ...remainingKeys];
+    },
+    remainingEditMemberKeys() {
+      const keys = Object.keys(this.editMemberData);
+      const excludeKeys = ['username', 'password'];
+      return keys.filter(key => !excludeKeys.includes(key));
     }
   },
   created() {
