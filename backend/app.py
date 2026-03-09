@@ -316,9 +316,16 @@ def update_member(member_id):
     if member is None:
         return jsonify({'error': 'Member not found'}), 404
 
-    for field_name in ('Members_Name', 'Number', 'Member_Type', 'Paid_Up_2026'):
-        if get_column(field_name, members_table) is not None:
-            setattr(member, field_name, data.get(field_name))
+    reserved_fields = {'club', 'ID', 'id'}
+    for field_name, field_value in data.items():
+        if field_name in reserved_fields:
+            continue
+        if get_column(field_name, members_table) is None:
+            continue
+        if field_name == 'password' and field_value:
+            if not str(field_value).startswith(('scrypt:', 'pbkdf2:', 'bcrypt:')):
+                field_value = generate_password_hash(str(field_value))
+        setattr(member, field_name, field_value)
 
     session.commit()
     return jsonify({'status': 'success'})

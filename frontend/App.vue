@@ -116,7 +116,7 @@
         <tr v-for="member in members" :key="member.id || member.ID || member.Number">
           <td>{{ member.ID }}</td>
           <td><a href="#" @click.prevent="lookupMemberByNumber(member.Number)" class="member-link">{{ member.Number }}</a></td>
-          <td>{{ member.Members_Name }}</td>
+          <td><a href="#" @click.prevent="openMemberEdit(member)" class="member-link">{{ member.Members_Name }}</a></td>
           <td>{{ member.E_Mail }}</td>
           <td>{{ member.Mobile }}</td>
           <td>{{ member.Car_Reg }}</td>
@@ -148,17 +148,6 @@
         {{ pageNum }}
       </button>
     </div>
-    <div v-if="editing">
-      <h2>Edit Member</h2>
-      <form @submit.prevent="updateMember">
-        <input v-model="editMemberData.name" placeholder="Name" required />
-        <input v-model="editMemberData.email" placeholder="Email" />
-        <input v-model="editMemberData.phone" placeholder="Phone" />
-        <input v-model="editMemberData.membership_type" placeholder="Membership Type" />
-        <button type="submit">Save</button>
-        <button @click="cancelEdit">Cancel</button>
-      </form>
-    </div>
     <hr />
     <div>
       <h2>Membership Details</h2>
@@ -183,6 +172,33 @@
       </table>
     </div>
     </div>
+    <div v-else-if="activeSection === 'member-edit'" class="member-edit-container">
+      <h2>Edit Member Details</h2>
+      <table class="member-detail-table">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(value, key) in editMemberData" :key="key">
+            <td>{{ key }}</td>
+            <td>
+              <input
+                v-model="editMemberData[key]"
+                :disabled="key === 'ID' || key === 'id'"
+                class="member-detail-input"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="member-edit-actions">
+        <button type="button" @click="updateMember">Update Member</button>
+        <button type="button" @click="cancelEdit">Cancel</button>
+      </div>
+    </div>
     <div v-else class="section-placeholder">
       <h2>{{ sectionDisplayName(activeSection) }}</h2>
       <p>This section is coming soon.</p>
@@ -205,7 +221,6 @@ export default {
       sortKey: 'ID',
       sortOrder: 'asc',
       newMember: { name: '', email: '', phone: '', membership_type: '' },
-      editing: false,
       editMemberData: {},
       editMemberId: null,
       lookupNumber: '',
@@ -378,6 +393,9 @@ export default {
       if (sectionKey === 'club-store') {
         return 'Club Store';
       }
+      if (sectionKey === 'member-edit') {
+        return 'Edit Member';
+      }
       return 'Home';
     },
     login() {
@@ -424,22 +442,22 @@ export default {
         this.newMember = { name: '', email: '', phone: '', membership_type: '' };
       });
     },
-    editMember(member) {
-      this.editing = true;
+    openMemberEdit(member) {
       this.editMemberData = { ...member };
-      this.editMemberId = member.id;
+      this.editMemberId = member.id || member.ID;
+      this.activeSection = 'member-edit';
     },
     updateMember() {
       const memberData = { ...this.editMemberData, club: this.loggedInClub };
       axios.put(`http://localhost:5000/members/${this.editMemberId}`, memberData).then(() => {
         this.fetchMembers();
-        this.editing = false;
+        this.activeSection = 'membership-admin';
         this.editMemberData = {};
         this.editMemberId = null;
       });
     },
     cancelEdit() {
-      this.editing = false;
+      this.activeSection = 'membership-admin';
       this.editMemberData = {};
       this.editMemberId = null;
     },
@@ -490,6 +508,35 @@ export default {
   max-width: 900px;
   margin: 40px auto;
   font-family: Helvetica, Arial, sans-serif;
+}
+#app .member-edit-container {
+  max-width: 900px;
+  margin: 20px auto;
+  font-family: Helvetica, Arial, sans-serif;
+}
+#app .member-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+}
+#app .member-detail-table th,
+#app .member-detail-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  font-size: 9pt;
+}
+#app .member-detail-table th {
+  background: #f0f0f0;
+  width: 30%;
+}
+#app .member-detail-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+}
+#app .member-edit-actions {
+  display: flex;
+  gap: 8px;
 }
 #app .pagination-controls {
   margin-bottom: 20px;
