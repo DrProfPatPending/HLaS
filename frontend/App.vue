@@ -29,7 +29,7 @@
               :value="club.shortName"
               :title="club.description"
             >
-              {{ club.shortName }} - {{ club.fullName }}
+              {{ club.shortName }}
             </option>
           </select>
         </div>
@@ -371,15 +371,24 @@ export default {
       axios.get(`${API_BASE_URL}/clubs`)
         .then(res => {
           const clubs = res.data && Array.isArray(res.data.clubs) ? res.data.clubs : [];
-          if (!clubs.length) {
+          const seenShortNames = new Set();
+          const uniqueClubs = clubs.filter(club => {
+            const shortName = club && typeof club.shortName === 'string' ? club.shortName.trim() : '';
+            if (!shortName || seenShortNames.has(shortName)) {
+              return false;
+            }
+            seenShortNames.add(shortName);
+            return true;
+          });
+          if (!uniqueClubs.length) {
             throw new Error('No clubs in config');
           }
 
-          this.clubs = clubs;
-          const hasSelected = clubs.some(club => club.shortName === this.selectedClub);
+          this.clubs = uniqueClubs;
+          const hasSelected = uniqueClubs.some(club => club.shortName === this.selectedClub);
           if (!hasSelected) {
-            this.selectedClub = clubs[0].shortName;
-            this.loggedInClub = clubs[0].shortName;
+            this.selectedClub = uniqueClubs[0].shortName;
+            this.loggedInClub = uniqueClubs[0].shortName;
           }
         })
         .catch(() => {

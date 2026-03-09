@@ -1,18 +1,25 @@
 {
   "clubs": [
     {
-      "fullName": "GAAFFS",
+      "fullName": "Grantham AA Fly Fishing Section",
       "shortName": "GAAFFS",
-      "description": "GAAFFS fishing club members",
-      "websiteUrl": "https://example.com/gaaffs",
-      "adminEmail": "admin@gaaffs.example.com"
+      "description": "GAAFFS has access to 11 miles of the River Witham in Licolnshire along with streches of the R. Welland and R. Chater",
+      "websiteUrl": "https:///gaaffs.org/",
+      "adminEmail": "committee@gaaffs.org"
     },
     {
-      "fullName": "CTC",
+      "fullName": "Cambridge Trout Club",
       "shortName": "CTC",
-      "description": "CTC fishing club members",
-      "websiteUrl": "https://example.com/ctc",
-      "adminEmail": "admin@ctc.example.com"
+      "description": "CTC has access to c. 5 miles of the River Cam in Cambridgeshire, fishing for Brown Trout.",
+      "websiteUrl": "https://scoffin.com/",
+      "adminEmail": "committee@cambridgetroutclub.org"
+    }
+    {
+      "fullName": "Leek and District Fly Fishing Association",
+      "shortName": "LADFFA",
+      "description": "LADFFA has access to c. 10 miles of the River Dove in Staffordshire, fishing for Grayling and Brown Trout.",
+      "websiteUrl": "https://ladffa.com/",
+      "adminEmail": "admin@ladffa.com"
     }
   ]
 }
