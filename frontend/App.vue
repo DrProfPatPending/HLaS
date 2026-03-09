@@ -23,8 +23,14 @@
         <div class="form-field">
           <label for="club-select">Select Club:</label>
           <select id="club-select" v-model="selectedClub" class="club-select">
-            <option value="GAAFFS">GAAFFS</option>
-            <option value="CTC">CTC</option>
+            <option
+              v-for="club in clubs"
+              :key="club.shortName"
+              :value="club.shortName"
+              :title="club.description"
+            >
+              {{ club.shortName }} - {{ club.fullName }}
+            </option>
           </select>
         </div>
         <input v-model="loginUsername" placeholder="Username" required />
@@ -278,6 +284,7 @@ export default {
       loginUsername: '',
       loginPassword: '',
       loginError: '',
+      clubs: [],
       loggedIn: false,
       loggedInUser: null,
       loggedInUsername: '',
@@ -349,6 +356,7 @@ export default {
     }
   },
   created() {
+    this.loadClubs();
     if (this.loggedIn) {
       this.fetchMembers();
     }
@@ -359,6 +367,40 @@ export default {
     }
   },
   methods: {
+    loadClubs() {
+      axios.get(`${API_BASE_URL}/clubs`)
+        .then(res => {
+          const clubs = res.data && Array.isArray(res.data.clubs) ? res.data.clubs : [];
+          if (!clubs.length) {
+            throw new Error('No clubs in config');
+          }
+
+          this.clubs = clubs;
+          const hasSelected = clubs.some(club => club.shortName === this.selectedClub);
+          if (!hasSelected) {
+            this.selectedClub = clubs[0].shortName;
+            this.loggedInClub = clubs[0].shortName;
+          }
+        })
+        .catch(() => {
+          this.clubs = [
+            {
+              fullName: 'GAAFFS',
+              shortName: 'GAAFFS',
+              description: 'GAAFFS fishing club members',
+              websiteUrl: '',
+              adminEmail: '',
+            },
+            {
+              fullName: 'CTC',
+              shortName: 'CTC',
+              description: 'CTC fishing club members',
+              websiteUrl: '',
+              adminEmail: '',
+            },
+          ];
+        });
+    },
     onFilterChange() {
       this.currentPage = 1;
       if (this.filterDebounceTimer) {

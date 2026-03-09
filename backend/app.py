@@ -28,9 +28,59 @@ CORS(app)
 DB_DIR = os.path.dirname(__file__)
 FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Resigned']
 SERVER_CONFIG_PATH = os.path.join(DB_DIR, 'server.config.json')
+CLUBS_CONFIG_PATH = os.path.join(DB_DIR, 'clubs.config.json')
 
 # Cache for club database engines and metadata
 _club_db_cache = {}
+
+
+def load_clubs_config():
+    default_clubs = [
+        {
+            'fullName': 'GAAFFS',
+            'shortName': 'GAAFFS',
+            'description': 'GAAFFS fishing club members',
+            'websiteUrl': 'https://example.com/gaaffs',
+            'adminEmail': 'admin@gaaffs.example.com',
+        },
+        {
+            'fullName': 'CTC',
+            'shortName': 'CTC',
+            'description': 'CTC fishing club members',
+            'websiteUrl': 'https://example.com/ctc',
+            'adminEmail': 'admin@ctc.example.com',
+        },
+    ]
+
+    if not os.path.exists(CLUBS_CONFIG_PATH):
+        return default_clubs
+
+    try:
+        with open(CLUBS_CONFIG_PATH, 'r', encoding='utf-8') as config_file:
+            loaded_config = json.load(config_file)
+    except (OSError, json.JSONDecodeError):
+        return default_clubs
+
+    source_clubs = loaded_config.get('clubs') if isinstance(loaded_config, dict) else loaded_config
+    if not isinstance(source_clubs, list):
+        return default_clubs
+
+    normalized_clubs = []
+    for club in source_clubs:
+        if not isinstance(club, dict):
+            continue
+        short_name = str(club.get('shortName', '')).strip()
+        if not short_name:
+            continue
+        normalized_clubs.append({
+            'fullName': str(club.get('fullName', short_name)).strip() or short_name,
+            'shortName': short_name,
+            'description': str(club.get('description', '')).strip(),
+            'websiteUrl': str(club.get('websiteUrl', '')).strip(),
+            'adminEmail': str(club.get('adminEmail', '')).strip(),
+        })
+
+    return normalized_clubs or default_clubs
 
 
 def load_server_config():
@@ -200,6 +250,20 @@ def log_request(response):
     return response
 
 
+@app.route('/clubs', methods=['GET'])
+def get_clubs():
+    return jsonify({'clubs': load_clubs_config()})
+
+
+def get_valid_club_short_names():
+    clubs = load_clubs_config()
+    return {
+        str(club.get('shortName', '')).strip()
+        for club in clubs
+        if isinstance(club, dict) and str(club.get('shortName', '')).strip()
+    }
+
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json or {}
@@ -209,6 +273,10 @@ def login():
     
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
+
+    valid_clubs = get_valid_club_short_names()
+    if club not in valid_clubs:
+        return jsonify({'error': 'Invalid club selection'}), 400
 
     log_database_target(club)
     db_info = get_db_for_club(club)

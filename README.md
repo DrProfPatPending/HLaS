@@ -172,6 +172,32 @@ If your PC IP changes (for example from DHCP), update these values:
 
 Then restart both servers with `./stop` + `./start` (`stop.ps1` / `start.ps1` on Windows).
 
+### Club login dropdown configuration
+
+The login screen club dropdown is loaded from:
+
+- `backend/clubs.config.json`
+
+Format:
+
+```json
+{
+   "clubs": [
+      {
+         "fullName": "GAAFFS",
+         "shortName": "GAAFFS",
+         "description": "GAAFFS fishing club members",
+         "websiteUrl": "https://example.com/gaaffs",
+         "adminEmail": "admin@gaaffs.example.com"
+      }
+   ]
+}
+```
+
+Notes:
+- `shortName` is used as the login `club` value (must match your backend DB naming, e.g. `GAAFFS.db`, `CTC.db`).
+- The frontend fetches clubs from backend endpoint `/clubs` at startup.
+
 ### Stop scripts
 
 From the repository root (`HLaS`), stop backend and frontend servers:

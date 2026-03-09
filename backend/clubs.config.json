@@ -1,0 +1,18 @@
+{
+  "clubs": [
+    {
+      "fullName": "GAAFFS",
+      "shortName": "GAAFFS",
+      "description": "GAAFFS fishing club members",
+      "websiteUrl": "https://example.com/gaaffs",
+      "adminEmail": "admin@gaaffs.example.com"
+    },
+    {
+      "fullName": "CTC",
+      "shortName": "CTC",
+      "description": "CTC fishing club members",
+      "websiteUrl": "https://example.com/ctc",
+      "adminEmail": "admin@ctc.example.com"
+    }
+  ]
+}
