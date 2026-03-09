@@ -1,19 +1,21 @@
 <template>
   <div id="app">
     <table class="logo-table">
-      <tr>
-        <td class="logo-cell">
-          <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" @click="goHome" />
-        </td>
-        <td class="logo-cell">
-          <img v-if="loggedIn" :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
-        </td>
-        <td class="logo-spacer"></td>
-        <td v-if="loggedIn" class="login-info-cell">Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})</td>
-        <td v-if="loggedIn" class="logout-cell">
-          <button type="button" class="logout-button" @click="logout">Log Out</button>
-        </td>
-      </tr>
+      <tbody>
+        <tr>
+          <td class="logo-cell">
+            <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" @click="goHome" />
+          </td>
+          <td class="logo-cell">
+            <img v-if="loggedIn" :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
+          </td>
+          <td class="logo-spacer"></td>
+          <td v-if="loggedIn" class="login-info-cell">Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})</td>
+          <td v-if="loggedIn" class="logout-cell">
+            <button type="button" class="logout-button" @click="logout">Log Out</button>
+          </td>
+        </tr>
+      </tbody>
     </table>
     <div v-if="!loggedIn" class="login-container">
       <h2>Welcome to HLaS - please provide your credentials to login</h2>
@@ -35,14 +37,16 @@
     <div v-if="activeSection === 'home'" class="home-container">
       <h2>Hello {{ loggedInUsername }} {{ loggedInClub }} - welcomes to HookLineandSinker your one-stop shop for fishing club management</h2>
       <table class="home-nav-table">
-        <tr>
-          <td><button type="button" class="home-nav-button" @click="navigateToSection('membership-admin')">Membership Admin</button></td>
-          <td><button type="button" class="home-nav-button" @click="navigateToSection('club-information')">Club Information</button></td>
-        </tr>
-        <tr>
-          <td><button type="button" class="home-nav-button" @click="navigateToSection('my-club')">My Club</button></td>
-          <td><button type="button" class="home-nav-button" @click="navigateToSection('club-store')">Club Store</button></td>
-        </tr>
+        <tbody>
+          <tr>
+            <td><button type="button" class="home-nav-button" @click="navigateToSection('membership-admin')">Membership Admin</button></td>
+            <td><button type="button" class="home-nav-button" @click="navigateToSection('club-information')">Club Information</button></td>
+          </tr>
+          <tr>
+            <td><button type="button" class="home-nav-button" @click="navigateToSection('my-club')">My Club</button></td>
+            <td><button type="button" class="home-nav-button" @click="navigateToSection('club-store')">Club Store</button></td>
+          </tr>
+        </tbody>
       </table>
     </div>
     <div v-else-if="activeSection === 'membership-admin'">

@@ -1,7 +1,9 @@
 param(
     [int]$DelayMs = 3000,
-    [string]$BackendUrl = "http://127.0.0.1:5000/members",
-    [string]$FrontendUrl = "http://127.0.0.1:8080/"
+    [int]$BackendPort = 5050,
+    [int]$FrontendPort = 8080,
+    [string]$BackendUrl = "",
+    [string]$FrontendUrl = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,6 +19,9 @@ function Test-ServerUrl {
         return $true
     }
     catch {
+        if ($_.Exception -and $_.Exception.Response) {
+            return $true
+        }
         return $false
     }
 }
@@ -27,8 +32,20 @@ $frontendDir = Join-Path $rootDir 'frontend'
 $backendPidFile = Join-Path $rootDir '.backend.pid'
 $frontendPidFile = Join-Path $rootDir '.frontend.pid'
 
-$pythonExe = Join-Path $rootDir '.venv\Scripts\python.exe'
-if (-not (Test-Path $pythonExe)) {
+$pythonCandidates = @(
+    (Join-Path $rootDir '.venv\Scripts\python.exe'),
+    (Join-Path (Split-Path -Parent $rootDir) '.venv\Scripts\python.exe')
+)
+
+$pythonExe = $null
+foreach ($candidate in $pythonCandidates) {
+    if (Test-Path $candidate) {
+        $pythonExe = $candidate
+        break
+    }
+}
+
+if (-not $pythonExe) {
     $pythonExe = 'python'
 }
 
@@ -37,7 +54,15 @@ if (-not (Get-Command $npmCmd -ErrorAction SilentlyContinue)) {
     $npmCmd = 'npm'
 }
 
-$backendProcess = Start-Process -FilePath $pythonExe -ArgumentList @('app.py') -WorkingDirectory $backendDir -PassThru
+if (-not $BackendUrl) {
+    $BackendUrl = "http://127.0.0.1:$BackendPort/members"
+}
+if (-not $FrontendUrl) {
+    $FrontendUrl = "http://127.0.0.1:$FrontendPort/"
+}
+
+$backendRunCode = "import app; app.configure_logging(); app.app.run(host='127.0.0.1', port=$BackendPort, debug=False, use_reloader=False)"
+$backendProcess = Start-Process -FilePath $pythonExe -ArgumentList @('-c', ('"' + $backendRunCode + '"')) -WorkingDirectory $backendDir -PassThru
 $backendProcess.Id | Set-Content -Path $backendPidFile
 Start-Sleep -Milliseconds $DelayMs
 
@@ -52,7 +77,7 @@ else {
     exit 1
 }
 
-$frontendProcess = Start-Process -FilePath $npmCmd -ArgumentList @('run', 'serve') -WorkingDirectory $frontendDir -PassThru
+$frontendProcess = Start-Process -FilePath $npmCmd -ArgumentList @('run', 'serve', '--', '--port', "$FrontendPort") -WorkingDirectory $frontendDir -PassThru
 $frontendProcess.Id | Set-Content -Path $frontendPidFile
 Start-Sleep -Milliseconds $DelayMs
 

@@ -53,13 +53,13 @@ From the repository root (`HLaS`), you can start both servers with a configurabl
 
 - Windows PowerShell:
    ```powershell
-   .\start.ps1 -DelayMs 3000
+   .\start.ps1 -DelayMs 3000 -BackendPort 5050 -FrontendPort 8080
    ```
 
 - Linux/macOS Bash:
    ```bash
    chmod +x ./start.sh
-   ./start.sh 3000
+   BACKEND_PORT=5050 FRONTEND_PORT=8080 ./start.sh 3000
    ```
 
 Behavior:
@@ -72,19 +72,23 @@ Optional URL overrides:
 - PowerShell parameters: `-BackendUrl`, `-FrontendUrl`
 - Bash environment variables: `BACKEND_URL`, `FRONTEND_URL`
 
+Optional port overrides:
+- PowerShell parameters: `-BackendPort`, `-FrontendPort`
+- Bash environment variables: `BACKEND_PORT`, `FRONTEND_PORT`
+
 ### Stop scripts
 
 From the repository root (`HLaS`), stop backend and frontend servers:
 
 - Windows PowerShell:
    ```powershell
-   .\stop.ps1
+   .\stop.ps1 -BackendPort 5050 -FrontendPort 8080
    ```
 
 - Linux/macOS Bash:
    ```bash
    chmod +x ./stop.sh
-   ./stop.sh
+   BACKEND_PORT=5050 FRONTEND_PORT=8080 ./stop.sh
    ```
 
 Optional port overrides:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-BACKEND_PORT="${BACKEND_PORT:-5000}"
+BACKEND_PORT="${BACKEND_PORT:-5050}"
 FRONTEND_PORT="${FRONTEND_PORT:-8080}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

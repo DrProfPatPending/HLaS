@@ -2,8 +2,10 @@
 set -u
 
 DELAY_MS="${1:-3000}"
-BACKEND_URL="${BACKEND_URL:-http://127.0.0.1:5000/members}"
-FRONTEND_URL="${FRONTEND_URL:-http://127.0.0.1:8080/}"
+BACKEND_PORT="${BACKEND_PORT:-5050}"
+FRONTEND_PORT="${FRONTEND_PORT:-8080}"
+BACKEND_URL="${BACKEND_URL:-http://127.0.0.1:${BACKEND_PORT}/members}"
+FRONTEND_URL="${FRONTEND_URL:-http://127.0.0.1:${FRONTEND_PORT}/}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/backend"
@@ -11,6 +13,8 @@ FRONTEND_DIR="$SCRIPT_DIR/frontend"
 
 if [[ -x "$SCRIPT_DIR/.venv/bin/python" ]]; then
     PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python"
+elif [[ -x "$SCRIPT_DIR/../.venv/bin/python" ]]; then
+    PYTHON_BIN="$SCRIPT_DIR/../.venv/bin/python"
 else
     PYTHON_BIN="python3"
 fi
@@ -19,12 +23,12 @@ SLEEP_SECONDS=$(awk "BEGIN {printf \"%.3f\", $DELAY_MS / 1000}")
 
 test_server_url() {
     local url="$1"
-    curl --silent --fail --show-error --max-time 5 "$url" >/dev/null 2>&1
+    curl --silent --show-error --max-time 5 "$url" >/dev/null 2>&1
 }
 
 (
     cd "$BACKEND_DIR" || exit 1
-    nohup "$PYTHON_BIN" app.py >/dev/null 2>&1 &
+    nohup "$PYTHON_BIN" -c "import app; app.configure_logging(); app.app.run(host='127.0.0.1', port=${BACKEND_PORT}, debug=False, use_reloader=False)" >/dev/null 2>&1 &
     echo $! > "$SCRIPT_DIR/.backend.pid"
 )
 
@@ -45,7 +49,7 @@ fi
 
 (
     cd "$FRONTEND_DIR" || exit 1
-    nohup npm run serve >/dev/null 2>&1 &
+    nohup npm run serve -- --port "$FRONTEND_PORT" >/dev/null 2>&1 &
     echo $! > "$SCRIPT_DIR/.frontend.pid"
 )
 

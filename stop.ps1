@@ -1,9 +1,24 @@
 param(
-    [int]$BackendPort = 5000,
+    [int]$BackendPort = 5050,
     [int]$FrontendPort = 8080
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Stop-ProcessTree {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$ProcessId
+    )
+
+    try {
+        & taskkill /PID $ProcessId /T /F *> $null
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        return $false
+    }
+}
 
 function Stop-ByPidFile {
     param(
@@ -28,12 +43,17 @@ function Stop-ByPidFile {
     }
 
     $process = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
-    if ($process) {
-        Stop-Process -Id $pidValue -Force -ErrorAction SilentlyContinue
+    if (-not $process) {
+        Remove-Item -Path $PidFile -ErrorAction SilentlyContinue
+        return $false
     }
 
+    $stopped = Stop-ProcessTree -ProcessId $pidValue
+    Start-Sleep -Milliseconds 200
+    $stillRunning = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
+
     Remove-Item -Path $PidFile -ErrorAction SilentlyContinue
-    return $true
+    return ($stopped -and (-not $stillRunning))
 }
 
 function Stop-ByPort {
@@ -48,19 +68,69 @@ function Stop-ByPort {
     }
 
     $owningProcessIds = $connections | Select-Object -ExpandProperty OwningProcess -Unique
+    $stoppedAny = $false
     foreach ($owningProcessId in $owningProcessIds) {
-        Stop-Process -Id $owningProcessId -Force -ErrorAction SilentlyContinue
+        if (Stop-ProcessTree -ProcessId $owningProcessId) {
+            $stoppedAny = $true
+        }
     }
 
-    return $true
+    return $stoppedAny
+}
+
+function Stop-ByCommandFilter {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$MustContain
+    )
+
+    $processes = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue
+    if (-not $processes) {
+        return $false
+    }
+
+    $matched = $processes | Where-Object {
+        $commandLine = $_.CommandLine
+        if (-not $commandLine) {
+            return $false
+        }
+
+        foreach ($fragment in $MustContain) {
+            if ($commandLine -notmatch [regex]::Escape($fragment)) {
+                return $false
+            }
+        }
+
+        return $true
+    }
+
+    if (-not $matched) {
+        return $false
+    }
+
+    $stoppedAny = $false
+    foreach ($process in $matched) {
+        if ($process.ProcessId -and (Stop-ProcessTree -ProcessId $process.ProcessId)) {
+            $stoppedAny = $true
+        }
+    }
+
+    return $stoppedAny
 }
 
 $rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $backendPidFile = Join-Path $rootDir '.backend.pid'
 $frontendPidFile = Join-Path $rootDir '.frontend.pid'
 
-$backendStopped = (Stop-ByPidFile -PidFile $backendPidFile) -or (Stop-ByPort -Port $BackendPort)
-$frontendStopped = (Stop-ByPidFile -PidFile $frontendPidFile) -or (Stop-ByPort -Port $FrontendPort)
+$backendStopped =
+    (Stop-ByPidFile -PidFile $backendPidFile) -or
+    (Stop-ByPort -Port $BackendPort) -or
+    (Stop-ByCommandFilter -MustContain @('\backend', 'import app'))
+
+$frontendStopped =
+    (Stop-ByPidFile -PidFile $frontendPidFile) -or
+    (Stop-ByPort -Port $FrontendPort) -or
+    (Stop-ByCommandFilter -MustContain @('vue-cli-service', '\frontend'))
 
 if ($backendStopped -or $frontendStopped) {
     Write-Output 'Servers Stopped'
