@@ -178,6 +178,11 @@
     </div>
     <div v-else-if="activeSection === 'member-edit'" class="member-edit-container">
       <h2>Edit Member Details</h2>
+      <div class="member-edit-actions">
+        <button type="button" @click="updateMember">Update Member</button>
+        <button type="button" @click="cancelEdit">Cancel</button>
+      </div>
+      <br />
       <table class="member-detail-table">
         <thead>
           <tr>
@@ -186,8 +191,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(value, key) in editMemberData" :key="key">
-            <td>{{ key }}</td>
+          <tr v-for="key in orderedEditMemberKeys" :key="key">
+            <td>{{ formatFieldName(key) }}</td>
             <td>
               <input
                 v-model="editMemberData[key]"
@@ -290,6 +295,13 @@ export default {
         pages.push(i);
       }
       return pages;
+    },
+    orderedEditMemberKeys() {
+      const keys = Object.keys(this.editMemberData);
+      const priorityKeys = ['username', 'password'];
+      const topKeys = priorityKeys.filter(key => keys.includes(key));
+      const remainingKeys = keys.filter(key => !priorityKeys.includes(key));
+      return [...topKeys, ...remainingKeys];
     }
   },
   created() {
@@ -488,6 +500,10 @@ export default {
       this.lookupNumber = number;
       this.lookupMember();
     },
+    formatFieldName(fieldName) {
+      // Replace double underscores with double colon, then single underscores with space
+      return fieldName.replace(/__/g, '::').replace(/_/g, ' ');
+    }
   }
 };
 </script>
