@@ -47,6 +47,50 @@ This project is a simple web application for managing the membership of a fishin
    npm run serve
    ```
 
+### One-command startup scripts
+
+From the repository root (`HLaS`), you can start both servers with a configurable delay (in milliseconds).
+
+- Windows PowerShell:
+   ```powershell
+   .\start.ps1 -DelayMs 3000
+   ```
+
+- Linux/macOS Bash:
+   ```bash
+   chmod +x ./start.sh
+   ./start.sh 3000
+   ```
+
+Behavior:
+- Starts backend, waits `DelayMs`, checks backend URL, prints `Backend Running` on success.
+- Prints `Server Not Running` and aborts if backend health check fails.
+- Starts frontend, waits the same delay, checks frontend URL, prints `Server Running` on success.
+- Prints `Server Not Running` if frontend health check fails.
+
+Optional URL overrides:
+- PowerShell parameters: `-BackendUrl`, `-FrontendUrl`
+- Bash environment variables: `BACKEND_URL`, `FRONTEND_URL`
+
+### Stop scripts
+
+From the repository root (`HLaS`), stop backend and frontend servers:
+
+- Windows PowerShell:
+   ```powershell
+   .\stop.ps1
+   ```
+
+- Linux/macOS Bash:
+   ```bash
+   chmod +x ./stop.sh
+   ./stop.sh
+   ```
+
+Optional port overrides:
+- PowerShell parameters: `-BackendPort`, `-FrontendPort`
+- Bash environment variables: `BACKEND_PORT`, `FRONTEND_PORT`
+
 ### Excel Import
 - The backend import script uses `backend/GAAFFS_Members_2026.csv`.
 - If you want to import a different file, update `CSV_FILE` in `backend/import_excel.py`.
