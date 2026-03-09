@@ -128,7 +128,10 @@
           <td>{{ member.ID }}</td>
           <td><a href="#" @click.prevent="lookupMemberByNumber(member.Number)" class="member-link">{{ member.Number }}</a></td>
           <td><a href="#" @click.prevent="openMemberEdit(member)" class="member-link">{{ member.Members_Name }}</a></td>
-          <td>{{ member.E_Mail }}</td>
+          <td>
+            <a v-if="member.E_Mail" :href="`mailto:${member.E_Mail}`">{{ member.E_Mail }}</a>
+            <span v-else>-</span>
+          </td>
           <td>{{ member.Mobile }}</td>
           <td>{{ member.Car_Reg }}</td>
           <td>{{ member.Member_Type }}</td>
@@ -182,6 +185,47 @@
         </tbody>
       </table>
     </div>
+    </div>
+    <div v-else-if="activeSection === 'club-information'" class="club-information-container">
+      <h2>{{ clubDetails.fullName }}</h2>
+      <table class="club-information-table">
+        <tbody>
+          <tr>
+            <th>Short Name</th>
+            <td>{{ clubDetails.shortName }}</td>
+          </tr>
+          <tr>
+            <th>URL</th>
+            <td>
+              <a
+                v-if="clubDetails.websiteUrl"
+                :href="clubDetails.websiteUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ clubDetails.websiteUrl }}
+              </a>
+              <span v-else>-</span>
+            </td>
+          </tr>
+          <tr>
+            <th>Admin Email</th>
+            <td>
+              <a v-if="clubDetails.adminEmail" :href="`mailto:${clubDetails.adminEmail}`">{{ clubDetails.adminEmail }}</a>
+              <span v-else>-</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <textarea
+        class="club-description-box"
+        :value="clubDetails.description"
+        readonly
+        rows="6"
+      ></textarea>
+      <div>
+        <button type="button" @click="activeSection = 'home'">Back to Home</button>
+      </div>
     </div>
     <div v-else-if="activeSection === 'member-edit'" class="member-edit-container">
       <h2>Edit Member Details</h2>
@@ -309,6 +353,21 @@ export default {
     };
   },
   computed: {
+    clubDetails() {
+      const activeClubShortName = this.loggedInClub || this.selectedClub;
+      const matchedClub =
+        this.clubs.find(club => club.shortName === activeClubShortName)
+        || this.clubs.find(club => club.shortName === this.selectedClub)
+        || {};
+
+      return {
+        fullName: matchedClub.fullName || activeClubShortName || 'Club Information',
+        shortName: matchedClub.shortName || activeClubShortName || '',
+        websiteUrl: matchedClub.websiteUrl || '',
+        adminEmail: matchedClub.adminEmail || '',
+        description: matchedClub.description || '',
+      };
+    },
     totalPages() {
       return Math.max(1, Math.ceil(this.totalMembers / this.pageSize));
     },
@@ -655,6 +714,38 @@ export default {
   max-width: 900px;
   margin: 40px auto;
   font-family: Helvetica, Arial, sans-serif;
+}
+#app .club-information-container {
+  max-width: 900px;
+  margin: 40px auto;
+  font-family: Helvetica, Arial, sans-serif;
+}
+#app .club-information-table {
+  width: 100%;
+  max-width: 680px;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+#app .club-information-table th,
+#app .club-information-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+  font-size: 10pt;
+}
+#app .club-information-table th {
+  width: 180px;
+  background: #f0f0f0;
+}
+#app .club-description-box {
+  width: 100%;
+  max-width: 680px;
+  box-sizing: border-box;
+  padding: 8px;
+  margin-bottom: 12px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  resize: vertical;
 }
 #app .member-edit-container {
   max-width: 900px;
