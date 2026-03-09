@@ -47,6 +47,15 @@ This project is a simple web application for managing the membership of a fishin
    npm run serve
    ```
 
+### Browser tab icon (favicon)
+
+Place these files in `frontend/public/`:
+- `favicon.ico` (recommended multi-size ICO including 16x16 and 32x32)
+- `favicon-32x32.png` (PNG fallback)
+- `favicon-16x16.png` (PNG fallback)
+
+The frontend HTML already references these files via `<%= BASE_URL %>`.
+
 ### One-command startup scripts
 
 From the repository root (`HLaS`), you can start both servers with a configurable delay (in milliseconds).
