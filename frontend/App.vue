@@ -201,6 +201,30 @@
               />
             </td>
           </tr>
+          <tr>
+            <td>New Password</td>
+            <td>
+              <input
+                v-model="newPassword"
+                type="password"
+                class="member-detail-input"
+                placeholder="Leave blank to keep current password"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>Confirm New Password</td>
+            <td>
+              <input
+                v-model="confirmPassword"
+                type="password"
+                class="member-detail-input"
+              />
+            </td>
+          </tr>
+          <tr v-if="passwordError">
+            <td colspan="2" style="color: red; text-align: center;">{{ passwordError }}</td>
+          </tr>
         </tbody>
       </table>
       <div class="member-edit-actions">
@@ -234,6 +258,9 @@ export default {
       newMember: { name: '', email: '', phone: '', membership_type: '' },
       editMemberData: {},
       editMemberId: null,
+      newPassword: '',
+      confirmPassword: '',
+      passwordError: '',
       lookupNumber: '',
       lookupResult: null,
       lookupError: '',
@@ -298,9 +325,10 @@ export default {
     },
     orderedEditMemberKeys() {
       const keys = Object.keys(this.editMemberData);
-      const priorityKeys = ['username', 'password'];
+      const priorityKeys = ['username'];
+      const excludeKeys = ['password'];  // Don't show password in regular fields
       const topKeys = priorityKeys.filter(key => keys.includes(key));
-      const remainingKeys = keys.filter(key => !priorityKeys.includes(key));
+      const remainingKeys = keys.filter(key => !priorityKeys.includes(key) && !excludeKeys.includes(key));
       return [...topKeys, ...remainingKeys];
     }
   },
@@ -463,21 +491,51 @@ export default {
     openMemberEdit(member) {
       this.editMemberData = { ...member };
       this.editMemberId = member.id || member.ID;
+      this.newPassword = '';
+      this.confirmPassword = '';
+      this.passwordError = '';
       this.activeSection = 'member-edit';
     },
     updateMember() {
+      // Validate password if provided
+      if (this.newPassword || this.confirmPassword) {
+        if (this.newPassword !== this.confirmPassword) {
+          this.passwordError = 'Passwords do not match';
+          return;
+        }
+        if (this.newPassword.length === 0) {
+          this.passwordError = 'Password cannot be empty';
+          return;
+        }
+      }
+      this.passwordError = '';
+      
       const memberData = { ...this.editMemberData, club: this.loggedInClub };
+      
+      // Include password only if a new one was entered
+      if (this.newPassword) {
+        memberData.password = this.newPassword;
+      }
+      
       axios.put(`${API_BASE_URL}/members/${this.editMemberId}`, memberData).then(() => {
         this.fetchMembers();
         this.activeSection = 'membership-admin';
         this.editMemberData = {};
         this.editMemberId = null;
+        this.newPassword = '';
+        this.confirmPassword = '';
+        this.passwordError = '';
+      }).catch(err => {
+        this.passwordError = err.response && err.response.data && err.response.data.error ? err.response.data.error : 'Update failed';
       });
     },
     cancelEdit() {
       this.activeSection = 'membership-admin';
       this.editMemberData = {};
       this.editMemberId = null;
+      this.newPassword = '';
+      this.confirmPassword = '';
+      this.passwordError = '';
     },
     deleteMember(id) {
       axios.delete(`${API_BASE_URL}/members/${id}?club=${this.loggedInClub}`).then(() => {
