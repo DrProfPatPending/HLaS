@@ -2,6 +2,7 @@ param(
     [int]$DelayMs = 3000,
     [int]$BackendPort = 5050,
     [int]$FrontendPort = 8080,
+    [string]$BindIp = "192.168.50.57",
     [string]$BackendUrl = "",
     [string]$FrontendUrl = ""
 )
@@ -31,6 +32,54 @@ $backendDir = Join-Path $rootDir 'backend'
 $frontendDir = Join-Path $rootDir 'frontend'
 $backendPidFile = Join-Path $rootDir '.backend.pid'
 $frontendPidFile = Join-Path $rootDir '.frontend.pid'
+$backendConfigPath = Join-Path $backendDir 'server.config.json'
+$frontendConfigPath = Join-Path $frontendDir 'server.config.json'
+
+$backendConfig = $null
+if (Test-Path $backendConfigPath) {
+    try {
+        $backendConfig = Get-Content -Path $backendConfigPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-Warning "Unable to parse backend/server.config.json. Using script defaults."
+    }
+}
+
+$frontendConfig = $null
+if (Test-Path $frontendConfigPath) {
+    try {
+        $frontendConfig = Get-Content -Path $frontendConfigPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-Warning "Unable to parse frontend/server.config.json. Using script defaults."
+    }
+}
+
+if (-not $PSBoundParameters.ContainsKey('DelayMs')) {
+    if ($frontendConfig -and $frontendConfig.startup -and $frontendConfig.startup.delayMs -ne $null) {
+        $DelayMs = [int]$frontendConfig.startup.delayMs
+    }
+    elseif ($backendConfig -and $backendConfig.startup -and $backendConfig.startup.delayMs -ne $null) {
+        $DelayMs = [int]$backendConfig.startup.delayMs
+    }
+}
+
+if (-not $PSBoundParameters.ContainsKey('BackendPort') -and $backendConfig -and $backendConfig.server -and $backendConfig.server.port -ne $null) {
+    $BackendPort = [int]$backendConfig.server.port
+}
+
+if (-not $PSBoundParameters.ContainsKey('FrontendPort') -and $frontendConfig -and $frontendConfig.server -and $frontendConfig.server.port -ne $null) {
+    $FrontendPort = [int]$frontendConfig.server.port
+}
+
+if (-not $PSBoundParameters.ContainsKey('BindIp')) {
+    if ($frontendConfig -and $frontendConfig.server -and $frontendConfig.server.host) {
+        $BindIp = [string]$frontendConfig.server.host
+    }
+    elseif ($backendConfig -and $backendConfig.server -and $backendConfig.server.host) {
+        $BindIp = [string]$backendConfig.server.host
+    }
+}
 
 $pythonCandidates = @(
     (Join-Path $rootDir '.venv\Scripts\python.exe'),
@@ -55,13 +104,36 @@ if (-not (Get-Command $npmCmd -ErrorAction SilentlyContinue)) {
 }
 
 if (-not $BackendUrl) {
-    $BackendUrl = "http://127.0.0.1:$BackendPort/members"
+    if ($backendConfig -and $backendConfig.server -and $backendConfig.server.url) {
+        $BackendUrl = "$(($backendConfig.server.url).TrimEnd('/'))/members"
+    }
+    else {
+        $BackendUrl = "http://${BindIp}:$BackendPort/members"
+    }
 }
 if (-not $FrontendUrl) {
-    $FrontendUrl = "http://127.0.0.1:$FrontendPort/"
+    if ($frontendConfig -and $frontendConfig.server -and $frontendConfig.server.url) {
+        $FrontendUrl = "$(($frontendConfig.server.url).TrimEnd('/'))/"
+    }
+    else {
+        $FrontendUrl = "http://${BindIp}:$FrontendPort/"
+    }
 }
 
-$backendRunCode = "import app; app.configure_logging(); app.app.run(host='127.0.0.1', port=$BackendPort, debug=False, use_reloader=False)"
+$backendDebug = $false
+if ($backendConfig -and $backendConfig.runtime -and $backendConfig.runtime.debug -ne $null) {
+    $backendDebug = [bool]$backendConfig.runtime.debug
+}
+
+$backendUseReloader = $false
+if ($backendConfig -and $backendConfig.runtime -and $backendConfig.runtime.useReloader -ne $null) {
+    $backendUseReloader = [bool]$backendConfig.runtime.useReloader
+}
+
+$debugPyValue = if ($backendDebug) { 'True' } else { 'False' }
+$reloaderPyValue = if ($backendUseReloader) { 'True' } else { 'False' }
+
+$backendRunCode = "import app; app.configure_logging(); app.app.run(host='$BindIp', port=$BackendPort, debug=$debugPyValue, use_reloader=$reloaderPyValue)"
 $backendProcess = Start-Process -FilePath $pythonExe -ArgumentList @('-c', ('"' + $backendRunCode + '"')) -WorkingDirectory $backendDir -PassThru
 $backendProcess.Id | Set-Content -Path $backendPidFile
 Start-Sleep -Milliseconds $DelayMs
@@ -77,7 +149,12 @@ else {
     exit 1
 }
 
-$frontendProcess = Start-Process -FilePath $npmCmd -ArgumentList @('run', 'serve', '--', '--port', "$FrontendPort") -WorkingDirectory $frontendDir -PassThru
+$configuredBackendUrl = "http://${BindIp}:$BackendPort"
+if ($frontendConfig -and $frontendConfig.api -and $frontendConfig.api.backendUrl) {
+    $configuredBackendUrl = [string]$frontendConfig.api.backendUrl
+}
+$env:VUE_APP_BACKEND_URL = $configuredBackendUrl
+$frontendProcess = Start-Process -FilePath $npmCmd -ArgumentList @('run', 'serve', '--', '--host', "$BindIp", '--port', "$FrontendPort") -WorkingDirectory $frontendDir -PassThru
 $frontendProcess.Id | Set-Content -Path $frontendPidFile
 Start-Sleep -Milliseconds $DelayMs
 

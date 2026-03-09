@@ -27,9 +27,44 @@ CORS(app)
 # Store database configurations per club in Flask's g object
 DB_DIR = os.path.dirname(__file__)
 FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Resigned']
+SERVER_CONFIG_PATH = os.path.join(DB_DIR, 'server.config.json')
 
 # Cache for club database engines and metadata
 _club_db_cache = {}
+
+
+def load_server_config():
+    default_config = {
+        'server': {
+            'host': '127.0.0.1',
+            'port': 5050,
+            'url': 'http://127.0.0.1:5050',
+        },
+        'startup': {
+            'delayMs': 3000,
+        },
+        'runtime': {
+            'debug': False,
+            'useReloader': False,
+        },
+        'logging': {
+            'level': 'INFO',
+        },
+    }
+
+    if not os.path.exists(SERVER_CONFIG_PATH):
+        return default_config
+
+    try:
+        with open(SERVER_CONFIG_PATH, 'r', encoding='utf-8') as config_file:
+            loaded_config = json.load(config_file)
+    except (OSError, json.JSONDecodeError):
+        return default_config
+
+    merged = default_config.copy()
+    for section in ('server', 'startup', 'runtime', 'logging'):
+        merged[section] = {**default_config.get(section, {}), **loaded_config.get(section, {})}
+    return merged
 
 def get_db_for_club(club):
     """Get or create database engine and session for the specified club."""
@@ -109,7 +144,9 @@ def initialize_database(club):
 
 
 def configure_logging():
-    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+    config = load_server_config()
+    configured_level = config.get('logging', {}).get('level', 'INFO')
+    log_level = os.getenv('LOG_LEVEL', str(configured_level)).upper()
     app.logger.setLevel(log_level)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
     for handler in app.logger.handlers:
@@ -374,6 +411,15 @@ def get_member_by_number(number):
 
 
 if __name__ == '__main__':
+    config = load_server_config()
+    server_config = config.get('server', {})
+    runtime_config = config.get('runtime', {})
+
+    host = server_config.get('host', '127.0.0.1')
+    port = int(server_config.get('port', 5050))
+    debug = bool(runtime_config.get('debug', False))
+    use_reloader = bool(runtime_config.get('useReloader', False))
+
     configure_logging()
     # Databases are now initialized on-demand per club
-    app.run(debug=True)
+    app.run(host=host, port=port, debug=debug, use_reloader=use_reloader)

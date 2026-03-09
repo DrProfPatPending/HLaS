@@ -1,0 +1,17 @@
+{
+  "server": {
+    "host": "192.168.50.57",
+    "port": 5050,
+    "url": "http://192.168.50.57:5050"
+  },
+  "startup": {
+    "delayMs": 3000
+  },
+  "runtime": {
+    "debug": false,
+    "useReloader": false
+  },
+  "logging": {
+    "level": "INFO"
+  }
+}

@@ -35,7 +35,8 @@
     </div>
     <div v-else>
     <div v-if="activeSection === 'home'" class="home-container">
-      <h2>Hello {{ loggedInUsername }} {{ loggedInClub }} - welcomes to HookLineandSinker your one-stop shop for fishing club management</h2>
+      <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
+      <h3> Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</h3>
       <table class="home-nav-table">
         <tbody>
           <tr>
@@ -254,7 +255,7 @@
 <script>
 import axios from 'axios';
 
-const API_BASE_URL = process.env.VUE_APP_BACKEND_URL || 'http://localhost:5050';
+const API_BASE_URL = process.env.VUE_APP_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:5050`;
 
 export default {
   data() {

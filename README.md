@@ -85,6 +85,93 @@ Optional port overrides:
 - PowerShell parameters: `-BackendPort`, `-FrontendPort`
 - Bash environment variables: `BACKEND_PORT`, `FRONTEND_PORT`
 
+### JSON server configuration
+
+Both servers now load startup defaults from JSON config files:
+
+- `backend/server.config.json`
+- `frontend/server.config.json`
+
+These files are parsed automatically during startup by:
+
+- `start.ps1`
+- `start.sh`
+- `backend/app.py` (when running backend directly)
+- `frontend/vue.config.js` (when running frontend directly)
+
+#### `backend/server.config.json`
+
+```json
+{
+   "server": {
+      "host": "192.168.50.57",
+      "port": 5050,
+      "url": "http://192.168.50.57:5050"
+   },
+   "startup": {
+      "delayMs": 3000
+   },
+   "runtime": {
+      "debug": false,
+      "useReloader": false
+   },
+   "logging": {
+      "level": "INFO"
+   }
+}
+```
+
+Key fields:
+- `server.host` / `server.port`: backend bind address and port
+- `server.url`: canonical backend URL used by startup health checks
+- `startup.delayMs`: default startup delay used by scripts
+- `runtime.debug` / `runtime.useReloader`: backend runtime flags
+- `logging.level`: default Flask log level (can be overridden by `LOG_LEVEL`)
+
+#### `frontend/server.config.json`
+
+```json
+{
+   "server": {
+      "host": "192.168.50.57",
+      "port": 8080,
+      "url": "http://192.168.50.57:8080"
+   },
+   "api": {
+      "backendUrl": "http://192.168.50.57:5050"
+   },
+   "startup": {
+      "delayMs": 3000
+   }
+}
+```
+
+Key fields:
+- `server.host` / `server.port`: frontend dev server bind address and port
+- `server.url`: canonical frontend URL used by startup health checks
+- `api.backendUrl`: backend API base URL injected as `VUE_APP_BACKEND_URL`
+- `startup.delayMs`: default startup delay used by scripts
+
+#### Override precedence
+
+- Explicit script parameters / environment variables still take precedence.
+- If no override is supplied, values are taken from the JSON config files.
+- If config files are missing or invalid, built-in safe defaults are used.
+
+#### Quick change (new LAN IP)
+
+If your PC IP changes (for example from DHCP), update these values:
+
+1. In `backend/server.config.json`
+   - `server.host`
+   - `server.url`
+2. In `frontend/server.config.json`
+   - `server.host`
+   - `server.url`
+   - `api.backendUrl`
+
+Then restart both servers with `./stop` + `./start` (`stop.ps1` / `start.ps1` on Windows).
+
 ### Stop scripts
 
 From the repository root (`HLaS`), stop backend and frontend servers:
