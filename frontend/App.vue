@@ -101,7 +101,17 @@
             Type
             <span class="sort-arrow" @click="setSort('Member_Type', 'asc')">&#8593;</span>
             <span class="sort-arrow" @click="setSort('Member_Type', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Member_Type" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+            <select v-model="columnFilters.Member_Type" @change="onFilterChange" class="column-filter">
+              <option value=""></option>
+              <option value="Ordinary">Ordinary</option>
+              <option value="Senior Citizen">Senior Citizen</option>
+              <option value="Senior 75+">Senior 75+</option>
+              <option value="Octagenarian">Octagenarian</option>
+              <option value="Junior">Junior</option>
+              <option value="Honorary">Honorary</option>
+              <option value="Paused">Paused</option>
+              <option value="Resigned">Resigned</option>
+            </select>
           </th>
           <th>
             EA_Licence
@@ -236,6 +246,16 @@
     </div>
     <div v-else-if="activeSection === 'member-edit'" class="member-edit-container">
       <h2>Edit Member Details</h2>
+      <div class="member-edit-photo-row">
+        <img
+          v-if="editMemberData.Photo_Path"
+          :src="`${apiBaseUrl}/member_photo/${loggedInClub}/${encodeURIComponent(editMemberData.Photo_Path)}`"
+          :alt="editMemberData.Members_Name || 'Member photo'"
+          class="member-edit-photo"
+          @error="$event.target.style.display='none'"
+        />
+        <div v-if="editMemberData.Photo_Path" class="member-edit-photo-name">{{ editMemberData.Photo_Path }}</div>
+      </div>
       <div class="member-edit-actions">
         <button type="button" @click="updateMember">Update Member</button>
         <button type="button" @click="cancelEdit">Cancel</button>
@@ -317,6 +337,7 @@ const API_BASE_URL = process.env.VUE_APP_BACKEND_URL || `${window.location.proto
 export default {
   data() {
     return {
+      apiBaseUrl: API_BASE_URL,
       members: [],
       totalMembers: 0,
       currentPage: 1,
@@ -785,6 +806,26 @@ export default {
   margin: 20px auto;
   font-family: Helvetica, Arial, sans-serif;
 }
+#app .member-edit-photo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+#app .member-edit-photo {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  background: #f0f0f0;
+}
+#app .member-edit-photo-name {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
+  color: #666;
+  align-self: flex-end;
+}
 #app .member-detail-table {
   width: 100%;
   border-collapse: collapse;
@@ -865,6 +906,15 @@ export default {
   width: 100%;
   margin-top: 4px;
   box-sizing: border-box;
+}
+#app .column-filter[type="text"],
+#app .column-filter input,
+#app .column-filter select {
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
 }
 #app .page-numbers {
   margin-top: 15px;

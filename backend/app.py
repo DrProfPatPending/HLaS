@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import (
@@ -254,6 +254,18 @@ def log_request(response):
 @app.route('/clubs', methods=['GET'])
 def get_clubs():
     return jsonify({'clubs': load_clubs_config()})
+
+
+@app.route('/member_photo/<club>/<path:filename>', methods=['GET'])
+def member_photo(club, filename):
+    # Validate club name to prevent directory traversal
+    valid_clubs = get_valid_club_short_names()
+    if club not in valid_clubs:
+        return jsonify({'error': 'Invalid club'}), 404
+    photo_dir = os.path.join(DB_DIR, 'ID_photos', club)
+    if not os.path.isdir(photo_dir):
+        return jsonify({'error': 'Photo directory not found'}), 404
+    return send_from_directory(photo_dir, filename)
 
 
 def get_valid_club_short_names():
