@@ -224,6 +224,19 @@ cd backend
 python migrate_club_logos.py --dry-run
 ```
 
+### Hardened login-user upsert helper
+
+To safely insert/update a club login row (including hashed password and guaranteed non-null `ID` where applicable):
+
+```powershell
+cd backend
+python upsert_login_user.py --club TEST --username rob@scoffin.com --password password --name "Rob Scoffin" --email rob@scoffin.com --member-number 15
+```
+
+Notes:
+- Prevents the `Invalid credentials` issue caused by rows with null `ID` in schemas that rely on `ID` as primary-key fallback.
+- Always stores password as a Werkzeug hash (never plain text).
+
 ### Stop scripts
 
 From the repository root (`HLaS`), stop backend and frontend servers:
