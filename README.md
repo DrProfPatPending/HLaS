@@ -188,7 +188,8 @@ Format:
          "shortName": "GAAFFS",
          "description": "GAAFFS fishing club members",
          "websiteUrl": "https://example.com/gaaffs",
-         "adminEmail": "admin@gaaffs.example.com"
+         "adminEmail": "admin@gaaffs.example.com",
+         "logoUrl": "/club_logo/GAAFFS"
       }
    ]
 }
@@ -196,7 +197,24 @@ Format:
 
 Notes:
 - `shortName` is used as the login `club` value (must match your backend DB naming, e.g. `GAAFFS.db`, `CTC.db`).
+- `logoUrl` is optional; when present, frontend uses this backend URL for the club logo.
 - The frontend fetches clubs from backend endpoint `/clubs` at startup.
+
+### One-time logo migration (frontend -> backend)
+
+To migrate existing logos from `frontend/logos` into backend-managed storage (`backend/club_logos`) and populate `logoUrl` in `backend/clubs.config.json`:
+
+```powershell
+cd backend
+python migrate_club_logos.py
+```
+
+Dry run:
+
+```powershell
+cd backend
+python migrate_club_logos.py --dry-run
+```
 
 ### Stop scripts
 

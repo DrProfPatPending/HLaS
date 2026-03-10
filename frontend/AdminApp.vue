@@ -99,6 +99,7 @@
             <th>Website URL</th>
             <th>Admin Email</th>
             <th>Description</th>
+            <th>Logo (PNG)</th>
             <th></th>
           </tr>
         </thead>
@@ -109,6 +110,15 @@
             <td><input v-model="newClub.websiteUrl" class="field-input" placeholder="https://..." /></td>
             <td><input v-model="newClub.adminEmail" class="field-input" placeholder="admin@example.com" /></td>
             <td><textarea v-model="newClub.description" class="field-input desc-textarea" rows="3" placeholder="Club description"></textarea></td>
+            <td>
+              <input
+                ref="newClubLogoInput"
+                type="file"
+                accept="image/png"
+                class="field-input"
+                @change="onNewClubLogoChange"
+              />
+            </td>
             <td class="actions-cell">
               <button type="button" class="save-btn" @click="addClub">Add Club</button>
             </td>
@@ -136,6 +146,7 @@ export default {
       editingShortName: null,
       editForm: {},
       newClub: { shortName: '', fullName: '', websiteUrl: '', adminEmail: '', description: '' },
+      newClubLogoFile: null,
       statusMsg: '',
       statusMsgError: false,
     };
@@ -231,14 +242,43 @@ export default {
           this.showStatus(err.response?.data?.error || 'Delete failed', true);
         });
     },
+    onNewClubLogoChange(event) {
+      const file = event.target.files && event.target.files.length ? event.target.files[0] : null;
+      if (!file) {
+        this.newClubLogoFile = null;
+        return;
+      }
+      const isPngType = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+      if (!isPngType) {
+        this.newClubLogoFile = null;
+        event.target.value = '';
+        this.showStatus('Logo must be a PNG file.', true);
+        return;
+      }
+      this.newClubLogoFile = file;
+    },
     addClub() {
       if (!this.newClub.shortName.trim()) {
         this.showStatus('Short Name is required.', true);
         return;
       }
-      axios.post(`${API_BASE_URL}/admin/clubs`, this.newClub, { headers: this.authHeaders() })
+      const formData = new FormData();
+      formData.append('shortName', this.newClub.shortName);
+      formData.append('fullName', this.newClub.fullName);
+      formData.append('websiteUrl', this.newClub.websiteUrl);
+      formData.append('adminEmail', this.newClub.adminEmail);
+      formData.append('description', this.newClub.description);
+      if (this.newClubLogoFile) {
+        formData.append('logoFile', this.newClubLogoFile);
+      }
+
+      axios.post(`${API_BASE_URL}/admin/clubs`, formData, { headers: this.authHeaders() })
         .then(() => {
           this.newClub = { shortName: '', fullName: '', websiteUrl: '', adminEmail: '', description: '' };
+          this.newClubLogoFile = null;
+          if (this.$refs.newClubLogoInput) {
+            this.$refs.newClubLogoInput.value = '';
+          }
           this.loadClubs();
           this.showStatus('Club added successfully.');
         })

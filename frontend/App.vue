@@ -8,9 +8,9 @@
           </td>
           <td class="logo-cell">
             <a v-if="loggedIn && clubDetails.websiteUrl" :href="clubDetails.websiteUrl" target="_blank" rel="noopener noreferrer">
-              <img :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
+              <img :src="clubLogoSrc" :alt="`${loggedInClub} logo`" class="club-logo" @error="onClubLogoError" />
             </a>
-            <img v-else-if="loggedIn" :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
+            <img v-else-if="loggedIn" :src="clubLogoSrc" :alt="`${loggedInClub} logo`" class="club-logo" @error="onClubLogoError" />
           </td>
           <td class="logo-spacer"></td>
           <td v-if="loggedIn" class="login-info-cell">Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})</td>
@@ -366,6 +366,7 @@ export default {
       loggedIn: false,
       loggedInUser: null,
       loggedInUsername: '',
+      clubLogoLoadFailed: false,
       activeSection: 'home',
       selectedClub: 'GAAFFS',
       loggedInClub: 'GAAFFS',
@@ -401,7 +402,17 @@ export default {
         websiteUrl: matchedClub.websiteUrl || '',
         adminEmail: matchedClub.adminEmail || '',
         description: matchedClub.description || '',
+        logoUrl: matchedClub.logoUrl || '',
       };
+    },
+    clubLogoSrc() {
+      if (this.clubDetails.logoUrl && !this.clubLogoLoadFailed) {
+        if (/^https?:\/\//i.test(this.clubDetails.logoUrl)) {
+          return this.clubDetails.logoUrl;
+        }
+        return `${API_BASE_URL}${this.clubDetails.logoUrl.startsWith('/') ? '' : '/'}${this.clubDetails.logoUrl}`;
+      }
+      return this.getBundledClubLogo(this.loggedInClub);
     },
     totalPages() {
       return Math.max(1, Math.ceil(this.totalMembers / this.pageSize));
@@ -461,6 +472,16 @@ export default {
     }
   },
   methods: {
+    getBundledClubLogo(shortName) {
+      try {
+        return require(`./logos/${shortName}_Logo_50px.png`);
+      } catch {
+        return require('./logos/HLaS.png');
+      }
+    },
+    onClubLogoError() {
+      this.clubLogoLoadFailed = true;
+    },
     loadClubs() {
       axios.get(`${API_BASE_URL}/clubs`)
         .then(res => {
@@ -479,6 +500,7 @@ export default {
           }
 
           this.clubs = uniqueClubs;
+          this.clubLogoLoadFailed = false;
           const hasSelected = uniqueClubs.some(club => club.shortName === this.selectedClub);
           if (!hasSelected) {
             this.selectedClub = uniqueClubs[0].shortName;
@@ -493,6 +515,7 @@ export default {
               description: 'GAAFFS fishing club members',
               websiteUrl: '',
               adminEmail: '',
+              logoUrl: '',
             },
             {
               fullName: 'CTC',
@@ -500,6 +523,7 @@ export default {
               description: 'CTC fishing club members',
               websiteUrl: '',
               adminEmail: '',
+              logoUrl: '',
             },
           ];
         });
@@ -618,6 +642,7 @@ export default {
             this.loggedInUser = res.data.user;
             this.loggedInUsername = this.loginUsername;
             this.loggedInClub = this.selectedClub;
+            this.clubLogoLoadFailed = false;
             this.activeSection = 'home';
             this.currentPage = 1;
             this.fetchMembers();
@@ -633,6 +658,7 @@ export default {
       this.loggedIn = false;
       this.loggedInUser = null;
       this.loggedInUsername = '';
+      this.clubLogoLoadFailed = false;
       this.activeSection = 'home';
       this.loginPassword = '';
       this.members = [];

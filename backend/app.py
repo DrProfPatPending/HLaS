@@ -22,6 +22,8 @@ import json
 import logging
 import time
 import uuid
+import sqlite3
+import re
 
 app = Flask(__name__)
 CORS(app)
@@ -31,12 +33,78 @@ DB_DIR = os.path.dirname(__file__)
 FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Licence_Exp', 'Resigned']
 SERVER_CONFIG_PATH = os.path.join(DB_DIR, 'server.config.json')
 CLUBS_CONFIG_PATH = os.path.join(DB_DIR, 'clubs.config.json')
+CLUB_LOGOS_DIR = os.path.join(DB_DIR, 'club_logos')
+CLUB_DB_TEMPLATE_PATH = os.path.join(DB_DIR, 'GAAFFS.db')
 
 # Cache for club database engines and metadata
 _club_db_cache = {}
 
 # In-memory admin session tokens (cleared on restart)
 _admin_tokens = set()
+
+
+def get_club_logo_path(short_name):
+    return os.path.join(CLUB_LOGOS_DIR, f'{short_name}.png')
+
+
+def get_club_logo_url(short_name):
+    return f'/club_logo/{short_name}'
+
+
+def save_uploaded_logo(short_name, logo_file):
+    if logo_file is None or not logo_file.filename:
+        return ''
+
+    file_name_lower = logo_file.filename.lower()
+    if not file_name_lower.endswith('.png'):
+        raise ValueError('Logo file must be a PNG (.png)')
+
+    content = logo_file.read()
+    if not content.startswith(b'\x89PNG\r\n\x1a\n'):
+        raise ValueError('Logo file content is not a valid PNG')
+
+    os.makedirs(CLUB_LOGOS_DIR, exist_ok=True)
+    with open(get_club_logo_path(short_name), 'wb') as logo_out:
+        logo_out.write(content)
+
+    return get_club_logo_url(short_name)
+
+
+def create_empty_club_database(short_name):
+    if not os.path.exists(CLUB_DB_TEMPLATE_PATH):
+        raise FileNotFoundError('Database template GAAFFS.db was not found')
+
+    target_db_path = os.path.join(DB_DIR, f'{short_name}.db')
+    if os.path.exists(target_db_path):
+        raise FileExistsError(f'Database for {short_name} already exists')
+
+    with sqlite3.connect(CLUB_DB_TEMPLATE_PATH) as src_conn:
+        objects = src_conn.execute(
+            """
+            SELECT type, name, sql
+            FROM sqlite_master
+            WHERE sql IS NOT NULL
+              AND type IN ('table', 'index', 'trigger', 'view')
+            ORDER BY
+              CASE type
+                WHEN 'table' THEN 1
+                WHEN 'index' THEN 2
+                WHEN 'trigger' THEN 3
+                WHEN 'view' THEN 4
+                ELSE 5
+              END,
+              name
+            """
+        ).fetchall()
+
+    with sqlite3.connect(target_db_path) as dest_conn:
+        for object_type, object_name, object_sql in objects:
+            if object_name.startswith('sqlite_'):
+                continue
+            if not object_sql:
+                continue
+            dest_conn.execute(object_sql)
+        dest_conn.commit()
 
 
 def load_clubs_config():
@@ -47,6 +115,7 @@ def load_clubs_config():
             'description': 'GAAFFS fishing club members',
             'websiteUrl': 'https://example.com/gaaffs',
             'adminEmail': 'admin@gaaffs.example.com',
+            'logoUrl': '',
         },
         {
             'fullName': 'CTC',
@@ -54,6 +123,7 @@ def load_clubs_config():
             'description': 'CTC fishing club members',
             'websiteUrl': 'https://example.com/ctc',
             'adminEmail': 'admin@ctc.example.com',
+            'logoUrl': '',
         },
     ]
 
@@ -83,6 +153,7 @@ def load_clubs_config():
             'description': str(club.get('description', '')).strip(),
             'websiteUrl': str(club.get('websiteUrl', '')).strip(),
             'adminEmail': str(club.get('adminEmail', '')).strip(),
+            'logoUrl': str(club.get('logoUrl', '')).strip() or (get_club_logo_url(short_name) if os.path.exists(get_club_logo_path(short_name)) else ''),
         })
 
     return normalized_clubs or default_clubs
@@ -293,6 +364,14 @@ def member_photo(club, filename):
     if not os.path.isdir(photo_dir):
         return jsonify({'error': 'Photo directory not found'}), 404
     return send_from_directory(photo_dir, filename)
+
+
+@app.route('/club_logo/<short_name>', methods=['GET'])
+def club_logo(short_name):
+    logo_path = get_club_logo_path(short_name)
+    if not os.path.exists(logo_path):
+        return jsonify({'error': 'Logo not found'}), 404
+    return send_from_directory(CLUB_LOGOS_DIR, os.path.basename(logo_path))
 
 
 def get_valid_club_short_names():
@@ -569,19 +648,48 @@ def admin_get_clubs():
 def admin_add_club():
     if not require_admin_token():
         return jsonify({'error': 'Unauthorized'}), 401
-    data = request.json or {}
+    data = request.form if request.form else (request.json or {})
     short_name = str(data.get('shortName', '')).strip()
     if not short_name:
         return jsonify({'error': 'shortName is required'}), 400
+    if not re.fullmatch(r'[A-Za-z0-9_-]+', short_name):
+        return jsonify({'error': 'shortName may only contain letters, numbers, underscore, and hyphen'}), 400
+
     clubs = load_clubs_config()
     if any(c.get('shortName') == short_name for c in clubs):
         return jsonify({'error': f'Club "{short_name}" already exists'}), 409
+
+    logo_url = ''
+    logo_file = request.files.get('logoFile')
+    logo_path = get_club_logo_path(short_name)
+    if logo_file and logo_file.filename:
+        try:
+            logo_url = save_uploaded_logo(short_name, logo_file)
+        except ValueError as exc:
+            return jsonify({'error': str(exc)}), 400
+
+    try:
+        create_empty_club_database(short_name)
+    except FileExistsError as exc:
+        if logo_url and os.path.exists(logo_path):
+            os.remove(logo_path)
+        return jsonify({'error': str(exc)}), 409
+    except FileNotFoundError as exc:
+        if logo_url and os.path.exists(logo_path):
+            os.remove(logo_path)
+        return jsonify({'error': str(exc)}), 500
+    except Exception as exc:
+        if logo_url and os.path.exists(logo_path):
+            os.remove(logo_path)
+        return jsonify({'error': f'Failed to create database for {short_name}: {exc}'}), 500
+
     clubs.append({
         'fullName': str(data.get('fullName', short_name)).strip(),
         'shortName': short_name,
         'description': str(data.get('description', '')).strip(),
         'websiteUrl': str(data.get('websiteUrl', '')).strip(),
         'adminEmail': str(data.get('adminEmail', '')).strip(),
+        'logoUrl': logo_url,
     })
     save_clubs_config(clubs)
     return jsonify({'success': True})
@@ -601,6 +709,7 @@ def admin_update_club(short_name):
                 'description': str(data.get('description', club.get('description', ''))).strip(),
                 'websiteUrl': str(data.get('websiteUrl', club.get('websiteUrl', ''))).strip(),
                 'adminEmail': str(data.get('adminEmail', club.get('adminEmail', ''))).strip(),
+                'logoUrl': str(data.get('logoUrl', club.get('logoUrl', ''))).strip(),
             }
             save_clubs_config(clubs)
             return jsonify({'success': True})
