@@ -181,7 +181,10 @@
     </div>
     <hr />
     <div>
-      <h2>Membership Details</h2>
+      <div class="membership-details-header">
+        <h2>Membership Details</h2>
+        <button v-if="lookupResult && !lookupError" type="button" @click="hideLookupDetails">Hide Details</button>
+      </div>
       <form @submit.prevent="lookupMember">
         <input v-model="lookupNumber" placeholder="Membership Number" required />
         <button type="submit">Lookup</button>
@@ -713,6 +716,10 @@ export default {
       this.lookupNumber = number;
       this.lookupMember();
     },
+    hideLookupDetails() {
+      this.lookupResult = null;
+      this.lookupError = '';
+    },
     formatFieldName(fieldName) {
       // Replace double underscores with double colon, then single underscores with space
       return fieldName.replace(/__/g, '::').replace(/_/g, ' ');
@@ -849,6 +856,11 @@ export default {
 #app .member-edit-actions {
   display: flex;
   gap: 8px;
+}
+#app .membership-details-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 #app .pagination-controls {
   margin-bottom: 20px;
