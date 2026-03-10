@@ -11,3 +11,6 @@ build/
 .github/
 ID_photos/
 backend/certs/*.pem
+.env.prod
+deploy/.env*
+!deploy/.env*.example

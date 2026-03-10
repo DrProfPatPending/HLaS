@@ -325,6 +325,12 @@ Optional port overrides:
 
 ## Security
 
+## Production deployment (Docker + VPS)
+
+Production containerization and VPS rollout instructions are in:
+
+- `DEPLOYMENT.md`
+
 ### Password Encryption
 - All passwords are encrypted using Werkzeug's `scrypt` algorithm before storage
 - Passwords are never stored as plain text in the database

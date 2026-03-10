@@ -30,10 +30,11 @@ CORS(app)
 
 # Store database configurations per club in Flask's g object
 DB_DIR = os.path.dirname(__file__)
+APP_DATA_DIR = os.getenv('HLAS_DATA_DIR', DB_DIR)
 FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Licence_Exp', 'Resigned']
-SERVER_CONFIG_PATH = os.path.join(DB_DIR, 'server.config.json')
-CLUBS_CONFIG_PATH = os.path.join(DB_DIR, 'clubs.config.json')
-CLUB_LOGOS_DIR = os.path.join(DB_DIR, 'club_logos')
+SERVER_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'server.config.json')
+CLUBS_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'clubs.config.json')
+CLUB_LOGOS_DIR = os.path.join(APP_DATA_DIR, 'club_logos')
 CLUB_DB_TEMPLATE_PATH = os.path.join(DB_DIR, 'template.db')
 
 # Cache for club database engines and metadata
@@ -74,7 +75,7 @@ def create_empty_club_database(short_name):
     if not os.path.exists(CLUB_DB_TEMPLATE_PATH):
         raise FileNotFoundError('Database template template.db was not found')
 
-    target_db_path = os.path.join(DB_DIR, f'{short_name}.db')
+    target_db_path = os.path.join(APP_DATA_DIR, f'{short_name}.db')
     if os.path.exists(target_db_path):
         raise FileExistsError(f'Database for {short_name} already exists')
 
@@ -198,7 +199,7 @@ def require_admin_token():
 def get_db_for_club(club):
     """Get or create database engine and session for the specified club."""
     if club not in _club_db_cache:
-        db_path = os.path.join(DB_DIR, f'{club}.db')
+        db_path = os.path.join(APP_DATA_DIR, f'{club}.db')
         database_url = f"sqlite:///{db_path.replace(os.sep, '/')}"
         engine = create_engine(database_url, future=True)
         session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
@@ -255,7 +256,7 @@ def wildcard_to_sql_like(value):
 
 def initialize_database(club):
     """Initialize database for a club if it doesn't exist."""
-    db_path = os.path.join(DB_DIR, f'{club}.db')
+    db_path = os.path.join(APP_DATA_DIR, f'{club}.db')
     database_url = f"sqlite:///{db_path.replace(os.sep, '/')}"
     engine = create_engine(database_url, future=True)
     bootstrap_metadata = MetaData()
@@ -288,7 +289,7 @@ def log_database_target(club):
     app.logger.info(json.dumps({
         'event': 'database.selected',
         'club': club,
-        'db_path': os.path.join(DB_DIR, f'{club}.db'),
+        'db_path': os.path.join(APP_DATA_DIR, f'{club}.db'),
     }))
 
 
@@ -340,7 +341,7 @@ def member_photo(club, filename):
     valid_clubs = get_valid_club_short_names()
     if club not in valid_clubs:
         return jsonify({'error': 'Invalid club'}), 404
-    photo_dir = os.path.join(DB_DIR, 'ID_photos', club)
+    photo_dir = os.path.join(APP_DATA_DIR, 'ID_photos', club)
     if not os.path.isdir(photo_dir):
         return jsonify({'error': 'Photo directory not found'}), 404
     return send_from_directory(photo_dir, filename)
@@ -728,8 +729,8 @@ if __name__ == '__main__':
             key_file = str(tls_config.get('keyFile', '')).strip()
             if not cert_file or not key_file:
                 raise RuntimeError('TLS enabled but certFile/keyFile are not configured in backend/server.config.json')
-            cert_path = cert_file if os.path.isabs(cert_file) else os.path.join(DB_DIR, cert_file)
-            key_path = key_file if os.path.isabs(key_file) else os.path.join(DB_DIR, key_file)
+            cert_path = cert_file if os.path.isabs(cert_file) else os.path.join(APP_DATA_DIR, cert_file)
+            key_path = key_file if os.path.isabs(key_file) else os.path.join(APP_DATA_DIR, key_file)
             if not os.path.exists(cert_path):
                 raise RuntimeError(f'TLS certificate file not found: {cert_path}')
             if not os.path.exists(key_path):
