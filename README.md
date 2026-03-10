@@ -200,6 +200,14 @@ Notes:
 - `logoUrl` is optional; when present, frontend uses this backend URL for the club logo.
 - The frontend fetches clubs from backend endpoint `/clubs` at startup.
 
+### New club database template
+
+When a new club is created in Club Admin, backend now provisions the club database by copying:
+
+- `backend/template.db`
+
+This template currently contains the full schema plus a single seed member row for Rob Scoffin (member number `15`).
+
 ### One-time logo migration (frontend -> backend)
 
 To migrate existing logos from `frontend/logos` into backend-managed storage (`backend/club_logos`) and populate `logoUrl` in `backend/clubs.config.json`:

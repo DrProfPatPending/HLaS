@@ -22,8 +22,8 @@ import json
 import logging
 import time
 import uuid
-import sqlite3
 import re
+import shutil
 
 app = Flask(__name__)
 CORS(app)
@@ -34,7 +34,7 @@ FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_20
 SERVER_CONFIG_PATH = os.path.join(DB_DIR, 'server.config.json')
 CLUBS_CONFIG_PATH = os.path.join(DB_DIR, 'clubs.config.json')
 CLUB_LOGOS_DIR = os.path.join(DB_DIR, 'club_logos')
-CLUB_DB_TEMPLATE_PATH = os.path.join(DB_DIR, 'GAAFFS.db')
+CLUB_DB_TEMPLATE_PATH = os.path.join(DB_DIR, 'template.db')
 
 # Cache for club database engines and metadata
 _club_db_cache = {}
@@ -72,39 +72,13 @@ def save_uploaded_logo(short_name, logo_file):
 
 def create_empty_club_database(short_name):
     if not os.path.exists(CLUB_DB_TEMPLATE_PATH):
-        raise FileNotFoundError('Database template GAAFFS.db was not found')
+        raise FileNotFoundError('Database template template.db was not found')
 
     target_db_path = os.path.join(DB_DIR, f'{short_name}.db')
     if os.path.exists(target_db_path):
         raise FileExistsError(f'Database for {short_name} already exists')
 
-    with sqlite3.connect(CLUB_DB_TEMPLATE_PATH) as src_conn:
-        objects = src_conn.execute(
-            """
-            SELECT type, name, sql
-            FROM sqlite_master
-            WHERE sql IS NOT NULL
-              AND type IN ('table', 'index', 'trigger', 'view')
-            ORDER BY
-              CASE type
-                WHEN 'table' THEN 1
-                WHEN 'index' THEN 2
-                WHEN 'trigger' THEN 3
-                WHEN 'view' THEN 4
-                ELSE 5
-              END,
-              name
-            """
-        ).fetchall()
-
-    with sqlite3.connect(target_db_path) as dest_conn:
-        for object_type, object_name, object_sql in objects:
-            if object_name.startswith('sqlite_'):
-                continue
-            if not object_sql:
-                continue
-            dest_conn.execute(object_sql)
-        dest_conn.commit()
+    shutil.copyfile(CLUB_DB_TEMPLATE_PATH, target_db_path)
 
 
 def load_clubs_config():
