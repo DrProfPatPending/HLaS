@@ -8,6 +8,7 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
+    Date,
     PrimaryKeyConstraint,
     cast,
     func,
@@ -26,7 +27,7 @@ CORS(app)
 
 # Store database configurations per club in Flask's g object
 DB_DIR = os.path.dirname(__file__)
-FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Resigned']
+FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Licence_Exp', 'Resigned']
 SERVER_CONFIG_PATH = os.path.join(DB_DIR, 'server.config.json')
 CLUBS_CONFIG_PATH = os.path.join(DB_DIR, 'clubs.config.json')
 
@@ -367,6 +368,9 @@ def get_members():
             # Cast numeric columns to Integer for proper numeric sorting
             if sort_by in ('Number', 'ID'):
                 sort_expression = cast(sort_column, Integer)
+            # Cast date columns to Date for proper date sorting
+            elif sort_by == 'Licence_Exp':
+                sort_expression = cast(sort_column, Date)
             else:
                 sort_expression = sort_column
             

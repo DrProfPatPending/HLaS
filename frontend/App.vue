@@ -110,6 +110,12 @@
             <input v-model="columnFilters.EA_Licence" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
           <th>
+            Licence Expiry
+            <span class="sort-arrow" @click="setSort('Licence_Exp', 'asc')">&#8593;</span>
+            <span class="sort-arrow" @click="setSort('Licence_Exp', 'desc')">&#8595;</span>
+            <input v-model="columnFilters.Licence_Exp" @input="onFilterChange" class="column-filter" placeholder="Filter" />
+          </th>
+          <th>
             Paid Up?
             <input v-model="columnFilters.Paid_Up_2026" @input="onFilterChange" class="column-filter" placeholder="Filter" />
           </th>
@@ -136,6 +142,7 @@
           <td>{{ member.Car_Reg }}</td>
           <td>{{ member.Member_Type }}</td>
           <td>{{ member.EA_Licence }}</td>
+          <td :style="getExpiryDateStyle(member.Licence_Exp)">{{ member.Licence_Exp }}</td>
           <td>{{ member.Paid_Up_2026 }}</td>
           <td>{{ member.Paused }}</td>
           <td>{{ member.Resigned }}</td>
@@ -348,6 +355,7 @@ export default {
         Mobile: '',
         Car_Reg: '',
         EA_Licence: '',
+        Licence_Exp: '',
         Resigned: ''
       }
     };
@@ -687,6 +695,31 @@ export default {
     formatFieldName(fieldName) {
       // Replace double underscores with double colon, then single underscores with space
       return fieldName.replace(/__/g, '::').replace(/_/g, ' ');
+    },
+    getExpiryDateStyle(dateString) {
+      if (!dateString) return {};
+      
+      // Check for n/a or N/A values - render in green
+      if (dateString.toLowerCase() === 'n/a') {
+        return { color: 'green' };
+      }
+      
+      try {
+        // Parse the date (assuming format like YYYY-MM-DD or similar)
+        const expiryDate = new Date(dateString);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        expiryDate.setHours(0, 0, 0, 0);
+        
+        // If expiry date is in the past, return red; otherwise black
+        if (expiryDate < today) {
+          return { color: 'red' };
+        } else {
+          return { color: 'black' };
+        }
+      } catch (e) {
+        return {};
+      }
     }
   }
 };
@@ -823,9 +856,10 @@ export default {
 #app .member-table th:nth-child(6), #app .member-table td:nth-child(6) { min-width: 90px; } /* Car_Reg */
 #app .member-table th:nth-child(7), #app .member-table td:nth-child(7) { min-width: 100px; } /* Member_Type */
 #app .member-table th:nth-child(8), #app .member-table td:nth-child(8) { min-width: 100px; } /* EA_Licence */
-#app .member-table th:nth-child(9), #app .member-table td:nth-child(9) { min-width: 90px; } /* Paid_Up_2026 */
-#app .member-table th:nth-child(10), #app .member-table td:nth-child(10) { min-width: 70px; } /* Paused */
-#app .member-table th:nth-child(11), #app .member-table td:nth-child(11) { min-width: 80px; } /* Resigned */
+#app .member-table th:nth-child(9), #app .member-table td:nth-child(9) { min-width: 110px; } /* Licence_Expiry */
+#app .member-table th:nth-child(10), #app .member-table td:nth-child(10) { min-width: 90px; } /* Paid_Up_2026 */
+#app .member-table th:nth-child(11), #app .member-table td:nth-child(11) { min-width: 70px; } /* Paused */
+#app .member-table th:nth-child(12), #app .member-table td:nth-child(12) { min-width: 80px; } /* Resigned */
 #app .column-filter {
   display: block;
   width: 100%;
