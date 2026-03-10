@@ -2,10 +2,12 @@
 __pycache__/
 venv/
 *.pyc
-*.pid
+.backend.pid
+.frontend.pid
 *.log
 .vscode/
 dist/
 build/
 .github/
 ID_photos/
+backend/certs/*.pem

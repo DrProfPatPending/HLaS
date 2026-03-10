@@ -140,6 +140,12 @@ def load_server_config():
             'port': 5050,
             'url': 'http://127.0.0.1:5050',
         },
+        'tls': {
+            'enabled': False,
+            'adhoc': True,
+            'certFile': '',
+            'keyFile': '',
+        },
         'startup': {
             'delayMs': 3000,
         },
@@ -162,7 +168,7 @@ def load_server_config():
         return default_config
 
     merged = default_config.copy()
-    for section in ('server', 'startup', 'runtime', 'logging'):
+    for section in ('server', 'tls', 'startup', 'runtime', 'logging'):
         merged[section] = {**default_config.get(section, {}), **loaded_config.get(section, {})}
     # Admin section is merged shallowly as a flat dict
     if 'admin' in loaded_config:
@@ -705,6 +711,7 @@ def admin_delete_club(short_name):
 if __name__ == '__main__':
     config = load_server_config()
     server_config = config.get('server', {})
+    tls_config = config.get('tls', {})
     runtime_config = config.get('runtime', {})
 
     host = server_config.get('host', '127.0.0.1')
@@ -712,6 +719,23 @@ if __name__ == '__main__':
     debug = bool(runtime_config.get('debug', False))
     use_reloader = bool(runtime_config.get('useReloader', False))
 
+    ssl_context = None
+    if bool(tls_config.get('enabled', False)):
+        if bool(tls_config.get('adhoc', True)):
+            ssl_context = 'adhoc'
+        else:
+            cert_file = str(tls_config.get('certFile', '')).strip()
+            key_file = str(tls_config.get('keyFile', '')).strip()
+            if not cert_file or not key_file:
+                raise RuntimeError('TLS enabled but certFile/keyFile are not configured in backend/server.config.json')
+            cert_path = cert_file if os.path.isabs(cert_file) else os.path.join(DB_DIR, cert_file)
+            key_path = key_file if os.path.isabs(key_file) else os.path.join(DB_DIR, key_file)
+            if not os.path.exists(cert_path):
+                raise RuntimeError(f'TLS certificate file not found: {cert_path}')
+            if not os.path.exists(key_path):
+                raise RuntimeError(f'TLS key file not found: {key_path}')
+            ssl_context = (cert_path, key_path)
+
     configure_logging()
     # Databases are now initialized on-demand per club
-    app.run(host=host, port=port, debug=debug, use_reloader=use_reloader)
+    app.run(host=host, port=port, debug=debug, use_reloader=use_reloader, ssl_context=ssl_context)

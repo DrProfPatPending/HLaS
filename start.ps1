@@ -4,7 +4,13 @@ param(
     [int]$FrontendPort = 8080,
     [string]$BindIp = "192.168.50.57",
     [string]$BackendUrl = "",
-    [string]$FrontendUrl = ""
+    [string]$FrontendUrl = "",
+    [switch]$TlsOff,
+    [switch]$BackendTlsOff,
+    [switch]$FrontendTlsOff,
+    [switch]$UseBackendCertFiles,
+    [string]$BackendCertFile = "",
+    [string]$BackendKeyFile = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,7 +21,26 @@ function Test-ServerUrl {
         [string]$Url
     )
 
+    $isHttps = $Url -match '^https://'
+    $curlExe = Get-Command 'curl.exe' -ErrorAction SilentlyContinue
+    $previousValidationCallback = $null
+
     try {
+        if ($curlExe) {
+            $curlArgs = @('--silent', '--show-error', '--max-time', '5', '--output', 'NUL')
+            if ($isHttps) {
+                $curlArgs += '--insecure'
+            }
+            $curlArgs += $Url
+            & $curlExe.Source @curlArgs | Out-Null
+            return ($LASTEXITCODE -eq 0)
+        }
+
+        if ($isHttps) {
+            $previousValidationCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+        }
+
         Invoke-WebRequest -Uri $Url -Method Get -UseBasicParsing -TimeoutSec 5 | Out-Null
         return $true
     }
@@ -24,6 +49,11 @@ function Test-ServerUrl {
             return $true
         }
         return $false
+    }
+    finally {
+        if ($isHttps -and $previousValidationCallback -ne $null) {
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $previousValidationCallback
+        }
     }
 }
 
@@ -54,6 +84,61 @@ if (Test-Path $frontendConfigPath) {
         Write-Warning "Unable to parse frontend/server.config.json. Using script defaults."
     }
 }
+
+$backendTlsEnabledForUrls = $false
+$backendTlsAdhocForRun = $true
+$backendTlsCertFileForRun = ''
+$backendTlsKeyFileForRun = ''
+
+if ($backendConfig -and $backendConfig.tls -and $null -ne $backendConfig.tls.enabled) {
+    $backendTlsEnabledForUrls = [bool]$backendConfig.tls.enabled
+}
+if ($backendConfig -and $backendConfig.tls -and $null -ne $backendConfig.tls.adhoc) {
+    $backendTlsAdhocForRun = [bool]$backendConfig.tls.adhoc
+}
+if ($backendConfig -and $backendConfig.tls -and $backendConfig.tls.certFile) {
+    $backendTlsCertFileForRun = [string]$backendConfig.tls.certFile
+}
+if ($backendConfig -and $backendConfig.tls -and $backendConfig.tls.keyFile) {
+    $backendTlsKeyFileForRun = [string]$backendConfig.tls.keyFile
+}
+
+$frontendTlsEnabledForUrls = $false
+$frontendTlsCertFileForRun = ''
+$frontendTlsKeyFileForRun = ''
+if ($frontendConfig -and $frontendConfig.tls -and $null -ne $frontendConfig.tls.enabled) {
+    $frontendTlsEnabledForUrls = [bool]$frontendConfig.tls.enabled
+}
+if ($frontendConfig -and $frontendConfig.tls -and $frontendConfig.tls.certFile) {
+    $frontendTlsCertFileForRun = [string]$frontendConfig.tls.certFile
+}
+if ($frontendConfig -and $frontendConfig.tls -and $frontendConfig.tls.keyFile) {
+    $frontendTlsKeyFileForRun = [string]$frontendConfig.tls.keyFile
+}
+
+if ($TlsOff) {
+    $backendTlsEnabledForUrls = $false
+    $frontendTlsEnabledForUrls = $false
+}
+if ($BackendTlsOff) {
+    $backendTlsEnabledForUrls = $false
+}
+if ($FrontendTlsOff) {
+    $frontendTlsEnabledForUrls = $false
+}
+
+if ($UseBackendCertFiles) {
+    $backendTlsEnabledForUrls = $true
+    $backendTlsAdhocForRun = $false
+    if ($BackendCertFile) {
+        $backendTlsCertFileForRun = $BackendCertFile
+    }
+    if ($BackendKeyFile) {
+        $backendTlsKeyFileForRun = $BackendKeyFile
+    }
+}
+
+$hasTlsSwitchOverride = $TlsOff -or $BackendTlsOff -or $FrontendTlsOff -or $UseBackendCertFiles
 
 if (-not $PSBoundParameters.ContainsKey('DelayMs')) {
     if ($frontendConfig -and $frontendConfig.startup -and $frontendConfig.startup.delayMs -ne $null) {
@@ -104,19 +189,21 @@ if (-not (Get-Command $npmCmd -ErrorAction SilentlyContinue)) {
 }
 
 if (-not $BackendUrl) {
-    if ($backendConfig -and $backendConfig.server -and $backendConfig.server.url) {
+    if (-not $hasTlsSwitchOverride -and $backendConfig -and $backendConfig.server -and $backendConfig.server.url) {
         $BackendUrl = "$(($backendConfig.server.url).TrimEnd('/'))/members"
     }
     else {
-        $BackendUrl = "http://${BindIp}:$BackendPort/members"
+        $backendProtocol = if ($backendTlsEnabledForUrls) { 'https' } else { 'http' }
+        $BackendUrl = "${backendProtocol}://${BindIp}:$BackendPort/members"
     }
 }
 if (-not $FrontendUrl) {
-    if ($frontendConfig -and $frontendConfig.server -and $frontendConfig.server.url) {
+    if (-not $hasTlsSwitchOverride -and $frontendConfig -and $frontendConfig.server -and $frontendConfig.server.url) {
         $FrontendUrl = "$(($frontendConfig.server.url).TrimEnd('/'))/"
     }
     else {
-        $FrontendUrl = "http://${BindIp}:$FrontendPort/"
+        $frontendProtocol = if ($frontendTlsEnabledForUrls) { 'https' } else { 'http' }
+        $FrontendUrl = "${frontendProtocol}://${BindIp}:$FrontendPort/"
     }
 }
 
@@ -133,7 +220,44 @@ if ($backendConfig -and $backendConfig.runtime -and $backendConfig.runtime.useRe
 $debugPyValue = if ($backendDebug) { 'True' } else { 'False' }
 $reloaderPyValue = if ($backendUseReloader) { 'True' } else { 'False' }
 
-$backendRunCode = "import app; app.configure_logging(); app.app.run(host='$BindIp', port=$BackendPort, debug=$debugPyValue, use_reloader=$reloaderPyValue)"
+$backendSslContextPy = 'None'
+$backendTlsEnabled = $false
+$backendTlsAdhoc = $true
+$backendTlsCertFile = ''
+$backendTlsKeyFile = ''
+
+$backendTlsEnabled = $backendTlsEnabledForUrls
+$backendTlsAdhoc = $backendTlsAdhocForRun
+$backendTlsCertFile = $backendTlsCertFileForRun
+$backendTlsKeyFile = $backendTlsKeyFileForRun
+
+if ($backendTlsEnabled) {
+    if ($backendTlsAdhoc) {
+        $backendSslContextPy = "'adhoc'"
+    }
+    elseif ($backendTlsCertFile -and $backendTlsKeyFile) {
+        $certPath = if ([System.IO.Path]::IsPathRooted($backendTlsCertFile)) { $backendTlsCertFile } else { Join-Path $backendDir $backendTlsCertFile }
+        $keyPath = if ([System.IO.Path]::IsPathRooted($backendTlsKeyFile)) { $backendTlsKeyFile } else { Join-Path $backendDir $backendTlsKeyFile }
+        $certPath = [System.IO.Path]::GetFullPath($certPath)
+        $keyPath = [System.IO.Path]::GetFullPath($keyPath)
+
+        if (-not (Test-Path $certPath)) {
+            throw "Backend TLS certificate not found: $certPath"
+        }
+        if (-not (Test-Path $keyPath)) {
+            throw "Backend TLS key not found: $keyPath"
+        }
+
+        $certPathPy = $certPath.Replace('\', '/').Replace("'", "\\'")
+        $keyPathPy = $keyPath.Replace('\', '/').Replace("'", "\\'")
+        $backendSslContextPy = "('$certPathPy', '$keyPathPy')"
+    }
+    else {
+        throw 'Backend TLS is enabled but tls.certFile/tls.keyFile are not configured and tls.adhoc is false.'
+    }
+}
+
+$backendRunCode = "import app; app.configure_logging(); app.app.run(host='$BindIp', port=$BackendPort, debug=$debugPyValue, use_reloader=$reloaderPyValue, ssl_context=$backendSslContextPy)"
 $backendProcess = Start-Process -FilePath $pythonExe -ArgumentList @('-c', ('"' + $backendRunCode + '"')) -WorkingDirectory $backendDir -PassThru
 $backendProcess.Id | Set-Content -Path $backendPidFile
 Start-Sleep -Milliseconds $DelayMs
@@ -149,11 +273,14 @@ else {
     exit 1
 }
 
-$configuredBackendUrl = "http://${BindIp}:$BackendPort"
-if ($frontendConfig -and $frontendConfig.api -and $frontendConfig.api.backendUrl) {
+$configuredBackendUrl = if ($backendTlsEnabled) { "https://${BindIp}:$BackendPort" } else { "http://${BindIp}:$BackendPort" }
+if (-not $hasTlsSwitchOverride -and $frontendConfig -and $frontendConfig.api -and $frontendConfig.api.backendUrl) {
     $configuredBackendUrl = [string]$frontendConfig.api.backendUrl
 }
 $env:VUE_APP_BACKEND_URL = $configuredBackendUrl
+$env:VUE_APP_TLS_ENABLED = if ($frontendTlsEnabledForUrls) { 'true' } else { 'false' }
+$env:VUE_APP_TLS_CERT_FILE = $frontendTlsCertFileForRun
+$env:VUE_APP_TLS_KEY_FILE = $frontendTlsKeyFileForRun
 $frontendProcess = Start-Process -FilePath $npmCmd -ArgumentList @('run', 'serve', '--', '--host', "$BindIp", '--port', "$FrontendPort") -WorkingDirectory $frontendDir -PassThru
 $frontendProcess.Id | Set-Content -Path $frontendPidFile
 Start-Sleep -Milliseconds $DelayMs

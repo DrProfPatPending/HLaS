@@ -2,7 +2,13 @@
   "server": {
     "host": "192.168.50.57",
     "port": 5050,
-    "url": "http://192.168.50.57:5050"
+    "url": "https://192.168.50.57:5050"
+  },
+  "tls": {
+    "enabled": true,
+    "adhoc": false,
+    "certFile": "certs/dev-cert.pem",
+    "keyFile": "certs/dev-key.pem"
   },
   "startup": {
     "delayMs": 3000

@@ -65,11 +65,35 @@ From the repository root (`HLaS`), you can start both servers with a configurabl
    .\start.ps1 -DelayMs 3000 -BackendPort 5050 -FrontendPort 8080
    ```
 
+Optional TLS switches (PowerShell):
+- `-TlsOff`: disable HTTPS for both backend and frontend for this run.
+- `-BackendTlsOff`: disable HTTPS for backend only for this run.
+- `-FrontendTlsOff`: disable HTTPS for frontend only for this run.
+- `-UseBackendCertFiles`: force backend HTTPS using certificate files.
+- `-BackendCertFile` / `-BackendKeyFile`: cert/key paths used with `-UseBackendCertFiles`.
+
+Example using cert files:
+```powershell
+.\start.ps1 -UseBackendCertFiles -BackendCertFile .\backend\certs\dev-cert.pem -BackendKeyFile .\backend\certs\dev-key.pem
+```
+
 - Linux/macOS Bash:
    ```bash
    chmod +x ./start.sh
-   BACKEND_PORT=5050 FRONTEND_PORT=8080 ./start.sh 3000
+   BACKEND_PORT=5050 FRONTEND_PORT=8080 ./start.sh --delay-ms 3000
    ```
+
+Optional TLS switches (Bash):
+- `--tls-off`: disable HTTPS for both backend and frontend for this run.
+- `--backend-tls-off`: disable HTTPS for backend only for this run.
+- `--frontend-tls-off`: disable HTTPS for frontend only for this run.
+- `--use-backend-cert-files`: force backend HTTPS using certificate files.
+- `--backend-cert-file <path>` / `--backend-key-file <path>`: cert/key paths used with `--use-backend-cert-files`.
+
+Example using cert files:
+```bash
+./start.sh --use-backend-cert-files --backend-cert-file ./backend/certs/dev-cert.pem --backend-key-file ./backend/certs/dev-key.pem
+```
 
 Behavior:
 - Starts backend, waits `DelayMs`, checks backend URL, prints `Backend Running` on success.
@@ -106,7 +130,13 @@ These files are parsed automatically during startup by:
    "server": {
       "host": "192.168.50.57",
       "port": 5050,
-      "url": "http://192.168.50.57:5050"
+      "url": "https://192.168.50.57:5050"
+   },
+   "tls": {
+      "enabled": true,
+      "adhoc": true,
+      "certFile": "",
+      "keyFile": ""
    },
    "startup": {
       "delayMs": 3000
@@ -124,6 +154,9 @@ These files are parsed automatically during startup by:
 Key fields:
 - `server.host` / `server.port`: backend bind address and port
 - `server.url`: canonical backend URL used by startup health checks
+- `tls.enabled`: enable HTTPS for backend runtime
+- `tls.adhoc`: use Flask/Werkzeug adhoc self-signed cert (dev only)
+- `tls.certFile` / `tls.keyFile`: optional cert/key paths (used when `tls.adhoc` is `false`)
 - `startup.delayMs`: default startup delay used by scripts
 - `runtime.debug` / `runtime.useReloader`: backend runtime flags
 - `logging.level`: default Flask log level (can be overridden by `LOG_LEVEL`)
@@ -135,10 +168,15 @@ Key fields:
    "server": {
       "host": "192.168.50.57",
       "port": 8080,
-      "url": "http://192.168.50.57:8080"
+      "url": "https://192.168.50.57:8080"
+   },
+   "tls": {
+      "enabled": true,
+      "certFile": "",
+      "keyFile": ""
    },
    "api": {
-      "backendUrl": "http://192.168.50.57:5050"
+      "backendUrl": "https://192.168.50.57:5050"
    },
    "startup": {
       "delayMs": 3000
@@ -149,8 +187,33 @@ Key fields:
 Key fields:
 - `server.host` / `server.port`: frontend dev server bind address and port
 - `server.url`: canonical frontend URL used by startup health checks
+- `tls.enabled`: enable HTTPS for Vue dev server
+- `tls.certFile` / `tls.keyFile`: optional cert/key paths; if omitted, Vue dev server uses generated dev cert
 - `api.backendUrl`: backend API base URL injected as `VUE_APP_BACKEND_URL`
 - `startup.delayMs`: default startup delay used by scripts
+
+HTTPS note:
+- When frontend HTTPS is enabled, backend should also use HTTPS to avoid browser mixed-content blocks.
+
+#### Local development certificate (created for this repo)
+
+The repository is configured to use a shared dev certificate pair:
+
+- `backend/certs/dev-cert.pem`
+- `backend/certs/dev-key.pem`
+
+These paths are already wired in:
+
+- `backend/server.config.json` (`tls.adhoc` is set to `false`)
+- `frontend/server.config.json`
+
+To trust this cert on Windows (avoid browser warnings), import it into `CurrentUser\Root`:
+
+```powershell
+Import-Certificate -FilePath .\backend\certs\dev-cert.pem -CertStoreLocation Cert:\CurrentUser\Root
+```
+
+If your LAN IP changes, regenerate the certificate with the new IP in Subject Alternative Name (SAN) and keep both config files pointing to the updated cert/key.
 
 #### Override precedence
 
