@@ -21,6 +21,7 @@ import os
 import json
 import logging
 import time
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -33,6 +34,9 @@ CLUBS_CONFIG_PATH = os.path.join(DB_DIR, 'clubs.config.json')
 
 # Cache for club database engines and metadata
 _club_db_cache = {}
+
+# In-memory admin session tokens (cleared on restart)
+_admin_tokens = set()
 
 
 def load_clubs_config():
@@ -115,7 +119,30 @@ def load_server_config():
     merged = default_config.copy()
     for section in ('server', 'startup', 'runtime', 'logging'):
         merged[section] = {**default_config.get(section, {}), **loaded_config.get(section, {})}
+    # Admin section is merged shallowly as a flat dict
+    if 'admin' in loaded_config:
+        merged['admin'] = loaded_config['admin']
     return merged
+
+def save_clubs_config(clubs):
+    """Overwrite clubs.config.json with the supplied list."""
+    with open(CLUBS_CONFIG_PATH, 'w', encoding='utf-8') as f:
+        json.dump({'clubs': clubs}, f, indent=2)
+
+
+def get_admin_config():
+    """Return admin credentials from server config, with safe defaults."""
+    config = load_server_config()
+    return config.get('admin', {'username': 'admin', 'password': 'admin123'})
+
+
+def require_admin_token():
+    """Return True if the request carries a valid admin Bearer token."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return False
+    return auth_header[7:] in _admin_tokens
+
 
 def get_db_for_club(club):
     """Get or create database engine and session for the specified club."""
@@ -492,6 +519,104 @@ def get_member_by_number(number):
         return jsonify({'error': 'Member not found'}), 404
 
     return jsonify(member_to_dict(member, members_table))
+
+
+# ---------------------------------------------------------------------------
+# Admin endpoints
+# ---------------------------------------------------------------------------
+
+@app.route('/admin/login', methods=['POST'])
+def admin_login():
+    data = request.json or {}
+    username = data.get('username', '')
+    password = data.get('password', '')
+
+    admin_cfg = get_admin_config()
+    stored_password = admin_cfg.get('password', '')
+
+    # Support both plain-text and werkzeug-hashed passwords in the config
+    try:
+        if stored_password.startswith(('scrypt:', 'pbkdf2:', 'bcrypt:')):
+            valid = check_password_hash(stored_password, password)
+        else:
+            valid = (password == stored_password)
+    except Exception:
+        valid = False
+
+    if username == admin_cfg.get('username', 'admin') and valid:
+        token = str(uuid.uuid4())
+        _admin_tokens.add(token)
+        return jsonify({'success': True, 'token': token})
+    return jsonify({'success': False, 'error': 'Invalid admin credentials'}), 401
+
+
+@app.route('/admin/logout', methods=['POST'])
+def admin_logout():
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        _admin_tokens.discard(auth_header[7:])
+    return jsonify({'success': True})
+
+
+@app.route('/admin/clubs', methods=['GET'])
+def admin_get_clubs():
+    if not require_admin_token():
+        return jsonify({'error': 'Unauthorized'}), 401
+    return jsonify({'clubs': load_clubs_config()})
+
+
+@app.route('/admin/clubs', methods=['POST'])
+def admin_add_club():
+    if not require_admin_token():
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    short_name = str(data.get('shortName', '')).strip()
+    if not short_name:
+        return jsonify({'error': 'shortName is required'}), 400
+    clubs = load_clubs_config()
+    if any(c.get('shortName') == short_name for c in clubs):
+        return jsonify({'error': f'Club "{short_name}" already exists'}), 409
+    clubs.append({
+        'fullName': str(data.get('fullName', short_name)).strip(),
+        'shortName': short_name,
+        'description': str(data.get('description', '')).strip(),
+        'websiteUrl': str(data.get('websiteUrl', '')).strip(),
+        'adminEmail': str(data.get('adminEmail', '')).strip(),
+    })
+    save_clubs_config(clubs)
+    return jsonify({'success': True})
+
+
+@app.route('/admin/clubs/<short_name>', methods=['PUT'])
+def admin_update_club(short_name):
+    if not require_admin_token():
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    clubs = load_clubs_config()
+    for i, club in enumerate(clubs):
+        if club.get('shortName') == short_name:
+            clubs[i] = {
+                'fullName': str(data.get('fullName', club.get('fullName', short_name))).strip(),
+                'shortName': short_name,
+                'description': str(data.get('description', club.get('description', ''))).strip(),
+                'websiteUrl': str(data.get('websiteUrl', club.get('websiteUrl', ''))).strip(),
+                'adminEmail': str(data.get('adminEmail', club.get('adminEmail', ''))).strip(),
+            }
+            save_clubs_config(clubs)
+            return jsonify({'success': True})
+    return jsonify({'error': f'Club "{short_name}" not found'}), 404
+
+
+@app.route('/admin/clubs/<short_name>', methods=['DELETE'])
+def admin_delete_club(short_name):
+    if not require_admin_token():
+        return jsonify({'error': 'Unauthorized'}), 401
+    clubs = load_clubs_config()
+    updated = [c for c in clubs if c.get('shortName') != short_name]
+    if len(updated) == len(clubs):
+        return jsonify({'error': f'Club "{short_name}" not found'}), 404
+    save_clubs_config(updated)
+    return jsonify({'success': True})
 
 
 if __name__ == '__main__':

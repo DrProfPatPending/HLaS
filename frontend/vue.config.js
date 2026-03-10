@@ -41,8 +41,27 @@ const backendUrl = process.env.VUE_APP_BACKEND_URL || mergedConfig.api.backendUr
 process.env.VUE_APP_BACKEND_URL = backendUrl;
 
 module.exports = {
+  pages: {
+    index: {
+      entry: 'src/main.js',
+      template: 'index.html',
+      filename: 'index.html',
+      title: 'HookLineandSinker',
+    },
+    admin: {
+      entry: 'src/admin.js',
+      template: 'index.html',
+      filename: 'admin.html',
+      title: 'HLaS Admin',
+    },
+  },
   devServer: {
     host: devServerHost,
     port: devServerPort,
+    historyApiFallback: {
+      rewrites: [
+        { from: /^\/admin/, to: '/admin.html' },
+      ],
+    },
   },
 };

@@ -7,7 +7,10 @@
             <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" @click="goHome" />
           </td>
           <td class="logo-cell">
-            <img v-if="loggedIn" :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
+            <a v-if="loggedIn && clubDetails.websiteUrl" :href="clubDetails.websiteUrl" target="_blank" rel="noopener noreferrer">
+              <img :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
+            </a>
+            <img v-else-if="loggedIn" :src="require(`./logos/${loggedInClub}_Logo_50px.png`)" :alt="`${loggedInClub} logo`" class="club-logo" />
           </td>
           <td class="logo-spacer"></td>
           <td v-if="loggedIn" class="login-info-cell">Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})</td>
