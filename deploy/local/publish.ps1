@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$rootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+$rootDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location $rootDir
 
 if (-not (Test-Path $ComposeFile)) {
