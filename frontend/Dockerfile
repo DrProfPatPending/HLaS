@@ -10,7 +10,7 @@ COPY frontend ./
 ARG VUE_APP_BACKEND_URL=/api
 ENV VUE_APP_BACKEND_URL=${VUE_APP_BACKEND_URL}
 
-RUN npm run build
+RUN node ./node_modules/@vue/cli-service/bin/vue-cli-service.js build
 
 FROM nginx:1.27-alpine
 

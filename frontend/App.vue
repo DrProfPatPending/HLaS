@@ -252,6 +252,7 @@
     </div>
     <div v-else-if="activeSection === 'member-edit'" class="member-edit-container">
       <h2>Edit Member Details</h2>
+      <div v-if="editMemberPositionLabel" class="member-edit-position">{{ editMemberPositionLabel }}</div>
       <div class="member-edit-photo-row">
         <img
           v-if="editMemberData.Photo_Path"
@@ -264,6 +265,8 @@
       </div>
       <div class="member-edit-actions">
         <button type="button" @click="updateMember">Update Member</button>
+        <button type="button" :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">Previous</button>
+        <button type="button" :disabled="!hasNextEditMember" @click="navigateEditMember(1)">Next</button>
         <button type="button" @click="cancelEdit">Cancel</button>
         <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
       </div>
@@ -323,6 +326,8 @@
       </table>
       <div class="member-edit-actions">
         <button type="button" @click="updateMember">Update Member</button>
+        <button type="button" :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">Previous</button>
+        <button type="button" :disabled="!hasNextEditMember" @click="navigateEditMember(1)">Next</button>
         <button type="button" @click="cancelEdit">Cancel</button>
       </div>
     </div>
@@ -458,6 +463,24 @@ export default {
       const keys = Object.keys(this.editMemberData);
       const excludeKeys = ['username', 'password'];
       return keys.filter(key => !excludeKeys.includes(key));
+    },
+    editMemberIndex() {
+      if (!this.members.length || this.editMemberId === null || this.editMemberId === undefined) {
+        return -1;
+      }
+      return this.members.findIndex(member => this.memberIdentity(member) === this.editMemberId);
+    },
+    hasPreviousEditMember() {
+      return this.editMemberIndex > 0;
+    },
+    hasNextEditMember() {
+      return this.editMemberIndex >= 0 && this.editMemberIndex < this.members.length - 1;
+    },
+    editMemberPositionLabel() {
+      if (this.editMemberIndex < 0 || !this.members.length) {
+        return '';
+      }
+      return `Member ${this.editMemberIndex + 1} of ${this.members.length}`;
     }
   },
   created() {
@@ -472,6 +495,17 @@ export default {
     }
   },
   methods: {
+    memberIdentity(member) {
+      return member && (member.id || member.ID || member.Number);
+    },
+    selectMemberForEdit(member) {
+      this.editMemberData = { ...member };
+      this.editMemberId = this.memberIdentity(member);
+      this.newPassword = '';
+      this.confirmPassword = '';
+      this.passwordError = '';
+      this.activeSection = 'member-edit';
+    },
     getBundledClubLogo(shortName) {
       try {
         return require(`./logos/${shortName}_Logo_50px.png`);
@@ -676,12 +710,14 @@ export default {
       });
     },
     openMemberEdit(member) {
-      this.editMemberData = { ...member };
-      this.editMemberId = member.id || member.ID;
-      this.newPassword = '';
-      this.confirmPassword = '';
-      this.passwordError = '';
-      this.activeSection = 'member-edit';
+      this.selectMemberForEdit(member);
+    },
+    navigateEditMember(direction) {
+      const targetIndex = this.editMemberIndex + direction;
+      if (targetIndex < 0 || targetIndex >= this.members.length) {
+        return;
+      }
+      this.selectMemberForEdit(this.members[targetIndex]);
     },
     updateMember() {
       // Validate password if provided
@@ -847,6 +883,12 @@ export default {
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 14px;
+}
+#app .member-edit-position {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  color: #555;
+  margin-bottom: 8px;
 }
 #app .member-edit-photo {
   width: 140px;

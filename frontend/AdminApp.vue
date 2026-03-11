@@ -5,7 +5,9 @@
       <tbody>
         <tr>
           <td class="logo-cell">
-            <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" />
+            <a href="/" aria-label="Go to member login">
+              <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" />
+            </a>
           </td>
           <td class="admin-title-cell">
             <span class="admin-title">Club Administration</span>
