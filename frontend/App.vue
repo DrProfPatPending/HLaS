@@ -256,6 +256,7 @@
       <div class="member-edit-photo-row">
         <img
           v-if="editMemberData.Photo_Path"
+          :key="editMemberId"
           :src="`${apiBaseUrl}/member_photo/${loggedInClub}/${encodeURIComponent(editMemberData.Photo_Path)}`"
           :alt="editMemberData.Members_Name || 'Member photo'"
           class="member-edit-photo"
