@@ -82,6 +82,25 @@ def create_empty_club_database(short_name):
     shutil.copyfile(CLUB_DB_TEMPLATE_PATH, target_db_path)
 
 
+def normalize_beats(beats_source):
+    if not isinstance(beats_source, list):
+        return []
+
+    normalized = []
+    for beat in beats_source:
+        if not isinstance(beat, dict):
+            continue
+        normalized.append({
+            'Beat_Name': str(beat.get('Beat_Name', '')).strip(),
+            'Beat_ID': str(beat.get('Beat_ID', '')).strip(),
+            'Beat_Upstream': str(beat.get('Beat_Upstream', '')).strip(),
+            'Beat_Downstream': str(beat.get('Beat_Downstream', '')).strip(),
+            'Beat_Description': str(beat.get('Beat_Description', '')).strip(),
+        })
+
+    return normalized
+
+
 def load_clubs_config():
     default_clubs = [
         {
@@ -91,6 +110,7 @@ def load_clubs_config():
             'websiteUrl': 'https://example.com/gaaffs',
             'adminEmail': 'admin@gaaffs.example.com',
             'logoUrl': '',
+            'beats': [],
         },
         {
             'fullName': 'CTC',
@@ -99,6 +119,7 @@ def load_clubs_config():
             'websiteUrl': 'https://example.com/ctc',
             'adminEmail': 'admin@ctc.example.com',
             'logoUrl': '',
+            'beats': [],
         },
     ]
 
@@ -129,6 +150,7 @@ def load_clubs_config():
             'websiteUrl': str(club.get('websiteUrl', '')).strip(),
             'adminEmail': str(club.get('adminEmail', '')).strip(),
             'logoUrl': str(club.get('logoUrl', '')).strip() or (get_club_logo_url(short_name) if os.path.exists(get_club_logo_path(short_name)) else ''),
+            'beats': normalize_beats(club.get('beats', [])),
         })
 
     return normalized_clubs or default_clubs
@@ -671,6 +693,7 @@ def admin_add_club():
         'websiteUrl': str(data.get('websiteUrl', '')).strip(),
         'adminEmail': str(data.get('adminEmail', '')).strip(),
         'logoUrl': logo_url,
+        'beats': [],
     })
     save_clubs_config(clubs)
     return jsonify({'success': True})
@@ -691,6 +714,7 @@ def admin_update_club(short_name):
                 'websiteUrl': str(data.get('websiteUrl', club.get('websiteUrl', ''))).strip(),
                 'adminEmail': str(data.get('adminEmail', club.get('adminEmail', ''))).strip(),
                 'logoUrl': str(data.get('logoUrl', club.get('logoUrl', ''))).strip(),
+                'beats': normalize_beats(data.get('beats', club.get('beats', []))),
             }
             save_clubs_config(clubs)
             return jsonify({'success': True})

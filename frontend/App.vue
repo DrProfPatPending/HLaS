@@ -51,9 +51,11 @@
           <tr>
             <td><button type="button" class="home-nav-button" @click="navigateToSection('membership-admin')">Membership Admin</button></td>
             <td><button type="button" class="home-nav-button" @click="navigateToSection('club-information')">Club Information</button></td>
+            <td><button type="button" class="home-nav-button" @click="navigateToSection('newsletters')">Newsletters</button></td>
           </tr>
           <tr>
             <td><button type="button" class="home-nav-button" @click="navigateToSection('my-club')">My Club</button></td>
+            <td><button type="button" class="home-nav-button" @click="navigateToSection('fishing-beats')">Fishing Beats</button></td>
             <td><button type="button" class="home-nav-button" @click="navigateToSection('club-store')">Club Store</button></td>
           </tr>
         </tbody>
@@ -250,6 +252,37 @@
         <button type="button" @click="activeSection = 'home'">Back to Home</button>
       </div>
     </div>
+    <div v-else-if="activeSection === 'newsletters'" class="newsletters-container">
+      <h2>Newsletters</h2>
+      <p>This page will support filtering members by criteria and bulk sending emails.</p>
+      <p>Newsletter filtering and bulk email actions will be added here.</p>
+      <button type="button" @click="activeSection = 'home'">Back to Home</button>
+    </div>
+    <div v-else-if="activeSection === 'fishing-beats'" class="fishing-beats-container">
+      <h2>{{ clubDetails.fullName }} - Fishing Beats</h2>
+      <table v-if="clubBeats.length" class="fishing-beats-table">
+        <thead>
+          <tr>
+            <th>Beat Name</th>
+            <th>Beat ID</th>
+            <th>Beat Upstream</th>
+            <th>Beat Downstream</th>
+            <th>Beat Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="beat in clubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
+            <td>{{ beat.Beat_Name }}</td>
+            <td>{{ beat.Beat_ID }}</td>
+            <td>{{ beat.Beat_Upstream }}</td>
+            <td>{{ beat.Beat_Downstream }}</td>
+            <td>{{ beat.Beat_Description }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else>No fishing beats are configured for this club.</p>
+      <button type="button" @click="activeSection = 'home'">Back to Home</button>
+    </div>
     <div v-else-if="activeSection === 'member-edit'" class="member-edit-container">
       <h2>Edit Member Details</h2>
       <div v-if="editMemberPositionLabel" class="member-edit-position">{{ editMemberPositionLabel }}</div>
@@ -410,7 +443,18 @@ export default {
         adminEmail: matchedClub.adminEmail || '',
         description: matchedClub.description || '',
         logoUrl: matchedClub.logoUrl || '',
+        beats: Array.isArray(matchedClub.beats) ? matchedClub.beats : [],
       };
+    },
+    clubBeats() {
+      const beats = Array.isArray(this.clubDetails.beats) ? this.clubDetails.beats : [];
+      return beats.map(beat => ({
+        Beat_Name: beat && beat.Beat_Name ? beat.Beat_Name : '',
+        Beat_ID: beat && beat.Beat_ID ? beat.Beat_ID : '',
+        Beat_Upstream: beat && beat.Beat_Upstream ? beat.Beat_Upstream : '',
+        Beat_Downstream: beat && beat.Beat_Downstream ? beat.Beat_Downstream : '',
+        Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
+      }));
     },
     clubLogoSrc() {
       if (this.clubDetails.logoUrl && !this.clubLogoLoadFailed) {
@@ -664,6 +708,12 @@ export default {
       if (sectionKey === 'club-store') {
         return 'Club Store';
       }
+      if (sectionKey === 'newsletters') {
+        return 'Newsletters';
+      }
+      if (sectionKey === 'fishing-beats') {
+        return 'Fishing Beats';
+      }
       if (sectionKey === 'member-edit') {
         return 'Edit Member';
       }
@@ -854,6 +904,27 @@ export default {
   max-width: 900px;
   margin: 40px auto;
   font-family: Helvetica, Arial, sans-serif;
+}
+#app .newsletters-container,
+#app .fishing-beats-container {
+  max-width: 900px;
+  margin: 40px auto;
+  font-family: Helvetica, Arial, sans-serif;
+}
+#app .fishing-beats-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+#app .fishing-beats-table th,
+#app .fishing-beats-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+  font-size: 10pt;
+}
+#app .fishing-beats-table th {
+  background: #f0f0f0;
 }
 #app .club-information-table {
   width: 100%;
@@ -1157,6 +1228,7 @@ export default {
   padding: 70px 12px 12px 12px;
   font-family: Arial, sans-serif;
 }
+              beats: [],
 #app h2 {
   font-size: 14pt;
   font-family: Helvetica, Arial, sans-serif;
@@ -1165,6 +1237,7 @@ form {
   margin-bottom: 20px;
 }
 input {
+              beats: [],
   margin-right: 10px;
 }
 button {

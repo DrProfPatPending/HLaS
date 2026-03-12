@@ -6,7 +6,23 @@
       "description": "GAAFFS has access to 11 miles of the River Witham in Lincolnshire along with streches of the R. Welland and R. Chater. Fishing for Grayling and Brown Trout.",
       "websiteUrl": "https:///gaaffs.org/",
       "adminEmail": "committee@gaaffs.org",
-      "logoUrl": "/club_logo/GAAFFS"
+      "logoUrl": "/club_logo/GAAFFS",
+      "beats": [
+        {
+          "Beat_Name": "Witham North",
+          "Beat_ID": "GAAFFS-WIT-01",
+          "Beat_Upstream": "Harrowby Weir",
+          "Beat_Downstream": "Belton Bridge",
+          "Beat_Description": "Mixed depth run with riffles and glides, suitable for daytime trout and evening grayling sessions."
+        },
+        {
+          "Beat_Name": "Witham South",
+          "Beat_ID": "GAAFFS-WIT-02",
+          "Beat_Upstream": "Belton Bridge",
+          "Beat_Downstream": "Barkston Mill",
+          "Beat_Description": "Slower holding water with undercut banks and deeper winter grayling lies."
+        }
+      ]
     },
     {
       "fullName": "Cambridge Trout Club",
@@ -14,7 +30,23 @@
       "description": "CTC has access to c. 5 miles of the River Cam in Cambridgeshire. Fishing for Brown Trout.",
       "websiteUrl": "https://scoffin.com/",
       "adminEmail": "committee@cambridgetroutclub.org",
-      "logoUrl": "/club_logo/CTC"
+      "logoUrl": "/club_logo/CTC",
+      "beats": [
+        {
+          "Beat_Name": "Upper Cam Meadow",
+          "Beat_ID": "CTC-CAM-01",
+          "Beat_Upstream": "Grantchester Mill",
+          "Beat_Downstream": "Byron's Pool",
+          "Beat_Description": "Classic chalkstream style glide with weed beds and dry-fly opportunities."
+        },
+        {
+          "Beat_Name": "Lower Cam Reach",
+          "Beat_ID": "CTC-CAM-02",
+          "Beat_Upstream": "Byron's Pool",
+          "Beat_Downstream": "Trumpington Lock",
+          "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water."
+        }
+      ]
     },
     {
       "fullName": "Leek and District Fly Fishing Association",
@@ -22,7 +54,23 @@
       "description": "LADFFA has access to c. 10 miles of the River Dove in Staffordshire. Fishing for Grayling and Brown Trout.",
       "websiteUrl": "https://ladffa.com/",
       "adminEmail": "admin@ladffa.com",
-      "logoUrl": "/club_logo/LADFFA"
+      "logoUrl": "/club_logo/LADFFA",
+      "beats": [
+        {
+          "Beat_Name": "Dove Valley Top Beat",
+          "Beat_ID": "LADFFA-DOV-01",
+          "Beat_Upstream": "Ilam Rock",
+          "Beat_Downstream": "Dovedale Bridge",
+          "Beat_Description": "Fast pocket water with short glides and reliable summer evening rises."
+        },
+        {
+          "Beat_Name": "Dove Valley Lower Beat",
+          "Beat_ID": "LADFFA-DOV-02",
+          "Beat_Upstream": "Dovedale Bridge",
+          "Beat_Downstream": "Thorpe Weir",
+          "Beat_Description": "Longer pools and broken runs with strong grayling potential in colder months."
+        }
+      ]
     },
     {
       "fullName": "Test Fishing",
@@ -30,7 +78,16 @@
       "description": "Test Club Adding",
       "websiteUrl": "https://scoffin.uk/",
       "adminEmail": "rob@scoffin.com",
-      "logoUrl": "/club_logo/TEST"
+      "logoUrl": "/club_logo/TEST",
+      "beats": [
+        {
+          "Beat_Name": "Test Water",
+          "Beat_ID": "TEST-001",
+          "Beat_Upstream": "Test Upstream Marker",
+          "Beat_Downstream": "Test Downstream Marker",
+          "Beat_Description": "Sample beat used for validating fishing beat configuration and display."
+        }
+      ]
     }
   ]
 }
