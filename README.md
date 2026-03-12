@@ -331,6 +331,39 @@ Production containerization and VPS rollout instructions are in:
 
 - `DEPLOYMENT.md`
 
+### Trusting test TLS certificate on Windows (Edge + Chrome)
+
+When using Caddy `tls internal` for the test server, trust the local CA certificate on each Windows client.
+
+Certificate file:
+
+- `deploy/caddy/caddy-local-root.crt`
+
+Edge and Chrome both use the Windows certificate store, so one import covers both browsers.
+
+Install for all users (recommended, run PowerShell as Administrator):
+
+```powershell
+Import-Certificate -FilePath .\deploy\caddy\caddy-local-root.crt -CertStoreLocation Cert:\LocalMachine\Root
+```
+
+Install for current user only (no admin rights):
+
+```powershell
+Import-Certificate -FilePath .\deploy\caddy\caddy-local-root.crt -CertStoreLocation Cert:\CurrentUser\Root
+```
+
+GUI alternative:
+
+1. Run `certmgr.msc` (current user) or `certlm.msc` (local machine).
+2. Open `Trusted Root Certification Authorities` -> `Certificates`.
+3. Import `caddy-local-root.crt` into that store.
+
+After import, fully restart Edge/Chrome and test:
+
+- `https://HLaSTest`
+- `https://192.168.50.221`
+
 ### Password Encryption
 - All passwords are encrypted using Werkzeug's `scrypt` algorithm before storage
 - Passwords are never stored as plain text in the database
