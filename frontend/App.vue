@@ -596,6 +596,7 @@ export default {
               websiteUrl: '',
               adminEmail: '',
               logoUrl: '',
+              beats: [],
             },
             {
               fullName: 'CTC',
@@ -604,6 +605,7 @@ export default {
               websiteUrl: '',
               adminEmail: '',
               logoUrl: '',
+              beats: [],
             },
           ];
         });
@@ -1228,7 +1230,6 @@ export default {
   padding: 70px 12px 12px 12px;
   font-family: Arial, sans-serif;
 }
-              beats: [],
 #app h2 {
   font-size: 14pt;
   font-family: Helvetica, Arial, sans-serif;
@@ -1237,7 +1238,6 @@ form {
   margin-bottom: 20px;
 }
 input {
-              beats: [],
   margin-right: 10px;
 }
 button {
