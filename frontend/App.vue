@@ -183,7 +183,7 @@
       </button>
     </div>
     <hr />
-    <div>
+    <div v-if="showMembershipDetails">
       <div class="membership-details-header">
         <h2>Membership Details</h2>
         <button v-if="lookupResult && !lookupError" type="button" @click="hideLookupDetails">Hide Details</button>
@@ -365,6 +365,7 @@ export default {
       lookupNumber: '',
       lookupResult: null,
       lookupError: '',
+      showMembershipDetails: false,
       loginUsername: '',
       loginPassword: '',
       loginError: '',
@@ -643,6 +644,10 @@ export default {
     navigateToSection(sectionKey) {
       if (sectionKey === 'membership-admin') {
         this.activeSection = 'membership-admin';
+        this.showMembershipDetails = false;
+        this.lookupNumber = '';
+        this.lookupResult = null;
+        this.lookupError = '';
         this.currentPage = 1;
         this.fetchMembers();
         return;
@@ -779,10 +784,13 @@ export default {
     }
       ,
     lookupMemberByNumber(number) {
+      this.showMembershipDetails = true;
       this.lookupNumber = number;
       this.lookupMember();
     },
     hideLookupDetails() {
+      this.showMembershipDetails = false;
+      this.lookupNumber = '';
       this.lookupResult = null;
       this.lookupError = '';
     },
