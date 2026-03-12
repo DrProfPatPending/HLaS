@@ -254,8 +254,102 @@
     </div>
     <div v-else-if="activeSection === 'newsletters'" class="newsletters-container">
       <h2>Newsletters</h2>
-      <p>This page will support filtering members by criteria and bulk sending emails.</p>
-      <p>Newsletter filtering and bulk email actions will be added here.</p>
+      <p>Filter members, build a selected list, and prepare recipients for bulk email.</p>
+      <table class="newsletter-table">
+        <thead>
+          <tr>
+            <th>
+              Select
+              <input type="checkbox" :checked="allNewsletterPageSelected" @change="toggleSelectAllNewsletterOnPage" />
+            </th>
+            <th>
+              ID
+              <input v-model="newsletterColumnFilters.ID" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
+            </th>
+            <th>
+              Num
+              <input v-model="newsletterColumnFilters.Number" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
+            </th>
+            <th>
+              Name
+              <input v-model="newsletterColumnFilters.Members_Name" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
+            </th>
+            <th>
+              E-Mail
+              <input v-model="newsletterColumnFilters.E_Mail" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
+            </th>
+            <th>
+              Membership Type
+              <select v-model="newsletterColumnFilters.Member_Type" @change="onNewsletterFilterChange" class="column-filter">
+                <option value=""></option>
+                <option value="Ordinary">Ordinary</option>
+                <option value="Senior Citizen">Senior Citizen</option>
+                <option value="Senior 75+">Senior 75+</option>
+                <option value="Octagenarian">Octagenarian</option>
+                <option value="Junior">Junior</option>
+                <option value="Honorary">Honorary</option>
+                <option value="Paused">Paused</option>
+                <option value="Resigned">Resigned</option>
+              </select>
+            </th>
+            <th>
+              Paid Up?
+              <input v-model="newsletterColumnFilters.Paid_Up_2026" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="member in newsletterMembers" :key="`newsletter-${memberIdentity(member)}`">
+            <td>
+              <input
+                type="checkbox"
+                :value="memberIdentity(member)"
+                v-model="newsletterSelectedMemberIds"
+              />
+            </td>
+            <td>{{ member.ID || member.id }}</td>
+            <td>{{ member.Number }}</td>
+            <td>{{ member.Members_Name }}</td>
+            <td>
+              <a v-if="member.E_Mail" :href="`mailto:${member.E_Mail}`">{{ member.E_Mail }}</a>
+              <span v-else>-</span>
+            </td>
+            <td>{{ member.Member_Type }}</td>
+            <td>{{ member.Paid_Up_2026 }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination-controls">
+        <button :disabled="newsletterCurrentPage === 1" @click="firstNewsletterPage">First Page</button>
+        <button :disabled="newsletterCurrentPage === 1" @click="prevNewsletterPage">Previous Page</button>
+        <span>Page {{ newsletterCurrentPage }} of {{ newsletterTotalPages }}&nbsp;</span>
+        <button :disabled="newsletterCurrentPage === newsletterTotalPages" @click="nextNewsletterPage">Next Page</button>
+        <button :disabled="newsletterCurrentPage === newsletterTotalPages" @click="lastNewsletterPage">Last Page</button>
+        <select v-model.number="newsletterPageSize" @change="onNewsletterPageSizeChange" class="records-per-page-select">
+          <option value="10">10 per page</option>
+          <option value="25">25 per page</option>
+          <option value="50">50 per page</option>
+          <option value="100">100 per page</option>
+        </select>
+      </div>
+      <div class="page-numbers">
+        <button
+          v-for="pageNum in newsletterVisiblePages"
+          :key="`newsletter-page-${pageNum}`"
+          :class="{ 'active': pageNum === newsletterCurrentPage }"
+          @click="goToNewsletterPage(pageNum)"
+        >
+          {{ pageNum }}
+        </button>
+      </div>
+      <div class="newsletter-actions">
+        <button type="button" :disabled="!newsletterSelectedMemberIds.length" @click="prepareNewsletterRecipients">
+          Prepare Selected for Email
+        </button>
+        <span>Selected: {{ newsletterSelectedMemberIds.length }}</span>
+      </div>
+      <div v-if="newsletterPrepareMessage" class="newsletter-status">{{ newsletterPrepareMessage }}</div>
+      <div v-if="newsletterPrepareError" class="newsletter-error">{{ newsletterPrepareError }}</div>
       <button type="button" @click="activeSection = 'home'">Back to Home</button>
     </div>
     <div v-else-if="activeSection === 'fishing-beats'" class="fishing-beats-container">
@@ -412,6 +506,22 @@ export default {
       loggedInClub: 'GAAFFS',
       filterDebounceTimer: null,
       filterDebounceMs: 250,
+      newsletterFilterDebounceTimer: null,
+      newsletterMembers: [],
+      newsletterTotalMembers: 0,
+      newsletterCurrentPage: 1,
+      newsletterPageSize: 10,
+      newsletterSelectedMemberIds: [],
+      newsletterPrepareMessage: '',
+      newsletterPrepareError: '',
+      newsletterColumnFilters: {
+        ID: '',
+        Number: '',
+        Members_Name: '',
+        E_Mail: '',
+        Member_Type: '',
+        Paid_Up_2026: '',
+      },
       columnFilters: {
         ID: '',
         Number: '',
@@ -467,6 +577,41 @@ export default {
     },
     totalPages() {
       return Math.max(1, Math.ceil(this.totalMembers / this.pageSize));
+    },
+    newsletterTotalPages() {
+      return Math.max(1, Math.ceil(this.newsletterTotalMembers / this.newsletterPageSize));
+    },
+    newsletterVisiblePages() {
+      const current = this.newsletterCurrentPage;
+      const total = this.newsletterTotalPages;
+      const pageCount = 5;
+
+      let start;
+      let end;
+
+      if (current <= 3) {
+        start = 1;
+        end = Math.min(pageCount, total);
+      } else {
+        start = current - 2;
+        end = current + 2;
+        if (end > total) {
+          end = total;
+          start = Math.max(1, end - pageCount + 1);
+        }
+      }
+
+      const pages = [];
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      return pages;
+    },
+    allNewsletterPageSelected() {
+      if (!this.newsletterMembers.length) {
+        return false;
+      }
+      return this.newsletterMembers.every(member => this.newsletterSelectedMemberIds.includes(this.memberIdentity(member)));
     },
     visiblePages() {
       const current = this.currentPage;
@@ -538,6 +683,9 @@ export default {
   beforeUnmount() {
     if (this.filterDebounceTimer) {
       clearTimeout(this.filterDebounceTimer);
+    }
+    if (this.newsletterFilterDebounceTimer) {
+      clearTimeout(this.newsletterFilterDebounceTimer);
     }
   },
   methods: {
@@ -619,6 +767,15 @@ export default {
         this.fetchMembers();
       }, this.filterDebounceMs);
     },
+    onNewsletterFilterChange() {
+      this.newsletterCurrentPage = 1;
+      if (this.newsletterFilterDebounceTimer) {
+        clearTimeout(this.newsletterFilterDebounceTimer);
+      }
+      this.newsletterFilterDebounceTimer = setTimeout(() => {
+        this.fetchNewsletterMembers();
+      }, this.filterDebounceMs);
+    },
     setSort(key, order) {
       this.sortKey = key;
       this.sortOrder = order;
@@ -655,6 +812,94 @@ export default {
         this.members = res.data.members;
         this.totalMembers = res.data.total;
       });
+    },
+    fetchNewsletterMembers() {
+      const offset = (this.newsletterCurrentPage - 1) * this.newsletterPageSize;
+      const activeFilters = Object.fromEntries(
+        Object.entries(this.newsletterColumnFilters)
+          .filter(([, value]) => value && value.trim() !== '')
+          .map(([key, value]) => {
+            const trimmed = value.trim();
+            if (trimmed === '[BLANK]') {
+              return [key, '[BLANK]'];
+            }
+            const hasWildcard = trimmed.includes('*') || trimmed.includes('?');
+            const filterValue = hasWildcard ? trimmed : `*${trimmed}*`;
+            return [key, filterValue];
+          })
+      );
+
+      axios.get(`${API_BASE_URL}/members`, {
+        params: {
+          club: this.loggedInClub,
+          limit: this.newsletterPageSize,
+          offset,
+          ...activeFilters,
+        }
+      }).then(res => {
+        this.newsletterMembers = res.data.members || [];
+        this.newsletterTotalMembers = res.data.total || 0;
+      });
+    },
+    toggleSelectAllNewsletterOnPage(event) {
+      const isChecked = event.target.checked;
+      const pageIds = this.newsletterMembers
+        .map(member => this.memberIdentity(member))
+        .filter(memberId => memberId !== null && memberId !== undefined);
+
+      if (isChecked) {
+        const merged = new Set(this.newsletterSelectedMemberIds);
+        pageIds.forEach(memberId => merged.add(memberId));
+        this.newsletterSelectedMemberIds = Array.from(merged);
+      } else {
+        const pageIdSet = new Set(pageIds);
+        this.newsletterSelectedMemberIds = this.newsletterSelectedMemberIds.filter(memberId => !pageIdSet.has(memberId));
+      }
+    },
+    prepareNewsletterRecipients() {
+      this.newsletterPrepareMessage = '';
+      this.newsletterPrepareError = '';
+      axios.post(`${API_BASE_URL}/newsletter/prepare_recipients`, {
+        club: this.loggedInClub,
+        memberIds: this.newsletterSelectedMemberIds,
+      })
+        .then(res => {
+          const summary = res.data || {};
+          this.newsletterPrepareMessage = `Prepared ${summary.emailableCount || 0} emailable recipients from ${summary.selectedCount || 0} selected members.`;
+        })
+        .catch(err => {
+          this.newsletterPrepareError = err.response && err.response.data && err.response.data.error
+            ? err.response.data.error
+            : 'Failed to prepare newsletter recipients';
+        });
+    },
+    nextNewsletterPage() {
+      if (this.newsletterCurrentPage < this.newsletterTotalPages) {
+        this.newsletterCurrentPage++;
+        this.fetchNewsletterMembers();
+      }
+    },
+    prevNewsletterPage() {
+      if (this.newsletterCurrentPage > 1) {
+        this.newsletterCurrentPage--;
+        this.fetchNewsletterMembers();
+      }
+    },
+    firstNewsletterPage() {
+      this.newsletterCurrentPage = 1;
+      this.fetchNewsletterMembers();
+    },
+    lastNewsletterPage() {
+      this.newsletterCurrentPage = this.newsletterTotalPages;
+      this.fetchNewsletterMembers();
+    },
+    goToNewsletterPage(pageNum) {
+      this.newsletterCurrentPage = pageNum;
+      this.fetchNewsletterMembers();
+    },
+    onNewsletterPageSizeChange() {
+      this.newsletterCurrentPage = 1;
+      this.fetchNewsletterMembers();
     },
     nextPage() {
       if (this.currentPage < this.totalPages) {
@@ -696,6 +941,14 @@ export default {
         this.lookupError = '';
         this.currentPage = 1;
         this.fetchMembers();
+        return;
+      }
+      if (sectionKey === 'newsletters') {
+        this.activeSection = 'newsletters';
+        this.newsletterCurrentPage = 1;
+        this.newsletterPrepareMessage = '';
+        this.newsletterPrepareError = '';
+        this.fetchNewsletterMembers();
         return;
       }
       this.activeSection = sectionKey;
@@ -756,6 +1009,12 @@ export default {
       this.members = [];
       this.totalMembers = 0;
       this.currentPage = 1;
+      this.newsletterMembers = [];
+      this.newsletterTotalMembers = 0;
+      this.newsletterCurrentPage = 1;
+      this.newsletterSelectedMemberIds = [];
+      this.newsletterPrepareMessage = '';
+      this.newsletterPrepareError = '';
       this.lookupNumber = '';
       this.lookupResult = null;
       this.lookupError = '';
@@ -912,6 +1171,36 @@ export default {
   max-width: 900px;
   margin: 40px auto;
   font-family: Helvetica, Arial, sans-serif;
+}
+#app .newsletter-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+#app .newsletter-table th,
+#app .newsletter-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+  font-size: 10pt;
+}
+#app .newsletter-table th {
+  background: #f0f0f0;
+  vertical-align: top;
+}
+#app .newsletter-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+#app .newsletter-status {
+  color: #1c6b2a;
+  margin-bottom: 8px;
+}
+#app .newsletter-error {
+  color: #c62828;
+  margin-bottom: 8px;
 }
 #app .fishing-beats-table {
   width: 100%;

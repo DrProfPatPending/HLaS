@@ -603,6 +603,85 @@ def get_member_by_number(number):
     return jsonify(member_to_dict(member, members_table))
 
 
+@app.route('/newsletter/prepare_recipients', methods=['POST'])
+def prepare_newsletter_recipients():
+    data = request.json or {}
+    club = data.get('club', 'GAAFFS')
+    member_ids = data.get('memberIds', [])
+
+    if not isinstance(member_ids, list) or not member_ids:
+        return jsonify({'error': 'memberIds must be a non-empty list'}), 400
+
+    valid_clubs = get_valid_club_short_names()
+    if club not in valid_clubs:
+        return jsonify({'error': 'Invalid club selection'}), 400
+
+    selected_ids = {
+        str(member_id).strip()
+        for member_id in member_ids
+        if str(member_id).strip()
+    }
+    if not selected_ids:
+        return jsonify({'error': 'No valid member IDs supplied'}), 400
+
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
+
+    id_column = get_column('id', members_table)
+    if id_column is None:
+        id_column = get_column('ID', members_table)
+    if id_column is None:
+        id_column = get_column('Number', members_table)
+    if id_column is None:
+        return jsonify({'error': 'No identifier column available in members table'}), 500
+
+    matched_members = session.scalars(
+        select(Member).where(cast(id_column, String).in_(list(selected_ids)))
+    ).all()
+
+    email_column = get_column('E_Mail', members_table)
+    if email_column is None:
+        email_column = get_column('email', members_table)
+    name_column = get_column('Members_Name', members_table)
+    if name_column is None:
+        name_column = get_column('name', members_table)
+    number_column = get_column('Number', members_table)
+    member_type_column = get_column('Member_Type', members_table)
+    paid_up_column = get_column('Paid_Up_2026', members_table)
+
+    recipients = []
+    missing_email_count = 0
+    for member in matched_members:
+        member_payload = member_to_dict(member, members_table)
+        email_value = str(member_payload.get(email_column.name, '')).strip() if email_column is not None else ''
+
+        if not email_value:
+            missing_email_count += 1
+            continue
+
+        recipients.append({
+            'memberId': member_payload.get(id_column.name),
+            'Number': member_payload.get(number_column.name) if number_column is not None else '',
+            'Members_Name': member_payload.get(name_column.name) if name_column is not None else '',
+            'E_Mail': email_value,
+            'Member_Type': member_payload.get(member_type_column.name) if member_type_column is not None else '',
+            'Paid_Up_2026': member_payload.get(paid_up_column.name) if paid_up_column is not None else '',
+        })
+
+    return jsonify({
+        'club': club,
+        'selectedCount': len(selected_ids),
+        'matchedCount': len(matched_members),
+        'emailableCount': len(recipients),
+        'missingEmailCount': missing_email_count,
+        'emailWorkflowStatus': 'prepared_not_sent',
+        'recipients': recipients,
+    })
+
+
 # ---------------------------------------------------------------------------
 # Admin endpoints
 # ---------------------------------------------------------------------------
