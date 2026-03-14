@@ -43,7 +43,14 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [
+            {
+              "Name": "Great Ponton Bridge, Dallygate Lane",
+              "Description": "W3W: ///consented.shout.reveal",
+              "Latitude": "52.8639",
+              "Longitude": "-0.62006"
+            }
+]
         },
         {
           "Beat_Name": "Syston - A607 Bridge",
@@ -234,11 +241,18 @@
           "Beat_Downstream": "///coffee.pastels.excellent",
           "Beat_Description": "Upstream of A beat",
           "Detailed_Description": "",
-          "Beat_Upstream_Latitude": "",
-          "Beat_Upstream_Longitude": "",
-          "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Beat_Upstream_Latitude": "52.84764",
+          "Beat_Upstream_Longitude": "-0.61966",
+          "Beat_Downstream_Latitude": "52.85197",
+          "Beat_Downstream_Longitude": "-0.62042",
+          "Parking_Locations": [
+            {
+              "Name": "Washdike Lane Bridge",
+              "Description": "W3W: ///browsers.ranged.topped",
+              "Latitude": "52.84764",
+              "Longitude": "-0.61966"
+            }
+]
         },
         {
           "Beat_Name": "Collyweston Bridge",
