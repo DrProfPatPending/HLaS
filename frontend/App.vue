@@ -489,6 +489,7 @@
                     <li v-for="(parking, parkingIndex) in selectedFishingBeat.Parking_Locations" :key="`parking-${parkingIndex}`">
                       <strong>{{ parking.Name || `Parking ${parkingIndex + 1}` }}</strong>
                       <span v-if="parking.Latitude && parking.Longitude"> ({{ parking.Latitude }}, {{ parking.Longitude }})</span>
+                      <span v-if="parking.Location_W3W"> &mdash; <a href="#" class="w3w-link" @click.prevent="openReusableMapWindow(parking.Location_W3W.url)">{{ parking.Location_W3W.display }}</a></span>
                       <span v-if="parking.Description"> - {{ parking.Description }}</span>
                     </li>
                   </ul>
@@ -716,6 +717,7 @@ export default {
               .filter(location => location && typeof location === 'object')
               .map(location => ({
                 Name: location && location.Name ? location.Name : '',
+                Location_W3W: this.parseWhat3Words(location && location.Location ? location.Location : ''),
                 Description: location && location.Description ? location.Description : '',
                 Latitude: location && location.Latitude ? location.Latitude : '',
                 Longitude: location && location.Longitude ? location.Longitude : '',
@@ -1035,7 +1037,14 @@ export default {
 
         const label = parking && parking.Name ? parking.Name : `Parking ${parkingIndex + 1}`;
         const description = parking && parking.Description ? parking.Description : '';
-        const parkingPopup = description ? `${label}<br>${description}` : label;
+        const locationW3W = parking && parking.Location_W3W ? parking.Location_W3W : null;
+        let parkingPopup = label;
+        if (locationW3W) {
+          parkingPopup += `<br><a href="${locationW3W.url}" target="what3words-map-window">${locationW3W.display}</a>`;
+        }
+        if (description) {
+          parkingPopup += `<br>${description}`;
+        }
 
         const parkingMarker = L.marker(parkingLatLng, {
           icon: L.divIcon({

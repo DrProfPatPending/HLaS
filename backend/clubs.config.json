@@ -24,7 +24,8 @@
           "Parking_Locations": [
             {
               "Name": "Great Ponton Bridge, Dallygate Lane",
-              "Description": "W3W: ///consented.shout.reveal",
+              "Location": "///consented.shout.reveal",
+              "Description": "",
               "Latitude": "52.8639",
               "Longitude": "-0.62006"
             }
@@ -46,11 +47,12 @@
           "Parking_Locations": [
             {
               "Name": "Great Ponton Bridge, Dallygate Lane",
-              "Description": "W3W: ///consented.shout.reveal",
+              "Location": "///consented.shout.reveal",
+              "Description": "",
               "Latitude": "52.8639",
               "Longitude": "-0.62006"
             }
-]
+          ]
         },
         {
           "Beat_Name": "Syston - A607 Bridge",

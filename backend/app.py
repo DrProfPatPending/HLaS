@@ -143,6 +143,7 @@ def normalize_parking_locations(parking_source):
             continue
         normalized.append({
             'Name': str(location.get('Name', '')).strip(),
+            'Location': normalize_what3words_words(location.get('Location', '')),
             'Description': str(location.get('Description', '')).strip(),
             'Latitude': str(location.get('Latitude', '')).strip(),
             'Longitude': str(location.get('Longitude', '')).strip(),
