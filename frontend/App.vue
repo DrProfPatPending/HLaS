@@ -359,6 +359,8 @@
           <tr>
             <th>Beat Name</th>
             <th>Beat ID</th>
+            <th>River</th>
+            <th>Position</th>
             <th>Beat Upstream</th>
             <th>Beat Downstream</th>
             <th>Beat Description</th>
@@ -368,8 +370,30 @@
           <tr v-for="beat in clubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
             <td>{{ beat.Beat_Name }}</td>
             <td>{{ beat.Beat_ID }}</td>
-            <td>{{ beat.Beat_Upstream }}</td>
-            <td>{{ beat.Beat_Downstream }}</td>
+            <td>{{ beat.River }}</td>
+            <td>{{ beat.Position }}</td>
+            <td>
+              <a
+                v-if="beat.Beat_Upstream_W3W"
+                :href="beat.Beat_Upstream_W3W.url"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ beat.Beat_Upstream_W3W.display }}
+              </a>
+              <span v-else>{{ beat.Beat_Upstream }}</span>
+            </td>
+            <td>
+              <a
+                v-if="beat.Beat_Downstream_W3W"
+                :href="beat.Beat_Downstream_W3W.url"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ beat.Beat_Downstream_W3W.display }}
+              </a>
+              <span v-else>{{ beat.Beat_Downstream }}</span>
+            </td>
             <td>{{ beat.Beat_Description }}</td>
           </tr>
         </tbody>
@@ -558,13 +582,22 @@ export default {
     },
     clubBeats() {
       const beats = Array.isArray(this.clubDetails.beats) ? this.clubDetails.beats : [];
-      return beats.map(beat => ({
-        Beat_Name: beat && beat.Beat_Name ? beat.Beat_Name : '',
-        Beat_ID: beat && beat.Beat_ID ? beat.Beat_ID : '',
-        Beat_Upstream: beat && beat.Beat_Upstream ? beat.Beat_Upstream : '',
-        Beat_Downstream: beat && beat.Beat_Downstream ? beat.Beat_Downstream : '',
-        Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
-      }));
+      return beats.map(beat => {
+        const beatUpstream = beat && beat.Beat_Upstream ? beat.Beat_Upstream : '';
+        const beatDownstream = beat && beat.Beat_Downstream ? beat.Beat_Downstream : '';
+
+        return {
+          Beat_Name: beat && beat.Beat_Name ? beat.Beat_Name : '',
+          Beat_ID: beat && beat.Beat_ID ? beat.Beat_ID : '',
+          River: beat && beat.River ? beat.River : '',
+          Position: beat && beat.Position ? beat.Position : '',
+          Beat_Upstream: beatUpstream,
+          Beat_Downstream: beatDownstream,
+          Beat_Upstream_W3W: this.parseWhat3Words(beatUpstream),
+          Beat_Downstream_W3W: this.parseWhat3Words(beatDownstream),
+          Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
+        };
+      });
     },
     clubLogoSrc() {
       if (this.clubDetails.logoUrl && !this.clubLogoLoadFailed) {
@@ -689,6 +722,33 @@ export default {
     }
   },
   methods: {
+    parseWhat3Words(rawValue) {
+      if (typeof rawValue !== 'string') {
+        return null;
+      }
+      const trimmed = rawValue.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      const withoutSlashes = trimmed.replace(/^\/+/, '');
+      const words = withoutSlashes
+        .split('.')
+        .map(word => word.trim())
+        .filter(Boolean);
+
+      if (words.length !== 3) {
+        return null;
+      }
+
+      const normalizedWords = words.map(word => word.toLowerCase());
+      const normalizedPath = normalizedWords.map(word => encodeURIComponent(word)).join('.');
+
+      return {
+        display: `///${normalizedWords.join('.')}`,
+        url: `https://what3words.com/${normalizedPath}`,
+      };
+    },
     memberIdentity(member) {
       return member && (member.id || member.ID || member.Number);
     },

@@ -90,15 +90,38 @@ def normalize_beats(beats_source):
     for beat in beats_source:
         if not isinstance(beat, dict):
             continue
+
+        beat_upstream = str(beat.get('Beat_Upstream', '')).strip()
+        beat_downstream = str(beat.get('Beat_Downstream', '')).strip()
+
         normalized.append({
             'Beat_Name': str(beat.get('Beat_Name', '')).strip(),
             'Beat_ID': str(beat.get('Beat_ID', '')).strip(),
-            'Beat_Upstream': str(beat.get('Beat_Upstream', '')).strip(),
-            'Beat_Downstream': str(beat.get('Beat_Downstream', '')).strip(),
+            'River': str(beat.get('River', '')).strip(),
+            'Position': str(beat.get('Position', '')).strip(),
+            'Beat_Upstream': normalize_what3words_value(beat_upstream),
+            'Beat_Downstream': normalize_what3words_value(beat_downstream),
             'Beat_Description': str(beat.get('Beat_Description', '')).strip(),
         })
 
     return normalized
+
+
+def normalize_what3words_value(raw_value):
+    value = str(raw_value or '').strip()
+    if not value:
+        return ''
+
+    without_slashes = re.sub(r'^/+', '', value).strip()
+    words = [word.strip() for word in without_slashes.split('.')]
+
+    if len(words) != 3 or any(not word for word in words):
+        return value
+
+    if not all(re.fullmatch(r'[A-Za-z]+', word) for word in words):
+        return value
+
+    return f"///{'.'.join(word.lower() for word in words)}"
 
 
 def load_clubs_config():

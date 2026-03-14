@@ -9,18 +9,22 @@
       "logoUrl": "/club_logo/GAAFFS",
       "beats": [
         {
-          "Beat_Name": "Witham North",
-          "Beat_ID": "GAAFFS-WIT-01",
-          "Beat_Upstream": "Harrowby Weir",
-          "Beat_Downstream": "Belton Bridge",
-          "Beat_Description": "Mixed depth run with riffles and glides, suitable for daytime trout and evening grayling sessions."
+          "Beat_Name": "Papermill Farm",
+          "Beat_ID": "P",
+          "River": "Witham",
+          "Position": "5",
+          "Beat_Upstream": "///bland.gladiators.agent",
+          "Beat_Downstream": "///quick.take.zealous",
+          "Beat_Description": "Lovely section mostly under tree cover, mixture of fast glides and small pools. A good head of wild trout."
         },
         {
-          "Beat_Name": "Witham South",
-          "Beat_ID": "GAAFFS-WIT-02",
-          "Beat_Upstream": "Belton Bridge",
-          "Beat_Downstream": "Barkston Mill",
-          "Beat_Description": "Slower holding water with undercut banks and deeper winter grayling lies."
+          "Beat_Name": "Barkston",
+          "Beat_ID": "I",
+          "River": "Witham",
+          "Position": "13",
+          "Beat_Upstream": "///waistcoat.fetches.residual",
+          "Beat_Downstream": "///stems.slam.dive",
+          "Beat_Description": "Downstream from Girder Bridge to the East Coast Mainline. Possibly the most prolific of the GAAFFS beats, with a lovely mixture of pools, runs and riffles. An excellent head of both grayling and brown trout, with the occasional very large specimen."
         }
       ]
     },
@@ -33,17 +37,30 @@
       "logoUrl": "/club_logo/CTC",
       "beats": [
         {
-          "Beat_Name": "Upper Cam Meadow",
-          "Beat_ID": "CTC-CAM-01",
-          "Beat_Upstream": "Grantchester Mill",
-          "Beat_Downstream": "Byron's Pool",
+          "Beat_Name": "A Beat",
+          "Beat_ID": "A",
+          "River": "Cam",
+          "Position": "1",
+          "Beat_Upstream": "///tablets.loudly.sues",
+          "Beat_Downstream": "///stuck.fits.subtitle",
           "Beat_Description": "Classic chalkstream style glide with weed beds and dry-fly opportunities."
         },
         {
-          "Beat_Name": "Lower Cam Reach",
-          "Beat_ID": "CTC-CAM-02",
-          "Beat_Upstream": "Byron's Pool",
-          "Beat_Downstream": "Trumpington Lock",
+          "Beat_Name": "B Beat",
+          "Beat_ID": "B",
+          "River": "Cam",
+          "Position": "2",
+          "Beat_Upstream": "///fells.burn.bulbs",
+          "Beat_Downstream": "///spindles.moped.mentioned",
+          "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water."
+        },
+        {
+          "Beat_Name": "C Beat",
+          "Beat_ID": "C",
+          "River": "Cam",
+          "Position": "3",
+          "Beat_Upstream": "///sweetly.chainsaw.fools",
+          "Beat_Downstream": "///upper.travels.professes",
           "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water."
         }
       ]
@@ -59,15 +76,19 @@
         {
           "Beat_Name": "Dove Valley Top Beat",
           "Beat_ID": "LADFFA-DOV-01",
-          "Beat_Upstream": "Ilam Rock",
-          "Beat_Downstream": "Dovedale Bridge",
+          "River": "Dove",
+          "Position": "1",
+          "Beat_Upstream": "///ilam.rock.pool",
+          "Beat_Downstream": "///dovedale.bridge.river",
           "Beat_Description": "Fast pocket water with short glides and reliable summer evening rises."
         },
         {
           "Beat_Name": "Dove Valley Lower Beat",
           "Beat_ID": "LADFFA-DOV-02",
-          "Beat_Upstream": "Dovedale Bridge",
-          "Beat_Downstream": "Thorpe Weir",
+          "River": "Dove",
+          "Position": "2",
+          "Beat_Upstream": "///dovedale.bridge.river",
+          "Beat_Downstream": "///thorpe.weir.river",
           "Beat_Description": "Longer pools and broken runs with strong grayling potential in colder months."
         }
       ]
@@ -83,8 +104,10 @@
         {
           "Beat_Name": "Test Water",
           "Beat_ID": "TEST-001",
-          "Beat_Upstream": "Test Upstream Marker",
-          "Beat_Downstream": "Test Downstream Marker",
+          "River": "Test",
+          "Position": "1",
+          "Beat_Upstream": "///test.upstream.marker",
+          "Beat_Downstream": "///test.downstream.marker",
           "Beat_Description": "Sample beat used for validating fishing beat configuration and display."
         }
       ]
