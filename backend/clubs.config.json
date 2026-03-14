@@ -15,7 +15,8 @@
           "Position": "3",
           "Beat_Upstream": "///coffee.pastels.excellent",
           "Beat_Downstream": "///hunk.calms.hardens",
-          "Beat_Description": "Upstream of Bridge"
+          "Beat_Description": "Upstream of Bridge",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Ponton B",
@@ -24,7 +25,8 @@
           "Position": "4",
           "Beat_Upstream": "///hunk.calms.hardens",
           "Beat_Downstream": "///rectangular.leaps.nearing",
-          "Beat_Description": "Downstream of Bridge"
+          "Beat_Description": "Downstream of Bridge",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Syston - A607 Bridge",
@@ -33,7 +35,8 @@
           "Position": "7",
           "Beat_Upstream": "///commented.seemingly.frame",
           "Beat_Downstream": "///feeds.rebounds.seducing",
-          "Beat_Description": "Downstream of A607 bridge"
+          "Beat_Description": "Downstream of A607 bridge",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Syston - Old Weir",
@@ -42,7 +45,8 @@
           "Position": "8",
           "Beat_Upstream": "///harmonica.witless.havens",
           "Beat_Downstream": "///pills.sample.motivator",
-          "Beat_Description": "Downstream to Syston Old Weir"
+          "Beat_Description": "Downstream to Syston Old Weir",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Beet Pad",
@@ -51,7 +55,8 @@
           "Position": "9",
           "Beat_Upstream": "///pills.sample.motivator",
           "Beat_Downstream": "///theory.staining.shuffle",
-          "Beat_Description": "Syston Old Weir to Beet Pad"
+          "Beat_Description": "Syston Old Weir to Beet Pad",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "White Bridge",
@@ -60,7 +65,8 @@
           "Position": "10",
           "Beat_Upstream": "///drive.umpires.lotteries",
           "Beat_Downstream": "///iterative.replenish.dates",
-          "Beat_Description": "Beet Pad to White Bridge"
+          "Beat_Description": "Beet Pad to White Bridge",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Elnor's Weir",
@@ -69,7 +75,8 @@
           "Position": "11",
           "Beat_Upstream": "///slant.sunset.bogus",
           "Beat_Downstream": "///campers.settle.dizziness",
-          "Beat_Description": "White Bridge to Elnor's Weir"
+          "Beat_Description": "White Bridge to Elnor's Weir",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Girder Bridge",
@@ -78,7 +85,8 @@
           "Position": "12",
           "Beat_Upstream": "///campers.settle.dizziness",
           "Beat_Downstream": "///ticket.island.degrading",
-          "Beat_Description": "Elnor's Weir to Girder Bridge"
+          "Beat_Description": "Elnor's Weir to Girder Bridge",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Barkston",
@@ -87,7 +95,8 @@
           "Position": "13",
           "Beat_Upstream": "///waistcoat.fetches.residual",
           "Beat_Downstream": "///stems.slam.dive",
-          "Beat_Description": "Girder Bridge to Railway viaduct"
+          "Beat_Description": "Girder Bridge to Railway viaduct",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "I Beat eXtension",
@@ -96,7 +105,8 @@
           "Position": "14",
           "Beat_Upstream": "///sensibly.inspector.denim",
           "Beat_Downstream": "///merely.behalf.extremely",
-          "Beat_Description": "Downstream of railway viaduct"
+          "Beat_Description": "Downstream of railway viaduct",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Colsterworth",
@@ -105,7 +115,8 @@
           "Position": "1",
           "Beat_Upstream": "///endlessly.obviously.ambitions",
           "Beat_Downstream": "///brighter.farms.recruiter",
-          "Beat_Description": "Upper Witham nr Colsterworth"
+          "Beat_Description": "Upper Witham nr Colsterworth",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Belton Park",
@@ -114,7 +125,8 @@
           "Position": "6",
           "Beat_Upstream": "///flicked.tallest.quietest",
           "Beat_Downstream": "///wider.iterative.immunity",
-          "Beat_Description": "NT Belton House - centre section 'no fishing'"
+          "Beat_Description": "NT Belton House - centre section 'no fishing'",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Chater",
@@ -123,7 +135,8 @@
           "Position": "31",
           "Beat_Upstream": "///seasonal.angers.sprinkler",
           "Beat_Downstream": "///beginning.entitle.bluff",
-          "Beat_Description": "R. Chater at Ketton"
+          "Beat_Description": "R. Chater at Ketton",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Welland (orig)",
@@ -132,7 +145,8 @@
           "Position": "25",
           "Beat_Upstream": "///duplicity.trek.robe",
           "Beat_Downstream": "///march.noodle.equity",
-          "Beat_Description": "R. Welland on 'Monty's Farm' - original beat"
+          "Beat_Description": "R. Welland on 'Monty's Farm' - original beat",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Washdike Lane",
@@ -141,7 +155,8 @@
           "Position": "2",
           "Beat_Upstream": "///browsers.ranged.topped",
           "Beat_Downstream": "///coffee.pastels.excellent",
-          "Beat_Description": "Upstream of A beat"
+          "Beat_Description": "Upstream of A beat",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Collyweston Bridge",
@@ -150,7 +165,8 @@
           "Position": "23",
           "Beat_Upstream": "///worker.paddocks.stunts",
           "Beat_Downstream": "///relieves.refrained.manuals",
-          "Beat_Description": "Welland upstream of Collyweston Bridge in Geeston"
+          "Beat_Description": "Welland upstream of Collyweston Bridge in Geeston",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Papermill",
@@ -159,7 +175,8 @@
           "Position": "5",
           "Beat_Upstream": "///bland.gladiators.agent",
           "Beat_Downstream": "///quick.take.zealous",
-          "Beat_Description": "Dble bank to ///strain.pocket.carbon"
+          "Beat_Description": "Dble bank to ///strain.pocket.carbon",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Wakerley",
@@ -168,7 +185,8 @@
           "Position": "21",
           "Beat_Upstream": "///proved.digitally.stag",
           "Beat_Downstream": "///talkers.belly.revamped",
-          "Beat_Description": "Burghley House - Barrowden to Tixover"
+          "Beat_Description": "Burghley House - Barrowden to Tixover",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Duddington",
@@ -177,7 +195,8 @@
           "Position": "22",
           "Beat_Upstream": "///headless.culling.defeated",
           "Beat_Downstream": "///astounded.flagged.writers",
-          "Beat_Description": "BH - Duddington to Collyweston Bridge"
+          "Beat_Description": "BH - Duddington to Collyweston Bridge",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Ketton",
@@ -186,7 +205,8 @@
           "Position": "24",
           "Beat_Upstream": "///astounded.flagged.writers",
           "Beat_Downstream": "///flopping.buzzing.ironclad",
-          "Beat_Description": "BH - Collyweston Bridge to Chater"
+          "Beat_Description": "BH - Collyweston Bridge to Chater",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Tinwell",
@@ -195,7 +215,8 @@
           "Position": "26",
           "Beat_Upstream": "///flopping.buzzing.ironclad",
           "Beat_Downstream": "///showcases.backfired.officials",
-          "Beat_Description": "BH - Chater confluence to Tinwell"
+          "Beat_Description": "BH - Chater confluence to Tinwell",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Stamford",
@@ -204,7 +225,8 @@
           "Position": "27",
           "Beat_Upstream": "///cards.expand.brand",
           "Beat_Downstream": "///petty.conclude.generally",
-          "Beat_Description": "BH - downstream of Stamford to Uffington"
+          "Beat_Description": "BH - downstream of Stamford to Uffington",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "GAA",
@@ -213,7 +235,8 @@
           "Position": "15",
           "Beat_Upstream": "///sadly.functions.majority",
           "Beat_Downstream": "///geese.collide.spells",
-          "Beat_Description": "All GAA Waters (W3w not accurate!!)"
+          "Beat_Description": "All GAA Waters (W3w not accurate!!)",
+          "Detailed_Description": ""
         }
       ]
     },
@@ -232,7 +255,8 @@
           "Position": "1",
           "Beat_Upstream": "///tablets.loudly.sues",
           "Beat_Downstream": "///stuck.fits.subtitle",
-          "Beat_Description": "Classic chalkstream style glide with weed beds and dry-fly opportunities."
+          "Beat_Description": "Classic chalkstream style glide with weed beds and dry-fly opportunities.",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "B Beat",
@@ -241,7 +265,8 @@
           "Position": "2",
           "Beat_Upstream": "///fells.burn.bulbs",
           "Beat_Downstream": "///spindles.moped.mentioned",
-          "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water."
+          "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water.",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "C Beat",
@@ -250,7 +275,8 @@
           "Position": "3",
           "Beat_Upstream": "///sweetly.chainsaw.fools",
           "Beat_Downstream": "///upper.travels.professes",
-          "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water."
+          "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water.",
+          "Detailed_Description": ""
         }
       ]
     },
@@ -269,7 +295,8 @@
           "Position": "1",
           "Beat_Upstream": "///ilam.rock.pool",
           "Beat_Downstream": "///dovedale.bridge.river",
-          "Beat_Description": "Fast pocket water with short glides and reliable summer evening rises."
+          "Beat_Description": "Fast pocket water with short glides and reliable summer evening rises.",
+          "Detailed_Description": ""
         },
         {
           "Beat_Name": "Dove Valley Lower Beat",
@@ -278,7 +305,8 @@
           "Position": "2",
           "Beat_Upstream": "///dovedale.bridge.river",
           "Beat_Downstream": "///thorpe.weir.river",
-          "Beat_Description": "Longer pools and broken runs with strong grayling potential in colder months."
+          "Beat_Description": "Longer pools and broken runs with strong grayling potential in colder months.",
+          "Detailed_Description": ""
         }
       ]
     },
@@ -297,7 +325,8 @@
           "Position": "1",
           "Beat_Upstream": "///test.upstream.marker",
           "Beat_Downstream": "///test.downstream.marker",
-          "Beat_Description": "Sample beat used for validating fishing beat configuration and display."
+          "Beat_Description": "Sample beat used for validating fishing beat configuration and display.",
+          "Detailed_Description": ""
         }
       ]
     }

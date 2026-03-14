@@ -102,6 +102,7 @@ def normalize_beats(beats_source):
             'Beat_Upstream': normalize_what3words_value(beat_upstream),
             'Beat_Downstream': normalize_what3words_value(beat_downstream),
             'Beat_Description': str(beat.get('Beat_Description', '')).strip(),
+            'Detailed_Description': str(beat.get('Detailed_Description', '')).strip(),
         })
 
     return normalized

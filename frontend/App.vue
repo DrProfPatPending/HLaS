@@ -354,50 +354,120 @@
     </div>
     <div v-else-if="activeSection === 'fishing-beats'" class="fishing-beats-container">
       <h2>{{ clubDetails.fullName }} - Fishing Beats</h2>
-      <table v-if="clubBeats.length" class="fishing-beats-table">
-        <thead>
-          <tr>
-            <th>Beat Name</th>
-            <th>Beat ID</th>
-            <th>River</th>
-            <th>Position</th>
-            <th>Beat Upstream</th>
-            <th>Beat Downstream</th>
-            <th>Beat Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="beat in clubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
-            <td>{{ beat.Beat_Name }}</td>
-            <td>{{ beat.Beat_ID }}</td>
-            <td>{{ beat.River }}</td>
-            <td>{{ beat.Position }}</td>
-            <td>
-              <a
-                v-if="beat.Beat_Upstream_W3W"
-                :href="beat.Beat_Upstream_W3W.url"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ beat.Beat_Upstream_W3W.display }}
-              </a>
-              <span v-else>{{ beat.Beat_Upstream }}</span>
-            </td>
-            <td>
-              <a
-                v-if="beat.Beat_Downstream_W3W"
-                :href="beat.Beat_Downstream_W3W.url"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ beat.Beat_Downstream_W3W.display }}
-              </a>
-              <span v-else>{{ beat.Beat_Downstream }}</span>
-            </td>
-            <td>{{ beat.Beat_Description }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-if="clubBeats.length" class="fishing-beats-layout">
+        <table class="fishing-beats-table">
+          <thead>
+            <tr>
+              <th>Beat Name</th>
+              <th>Beat ID</th>
+              <th>River</th>
+              <th>Position</th>
+              <th>Beat Upstream</th>
+              <th>Beat Downstream</th>
+              <th>Beat Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="beat in clubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
+              <td>
+                <a
+                  href="#"
+                  class="beat-name-link"
+                  :class="{ 'active': selectedFishingBeat && beatKey(selectedFishingBeat) === beatKey(beat) }"
+                  @click.prevent="selectFishingBeat(beat)"
+                >
+                  {{ beat.Beat_Name }}
+                </a>
+              </td>
+              <td>{{ beat.Beat_ID }}</td>
+              <td>{{ beat.River }}</td>
+              <td>{{ beat.Position }}</td>
+              <td>
+                <a
+                  v-if="beat.Beat_Upstream_W3W"
+                  :href="beat.Beat_Upstream_W3W.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ beat.Beat_Upstream_W3W.display }}
+                </a>
+                <span v-else>{{ beat.Beat_Upstream }}</span>
+              </td>
+              <td>
+                <a
+                  v-if="beat.Beat_Downstream_W3W"
+                  :href="beat.Beat_Downstream_W3W.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ beat.Beat_Downstream_W3W.display }}
+                </a>
+                <span v-else>{{ beat.Beat_Downstream }}</span>
+              </td>
+              <td>{{ beat.Beat_Description }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-if="selectedFishingBeat" class="fishing-beat-detail-panel">
+          <h3>{{ selectedFishingBeat.Beat_Name }}</h3>
+          <table class="fishing-beat-detail-table">
+            <tbody>
+              <tr>
+                <th>Beat Name</th>
+                <td>{{ selectedFishingBeat.Beat_Name }}</td>
+              </tr>
+              <tr>
+                <th>Beat ID</th>
+                <td>{{ selectedFishingBeat.Beat_ID }}</td>
+              </tr>
+              <tr>
+                <th>River</th>
+                <td>{{ selectedFishingBeat.River }}</td>
+              </tr>
+              <tr>
+                <th>Position</th>
+                <td>{{ selectedFishingBeat.Position }}</td>
+              </tr>
+              <tr>
+                <th>Beat Upstream</th>
+                <td>
+                  <a
+                    v-if="selectedFishingBeat.Beat_Upstream_W3W"
+                    :href="selectedFishingBeat.Beat_Upstream_W3W.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ selectedFishingBeat.Beat_Upstream_W3W.display }}
+                  </a>
+                  <span v-else>{{ selectedFishingBeat.Beat_Upstream }}</span>
+                </td>
+              </tr>
+              <tr>
+                <th>Beat Downstream</th>
+                <td>
+                  <a
+                    v-if="selectedFishingBeat.Beat_Downstream_W3W"
+                    :href="selectedFishingBeat.Beat_Downstream_W3W.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ selectedFishingBeat.Beat_Downstream_W3W.display }}
+                  </a>
+                  <span v-else>{{ selectedFishingBeat.Beat_Downstream }}</span>
+                </td>
+              </tr>
+              <tr>
+                <th>Beat Description</th>
+                <td>{{ selectedFishingBeat.Beat_Description }}</td>
+              </tr>
+              <tr>
+                <th>Detailed Description</th>
+                <td>{{ selectedFishingBeat.Detailed_Description || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <p v-else>No fishing beats are configured for this club.</p>
       <button type="button" @click="activeSection = 'home'">Back to Home</button>
     </div>
@@ -538,6 +608,7 @@ export default {
       newsletterSelectedMemberIds: [],
       newsletterPrepareMessage: '',
       newsletterPrepareError: '',
+      selectedFishingBeatKey: '',
       newsletterColumnFilters: {
         ID: '',
         Number: '',
@@ -596,8 +667,17 @@ export default {
           Beat_Upstream_W3W: this.parseWhat3Words(beatUpstream),
           Beat_Downstream_W3W: this.parseWhat3Words(beatDownstream),
           Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
+          Detailed_Description: beat && beat.Detailed_Description ? beat.Detailed_Description : '',
         };
       });
+    },
+    selectedFishingBeat() {
+      const beats = this.clubBeats;
+      if (!beats.length) {
+        return null;
+      }
+      const selected = beats.find(beat => this.beatKey(beat) === this.selectedFishingBeatKey);
+      return selected || beats[0];
     },
     clubLogoSrc() {
       if (this.clubDetails.logoUrl && !this.clubLogoLoadFailed) {
@@ -722,6 +802,14 @@ export default {
     }
   },
   methods: {
+    beatKey(beat) {
+      const beatId = beat && beat.Beat_ID ? beat.Beat_ID : '';
+      const beatName = beat && beat.Beat_Name ? beat.Beat_Name : '';
+      return `${beatId}-${beatName}`;
+    },
+    selectFishingBeat(beat) {
+      this.selectedFishingBeatKey = this.beatKey(beat);
+    },
     parseWhat3Words(rawValue) {
       if (typeof rawValue !== 'string') {
         return null;
@@ -1011,6 +1099,11 @@ export default {
         this.fetchNewsletterMembers();
         return;
       }
+      if (sectionKey === 'fishing-beats') {
+        this.activeSection = 'fishing-beats';
+        this.selectedFishingBeatKey = this.clubBeats.length ? this.beatKey(this.clubBeats[0]) : '';
+        return;
+      }
       this.activeSection = sectionKey;
     },
     sectionDisplayName(sectionKey) {
@@ -1266,6 +1359,50 @@ export default {
   width: 100%;
   border-collapse: collapse;
   margin: 12px 0;
+}
+#app .fishing-beats-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+#app .fishing-beat-detail-panel {
+  width: 320px;
+  min-width: 280px;
+  border: 1px solid #ccc;
+  background: #fafafa;
+  padding: 10px;
+  margin-top: 12px;
+}
+#app .fishing-beat-detail-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 11pt;
+}
+#app .fishing-beat-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+#app .fishing-beat-detail-table th,
+#app .fishing-beat-detail-table td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: left;
+  font-size: 10pt;
+  vertical-align: top;
+}
+#app .fishing-beat-detail-table th {
+  width: 130px;
+  background: #f0f0f0;
+}
+#app .beat-name-link {
+  display: inline-block;
+  color: #0645ad;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+}
+#app .beat-name-link.active {
+  font-weight: bold;
 }
 #app .fishing-beats-table th,
 #app .fishing-beats-table td {

@@ -336,12 +336,15 @@ Required CSV columns:
 - `Beat_Downstream`
 - `Beat_Description`
 
+Optional CSV columns:
+- `Detailed_Description`
+
 Example CSV (`<CLUB>_beats.csv`):
 
 ```csv
-Beat_ID,River,Beat_Name,Position,Beat_Upstream,Beat_Downstream,Beat_Description
-A,Witham,Ponton A,3,///coffee.pastels.excellent,///hunk.calms.hardens,Upstream of Bridge
-B,Witham,Ponton B,4,///hunk.calms.hardens,///rectangular.leaps.nearing,Downstream of Bridge
+Beat_ID,River,Beat_Name,Position,Beat_Upstream,Beat_Downstream,Beat_Description,Detailed_Description
+A,Witham,Ponton A,3,///coffee.pastels.excellent,///hunk.calms.hardens,Upstream of Bridge,"Access from the farm gate opposite the bridge; fish upstream in low water."
+B,Witham,Ponton B,4,///hunk.calms.hardens,///rectangular.leaps.nearing,Downstream of Bridge,"Best in evening hatch windows; watch footing near the cut bank."
 ```
 
 Available club-specific scripts:

@@ -47,6 +47,7 @@ def normalize_beat_row(row: Dict[str, str]) -> Dict[str, str]:
         'Beat_Upstream': normalize_what3words_value(beat_upstream),
         'Beat_Downstream': normalize_what3words_value(beat_downstream),
         'Beat_Description': str(row.get('Beat_Description', '')).strip(),
+        'Detailed_Description': str(row.get('Detailed_Description', '')).strip(),
     }
 
 
