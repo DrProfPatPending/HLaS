@@ -343,9 +343,17 @@ Optional CSV columns:
 - `Beat_Downstream_Latitude`
 - `Beat_Downstream_Longitude`
 
+Optional beat JSON fields (for map annotations in `clubs.config.json`):
+- `Parking_Locations` (array of objects)
+   - `Name`
+   - `Description`
+   - `Latitude`
+   - `Longitude`
+
 Notes:
 - If `WHAT3WORDS_API_KEY` is configured for the backend, the Fishing Beats inset map can resolve What3Words locations directly.
 - If What3Words lookup is unavailable, the map uses the optional coordinate fallback fields above.
+- Parking pushpins are rendered from `Parking_Locations` when valid coordinates are present.
 
 Example CSV (`<CLUB>_beats.csv`):
 

@@ -482,6 +482,19 @@
                   <span v-else>-</span>
                 </td>
               </tr>
+              <tr>
+                <th>Parking</th>
+                <td>
+                  <ul v-if="selectedFishingBeat.Parking_Locations.length" class="fishing-beat-parking-list">
+                    <li v-for="(parking, parkingIndex) in selectedFishingBeat.Parking_Locations" :key="`parking-${parkingIndex}`">
+                      <strong>{{ parking.Name || `Parking ${parkingIndex + 1}` }}</strong>
+                      <span v-if="parking.Latitude && parking.Longitude"> ({{ parking.Latitude }}, {{ parking.Longitude }})</span>
+                      <span v-if="parking.Description"> - {{ parking.Description }}</span>
+                    </li>
+                  </ul>
+                  <span v-else>-</span>
+                </td>
+              </tr>
             </tbody>
           </table>
           <div class="fishing-beat-map-wrap">
@@ -698,6 +711,16 @@ export default {
           Beat_Upstream_Longitude: beat && beat.Beat_Upstream_Longitude ? beat.Beat_Upstream_Longitude : '',
           Beat_Downstream_Latitude: beat && beat.Beat_Downstream_Latitude ? beat.Beat_Downstream_Latitude : '',
           Beat_Downstream_Longitude: beat && beat.Beat_Downstream_Longitude ? beat.Beat_Downstream_Longitude : '',
+          Parking_Locations: Array.isArray(beat && beat.Parking_Locations)
+            ? beat.Parking_Locations
+              .filter(location => location && typeof location === 'object')
+              .map(location => ({
+                Name: location && location.Name ? location.Name : '',
+                Description: location && location.Description ? location.Description : '',
+                Latitude: location && location.Latitude ? location.Latitude : '',
+                Longitude: location && location.Longitude ? location.Longitude : '',
+              }))
+            : [],
           Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
           Detailed_Description: beat && beat.Detailed_Description ? beat.Detailed_Description : '',
         };
@@ -959,6 +982,7 @@ export default {
 
       const upstreamLatLng = L.latLng(upstreamCoordinates.lat, upstreamCoordinates.lng);
       const downstreamLatLng = L.latLng(downstreamCoordinates.lat, downstreamCoordinates.lng);
+      const allBoundsPoints = [upstreamLatLng, downstreamLatLng];
 
       const upstreamMarker = L.circleMarker(upstreamLatLng, {
         radius: 7,
@@ -979,15 +1003,46 @@ export default {
         weight: 3,
       });
 
+      const parkingLayers = [];
+      const parkingLocations = Array.isArray(selectedBeat.Parking_Locations) ? selectedBeat.Parking_Locations : [];
+      parkingLocations.forEach((parking, parkingIndex) => {
+        const parkingLatitude = this.parseCoordinateValue(parking && parking.Latitude ? parking.Latitude : '');
+        const parkingLongitude = this.parseCoordinateValue(parking && parking.Longitude ? parking.Longitude : '');
+        if (parkingLatitude === null || parkingLongitude === null) {
+          return;
+        }
+
+        const parkingLatLng = L.latLng(parkingLatitude, parkingLongitude);
+        allBoundsPoints.push(parkingLatLng);
+
+        const label = parking && parking.Name ? parking.Name : `Parking ${parkingIndex + 1}`;
+        const description = parking && parking.Description ? parking.Description : '';
+        const parkingPopup = description ? `${label}<br>${description}` : label;
+
+        const parkingMarker = L.marker(parkingLatLng, {
+          icon: L.divIcon({
+            className: 'parking-pin-marker',
+            html: '<div class="parking-pin-dot">P</div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          }),
+        }).bindPopup(parkingPopup);
+
+        parkingMarker.addTo(this.fishingBeatMapInstance);
+        parkingLayers.push(parkingMarker);
+      });
+
       upstreamMarker.addTo(this.fishingBeatMapInstance);
       downstreamMarker.addTo(this.fishingBeatMapInstance);
       boundaryLine.addTo(this.fishingBeatMapInstance);
-      this.fishingBeatMapLayers = [upstreamMarker, downstreamMarker, boundaryLine];
+      this.fishingBeatMapLayers = [upstreamMarker, downstreamMarker, boundaryLine, ...parkingLayers];
 
       this.fishingBeatMapInstance.invalidateSize();
-      const bounds = L.latLngBounds([upstreamLatLng, downstreamLatLng]);
+      const bounds = L.latLngBounds(allBoundsPoints);
       this.fishingBeatMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
-      this.fishingBeatMapStatus = 'Showing upstream and downstream limits.';
+      this.fishingBeatMapStatus = parkingLayers.length
+        ? `Showing upstream/downstream limits and ${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}.`
+        : 'Showing upstream and downstream limits.';
     },
     destroyFishingBeatMap() {
       this.clearFishingBeatMapLayers();
@@ -1603,6 +1658,26 @@ export default {
   margin-top: 6px;
   font-size: 9pt;
   color: #555;
+}
+#app .fishing-beat-parking-list {
+  margin: 0;
+  padding-left: 18px;
+}
+#app .parking-pin-marker {
+  background: transparent;
+  border: none;
+}
+#app .parking-pin-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #1c7c3f;
+  color: #fff;
+  font-size: 10pt;
+  font-weight: bold;
+  line-height: 20px;
+  text-align: center;
+  box-shadow: 0 0 0 1px #fff inset;
 }
 #app .beat-name-link {
   display: inline-block;

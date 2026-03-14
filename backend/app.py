@@ -110,6 +110,7 @@ def normalize_beats(beats_source):
             'Beat_Upstream_Longitude': str(beat.get('Beat_Upstream_Longitude', '')).strip(),
             'Beat_Downstream_Latitude': str(beat.get('Beat_Downstream_Latitude', '')).strip(),
             'Beat_Downstream_Longitude': str(beat.get('Beat_Downstream_Longitude', '')).strip(),
+            'Parking_Locations': normalize_parking_locations(beat.get('Parking_Locations', [])),
         })
 
     return normalized
@@ -130,6 +131,24 @@ def normalize_what3words_value(raw_value):
         return value
 
     return f"///{'.'.join(word.lower() for word in words)}"
+
+
+def normalize_parking_locations(parking_source):
+    if not isinstance(parking_source, list):
+        return []
+
+    normalized = []
+    for location in parking_source:
+        if not isinstance(location, dict):
+            continue
+        normalized.append({
+            'Name': str(location.get('Name', '')).strip(),
+            'Description': str(location.get('Description', '')).strip(),
+            'Latitude': str(location.get('Latitude', '')).strip(),
+            'Longitude': str(location.get('Longitude', '')).strip(),
+        })
+
+    return normalized
 
 
 def normalize_what3words_words(raw_value):

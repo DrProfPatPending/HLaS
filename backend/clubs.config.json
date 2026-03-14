@@ -20,7 +20,8 @@
           "Beat_Upstream_Latitude": "52.85197",
           "Beat_Upstream_Longitude": "-0.62042",
           "Beat_Downstream_Latitude": "52.86385",
-          "Beat_Downstream_Longitude": "-0.62030"
+          "Beat_Downstream_Longitude": "-0.62030",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Ponton B",
@@ -34,7 +35,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Syston - A607 Bridge",
@@ -48,7 +50,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Syston - Old Weir",
@@ -62,7 +65,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Beet Pad",
@@ -76,7 +80,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "White Bridge",
@@ -90,7 +95,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Elnor's Weir",
@@ -104,7 +110,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Girder Bridge",
@@ -118,7 +125,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Barkston",
@@ -132,7 +140,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "I Beat eXtension",
@@ -146,7 +155,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Colsterworth",
@@ -160,7 +170,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Belton Park",
@@ -174,7 +185,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Chater",
@@ -188,7 +200,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Welland (orig)",
@@ -202,7 +215,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Washdike Lane",
@@ -216,7 +230,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Collyweston Bridge",
@@ -230,7 +245,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Papermill",
@@ -244,7 +260,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Wakerley",
@@ -258,7 +275,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Duddington",
@@ -272,7 +290,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Ketton",
@@ -286,7 +305,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Tinwell",
@@ -300,7 +320,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Stamford",
@@ -314,7 +335,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "GAA",
@@ -328,7 +350,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         }
       ]
     },
@@ -352,7 +375,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "B Beat",
@@ -366,7 +390,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "C Beat",
@@ -380,7 +405,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         }
       ]
     },
@@ -404,7 +430,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         },
         {
           "Beat_Name": "Dove Valley Lower Beat",
@@ -418,7 +445,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         }
       ]
     },
@@ -442,7 +470,8 @@
           "Beat_Upstream_Latitude": "",
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": ""
+          "Beat_Downstream_Longitude": "",
+          "Parking_Locations": []
         }
       ]
     }
