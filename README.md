@@ -323,6 +323,47 @@ Optional port overrides:
 - The backend import script uses `backend/GAAFFS_Members_2026.csv`.
 - If you want to import a different file, update `CSV_FILE` in `backend/import_excel.py`.
 
+### Beats Importers
+
+Beat CSV files are imported into the `beats` array in `backend/clubs.config.json`.
+
+Required CSV columns:
+- `Beat_ID`
+- `River`
+- `Beat_Name`
+- `Position`
+- `Beat_Upstream`
+- `Beat_Downstream`
+- `Beat_Description`
+
+Example CSV (`<CLUB>_beats.csv`):
+
+```csv
+Beat_ID,River,Beat_Name,Position,Beat_Upstream,Beat_Downstream,Beat_Description
+A,Witham,Ponton A,3,///coffee.pastels.excellent,///hunk.calms.hardens,Upstream of Bridge
+B,Witham,Ponton B,4,///hunk.calms.hardens,///rectangular.leaps.nearing,Downstream of Bridge
+```
+
+Available club-specific scripts:
+- `backend/import_gaaffs_beats.py` (expects `backend/GAAFFS_beats.csv`)
+- `backend/import_ctc_beats.py` (expects `backend/CTC_beats.csv`)
+- `backend/import_ladffa_beats.py` (expects `backend/LADFFA_beats.csv`)
+- `backend/import_test_beats.py` (expects `backend/TEST_beats.csv`)
+
+Run an importer:
+
+```bash
+python3 backend/import_gaaffs_beats.py
+```
+
+Generic template for new clubs:
+- Copy `backend/import_club_beats_template.py` to a new file (e.g. `backend/import_myclub_beats.py`)
+- Set `CLUB_SHORT_NAME` and `BEATS_CSV_FILENAME`
+- Run your new script with `python3`
+
+Shared helper module:
+- `backend/import_beats_common.py` (CSV validation, mapping, and What3Words normalization)
+
 ## Security
 
 ## Production deployment (Docker + VPS)
