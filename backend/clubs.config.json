@@ -9,13 +9,76 @@
       "logoUrl": "/club_logo/GAAFFS",
       "beats": [
         {
-          "Beat_Name": "Papermill Farm",
-          "Beat_ID": "P",
+          "Beat_Name": "Ponton A",
+          "Beat_ID": "A",
           "River": "Witham",
-          "Position": "5",
-          "Beat_Upstream": "///bland.gladiators.agent",
-          "Beat_Downstream": "///quick.take.zealous",
-          "Beat_Description": "Lovely section mostly under tree cover, mixture of fast glides and small pools. A good head of wild trout."
+          "Position": "3",
+          "Beat_Upstream": "///coffee.pastels.excellent",
+          "Beat_Downstream": "///hunk.calms.hardens",
+          "Beat_Description": "Upstream of Bridge"
+        },
+        {
+          "Beat_Name": "Ponton B",
+          "Beat_ID": "B",
+          "River": "Witham",
+          "Position": "4",
+          "Beat_Upstream": "///hunk.calms.hardens",
+          "Beat_Downstream": "///rectangular.leaps.nearing",
+          "Beat_Description": "Downstream of Bridge"
+        },
+        {
+          "Beat_Name": "Syston - A607 Bridge",
+          "Beat_ID": "C",
+          "River": "Witham",
+          "Position": "7",
+          "Beat_Upstream": "///commented.seemingly.frame",
+          "Beat_Downstream": "///feeds.rebounds.seducing",
+          "Beat_Description": "Downstream of A607 bridge"
+        },
+        {
+          "Beat_Name": "Syston - Old Weir",
+          "Beat_ID": "D",
+          "River": "Witham",
+          "Position": "8",
+          "Beat_Upstream": "///harmonica.witless.havens",
+          "Beat_Downstream": "///pills.sample.motivator",
+          "Beat_Description": "Downstream to Syston Old Weir"
+        },
+        {
+          "Beat_Name": "Beet Pad",
+          "Beat_ID": "E",
+          "River": "Witham",
+          "Position": "9",
+          "Beat_Upstream": "///pills.sample.motivator",
+          "Beat_Downstream": "///theory.staining.shuffle",
+          "Beat_Description": "Syston Old Weir to Beet Pad"
+        },
+        {
+          "Beat_Name": "White Bridge",
+          "Beat_ID": "F",
+          "River": "Witham",
+          "Position": "10",
+          "Beat_Upstream": "///drive.umpires.lotteries",
+          "Beat_Downstream": "///iterative.replenish.dates",
+          "Beat_Description": "Beet Pad to White Bridge"
+        },
+        {
+          "Beat_Name": "Elnor's Weir",
+          "Beat_ID": "G",
+          "River": "Witham",
+          "Position": "11",
+          "Beat_Upstream": "///slant.sunset.bogus",
+          "Beat_Downstream": "///campers.settle.dizziness",
+          "Beat_Description": "White Bridge to Elnor's Weir"
+        },
+        {
+          "Beat_Name": "Girder Bridge",
+          "Beat_ID": "H",
+          "River": "Witham",
+          "Position": "12",
+          "Beat_Upstream": "///campers.settle.dizziness",
+          "Beat_Downstream": "///ticket.island.degrading",
+          "Beat_Description": "Elnor's Weir to Girder Bridge"
         },
         {
           "Beat_Name": "Barkston",
@@ -24,7 +87,133 @@
           "Position": "13",
           "Beat_Upstream": "///waistcoat.fetches.residual",
           "Beat_Downstream": "///stems.slam.dive",
-          "Beat_Description": "Downstream from Girder Bridge to the East Coast Mainline. Possibly the most prolific of the GAAFFS beats, with a lovely mixture of pools, runs and riffles. An excellent head of both grayling and brown trout, with the occasional very large specimen."
+          "Beat_Description": "Girder Bridge to Railway viaduct"
+        },
+        {
+          "Beat_Name": "I Beat eXtension",
+          "Beat_ID": "IX",
+          "River": "Witham",
+          "Position": "14",
+          "Beat_Upstream": "///sensibly.inspector.denim",
+          "Beat_Downstream": "///merely.behalf.extremely",
+          "Beat_Description": "Downstream of railway viaduct"
+        },
+        {
+          "Beat_Name": "Colsterworth",
+          "Beat_ID": "J",
+          "River": "Witham",
+          "Position": "1",
+          "Beat_Upstream": "///endlessly.obviously.ambitions",
+          "Beat_Downstream": "///brighter.farms.recruiter",
+          "Beat_Description": "Upper Witham nr Colsterworth"
+        },
+        {
+          "Beat_Name": "Belton Park",
+          "Beat_ID": "K",
+          "River": "Witham",
+          "Position": "6",
+          "Beat_Upstream": "///flicked.tallest.quietest",
+          "Beat_Downstream": "///wider.iterative.immunity",
+          "Beat_Description": "NT Belton House - centre section 'no fishing'"
+        },
+        {
+          "Beat_Name": "Chater",
+          "Beat_ID": "L",
+          "River": "Chater",
+          "Position": "31",
+          "Beat_Upstream": "///seasonal.angers.sprinkler",
+          "Beat_Downstream": "///beginning.entitle.bluff",
+          "Beat_Description": "R. Chater at Ketton"
+        },
+        {
+          "Beat_Name": "Welland (orig)",
+          "Beat_ID": "M",
+          "River": "Welland",
+          "Position": "25",
+          "Beat_Upstream": "///duplicity.trek.robe",
+          "Beat_Downstream": "///march.noodle.equity",
+          "Beat_Description": "R. Welland on 'Monty's Farm' - original beat"
+        },
+        {
+          "Beat_Name": "Washdike Lane",
+          "Beat_ID": "N",
+          "River": "Witham",
+          "Position": "2",
+          "Beat_Upstream": "///browsers.ranged.topped",
+          "Beat_Downstream": "///coffee.pastels.excellent",
+          "Beat_Description": "Upstream of A beat"
+        },
+        {
+          "Beat_Name": "Collyweston Bridge",
+          "Beat_ID": "O",
+          "River": "Welland",
+          "Position": "23",
+          "Beat_Upstream": "///worker.paddocks.stunts",
+          "Beat_Downstream": "///relieves.refrained.manuals",
+          "Beat_Description": "Welland upstream of Collyweston Bridge in Geeston"
+        },
+        {
+          "Beat_Name": "Papermill",
+          "Beat_ID": "P",
+          "River": "Witham",
+          "Position": "5",
+          "Beat_Upstream": "///bland.gladiators.agent",
+          "Beat_Downstream": "///quick.take.zealous",
+          "Beat_Description": "Dble bank to ///strain.pocket.carbon"
+        },
+        {
+          "Beat_Name": "Wakerley",
+          "Beat_ID": "Q",
+          "River": "Welland",
+          "Position": "21",
+          "Beat_Upstream": "///proved.digitally.stag",
+          "Beat_Downstream": "///talkers.belly.revamped",
+          "Beat_Description": "Burghley House - Barrowden to Tixover"
+        },
+        {
+          "Beat_Name": "Duddington",
+          "Beat_ID": "R",
+          "River": "Welland",
+          "Position": "22",
+          "Beat_Upstream": "///headless.culling.defeated",
+          "Beat_Downstream": "///astounded.flagged.writers",
+          "Beat_Description": "BH - Duddington to Collyweston Bridge"
+        },
+        {
+          "Beat_Name": "Ketton",
+          "Beat_ID": "S",
+          "River": "Welland",
+          "Position": "24",
+          "Beat_Upstream": "///astounded.flagged.writers",
+          "Beat_Downstream": "///flopping.buzzing.ironclad",
+          "Beat_Description": "BH - Collyweston Bridge to Chater"
+        },
+        {
+          "Beat_Name": "Tinwell",
+          "Beat_ID": "T",
+          "River": "Welland",
+          "Position": "26",
+          "Beat_Upstream": "///flopping.buzzing.ironclad",
+          "Beat_Downstream": "///showcases.backfired.officials",
+          "Beat_Description": "BH - Chater confluence to Tinwell"
+        },
+        {
+          "Beat_Name": "Stamford",
+          "Beat_ID": "U",
+          "River": "Welland",
+          "Position": "27",
+          "Beat_Upstream": "///cards.expand.brand",
+          "Beat_Downstream": "///petty.conclude.generally",
+          "Beat_Description": "BH - downstream of Stamford to Uffington"
+        },
+        {
+          "Beat_Name": "GAA",
+          "Beat_ID": "V",
+          "River": "Witham",
+          "Position": "15",
+          "Beat_Upstream": "///sadly.functions.majority",
+          "Beat_Downstream": "///geese.collide.spells",
+          "Beat_Description": "All GAA Waters (W3w not accurate!!)"
         }
       ]
     },
