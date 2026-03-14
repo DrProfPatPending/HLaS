@@ -386,8 +386,8 @@
                 <a
                   v-if="beat.Beat_Upstream_W3W"
                   :href="beat.Beat_Upstream_W3W.url"
-                  target="_blank"
                   rel="noopener noreferrer"
+                  @click.prevent="openReusableMapWindow(beat.Beat_Upstream_W3W.url)"
                 >
                   {{ beat.Beat_Upstream_W3W.display }}
                 </a>
@@ -397,8 +397,8 @@
                 <a
                   v-if="beat.Beat_Downstream_W3W"
                   :href="beat.Beat_Downstream_W3W.url"
-                  target="_blank"
                   rel="noopener noreferrer"
+                  @click.prevent="openReusableMapWindow(beat.Beat_Downstream_W3W.url)"
                 >
                   {{ beat.Beat_Downstream_W3W.display }}
                 </a>
@@ -434,8 +434,8 @@
                   <a
                     v-if="selectedFishingBeat.Beat_Upstream_W3W"
                     :href="selectedFishingBeat.Beat_Upstream_W3W.url"
-                    target="_blank"
                     rel="noopener noreferrer"
+                    @click.prevent="openReusableMapWindow(selectedFishingBeat.Beat_Upstream_W3W.url)"
                   >
                     {{ selectedFishingBeat.Beat_Upstream_W3W.display }}
                   </a>
@@ -448,8 +448,8 @@
                   <a
                     v-if="selectedFishingBeat.Beat_Downstream_W3W"
                     :href="selectedFishingBeat.Beat_Downstream_W3W.url"
-                    target="_blank"
                     rel="noopener noreferrer"
+                    @click.prevent="openReusableMapWindow(selectedFishingBeat.Beat_Downstream_W3W.url)"
                   >
                     {{ selectedFishingBeat.Beat_Downstream_W3W.display }}
                   </a>
@@ -870,6 +870,24 @@ export default {
     this.destroyFishingBeatMap();
   },
   methods: {
+    openReusableMapWindow(url) {
+      if (!url) {
+        return;
+      }
+
+      const popupWindow = window.open(
+        url,
+        'what3words-map-window',
+        'popup=yes,width=980,height=760,resizable=yes,scrollbars=yes'
+      );
+
+      if (popupWindow) {
+        popupWindow.focus();
+        return;
+      }
+
+      window.location.href = url;
+    },
     parseCoordinateValue(rawValue) {
       const numericValue = Number.parseFloat(String(rawValue || '').trim());
       return Number.isFinite(numericValue) ? numericValue : null;
