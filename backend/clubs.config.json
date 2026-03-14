@@ -39,10 +39,10 @@
           "Beat_Downstream": "///rectangular.leaps.nearing",
           "Beat_Description": "Downstream of Bridge",
           "Detailed_Description": "",
-          "Beat_Upstream_Latitude": "",
-          "Beat_Upstream_Longitude": "",
-          "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": "",
+          "Beat_Upstream_Latitude": "52.86385",
+          "Beat_Upstream_Longitude": "-0.62030",
+          "Beat_Downstream_Latitude": "52.87015",
+          "Beat_Downstream_Longitude": "-0.62194",
           "Parking_Locations": [
             {
               "Name": "Great Ponton Bridge, Dallygate Lane",
