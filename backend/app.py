@@ -24,6 +24,9 @@ import time
 import uuid
 import re
 import shutil
+from urllib.parse import quote
+from urllib.request import urlopen
+from urllib.error import HTTPError, URLError
 
 app = Flask(__name__)
 CORS(app)
@@ -103,6 +106,10 @@ def normalize_beats(beats_source):
             'Beat_Downstream': normalize_what3words_value(beat_downstream),
             'Beat_Description': str(beat.get('Beat_Description', '')).strip(),
             'Detailed_Description': str(beat.get('Detailed_Description', '')).strip(),
+            'Beat_Upstream_Latitude': str(beat.get('Beat_Upstream_Latitude', '')).strip(),
+            'Beat_Upstream_Longitude': str(beat.get('Beat_Upstream_Longitude', '')).strip(),
+            'Beat_Downstream_Latitude': str(beat.get('Beat_Downstream_Latitude', '')).strip(),
+            'Beat_Downstream_Longitude': str(beat.get('Beat_Downstream_Longitude', '')).strip(),
         })
 
     return normalized
@@ -123,6 +130,23 @@ def normalize_what3words_value(raw_value):
         return value
 
     return f"///{'.'.join(word.lower() for word in words)}"
+
+
+def normalize_what3words_words(raw_value):
+    value = str(raw_value or '').strip()
+    if not value:
+        return ''
+
+    without_slashes = re.sub(r'^/+', '', value).strip().lower()
+    words = [word.strip() for word in without_slashes.split('.')]
+
+    if len(words) != 3 or any(not word for word in words):
+        return ''
+
+    if not all(re.fullmatch(r'[a-z]+', word) for word in words):
+        return ''
+
+    return '.'.join(words)
 
 
 def load_clubs_config():
@@ -379,6 +403,45 @@ def log_request(response):
 @app.route('/clubs', methods=['GET'])
 def get_clubs():
     return jsonify({'clubs': load_clubs_config()})
+
+
+@app.route('/w3w/coordinates', methods=['GET'])
+def w3w_coordinates():
+    words_param = request.args.get('words', '')
+    words = normalize_what3words_words(words_param)
+    if not words:
+        return jsonify({'error': 'Invalid what3words address'}), 400
+
+    api_key = os.getenv('WHAT3WORDS_API_KEY', '').strip()
+    if not api_key:
+        return jsonify({'error': 'WHAT3WORDS_API_KEY is not configured'}), 503
+
+    lookup_url = (
+        'https://api.what3words.com/v3/convert-to-coordinates'
+        f'?words={quote(words)}&key={quote(api_key)}'
+    )
+
+    try:
+        with urlopen(lookup_url, timeout=8) as response:
+            payload = json.loads(response.read().decode('utf-8'))
+    except HTTPError as exc:
+        try:
+            payload = json.loads(exc.read().decode('utf-8'))
+        except Exception:
+            payload = {'error': str(exc)}
+        return jsonify({'error': payload.get('error', 'Failed to resolve what3words')}), 502
+    except URLError:
+        return jsonify({'error': 'Unable to reach what3words service'}), 502
+    except Exception:
+        return jsonify({'error': 'Failed to resolve what3words'}), 502
+
+    coordinates = payload.get('coordinates', {}) if isinstance(payload, dict) else {}
+    lat = coordinates.get('lat')
+    lng = coordinates.get('lng')
+    if lat is None or lng is None:
+        return jsonify({'error': 'No coordinates returned for what3words'}), 404
+
+    return jsonify({'words': words, 'lat': lat, 'lng': lng})
 
 
 @app.route('/member_photo/<club>/<path:filename>', methods=['GET'])

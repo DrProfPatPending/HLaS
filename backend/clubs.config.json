@@ -16,7 +16,11 @@
           "Beat_Upstream": "///coffee.pastels.excellent",
           "Beat_Downstream": "///hunk.calms.hardens",
           "Beat_Description": "Upstream of Bridge",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Ponton B",
@@ -26,7 +30,11 @@
           "Beat_Upstream": "///hunk.calms.hardens",
           "Beat_Downstream": "///rectangular.leaps.nearing",
           "Beat_Description": "Downstream of Bridge",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Syston - A607 Bridge",
@@ -36,7 +44,11 @@
           "Beat_Upstream": "///commented.seemingly.frame",
           "Beat_Downstream": "///feeds.rebounds.seducing",
           "Beat_Description": "Downstream of A607 bridge",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Syston - Old Weir",
@@ -46,7 +58,11 @@
           "Beat_Upstream": "///harmonica.witless.havens",
           "Beat_Downstream": "///pills.sample.motivator",
           "Beat_Description": "Downstream to Syston Old Weir",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Beet Pad",
@@ -56,7 +72,11 @@
           "Beat_Upstream": "///pills.sample.motivator",
           "Beat_Downstream": "///theory.staining.shuffle",
           "Beat_Description": "Syston Old Weir to Beet Pad",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "White Bridge",
@@ -66,7 +86,11 @@
           "Beat_Upstream": "///drive.umpires.lotteries",
           "Beat_Downstream": "///iterative.replenish.dates",
           "Beat_Description": "Beet Pad to White Bridge",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Elnor's Weir",
@@ -76,7 +100,11 @@
           "Beat_Upstream": "///slant.sunset.bogus",
           "Beat_Downstream": "///campers.settle.dizziness",
           "Beat_Description": "White Bridge to Elnor's Weir",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Girder Bridge",
@@ -86,7 +114,11 @@
           "Beat_Upstream": "///campers.settle.dizziness",
           "Beat_Downstream": "///ticket.island.degrading",
           "Beat_Description": "Elnor's Weir to Girder Bridge",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Barkston",
@@ -96,7 +128,11 @@
           "Beat_Upstream": "///waistcoat.fetches.residual",
           "Beat_Downstream": "///stems.slam.dive",
           "Beat_Description": "Girder Bridge to Railway viaduct",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "I Beat eXtension",
@@ -106,7 +142,11 @@
           "Beat_Upstream": "///sensibly.inspector.denim",
           "Beat_Downstream": "///merely.behalf.extremely",
           "Beat_Description": "Downstream of railway viaduct",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Colsterworth",
@@ -116,7 +156,11 @@
           "Beat_Upstream": "///endlessly.obviously.ambitions",
           "Beat_Downstream": "///brighter.farms.recruiter",
           "Beat_Description": "Upper Witham nr Colsterworth",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Belton Park",
@@ -126,7 +170,11 @@
           "Beat_Upstream": "///flicked.tallest.quietest",
           "Beat_Downstream": "///wider.iterative.immunity",
           "Beat_Description": "NT Belton House - centre section 'no fishing'",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Chater",
@@ -136,7 +184,11 @@
           "Beat_Upstream": "///seasonal.angers.sprinkler",
           "Beat_Downstream": "///beginning.entitle.bluff",
           "Beat_Description": "R. Chater at Ketton",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Welland (orig)",
@@ -146,7 +198,11 @@
           "Beat_Upstream": "///duplicity.trek.robe",
           "Beat_Downstream": "///march.noodle.equity",
           "Beat_Description": "R. Welland on 'Monty's Farm' - original beat",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Washdike Lane",
@@ -156,7 +212,11 @@
           "Beat_Upstream": "///browsers.ranged.topped",
           "Beat_Downstream": "///coffee.pastels.excellent",
           "Beat_Description": "Upstream of A beat",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Collyweston Bridge",
@@ -166,7 +226,11 @@
           "Beat_Upstream": "///worker.paddocks.stunts",
           "Beat_Downstream": "///relieves.refrained.manuals",
           "Beat_Description": "Welland upstream of Collyweston Bridge in Geeston",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Papermill",
@@ -176,7 +240,11 @@
           "Beat_Upstream": "///bland.gladiators.agent",
           "Beat_Downstream": "///quick.take.zealous",
           "Beat_Description": "Dble bank to ///strain.pocket.carbon",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Wakerley",
@@ -186,7 +254,11 @@
           "Beat_Upstream": "///proved.digitally.stag",
           "Beat_Downstream": "///talkers.belly.revamped",
           "Beat_Description": "Burghley House - Barrowden to Tixover",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Duddington",
@@ -196,7 +268,11 @@
           "Beat_Upstream": "///headless.culling.defeated",
           "Beat_Downstream": "///astounded.flagged.writers",
           "Beat_Description": "BH - Duddington to Collyweston Bridge",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Ketton",
@@ -206,7 +282,11 @@
           "Beat_Upstream": "///astounded.flagged.writers",
           "Beat_Downstream": "///flopping.buzzing.ironclad",
           "Beat_Description": "BH - Collyweston Bridge to Chater",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Tinwell",
@@ -216,7 +296,11 @@
           "Beat_Upstream": "///flopping.buzzing.ironclad",
           "Beat_Downstream": "///showcases.backfired.officials",
           "Beat_Description": "BH - Chater confluence to Tinwell",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Stamford",
@@ -226,7 +310,11 @@
           "Beat_Upstream": "///cards.expand.brand",
           "Beat_Downstream": "///petty.conclude.generally",
           "Beat_Description": "BH - downstream of Stamford to Uffington",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "GAA",
@@ -236,7 +324,11 @@
           "Beat_Upstream": "///sadly.functions.majority",
           "Beat_Downstream": "///geese.collide.spells",
           "Beat_Description": "All GAA Waters (W3w not accurate!!)",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         }
       ]
     },
@@ -256,7 +348,11 @@
           "Beat_Upstream": "///tablets.loudly.sues",
           "Beat_Downstream": "///stuck.fits.subtitle",
           "Beat_Description": "Classic chalkstream style glide with weed beds and dry-fly opportunities.",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "B Beat",
@@ -266,7 +362,11 @@
           "Beat_Upstream": "///fells.burn.bulbs",
           "Beat_Downstream": "///spindles.moped.mentioned",
           "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water.",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "C Beat",
@@ -276,7 +376,11 @@
           "Beat_Upstream": "///sweetly.chainsaw.fools",
           "Beat_Downstream": "///upper.travels.professes",
           "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water.",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         }
       ]
     },
@@ -296,7 +400,11 @@
           "Beat_Upstream": "///ilam.rock.pool",
           "Beat_Downstream": "///dovedale.bridge.river",
           "Beat_Description": "Fast pocket water with short glides and reliable summer evening rises.",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         },
         {
           "Beat_Name": "Dove Valley Lower Beat",
@@ -306,7 +414,11 @@
           "Beat_Upstream": "///dovedale.bridge.river",
           "Beat_Downstream": "///thorpe.weir.river",
           "Beat_Description": "Longer pools and broken runs with strong grayling potential in colder months.",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         }
       ]
     },
@@ -326,7 +438,11 @@
           "Beat_Upstream": "///test.upstream.marker",
           "Beat_Downstream": "///test.downstream.marker",
           "Beat_Description": "Sample beat used for validating fishing beat configuration and display.",
-          "Detailed_Description": ""
+          "Detailed_Description": "",
+          "Beat_Upstream_Latitude": "",
+          "Beat_Upstream_Longitude": "",
+          "Beat_Downstream_Latitude": "",
+          "Beat_Downstream_Longitude": ""
         }
       ]
     }

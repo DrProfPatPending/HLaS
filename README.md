@@ -338,13 +338,21 @@ Required CSV columns:
 
 Optional CSV columns:
 - `Detailed_Description`
+- `Beat_Upstream_Latitude`
+- `Beat_Upstream_Longitude`
+- `Beat_Downstream_Latitude`
+- `Beat_Downstream_Longitude`
+
+Notes:
+- If `WHAT3WORDS_API_KEY` is configured for the backend, the Fishing Beats inset map can resolve What3Words locations directly.
+- If What3Words lookup is unavailable, the map uses the optional coordinate fallback fields above.
 
 Example CSV (`<CLUB>_beats.csv`):
 
 ```csv
-Beat_ID,River,Beat_Name,Position,Beat_Upstream,Beat_Downstream,Beat_Description,Detailed_Description
-A,Witham,Ponton A,3,///coffee.pastels.excellent,///hunk.calms.hardens,Upstream of Bridge,"Access from the farm gate opposite the bridge; fish upstream in low water."
-B,Witham,Ponton B,4,///hunk.calms.hardens,///rectangular.leaps.nearing,Downstream of Bridge,"Best in evening hatch windows; watch footing near the cut bank."
+Beat_ID,River,Beat_Name,Position,Beat_Upstream,Beat_Downstream,Beat_Upstream_Latitude,Beat_Upstream_Longitude,Beat_Downstream_Latitude,Beat_Downstream_Longitude,Beat_Description,Detailed_Description
+A,Witham,Ponton A,3,///coffee.pastels.excellent,///hunk.calms.hardens,52.9089,-0.5621,52.9065,-0.5592,Upstream of Bridge,"Access from the farm gate opposite the bridge; fish upstream in low water."
+B,Witham,Ponton B,4,///hunk.calms.hardens,///rectangular.leaps.nearing,52.9065,-0.5592,52.9037,-0.5534,Downstream of Bridge,"Best in evening hatch windows; watch footing near the cut bank."
 ```
 
 Available club-specific scripts:

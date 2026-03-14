@@ -464,8 +464,30 @@
                 <th>Detailed Description</th>
                 <td>{{ selectedFishingBeat.Detailed_Description || '-' }}</td>
               </tr>
+              <tr>
+                <th>Upstream Co-ords</th>
+                <td>
+                  <span v-if="selectedFishingBeat.Beat_Upstream_Latitude && selectedFishingBeat.Beat_Upstream_Longitude">
+                    {{ selectedFishingBeat.Beat_Upstream_Latitude }}, {{ selectedFishingBeat.Beat_Upstream_Longitude }}
+                  </span>
+                  <span v-else>-</span>
+                </td>
+              </tr>
+              <tr>
+                <th>Downstream Co-ords</th>
+                <td>
+                  <span v-if="selectedFishingBeat.Beat_Downstream_Latitude && selectedFishingBeat.Beat_Downstream_Longitude">
+                    {{ selectedFishingBeat.Beat_Downstream_Latitude }}, {{ selectedFishingBeat.Beat_Downstream_Longitude }}
+                  </span>
+                  <span v-else>-</span>
+                </td>
+              </tr>
             </tbody>
           </table>
+          <div class="fishing-beat-map-wrap">
+            <div ref="fishingBeatMap" class="fishing-beat-map"></div>
+            <div v-if="fishingBeatMapStatus" class="fishing-beat-map-status">{{ fishingBeatMapStatus }}</div>
+          </div>
         </div>
       </div>
       <p v-else>No fishing beats are configured for this club.</p>
@@ -564,6 +586,8 @@
 
 <script>
 import axios from 'axios';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const API_BASE_URL = process.env.VUE_APP_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:5050`;
 
@@ -609,6 +633,10 @@ export default {
       newsletterPrepareMessage: '',
       newsletterPrepareError: '',
       selectedFishingBeatKey: '',
+      fishingBeatMapInstance: null,
+      fishingBeatMapLayers: [],
+      fishingBeatMapStatus: '',
+      fishingBeatMapRequestId: 0,
       newsletterColumnFilters: {
         ID: '',
         Number: '',
@@ -666,6 +694,10 @@ export default {
           Beat_Downstream: beatDownstream,
           Beat_Upstream_W3W: this.parseWhat3Words(beatUpstream),
           Beat_Downstream_W3W: this.parseWhat3Words(beatDownstream),
+          Beat_Upstream_Latitude: beat && beat.Beat_Upstream_Latitude ? beat.Beat_Upstream_Latitude : '',
+          Beat_Upstream_Longitude: beat && beat.Beat_Upstream_Longitude ? beat.Beat_Upstream_Longitude : '',
+          Beat_Downstream_Latitude: beat && beat.Beat_Downstream_Latitude ? beat.Beat_Downstream_Latitude : '',
+          Beat_Downstream_Longitude: beat && beat.Beat_Downstream_Longitude ? beat.Beat_Downstream_Longitude : '',
           Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
           Detailed_Description: beat && beat.Detailed_Description ? beat.Detailed_Description : '',
         };
@@ -787,6 +819,18 @@ export default {
       return `Member ${this.editMemberIndex + 1} of ${this.members.length}`;
     }
   },
+  watch: {
+    selectedFishingBeat() {
+      if (this.activeSection === 'fishing-beats') {
+        this.refreshFishingBeatMap();
+      }
+    },
+    activeSection(newSection) {
+      if (newSection === 'fishing-beats') {
+        this.refreshFishingBeatMap();
+      }
+    },
+  },
   created() {
     this.loadClubs();
     if (this.loggedIn) {
@@ -800,8 +844,159 @@ export default {
     if (this.newsletterFilterDebounceTimer) {
       clearTimeout(this.newsletterFilterDebounceTimer);
     }
+    this.destroyFishingBeatMap();
   },
   methods: {
+    parseCoordinateValue(rawValue) {
+      const numericValue = Number.parseFloat(String(rawValue || '').trim());
+      return Number.isFinite(numericValue) ? numericValue : null;
+    },
+    async resolveBeatPointCoordinates(wordsValue, latitudeValue, longitudeValue) {
+      const latitude = this.parseCoordinateValue(latitudeValue);
+      const longitude = this.parseCoordinateValue(longitudeValue);
+
+      if (latitude !== null && longitude !== null) {
+        return { lat: latitude, lng: longitude, source: 'coordinates' };
+      }
+
+      const parsedW3W = this.parseWhat3Words(wordsValue);
+      if (!parsedW3W) {
+        return null;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/w3w/coordinates`, {
+          params: {
+            words: parsedW3W.display,
+          },
+        });
+        const responseData = response && response.data ? response.data : {};
+        const resolvedLat = this.parseCoordinateValue(responseData.lat);
+        const resolvedLng = this.parseCoordinateValue(responseData.lng);
+        if (resolvedLat !== null && resolvedLng !== null) {
+          return { lat: resolvedLat, lng: resolvedLng, source: 'w3w' };
+        }
+      } catch {
+      }
+
+      return null;
+    },
+    clearFishingBeatMapLayers() {
+      if (!this.fishingBeatMapInstance || !Array.isArray(this.fishingBeatMapLayers)) {
+        return;
+      }
+      this.fishingBeatMapLayers.forEach(layer => {
+        if (layer && this.fishingBeatMapInstance.hasLayer(layer)) {
+          this.fishingBeatMapInstance.removeLayer(layer);
+        }
+      });
+      this.fishingBeatMapLayers = [];
+    },
+    ensureFishingBeatMap() {
+      if (this.fishingBeatMapInstance) {
+        return;
+      }
+
+      const mapElement = this.$refs.fishingBeatMap;
+      if (!mapElement) {
+        return;
+      }
+
+      this.fishingBeatMapInstance = L.map(mapElement, {
+        zoomControl: true,
+        attributionControl: true,
+      }).setView([54.5, -2.5], 6);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(this.fishingBeatMapInstance);
+    },
+    async refreshFishingBeatMap() {
+      if (this.activeSection !== 'fishing-beats') {
+        return;
+      }
+
+      const selectedBeat = this.selectedFishingBeat;
+      if (!selectedBeat) {
+        this.fishingBeatMapStatus = 'No beat selected.';
+        this.clearFishingBeatMapLayers();
+        return;
+      }
+
+      const requestId = ++this.fishingBeatMapRequestId;
+      this.fishingBeatMapStatus = 'Loading map...';
+
+      await this.$nextTick();
+      this.ensureFishingBeatMap();
+
+      if (!this.fishingBeatMapInstance) {
+        this.fishingBeatMapStatus = 'Map is unavailable.';
+        return;
+      }
+
+      const upstreamCoordinates = await this.resolveBeatPointCoordinates(
+        selectedBeat.Beat_Upstream,
+        selectedBeat.Beat_Upstream_Latitude,
+        selectedBeat.Beat_Upstream_Longitude,
+      );
+      const downstreamCoordinates = await this.resolveBeatPointCoordinates(
+        selectedBeat.Beat_Downstream,
+        selectedBeat.Beat_Downstream_Latitude,
+        selectedBeat.Beat_Downstream_Longitude,
+      );
+
+      if (requestId !== this.fishingBeatMapRequestId) {
+        return;
+      }
+
+      this.clearFishingBeatMapLayers();
+
+      if (!upstreamCoordinates || !downstreamCoordinates) {
+        this.fishingBeatMapStatus = 'Map requires valid W3W lookup support or fallback coordinates for both upstream and downstream limits.';
+        return;
+      }
+
+      const upstreamLatLng = L.latLng(upstreamCoordinates.lat, upstreamCoordinates.lng);
+      const downstreamLatLng = L.latLng(downstreamCoordinates.lat, downstreamCoordinates.lng);
+
+      const upstreamMarker = L.circleMarker(upstreamLatLng, {
+        radius: 7,
+        color: '#1f77b4',
+        fillColor: '#1f77b4',
+        fillOpacity: 0.8,
+      }).bindPopup('Upstream limit');
+
+      const downstreamMarker = L.circleMarker(downstreamLatLng, {
+        radius: 7,
+        color: '#d62728',
+        fillColor: '#d62728',
+        fillOpacity: 0.8,
+      }).bindPopup('Downstream limit');
+
+      const boundaryLine = L.polyline([upstreamLatLng, downstreamLatLng], {
+        color: '#2f2f2f',
+        weight: 3,
+      });
+
+      upstreamMarker.addTo(this.fishingBeatMapInstance);
+      downstreamMarker.addTo(this.fishingBeatMapInstance);
+      boundaryLine.addTo(this.fishingBeatMapInstance);
+      this.fishingBeatMapLayers = [upstreamMarker, downstreamMarker, boundaryLine];
+
+      this.fishingBeatMapInstance.invalidateSize();
+      const bounds = L.latLngBounds([upstreamLatLng, downstreamLatLng]);
+      this.fishingBeatMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
+      this.fishingBeatMapStatus = 'Showing upstream and downstream limits.';
+    },
+    destroyFishingBeatMap() {
+      this.clearFishingBeatMapLayers();
+      if (this.fishingBeatMapInstance) {
+        this.fishingBeatMapInstance.remove();
+        this.fishingBeatMapInstance = null;
+      }
+      this.fishingBeatMapStatus = '';
+    },
     beatKey(beat) {
       const beatId = beat && beat.Beat_ID ? beat.Beat_ID : '';
       const beatName = beat && beat.Beat_Name ? beat.Beat_Name : '';
@@ -809,6 +1004,7 @@ export default {
     },
     selectFishingBeat(beat) {
       this.selectedFishingBeatKey = this.beatKey(beat);
+      this.refreshFishingBeatMap();
     },
     parseWhat3Words(rawValue) {
       if (typeof rawValue !== 'string') {
@@ -1102,6 +1298,7 @@ export default {
       if (sectionKey === 'fishing-beats') {
         this.activeSection = 'fishing-beats';
         this.selectedFishingBeatKey = this.clubBeats.length ? this.beatKey(this.clubBeats[0]) : '';
+        this.refreshFishingBeatMap();
         return;
       }
       this.activeSection = sectionKey;
@@ -1392,6 +1589,20 @@ export default {
 #app .fishing-beat-detail-table th {
   width: 130px;
   background: #f0f0f0;
+}
+#app .fishing-beat-map-wrap {
+  margin-top: 10px;
+}
+#app .fishing-beat-map {
+  width: 100%;
+  height: 230px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+#app .fishing-beat-map-status {
+  margin-top: 6px;
+  font-size: 9pt;
+  color: #555;
 }
 #app .beat-name-link {
   display: inline-block;

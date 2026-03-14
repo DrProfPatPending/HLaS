@@ -46,6 +46,10 @@ def normalize_beat_row(row: Dict[str, str]) -> Dict[str, str]:
         'Position': str(row.get('Position', '')).strip(),
         'Beat_Upstream': normalize_what3words_value(beat_upstream),
         'Beat_Downstream': normalize_what3words_value(beat_downstream),
+        'Beat_Upstream_Latitude': str(row.get('Beat_Upstream_Latitude', '')).strip(),
+        'Beat_Upstream_Longitude': str(row.get('Beat_Upstream_Longitude', '')).strip(),
+        'Beat_Downstream_Latitude': str(row.get('Beat_Downstream_Latitude', '')).strip(),
+        'Beat_Downstream_Longitude': str(row.get('Beat_Downstream_Longitude', '')).strip(),
         'Beat_Description': str(row.get('Beat_Description', '')).strip(),
         'Detailed_Description': str(row.get('Detailed_Description', '')).strip(),
     }
