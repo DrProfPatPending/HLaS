@@ -62,7 +62,10 @@
       </table>
     </div>
     <div v-else-if="activeSection === 'membership-admin'">
-    <h1>{{ selectedClub }} Members</h1>
+    <div class="membership-admin-header">
+      <button type="button" @click="activeSection = 'home'">Back to Home</button>
+      <h1>{{ selectedClub }} Members</h1>
+    </div>
     <table class="member-table">
       <thead>
         <tr>
@@ -1584,9 +1587,6 @@ export default {
 #app .home-nav-button {
   width: 220px;
   padding: 12px 10px;
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 10pt;
-  cursor: pointer;
 }
 #app .section-placeholder {
   max-width: 900px;
@@ -1809,6 +1809,14 @@ export default {
   display: flex;
   gap: 8px;
 }
+#app .membership-admin-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#app .membership-admin-header h1 {
+  margin: 0;
+}
 #app .membership-details-header {
   display: flex;
   align-items: center;
@@ -1886,14 +1894,10 @@ export default {
 }
 #app .page-numbers button {
   margin: 0 4px;
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  background-color: #fff;
-  cursor: pointer;
-  border-radius: 4px;
+  min-width: 36px;
 }
 #app .page-numbers button:hover {
-  background-color: #f0f0f0;
+  background-color: #0069d9;
 }
 #app .page-numbers button.active {
   background-color: #007bff;
@@ -1962,16 +1966,6 @@ export default {
 }
 #app .login-container button {
   width: 100%;
-  padding: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-}
-#app .login-container button:hover {
-  background-color: #0056b3;
 }
 #app .logo-table {
   position: fixed;
@@ -2033,14 +2027,30 @@ export default {
   font-size: 14pt;
   font-family: Helvetica, Arial, sans-serif;
 }
-form {
+#app form {
   margin-bottom: 20px;
 }
-input {
+#app input {
   margin-right: 10px;
 }
-button {
+#app button {
   margin-right: 5px;
+  padding: 8px 12px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  color: #fff;
+  background-color: #007bff;
+  border: 1px solid #0056b3;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#app button:hover:not(:disabled) {
+  background-color: #0069d9;
+  border-color: #0056b3;
+}
+#app button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 #app .member-link {
   color: #007bff;
