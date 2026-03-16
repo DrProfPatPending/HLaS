@@ -257,7 +257,31 @@
     </div>
     <div v-else-if="activeSection === 'newsletters'" class="newsletters-container">
       <h2>Newsletters</h2>
-      <p>Filter members, build a selected list, and prepare recipients for bulk email.</p>
+      <p>Filter members, build a selected list, choose a template, and send club newsletters.</p>
+      <div class="newsletter-actions newsletter-toolbar">
+        <label class="newsletter-template-label" for="newsletter-template-select">Template</label>
+        <select
+          id="newsletter-template-select"
+          v-model="selectedNewsletterTemplateId"
+          class="newsletter-template-select"
+        >
+          <option value="">Select template</option>
+          <option
+            v-for="template in newsletterTemplates"
+            :key="`newsletter-template-${template.id}`"
+            :value="template.id"
+          >
+            {{ template.name }}
+          </option>
+        </select>
+        <button type="button" :disabled="newsletterFilterSelectBusy" @click="selectAllNewsletterFiltered">
+          {{ newsletterFilterSelectBusy ? 'Selecting…' : 'Select All Filtered' }}
+        </button>
+        <button type="button" :disabled="!newsletterSelectedMemberIds.length" @click="clearNewsletterSelection">
+          Clear Selection
+        </button>
+        <span>Filtered: {{ newsletterTotalMembers }}</span>
+      </div>
       <table class="newsletter-table">
         <thead>
           <tr>
@@ -306,7 +330,7 @@
             <td>
               <input
                 type="checkbox"
-                :value="memberIdentity(member)"
+                :value="String(memberIdentity(member))"
                 v-model="newsletterSelectedMemberIds"
               />
             </td>
@@ -348,6 +372,13 @@
       <div class="newsletter-actions">
         <button type="button" :disabled="!newsletterSelectedMemberIds.length" @click="prepareNewsletterRecipients">
           Prepare Selected for Email
+        </button>
+        <button
+          type="button"
+          :disabled="!selectedNewsletterTemplateId || newsletterSendBusy"
+          @click="sendNewsletterToAllMembers"
+        >
+          {{ newsletterSendBusy ? 'Sending…' : 'Send Newsletter to All' }}
         </button>
         <span>Selected: {{ newsletterSelectedMemberIds.length }}</span>
       </div>
@@ -652,6 +683,10 @@ export default {
       newsletterCurrentPage: 1,
       newsletterPageSize: 10,
       newsletterSelectedMemberIds: [],
+      newsletterTemplates: [],
+      selectedNewsletterTemplateId: '',
+      newsletterFilterSelectBusy: false,
+      newsletterSendBusy: false,
       newsletterPrepareMessage: '',
       newsletterPrepareError: '',
       selectedFishingBeatKey: '',
@@ -789,7 +824,8 @@ export default {
       if (!this.newsletterMembers.length) {
         return false;
       }
-      return this.newsletterMembers.every(member => this.newsletterSelectedMemberIds.includes(this.memberIdentity(member)));
+      const selectedIds = new Set(this.newsletterSelectedMemberIds.map(memberId => String(memberId)));
+      return this.newsletterMembers.every(member => selectedIds.has(String(this.memberIdentity(member))));
     },
     visiblePages() {
       const current = this.currentPage;
@@ -1249,19 +1285,7 @@ export default {
     },
     fetchNewsletterMembers() {
       const offset = (this.newsletterCurrentPage - 1) * this.newsletterPageSize;
-      const activeFilters = Object.fromEntries(
-        Object.entries(this.newsletterColumnFilters)
-          .filter(([, value]) => value && value.trim() !== '')
-          .map(([key, value]) => {
-            const trimmed = value.trim();
-            if (trimmed === '[BLANK]') {
-              return [key, '[BLANK]'];
-            }
-            const hasWildcard = trimmed.includes('*') || trimmed.includes('?');
-            const filterValue = hasWildcard ? trimmed : `*${trimmed}*`;
-            return [key, filterValue];
-          })
-      );
+      const activeFilters = this.buildNewsletterActiveFilters();
 
       axios.get(`${API_BASE_URL}/members`, {
         params: {
@@ -1275,11 +1299,46 @@ export default {
         this.newsletterTotalMembers = res.data.total || 0;
       });
     },
+    fetchNewsletterTemplates() {
+      axios.get(`${API_BASE_URL}/newsletter/templates`)
+        .then(res => {
+          const templates = Array.isArray(res.data && res.data.templates) ? res.data.templates : [];
+          this.newsletterTemplates = templates
+            .filter(template => template && template.id)
+            .map(template => ({
+              id: String(template.id),
+              name: template.name || String(template.id),
+            }));
+
+          if (!this.selectedNewsletterTemplateId && this.newsletterTemplates.length) {
+            this.selectedNewsletterTemplateId = this.newsletterTemplates[0].id;
+          }
+        })
+        .catch(() => {
+          this.newsletterTemplates = [];
+        });
+    },
+    buildNewsletterActiveFilters() {
+      return Object.fromEntries(
+        Object.entries(this.newsletterColumnFilters)
+          .filter(([, value]) => value && value.trim() !== '')
+          .map(([key, value]) => {
+            const trimmed = value.trim();
+            if (trimmed === '[BLANK]') {
+              return [key, '[BLANK]'];
+            }
+            const hasWildcard = trimmed.includes('*') || trimmed.includes('?');
+            const filterValue = hasWildcard ? trimmed : `*${trimmed}*`;
+            return [key, filterValue];
+          })
+      );
+    },
     toggleSelectAllNewsletterOnPage(event) {
       const isChecked = event.target.checked;
       const pageIds = this.newsletterMembers
         .map(member => this.memberIdentity(member))
-        .filter(memberId => memberId !== null && memberId !== undefined);
+        .filter(memberId => memberId !== null && memberId !== undefined)
+        .map(memberId => String(memberId));
 
       if (isChecked) {
         const merged = new Set(this.newsletterSelectedMemberIds);
@@ -1289,6 +1348,40 @@ export default {
         const pageIdSet = new Set(pageIds);
         this.newsletterSelectedMemberIds = this.newsletterSelectedMemberIds.filter(memberId => !pageIdSet.has(memberId));
       }
+    },
+    selectAllNewsletterFiltered() {
+      this.newsletterPrepareMessage = '';
+      this.newsletterPrepareError = '';
+      this.newsletterFilterSelectBusy = true;
+
+      axios.post(`${API_BASE_URL}/newsletter/filtered_member_ids`, {
+        club: this.loggedInClub,
+        filters: this.newsletterColumnFilters,
+      })
+        .then(res => {
+          const filteredIds = Array.isArray(res.data && res.data.memberIds)
+            ? res.data.memberIds.map(memberId => String(memberId)).filter(Boolean)
+            : [];
+
+          const merged = new Set(this.newsletterSelectedMemberIds);
+          filteredIds.forEach(memberId => merged.add(memberId));
+          this.newsletterSelectedMemberIds = Array.from(merged);
+
+          this.newsletterPrepareMessage = `Selected ${filteredIds.length} members from current filtered results.`;
+        })
+        .catch(err => {
+          this.newsletterPrepareError = err.response && err.response.data && err.response.data.error
+            ? err.response.data.error
+            : 'Failed to select filtered members';
+        })
+        .finally(() => {
+          this.newsletterFilterSelectBusy = false;
+        });
+    },
+    clearNewsletterSelection() {
+      this.newsletterSelectedMemberIds = [];
+      this.newsletterPrepareMessage = '';
+      this.newsletterPrepareError = '';
     },
     prepareNewsletterRecipients() {
       this.newsletterPrepareMessage = '';
@@ -1305,6 +1398,35 @@ export default {
           this.newsletterPrepareError = err.response && err.response.data && err.response.data.error
             ? err.response.data.error
             : 'Failed to prepare newsletter recipients';
+        });
+    },
+    sendNewsletterToAllMembers() {
+      this.newsletterPrepareMessage = '';
+      this.newsletterPrepareError = '';
+
+      if (!this.selectedNewsletterTemplateId) {
+        this.newsletterPrepareError = 'Please select a newsletter template.';
+        return;
+      }
+
+      this.newsletterSendBusy = true;
+
+      axios.post(`${API_BASE_URL}/newsletter/send`, {
+        club: this.loggedInClub,
+        templateId: this.selectedNewsletterTemplateId,
+        scope: 'all_club',
+      })
+        .then(res => {
+          const summary = res.data || {};
+          this.newsletterPrepareMessage = `Sent ${summary.sentCount || 0} emails to ${summary.emailableCount || 0} emailable members in ${this.loggedInClub}.`;
+        })
+        .catch(err => {
+          this.newsletterPrepareError = err.response && err.response.data && err.response.data.error
+            ? err.response.data.error
+            : 'Failed to send newsletter to all members';
+        })
+        .finally(() => {
+          this.newsletterSendBusy = false;
         });
     },
     nextNewsletterPage() {
@@ -1382,6 +1504,7 @@ export default {
         this.newsletterCurrentPage = 1;
         this.newsletterPrepareMessage = '';
         this.newsletterPrepareError = '';
+        this.fetchNewsletterTemplates();
         this.fetchNewsletterMembers();
         return;
       }
@@ -1453,6 +1576,10 @@ export default {
       this.newsletterTotalMembers = 0;
       this.newsletterCurrentPage = 1;
       this.newsletterSelectedMemberIds = [];
+      this.newsletterTemplates = [];
+      this.selectedNewsletterTemplateId = '';
+      this.newsletterFilterSelectBusy = false;
+      this.newsletterSendBusy = false;
       this.newsletterPrepareMessage = '';
       this.newsletterPrepareError = '';
       this.lookupNumber = '';
@@ -1628,8 +1755,24 @@ export default {
 #app .newsletter-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin: 10px 0;
+}
+#app .newsletter-toolbar {
+  margin-bottom: 12px;
+}
+#app .newsletter-template-label {
+  font-size: 10pt;
+}
+#app .newsletter-template-select {
+  min-width: 220px;
+  padding: 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
 }
 #app .newsletter-status {
   color: #1c6b2a;

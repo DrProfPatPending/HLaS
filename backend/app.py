@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
+from email.message import EmailMessage
+import smtplib
 from sqlalchemy import (
     create_engine,
     MetaData,
@@ -35,6 +37,20 @@ CORS(app)
 DB_DIR = os.path.dirname(__file__)
 APP_DATA_DIR = os.getenv('HLAS_DATA_DIR', DB_DIR)
 FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Licence_Exp', 'Resigned']
+NEWSLETTER_TEMPLATES = {
+    'club-update': {
+        'id': 'club-update',
+        'name': 'Club Update',
+        'subject': '{club} Newsletter Update',
+        'body': 'Hello {name},\n\nThis is your latest newsletter update from {club}.\n\nKind regards,\n{club} Committee',
+    },
+    'membership-reminder': {
+        'id': 'membership-reminder',
+        'name': 'Membership Reminder',
+        'subject': '{club} Membership Reminder',
+        'body': 'Hello {name},\n\nThis is a reminder from {club} regarding your membership.\n\nKind regards,\n{club} Committee',
+    },
+}
 SERVER_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'server.config.json')
 CLUBS_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'clubs.config.json')
 CLUB_LOGOS_DIR = os.path.join(APP_DATA_DIR, 'club_logos')
@@ -342,6 +358,54 @@ def wildcard_to_sql_like(value):
     escaped = escaped.replace('%', '\\%').replace('_', '\\_')
     escaped = escaped.replace('*', '%').replace('?', '_')
     return escaped
+
+
+def normalize_newsletter_filters(filters_source):
+    if not isinstance(filters_source, dict):
+        return {}
+
+    normalized = {}
+    for column_name in FILTERABLE_COLUMNS:
+        raw_filter = filters_source.get(column_name)
+        if raw_filter is None:
+            continue
+
+        filter_value = str(raw_filter).strip()
+        if not filter_value:
+            continue
+
+        if filter_value == '[BLANK]':
+            normalized[column_name] = '[BLANK]'
+            continue
+
+        has_wildcard = ('*' in filter_value) or ('?' in filter_value)
+        normalized[column_name] = filter_value if has_wildcard else f'*{filter_value}*'
+
+    return normalized
+
+
+def build_member_filters(members_table, normalized_filters):
+    filters = []
+    for column_name, filter_value in normalized_filters.items():
+        column = get_column(column_name, members_table)
+        if column is None:
+            continue
+
+        if filter_value == '[BLANK]':
+            filters.append(or_(column.is_(None), cast(column, String) == ''))
+        else:
+            filters.append(cast(column, String).ilike(wildcard_to_sql_like(filter_value), escape='\\'))
+
+    return filters
+
+
+def get_identifier_column(members_table):
+    id_column = get_column('id', members_table)
+    if id_column is None:
+        id_column = get_column('ID', members_table)
+    if id_column is None:
+        id_column = get_column('Number', members_table)
+    return id_column
 
 
 def initialize_database(club):
@@ -786,6 +850,219 @@ def prepare_newsletter_recipients():
         'missingEmailCount': missing_email_count,
         'emailWorkflowStatus': 'prepared_not_sent',
         'recipients': recipients,
+    })
+
+
+@app.route('/newsletter/templates', methods=['GET'])
+def get_newsletter_templates():
+    templates = [
+        {
+            'id': template['id'],
+            'name': template['name'],
+        }
+        for template in NEWSLETTER_TEMPLATES.values()
+    ]
+    return jsonify({'templates': templates})
+
+
+@app.route('/newsletter/filtered_member_ids', methods=['POST'])
+def get_newsletter_filtered_member_ids():
+    data = request.json or {}
+    club = data.get('club', 'GAAFFS')
+    filters_source = data.get('filters', {})
+
+    valid_clubs = get_valid_club_short_names()
+    if club not in valid_clubs:
+        return jsonify({'error': 'Invalid club selection'}), 400
+
+    normalized_filters = normalize_newsletter_filters(filters_source)
+
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
+
+    id_column = get_identifier_column(members_table)
+    if id_column is None:
+        return jsonify({'error': 'No identifier column available in members table'}), 500
+
+    filters = build_member_filters(members_table, normalized_filters)
+    query = select(Member)
+    if filters:
+        query = query.where(and_(*filters))
+
+    matched_members = session.scalars(query).all()
+
+    member_ids = []
+    for member in matched_members:
+        member_payload = member_to_dict(member, members_table)
+        member_id = member_payload.get(id_column.name)
+        if member_id is None:
+            continue
+        member_id_string = str(member_id).strip()
+        if member_id_string:
+            member_ids.append(member_id_string)
+
+    return jsonify({
+        'club': club,
+        'matchedCount': len(member_ids),
+        'memberIds': member_ids,
+    })
+
+
+@app.route('/newsletter/send', methods=['POST'])
+def send_newsletter():
+    data = request.json or {}
+    club = data.get('club', 'GAAFFS')
+    template_id = str(data.get('templateId', '')).strip()
+    scope = str(data.get('scope', 'all_club')).strip().lower()
+    member_ids = data.get('memberIds', [])
+    filters_source = data.get('filters', {})
+
+    valid_clubs = get_valid_club_short_names()
+    if club not in valid_clubs:
+        return jsonify({'error': 'Invalid club selection'}), 400
+
+    template = NEWSLETTER_TEMPLATES.get(template_id)
+    if template is None:
+        return jsonify({'error': 'Invalid newsletter template selection'}), 400
+
+    smtp_host = os.getenv('SMTP_HOST', '').strip()
+    smtp_port_raw = os.getenv('SMTP_PORT', '587').strip()
+    smtp_username = os.getenv('SMTP_USERNAME', '').strip()
+    smtp_password = os.getenv('SMTP_PASSWORD', '').strip()
+    smtp_from_email = os.getenv('SMTP_FROM_EMAIL', smtp_username).strip()
+    smtp_from_name = os.getenv('SMTP_FROM_NAME', f'{club} Newsletter').strip()
+    smtp_use_ssl = os.getenv('SMTP_USE_SSL', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
+    smtp_use_tls = os.getenv('SMTP_USE_TLS', 'true').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+    if not smtp_host or not smtp_from_email:
+        return jsonify({'error': 'SMTP is not configured. Set SMTP_HOST and SMTP_FROM_EMAIL environment variables.'}), 503
+
+    try:
+        smtp_port = int(smtp_port_raw)
+    except ValueError:
+        return jsonify({'error': 'SMTP_PORT must be a valid integer'}), 500
+
+    log_database_target(club)
+    db_info = get_db_for_club(club)
+    session = db_info['session']
+    members_table = db_info['members_table']
+    Member = db_info['Member']
+
+    id_column = get_identifier_column(members_table)
+    if id_column is None:
+        return jsonify({'error': 'No identifier column available in members table'}), 500
+
+    members_query = select(Member)
+    selected_count = 0
+
+    if scope == 'selected':
+        if not isinstance(member_ids, list) or not member_ids:
+            return jsonify({'error': 'memberIds must be a non-empty list when scope=selected'}), 400
+        selected_ids = {
+            str(member_id).strip()
+            for member_id in member_ids
+            if str(member_id).strip()
+        }
+        if not selected_ids:
+            return jsonify({'error': 'No valid member IDs supplied'}), 400
+        selected_count = len(selected_ids)
+        members_query = members_query.where(cast(id_column, String).in_(list(selected_ids)))
+    elif scope == 'all_filtered':
+        normalized_filters = normalize_newsletter_filters(filters_source)
+        filter_clauses = build_member_filters(members_table, normalized_filters)
+        if filter_clauses:
+            members_query = members_query.where(and_(*filter_clauses))
+    elif scope == 'all_club':
+        pass
+    else:
+        return jsonify({'error': 'Invalid scope. Expected one of: selected, all_filtered, all_club'}), 400
+
+    matched_members = session.scalars(members_query).all()
+
+    email_column = get_column('E_Mail', members_table)
+    if email_column is None:
+        email_column = get_column('email', members_table)
+    name_column = get_column('Members_Name', members_table)
+    if name_column is None:
+        name_column = get_column('name', members_table)
+    number_column = get_column('Number', members_table)
+
+    recipients = []
+    missing_email_count = 0
+
+    for member in matched_members:
+        member_payload = member_to_dict(member, members_table)
+        email_value = str(member_payload.get(email_column.name, '')).strip() if email_column is not None else ''
+        if not email_value:
+            missing_email_count += 1
+            continue
+
+        recipients.append({
+            'memberId': str(member_payload.get(id_column.name, '')).strip(),
+            'name': str(member_payload.get(name_column.name, '')).strip() if name_column is not None else '',
+            'number': str(member_payload.get(number_column.name, '')).strip() if number_column is not None else '',
+            'email': email_value,
+        })
+
+    if not recipients:
+        return jsonify({'error': 'No emailable recipients matched the selected scope'}), 400
+
+    sent_count = 0
+    failed_deliveries = []
+
+    try:
+        if smtp_use_ssl:
+            smtp_client = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20)
+        else:
+            smtp_client = smtplib.SMTP(smtp_host, smtp_port, timeout=20)
+
+        with smtp_client as server:
+            if not smtp_use_ssl and smtp_use_tls:
+                server.starttls()
+            if smtp_username:
+                server.login(smtp_username, smtp_password)
+
+            for recipient in recipients:
+                context = {
+                    'club': club,
+                    'name': recipient.get('name') or 'Member',
+                    'number': recipient.get('number') or '',
+                }
+                subject = template['subject'].format_map(context)
+                body = template['body'].format_map(context)
+
+                message = EmailMessage()
+                message['Subject'] = subject
+                message['From'] = f'{smtp_from_name} <{smtp_from_email}>'
+                message['To'] = recipient['email']
+                message.set_content(body)
+
+                try:
+                    server.send_message(message)
+                    sent_count += 1
+                except Exception as exc:
+                    failed_deliveries.append({
+                        'email': recipient['email'],
+                        'error': str(exc),
+                    })
+    except Exception as exc:
+        return jsonify({'error': f'Failed to connect or authenticate with SMTP server: {exc}'}), 502
+
+    return jsonify({
+        'club': club,
+        'templateId': template_id,
+        'scope': scope,
+        'selectedCount': selected_count,
+        'matchedCount': len(matched_members),
+        'emailableCount': len(recipients),
+        'missingEmailCount': missing_email_count,
+        'sentCount': sent_count,
+        'failedCount': len(failed_deliveries),
+        'failedDeliveries': failed_deliveries,
+        'emailWorkflowStatus': 'sent',
     })
 
 
