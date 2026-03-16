@@ -598,6 +598,11 @@
       <button type="button" @click="activeSection = 'home'">Back to Home</button>
     </div>
     </div>
+    <footer class="app-footer">
+      <span>(c) 2026 - ScoffySoft</span>
+      <span class="app-footer-separator">|</span>
+      <a href="mailto: robbie.scoff@gmail.com">Contact Us</a>
+    </footer>
   </div>
 </template>
 
@@ -1708,7 +1713,7 @@ export default {
 }
 #app .beat-name-link {
   display: inline-block;
-  color: #0645ad;
+  color: #007bff;
   text-decoration: underline;
   cursor: pointer;
   font-family: Helvetica, Arial, sans-serif;
@@ -1910,6 +1915,7 @@ export default {
   cursor: pointer;
 }
 #app .member-link:hover {
+  color: #0056b3;
   text-decoration: underline;
 }
 #app .lookup-table th,
@@ -2023,6 +2029,19 @@ export default {
   padding: 70px 12px 12px 12px;
   font-family: Arial, sans-serif;
 }
+#app .app-footer {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid #ccc;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  text-align: center;
+  color: #444;
+}
+#app .app-footer-separator {
+  margin: 0 8px;
+  color: #888;
+}
 #app h2 {
   font-size: 14pt;
   font-family: Helvetica, Arial, sans-serif;
@@ -2052,12 +2071,19 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
 }
-#app .member-link {
+#app a,
+#app a:visited,
+#app .member-link,
+#app .beat-name-link,
+#app .w3w-link {
   color: #007bff;
-  text-decoration: none;
-  cursor: pointer;
 }
-#app .member-link:hover {
-  text-decoration: underline;
+#app a:hover,
+#app a:focus,
+#app .member-link:hover,
+#app .beat-name-link:hover,
+#app .w3w-link:hover,
+#app .w3w-link:focus {
+  color: #0056b3;
 }
 </style>
