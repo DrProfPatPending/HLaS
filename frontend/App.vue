@@ -766,6 +766,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const API_BASE_URL = process.env.VUE_APP_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:5050`;
+const MEMBER_SESSION_STORAGE_KEY = 'hlas.memberSession';
 
 export default {
   data() {
@@ -1035,6 +1036,7 @@ export default {
     },
   },
   created() {
+    this.restoreMemberSession();
     this.loadClubs();
     if (this.loggedIn) {
       this.fetchMembers();
@@ -1050,6 +1052,49 @@ export default {
     this.destroyFishingBeatMap();
   },
   methods: {
+    persistMemberSession() {
+      try {
+        const payload = {
+          loggedIn: Boolean(this.loggedIn),
+          loggedInUsername: this.loggedInUsername || '',
+          loggedInClub: this.loggedInClub || this.selectedClub || 'GAAFFS',
+          loggedInUser: this.loggedInUser || null,
+        };
+        window.localStorage.setItem(MEMBER_SESSION_STORAGE_KEY, JSON.stringify(payload));
+      } catch {
+      }
+    },
+    clearMemberSession() {
+      try {
+        window.localStorage.removeItem(MEMBER_SESSION_STORAGE_KEY);
+      } catch {
+      }
+    },
+    restoreMemberSession() {
+      try {
+        const raw = window.localStorage.getItem(MEMBER_SESSION_STORAGE_KEY);
+        if (!raw) {
+          return;
+        }
+
+        const payload = JSON.parse(raw);
+        if (!payload || payload.loggedIn !== true) {
+          return;
+        }
+
+        const restoredClub = typeof payload.loggedInClub === 'string' && payload.loggedInClub.trim()
+          ? payload.loggedInClub.trim()
+          : 'GAAFFS';
+
+        this.loggedIn = true;
+        this.loggedInUsername = typeof payload.loggedInUsername === 'string' ? payload.loggedInUsername : '';
+        this.loggedInClub = restoredClub;
+        this.selectedClub = restoredClub;
+        this.loggedInUser = payload.loggedInUser || null;
+      } catch {
+        this.clearMemberSession();
+      }
+    },
     openReusableMapWindow(url) {
       if (!url) {
         return;
@@ -1827,6 +1872,7 @@ export default {
             this.loggedInUser = res.data.user;
             this.loggedInUsername = this.loginUsername;
             this.loggedInClub = this.selectedClub;
+            this.persistMemberSession();
             this.clubLogoLoadFailed = false;
             this.activeSection = 'home';
             this.currentPage = 1;
@@ -1840,6 +1886,7 @@ export default {
         });
     },
     logout() {
+      this.clearMemberSession();
       this.loggedIn = false;
       this.loggedInUser = null;
       this.loggedInUsername = '';
