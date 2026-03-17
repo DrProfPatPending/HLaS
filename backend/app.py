@@ -37,6 +37,51 @@ CORS(app)
 DB_DIR = os.path.dirname(__file__)
 APP_DATA_DIR = os.getenv('HLAS_DATA_DIR', DB_DIR)
 FILTERABLE_COLUMNS = ['ID', 'Number', 'Members_Name', 'Member_Type', 'Paid_Up_2026', 'Paused', 'E_Mail', 'Mobile', 'Car_Reg', 'EA_Licence', 'Licence_Exp', 'Resigned']
+LEGACY_TO_POSTGRES_MEMBER_COLUMNS = {
+    'ID': 'legacy_id',
+    'Number': 'number',
+    'Members_Name': 'members_name',
+    'Title': 'title',
+    'First_Name': 'first_name',
+    'Last_Name': 'last_name',
+    'Photo_Path': 'photo_path',
+    'Preferred_Name': 'preferred_name',
+    'First_Names': 'first_names',
+    'Paused': 'paused',
+    'Resigned': 'resigned',
+    'Member_Type': 'member_type',
+    'Subs_Expected': 'subs_expected',
+    'Subs_paid': 'subs_paid',
+    'Join_Fee': 'join_fee',
+    'Paid_Up_2026': 'paid_up_2026',
+    'Photo_Received': 'photo_received',
+    'In_WhatsApp': 'in_whatsapp',
+    'In_FB': 'in_fb',
+    'Date_of_Birth': 'date_of_birth',
+    'Age': 'age',
+    'New_Member_2026': 'new_member_2026',
+    'Paid_up_Card_Sent': 'paid_up_card_sent',
+    'CR2023': 'cr2023',
+    'CR2024': 'cr2024',
+    'CR2025': 'cr2025',
+    'Details_Confirmed_2026': 'details_confirmed_2026',
+    'Full_Address': 'full_address',
+    'Address___Street_Address': 'address_street',
+    'Address___Address_Line_2': 'address_line_2',
+    'Address___City': 'address_city',
+    'County': 'county',
+    'Address___State/Prov/Region': 'address_state_region',
+    'Address___ZIP/Postal': 'address_zip_postal',
+    'Address___Country': 'address_country',
+    'Phone': 'phone',
+    'Mobile': 'mobile',
+    'E_Mail': 'email',
+    'EA_Licence': 'ea_licence',
+    'Licence_Exp': 'licence_exp',
+    'Car_Reg': 'car_reg',
+    'username': 'username',
+    'password': 'password',
+}
 NEWSLETTER_TEMPLATES = {
     'club-update': {
         'id': 'club-update',
@@ -232,6 +277,10 @@ def is_postgres_reads_enabled():
     return flag_value in {'1', 'true', 'yes', 'on'} and bool(os.getenv('DATABASE_URL', '').strip())
 
 
+def is_postgres_writes_enabled():
+    return is_postgres_reads_enabled()
+
+
 def get_postgres_backend():
     database_url = os.getenv('DATABASE_URL', '').strip()
     if not database_url:
@@ -256,6 +305,50 @@ def get_postgres_backend():
             'read_club_cache': {},
         }
     return _postgres_cache[cache_key]
+
+
+def _resolve_postgres_club_id(session, short_name):
+    backend = get_postgres_backend()
+    clubs_table = backend['clubs_table']
+    return session.execute(
+        select(clubs_table.c.id).where(
+            and_(clubs_table.c.short_name == short_name, clubs_table.c.is_active.is_(True))
+        )
+    ).scalar_one_or_none()
+
+
+def _build_postgres_member_values(data):
+    values = {}
+    for field_name, field_value in (data or {}).items():
+        postgres_column = LEGACY_TO_POSTGRES_MEMBER_COLUMNS.get(field_name)
+        if not postgres_column:
+            continue
+        if field_name == 'password' and field_value:
+            if not str(field_value).startswith(('scrypt:', 'pbkdf2:', 'bcrypt:')):
+                field_value = generate_password_hash(str(field_value))
+        if postgres_column == 'date_of_birth':
+            field_value = _parse_date(field_value)
+        values[postgres_column] = field_value
+    return values
+
+
+def _parse_date(raw_value):
+    value = str(raw_value or '').strip()
+    if not value:
+        return None
+
+    from datetime import datetime
+
+    for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%m/%d/%Y'):
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+
+    try:
+        return datetime.fromisoformat(value).date()
+    except Exception:
+        return None
 
 
 def _default_clubs_config():
@@ -633,9 +726,99 @@ def load_server_config():
     return _load_server_config_from_json()
 
 def save_clubs_config(clubs):
-    """Overwrite clubs.config.json with the supplied list."""
-    with open(CLUBS_CONFIG_PATH, 'w', encoding='utf-8') as f:
-        json.dump({'clubs': clubs}, f, indent=2)
+    """Persist clubs config to PostgreSQL when enabled, else to clubs.config.json."""
+    if not is_postgres_writes_enabled():
+        with open(CLUBS_CONFIG_PATH, 'w', encoding='utf-8') as f:
+            json.dump({'clubs': clubs}, f, indent=2)
+        return
+
+    backend = get_postgres_backend()
+    session = backend['session_factory']()
+    clubs_table = backend['clubs_table']
+    smtp_table = backend['club_smtp_settings_table']
+    beats_table = backend['club_beats_table']
+
+    try:
+        existing_rows = session.execute(select(clubs_table.c.id, clubs_table.c.short_name)).fetchall()
+        existing_by_short_name = {row.short_name: row.id for row in existing_rows}
+
+        incoming_short_names = set()
+        for club in clubs:
+            short_name = str(club.get('shortName', '')).strip()
+            if not short_name:
+                continue
+            incoming_short_names.add(short_name)
+
+            club_values = {
+                'full_name': str(club.get('fullName', short_name)).strip() or short_name,
+                'description': str(club.get('description', '')).strip(),
+                'website_url': str(club.get('websiteUrl', '')).strip(),
+                'admin_email': str(club.get('adminEmail', '')).strip(),
+                'logo_url': str(club.get('logoUrl', '')).strip(),
+                'is_active': True,
+            }
+
+            if short_name in existing_by_short_name:
+                club_id = existing_by_short_name[short_name]
+                session.execute(
+                    clubs_table.update().where(clubs_table.c.id == club_id).values(**club_values)
+                )
+            else:
+                club_id = session.execute(
+                    clubs_table.insert().values(short_name=short_name, **club_values).returning(clubs_table.c.id)
+                ).scalar_one()
+                existing_by_short_name[short_name] = club_id
+
+            raw_smtp = club.get('smtp', {}) if isinstance(club.get('smtp', {}), dict) else {}
+            smtp_values = {
+                'host': str(raw_smtp.get('host', '')).strip(),
+                'port': int(raw_smtp.get('port', 587)) if str(raw_smtp.get('port', 587)).isdigit() else 587,
+                'username': str(raw_smtp.get('username', '')).strip(),
+                'password': str(raw_smtp.get('password', '')).strip(),
+                'from_email': str(raw_smtp.get('fromEmail', '')).strip(),
+                'from_name': str(raw_smtp.get('fromName', '')).strip(),
+                'use_ssl': bool(raw_smtp.get('useSsl', False)),
+                'use_tls': bool(raw_smtp.get('useTls', True)),
+            }
+
+            updated = session.execute(
+                smtp_table.update().where(smtp_table.c.club_id == club_id).values(**smtp_values)
+            )
+            if updated.rowcount == 0:
+                session.execute(smtp_table.insert().values(club_id=club_id, **smtp_values))
+
+            session.execute(beats_table.delete().where(beats_table.c.club_id == club_id))
+            beat_rows = []
+            for beat in normalize_beats(club.get('beats', [])):
+                beat_rows.append({
+                    'club_id': club_id,
+                    'beat_name': str(beat.get('Beat_Name', '')).strip(),
+                    'beat_id': str(beat.get('Beat_ID', '')).strip(),
+                    'river': str(beat.get('River', '')).strip(),
+                    'position': str(beat.get('Position', '')).strip(),
+                    'beat_upstream': str(beat.get('Beat_Upstream', '')).strip(),
+                    'beat_downstream': str(beat.get('Beat_Downstream', '')).strip(),
+                    'beat_description': str(beat.get('Beat_Description', '')).strip(),
+                    'detailed_description': str(beat.get('Detailed_Description', '')).strip(),
+                    'beat_upstream_latitude': str(beat.get('Beat_Upstream_Latitude', '')).strip(),
+                    'beat_upstream_longitude': str(beat.get('Beat_Upstream_Longitude', '')).strip(),
+                    'beat_downstream_latitude': str(beat.get('Beat_Downstream_Latitude', '')).strip(),
+                    'beat_downstream_longitude': str(beat.get('Beat_Downstream_Longitude', '')).strip(),
+                    'parking_locations': beat.get('Parking_Locations', []),
+                })
+            if beat_rows:
+                session.execute(beats_table.insert(), beat_rows)
+
+        removed_short_names = [name for name in existing_by_short_name.keys() if name not in incoming_short_names]
+        if removed_short_names:
+            session.execute(clubs_table.delete().where(clubs_table.c.short_name.in_(removed_short_names)))
+
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def get_admin_config():
@@ -1083,18 +1266,39 @@ def add_member():
     data = request.json or {}
     club = data.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
     log_database_target(club)
-    db_info = get_db_for_club(club)
-    session = db_info['session']
-    members_table = db_info['members_table']
-    Member = db_info['Member']
-    
-    member = Member()
-    for field_name in ('Members_Name', 'Number', 'Member_Type', 'Paid_Up_2026'):
-        if get_column(field_name, members_table) is not None:
-            setattr(member, field_name, data.get(field_name))
+    if is_postgres_writes_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            club_id = _resolve_postgres_club_id(session, club)
+            if club_id is None:
+                return jsonify({'error': 'Invalid club selection'}), 400
 
-    session.add(member)
-    session.commit()
+            values = _build_postgres_member_values(data)
+            defaults = {}
+            for required_key in ('members_name', 'number', 'member_type', 'paid_up_2026'):
+                if required_key not in values:
+                    defaults[required_key] = ''
+            session.execute(backend['members_table'].insert().values(club_id=club_id, **defaults, **values))
+            session.commit()
+        except Exception as exc:
+            session.rollback()
+            return jsonify({'error': str(exc)}), 500
+        finally:
+            session.close()
+    else:
+        db_info = get_db_for_club(club)
+        session = db_info['session']
+        members_table = db_info['members_table']
+        Member = db_info['Member']
+
+        member = Member()
+        for field_name in ('Members_Name', 'Number', 'Member_Type', 'Paid_Up_2026'):
+            if get_column(field_name, members_table) is not None:
+                setattr(member, field_name, data.get(field_name))
+
+        session.add(member)
+        session.commit()
     return jsonify({'status': 'success'})
 
 
@@ -1103,31 +1307,57 @@ def update_member(member_id):
     data = request.json or {}
     club = data.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
     log_database_target(club)
-    db_info = get_db_for_club(club)
-    session = db_info['session']
-    members_table = db_info['members_table']
-    Member = db_info['Member']
-    
-    id_column = get_column('id', members_table) or get_column('ID', members_table)
-    if id_column is None:
-        return jsonify({'error': 'No ID column available for update'}), 400
+    if is_postgres_writes_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            club_id = _resolve_postgres_club_id(session, club)
+            if club_id is None:
+                return jsonify({'error': 'Invalid club selection'}), 400
 
-    member = session.scalars(select(Member).where(id_column == member_id)).first()
-    if member is None:
-        return jsonify({'error': 'Member not found'}), 404
+            values = _build_postgres_member_values({k: v for k, v in data.items() if k not in {'club', 'ID', 'id'}})
+            if not values:
+                return jsonify({'status': 'success'})
 
-    reserved_fields = {'club', 'ID', 'id'}
-    for field_name, field_value in data.items():
-        if field_name in reserved_fields:
-            continue
-        if get_column(field_name, members_table) is None:
-            continue
-        if field_name == 'password' and field_value:
-            if not str(field_value).startswith(('scrypt:', 'pbkdf2:', 'bcrypt:')):
-                field_value = generate_password_hash(str(field_value))
-        setattr(member, field_name, field_value)
+            updated = session.execute(
+                backend['members_table'].update().where(
+                    and_(backend['members_table'].c.club_id == club_id, backend['members_table'].c.id == member_id)
+                ).values(**values)
+            )
+            if updated.rowcount == 0:
+                return jsonify({'error': 'Member not found'}), 404
+            session.commit()
+        except Exception as exc:
+            session.rollback()
+            return jsonify({'error': str(exc)}), 500
+        finally:
+            session.close()
+    else:
+        db_info = get_db_for_club(club)
+        session = db_info['session']
+        members_table = db_info['members_table']
+        Member = db_info['Member']
 
-    session.commit()
+        id_column = get_column('id', members_table) or get_column('ID', members_table)
+        if id_column is None:
+            return jsonify({'error': 'No ID column available for update'}), 400
+
+        member = session.scalars(select(Member).where(id_column == member_id)).first()
+        if member is None:
+            return jsonify({'error': 'Member not found'}), 404
+
+        reserved_fields = {'club', 'ID', 'id'}
+        for field_name, field_value in data.items():
+            if field_name in reserved_fields:
+                continue
+            if get_column(field_name, members_table) is None:
+                continue
+            if field_name == 'password' and field_value:
+                if not str(field_value).startswith(('scrypt:', 'pbkdf2:', 'bcrypt:')):
+                    field_value = generate_password_hash(str(field_value))
+            setattr(member, field_name, field_value)
+
+        session.commit()
     return jsonify({'status': 'success'})
 
 
@@ -1135,21 +1365,42 @@ def update_member(member_id):
 def delete_member(member_id):
     club = request.args.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
     log_database_target(club)
-    db_info = get_db_for_club(club)
-    session = db_info['session']
-    members_table = db_info['members_table']
-    Member = db_info['Member']
-    
-    id_column = get_column('id', members_table) or get_column('ID', members_table)
-    if id_column is None:
-        return jsonify({'error': 'No ID column available for delete'}), 400
+    if is_postgres_writes_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            club_id = _resolve_postgres_club_id(session, club)
+            if club_id is None:
+                return jsonify({'error': 'Invalid club selection'}), 400
+            deleted = session.execute(
+                backend['members_table'].delete().where(
+                    and_(backend['members_table'].c.club_id == club_id, backend['members_table'].c.id == member_id)
+                )
+            )
+            if deleted.rowcount == 0:
+                return jsonify({'error': 'Member not found'}), 404
+            session.commit()
+        except Exception as exc:
+            session.rollback()
+            return jsonify({'error': str(exc)}), 500
+        finally:
+            session.close()
+    else:
+        db_info = get_db_for_club(club)
+        session = db_info['session']
+        members_table = db_info['members_table']
+        Member = db_info['Member']
 
-    member = session.scalars(select(Member).where(id_column == member_id)).first()
-    if member is None:
-        return jsonify({'error': 'Member not found'}), 404
+        id_column = get_column('id', members_table) or get_column('ID', members_table)
+        if id_column is None:
+            return jsonify({'error': 'No ID column available for delete'}), 400
 
-    session.delete(member)
-    session.commit()
+        member = session.scalars(select(Member).where(id_column == member_id)).first()
+        if member is None:
+            return jsonify({'error': 'Member not found'}), 404
+
+        session.delete(member)
+        session.commit()
     return jsonify({'status': 'success'})
 
 
@@ -1324,21 +1575,37 @@ def update_newsletter_template(template_id):
         return jsonify({'error': 'Template name, subject, and body are required'}), 400
     
     try:
-        db_info = get_db_for_club(club)
-        session = db_info['session']
-        newsletter_templates_table = db_info['newsletter_templates_table']
-        
-        # Update template
-        stmt = newsletter_templates_table.update().where(
-            newsletter_templates_table.c.id == template_id
-        ).values(name=name, subject=subject, body=body)
-        result = session.execute(stmt)
-        session.commit()
-        session.close()
-        
+        if is_postgres_writes_enabled():
+            backend = get_postgres_backend()
+            session = backend['session_factory']()
+            club_id = _resolve_postgres_club_id(session, club)
+            if club_id is None:
+                return jsonify({'error': 'Invalid club selection'}), 400
+            result = session.execute(
+                backend['newsletter_templates_table'].update().where(
+                    and_(
+                        backend['newsletter_templates_table'].c.club_id == club_id,
+                        backend['newsletter_templates_table'].c.template_key == template_id,
+                    )
+                ).values(name=name, subject=subject, body=body)
+            )
+            session.commit()
+            session.close()
+        else:
+            db_info = get_db_for_club(club)
+            session = db_info['session']
+            newsletter_templates_table = db_info['newsletter_templates_table']
+
+            stmt = newsletter_templates_table.update().where(
+                newsletter_templates_table.c.id == template_id
+            ).values(name=name, subject=subject, body=body)
+            result = session.execute(stmt)
+            session.commit()
+            session.close()
+
         if result.rowcount == 0:
             return jsonify({'error': 'Template not found'}), 404
-        
+
         return jsonify({'message': 'Template updated successfully', 'id': template_id}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1354,21 +1621,37 @@ def delete_newsletter_template(template_id):
         return jsonify({'error': 'Cannot delete default templates'}), 400
     
     try:
-        db_info = get_db_for_club(club)
-        session = db_info['session']
-        newsletter_templates_table = db_info['newsletter_templates_table']
-        
-        # Delete template
-        stmt = newsletter_templates_table.delete().where(
-            newsletter_templates_table.c.id == template_id
-        )
-        result = session.execute(stmt)
-        session.commit()
-        session.close()
-        
+        if is_postgres_writes_enabled():
+            backend = get_postgres_backend()
+            session = backend['session_factory']()
+            club_id = _resolve_postgres_club_id(session, club)
+            if club_id is None:
+                return jsonify({'error': 'Invalid club selection'}), 400
+            result = session.execute(
+                backend['newsletter_templates_table'].delete().where(
+                    and_(
+                        backend['newsletter_templates_table'].c.club_id == club_id,
+                        backend['newsletter_templates_table'].c.template_key == template_id,
+                    )
+                )
+            )
+            session.commit()
+            session.close()
+        else:
+            db_info = get_db_for_club(club)
+            session = db_info['session']
+            newsletter_templates_table = db_info['newsletter_templates_table']
+
+            stmt = newsletter_templates_table.delete().where(
+                newsletter_templates_table.c.id == template_id
+            )
+            result = session.execute(stmt)
+            session.commit()
+            session.close()
+
         if result.rowcount == 0:
             return jsonify({'error': 'Template not found'}), 404
-        
+
         return jsonify({'message': 'Template deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1392,18 +1675,35 @@ def create_newsletter_template():
         return jsonify({'error': 'Template id must contain only lowercase letters, numbers, and hyphens'}), 400
     
     try:
-        db_info = get_db_for_club(club)
-        session = db_info['session']
-        newsletter_templates_table = db_info['newsletter_templates_table']
-        
-        # Insert new template
-        stmt = newsletter_templates_table.insert().values(
-            id=template_id, name=name, subject=subject, body=body
-        )
-        session.execute(stmt)
-        session.commit()
-        session.close()
-        
+        if is_postgres_writes_enabled():
+            backend = get_postgres_backend()
+            session = backend['session_factory']()
+            club_id = _resolve_postgres_club_id(session, club)
+            if club_id is None:
+                return jsonify({'error': 'Invalid club selection'}), 400
+            session.execute(
+                backend['newsletter_templates_table'].insert().values(
+                    club_id=club_id,
+                    template_key=template_id,
+                    name=name,
+                    subject=subject,
+                    body=body,
+                )
+            )
+            session.commit()
+            session.close()
+        else:
+            db_info = get_db_for_club(club)
+            session = db_info['session']
+            newsletter_templates_table = db_info['newsletter_templates_table']
+
+            stmt = newsletter_templates_table.insert().values(
+                id=template_id, name=name, subject=subject, body=body
+            )
+            session.execute(stmt)
+            session.commit()
+            session.close()
+
         return jsonify({'message': 'Template created successfully', 'id': template_id}), 201
     except Exception as e:
         if 'UNIQUE constraint failed' in str(e) or 'already exists' in str(e):
@@ -1698,20 +1998,21 @@ def admin_add_club():
         except ValueError as exc:
             return jsonify({'error': str(exc)}), 400
 
-    try:
-        create_empty_club_database(short_name)
-    except FileExistsError as exc:
-        if logo_url and os.path.exists(logo_path):
-            os.remove(logo_path)
-        return jsonify({'error': str(exc)}), 409
-    except FileNotFoundError as exc:
-        if logo_url and os.path.exists(logo_path):
-            os.remove(logo_path)
-        return jsonify({'error': str(exc)}), 500
-    except Exception as exc:
-        if logo_url and os.path.exists(logo_path):
-            os.remove(logo_path)
-        return jsonify({'error': f'Failed to create database for {short_name}: {exc}'}), 500
+    if not is_postgres_writes_enabled():
+        try:
+            create_empty_club_database(short_name)
+        except FileExistsError as exc:
+            if logo_url and os.path.exists(logo_path):
+                os.remove(logo_path)
+            return jsonify({'error': str(exc)}), 409
+        except FileNotFoundError as exc:
+            if logo_url and os.path.exists(logo_path):
+                os.remove(logo_path)
+            return jsonify({'error': str(exc)}), 500
+        except Exception as exc:
+            if logo_url and os.path.exists(logo_path):
+                os.remove(logo_path)
+            return jsonify({'error': f'Failed to create database for {short_name}: {exc}'}), 500
 
     clubs.append({
         'fullName': str(data.get('fullName', short_name)).strip(),
