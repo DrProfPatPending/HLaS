@@ -282,6 +282,11 @@
         </button>
         <span>Filtered: {{ newsletterTotalMembers }}</span>
       </div>
+      <div v-if="selectedNewsletterTemplate" class="newsletter-template-preview">
+        <h3>Template Preview</h3>
+        <p><strong>Subject:</strong> {{ selectedNewsletterTemplate.previewSubject }}</p>
+        <pre class="newsletter-template-preview-body">{{ selectedNewsletterTemplate.previewBody }}</pre>
+      </div>
       <table class="newsletter-table">
         <thead>
           <tr>
@@ -820,6 +825,9 @@ export default {
       }
       return pages;
     },
+    selectedNewsletterTemplate() {
+      return this.newsletterTemplates.find(template => template.id === this.selectedNewsletterTemplateId) || null;
+    },
     allNewsletterPageSelected() {
       if (!this.newsletterMembers.length) {
         return false;
@@ -1300,7 +1308,11 @@ export default {
       });
     },
     fetchNewsletterTemplates() {
-      axios.get(`${API_BASE_URL}/newsletter/templates`)
+      axios.get(`${API_BASE_URL}/newsletter/templates`, {
+        params: {
+          club: this.loggedInClub,
+        },
+      })
         .then(res => {
           const templates = Array.isArray(res.data && res.data.templates) ? res.data.templates : [];
           this.newsletterTemplates = templates
@@ -1308,6 +1320,8 @@ export default {
             .map(template => ({
               id: String(template.id),
               name: template.name || String(template.id),
+              previewSubject: template.previewSubject || template.subjectTemplate || '',
+              previewBody: template.previewBody || template.bodyTemplate || '',
             }));
 
           if (!this.selectedNewsletterTemplateId && this.newsletterTemplates.length) {
@@ -1773,6 +1787,26 @@ export default {
   border: 1px solid #ccc;
   border-radius: 4px;
   background: #fff;
+}
+#app .newsletter-template-preview {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background: #fafafa;
+}
+#app .newsletter-template-preview h3 {
+  margin: 0 0 8px 0;
+  font-size: 11pt;
+}
+#app .newsletter-template-preview p {
+  margin: 0 0 8px 0;
+  font-size: 10pt;
+}
+#app .newsletter-template-preview-body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
 }
 #app .newsletter-status {
   color: #1c6b2a;

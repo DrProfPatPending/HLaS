@@ -855,10 +855,21 @@ def prepare_newsletter_recipients():
 
 @app.route('/newsletter/templates', methods=['GET'])
 def get_newsletter_templates():
+    club = request.args.get('club', 'GAAFFS')
+    context = {
+        'club': club,
+        'name': 'Member',
+        'number': '',
+    }
+
     templates = [
         {
             'id': template['id'],
             'name': template['name'],
+            'subjectTemplate': template['subject'],
+            'bodyTemplate': template['body'],
+            'previewSubject': template['subject'].format_map(context),
+            'previewBody': template['body'].format_map(context),
         }
         for template in NEWSLETTER_TEMPLATES.values()
     ]
