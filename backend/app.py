@@ -99,6 +99,7 @@ CLUB_DB_TEMPLATE_PATH = os.path.join(DB_DIR, 'template.db')
 
 # Cache for club database engines and metadata
 _club_db_cache = {}
+_postgres_cache = {}
 
 # In-memory admin session tokens (cleared on restart)
 _admin_tokens = set()
@@ -226,8 +227,39 @@ def normalize_what3words_words(raw_value):
     return '.'.join(words)
 
 
-def load_clubs_config():
-    default_clubs = [
+def is_postgres_reads_enabled():
+    flag_value = os.getenv('HLAS_USE_POSTGRES_READS', os.getenv('USE_POSTGRES_READS', '')).strip().lower()
+    return flag_value in {'1', 'true', 'yes', 'on'} and bool(os.getenv('DATABASE_URL', '').strip())
+
+
+def get_postgres_backend():
+    database_url = os.getenv('DATABASE_URL', '').strip()
+    if not database_url:
+        raise RuntimeError('DATABASE_URL is not configured')
+
+    cache_key = database_url
+    if cache_key not in _postgres_cache:
+        engine = create_engine(database_url, future=True)
+        metadata = MetaData()
+        metadata.reflect(bind=engine, only=['app_settings', 'clubs', 'club_smtp_settings', 'club_beats', 'members', 'newsletter_templates'])
+        session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+        _postgres_cache[cache_key] = {
+            'engine': engine,
+            'metadata': metadata,
+            'session_factory': session_factory,
+            'app_settings_table': metadata.tables['app_settings'],
+            'clubs_table': metadata.tables['clubs'],
+            'club_smtp_settings_table': metadata.tables['club_smtp_settings'],
+            'club_beats_table': metadata.tables['club_beats'],
+            'members_table': metadata.tables['members'],
+            'newsletter_templates_table': metadata.tables['newsletter_templates'],
+            'read_club_cache': {},
+        }
+    return _postgres_cache[cache_key]
+
+
+def _default_clubs_config():
+    return [
         {
             'fullName': 'GAAFFS',
             'shortName': 'GAAFFS',
@@ -247,6 +279,36 @@ def load_clubs_config():
             'beats': [],
         },
     ]
+
+
+def _default_server_config():
+    return {
+        'server': {
+            'host': '127.0.0.1',
+            'port': 5050,
+            'url': 'http://127.0.0.1:5050',
+        },
+        'tls': {
+            'enabled': False,
+            'adhoc': True,
+            'certFile': '',
+            'keyFile': '',
+        },
+        'startup': {
+            'delayMs': 3000,
+        },
+        'runtime': {
+            'debug': False,
+            'useReloader': False,
+        },
+        'logging': {
+            'level': 'INFO',
+        },
+    }
+
+
+def _load_clubs_config_from_json():
+    default_clubs = _default_clubs_config()
 
     if not os.path.exists(CLUBS_CONFIG_PATH):
         return default_clubs
@@ -292,6 +354,235 @@ def load_clubs_config():
     return normalized_clubs or default_clubs
 
 
+def _load_clubs_config_from_postgres():
+    backend = get_postgres_backend()
+    session = backend['session_factory']()
+    clubs_table = backend['clubs_table']
+    smtp_table = backend['club_smtp_settings_table']
+    beats_table = backend['club_beats_table']
+
+    try:
+        club_rows = session.execute(
+            select(clubs_table).where(clubs_table.c.is_active.is_(True)).order_by(clubs_table.c.short_name.asc())
+        ).fetchall()
+        if not club_rows:
+            return []
+
+        club_ids = [row.id for row in club_rows]
+        smtp_rows = session.execute(
+            select(smtp_table).where(smtp_table.c.club_id.in_(club_ids))
+        ).fetchall()
+        beat_rows = session.execute(
+            select(beats_table).where(beats_table.c.club_id.in_(club_ids)).order_by(beats_table.c.club_id.asc(), beats_table.c.beat_name.asc())
+        ).fetchall()
+    finally:
+        session.close()
+
+    smtp_by_club_id = {row.club_id: row for row in smtp_rows}
+    beats_by_club_id = {}
+    for row in beat_rows:
+        beats_by_club_id.setdefault(row.club_id, []).append({
+            'Beat_Name': row.beat_name or '',
+            'Beat_ID': row.beat_id or '',
+            'River': row.river or '',
+            'Position': row.position or '',
+            'Beat_Upstream': row.beat_upstream or '',
+            'Beat_Downstream': row.beat_downstream or '',
+            'Beat_Description': row.beat_description or '',
+            'Detailed_Description': row.detailed_description or '',
+            'Beat_Upstream_Latitude': row.beat_upstream_latitude or '',
+            'Beat_Upstream_Longitude': row.beat_upstream_longitude or '',
+            'Beat_Downstream_Latitude': row.beat_downstream_latitude or '',
+            'Beat_Downstream_Longitude': row.beat_downstream_longitude or '',
+            'Parking_Locations': row.parking_locations or [],
+        })
+
+    normalized_clubs = []
+    for row in club_rows:
+        smtp_row = smtp_by_club_id.get(row.id)
+        normalized_clubs.append({
+            'fullName': row.full_name or row.short_name,
+            'shortName': row.short_name,
+            'description': row.description or '',
+            'websiteUrl': row.website_url or '',
+            'adminEmail': row.admin_email or '',
+            'logoUrl': row.logo_url or '',
+            'beats': normalize_beats(beats_by_club_id.get(row.id, [])),
+            'smtp': {
+                'host': getattr(smtp_row, 'host', '') or '',
+                'port': getattr(smtp_row, 'port', 587) or 587,
+                'username': getattr(smtp_row, 'username', '') or '',
+                'password': getattr(smtp_row, 'password', '') or '',
+                'fromEmail': getattr(smtp_row, 'from_email', '') or '',
+                'fromName': getattr(smtp_row, 'from_name', '') or '',
+                'useSsl': bool(getattr(smtp_row, 'use_ssl', False)) if smtp_row is not None else False,
+                'useTls': bool(getattr(smtp_row, 'use_tls', True)) if smtp_row is not None else True,
+            },
+        })
+
+    return normalized_clubs
+
+
+def _load_server_config_from_json():
+    default_config = _default_server_config()
+
+    if not os.path.exists(SERVER_CONFIG_PATH):
+        return default_config
+
+    try:
+        with open(SERVER_CONFIG_PATH, 'r', encoding='utf-8') as config_file:
+            loaded_config = json.load(config_file)
+    except (OSError, json.JSONDecodeError):
+        return default_config
+
+    merged = default_config.copy()
+    for section in ('server', 'tls', 'startup', 'runtime', 'logging'):
+        merged[section] = {**default_config.get(section, {}), **loaded_config.get(section, {})}
+    if 'admin' in loaded_config:
+        merged['admin'] = loaded_config['admin']
+    return merged
+
+
+def _load_server_config_from_postgres():
+    default_config = _default_server_config()
+    backend = get_postgres_backend()
+    session = backend['session_factory']()
+    app_settings_table = backend['app_settings_table']
+
+    try:
+        row = session.execute(
+            select(app_settings_table.c.value).where(
+                and_(app_settings_table.c.scope == 'global', app_settings_table.c.key == 'server_config')
+            )
+        ).first()
+    finally:
+        session.close()
+
+    loaded_config = row[0] if row else {}
+    if not isinstance(loaded_config, dict):
+        return default_config
+
+    merged = default_config.copy()
+    for section in ('server', 'tls', 'startup', 'runtime', 'logging'):
+        merged[section] = {**default_config.get(section, {}), **loaded_config.get(section, {})}
+    if 'admin' in loaded_config:
+        merged['admin'] = loaded_config['admin']
+    return merged
+
+
+def get_read_db_for_club(club):
+    if not is_postgres_reads_enabled():
+        return get_db_for_club(club)
+
+    backend = get_postgres_backend()
+    if club not in backend['read_club_cache']:
+        session = backend['session_factory']()
+        clubs_table = backend['clubs_table']
+        members_base_table = backend['members_table']
+        newsletter_base_table = backend['newsletter_templates_table']
+
+        try:
+            club_id = session.execute(
+                select(clubs_table.c.id).where(
+                    and_(clubs_table.c.short_name == club, clubs_table.c.is_active.is_(True))
+                )
+            ).scalar_one_or_none()
+        finally:
+            session.close()
+
+        if club_id is None:
+            raise RuntimeError(f'Club {club} not found in PostgreSQL')
+
+        mapper_registry = registry()
+        members_query = select(
+            members_base_table.c.id.label('ID'),
+            members_base_table.c.number.label('Number'),
+            members_base_table.c.members_name.label('Members_Name'),
+            members_base_table.c.title.label('Title'),
+            members_base_table.c.first_name.label('First_Name'),
+            members_base_table.c.last_name.label('Last_Name'),
+            members_base_table.c.photo_path.label('Photo_Path'),
+            members_base_table.c.preferred_name.label('Preferred_Name'),
+            members_base_table.c.first_names.label('First_Names'),
+            members_base_table.c.paused.label('Paused'),
+            members_base_table.c.resigned.label('Resigned'),
+            members_base_table.c.member_type.label('Member_Type'),
+            members_base_table.c.subs_expected.label('Subs_Expected'),
+            members_base_table.c.subs_paid.label('Subs_paid'),
+            members_base_table.c.join_fee.label('Join_Fee'),
+            members_base_table.c.paid_up_2026.label('Paid_Up_2026'),
+            members_base_table.c.photo_received.label('Photo_Received'),
+            members_base_table.c.in_whatsapp.label('In_WhatsApp'),
+            members_base_table.c.in_fb.label('In_FB'),
+            cast(members_base_table.c.date_of_birth, String).label('Date_of_Birth'),
+            members_base_table.c.age.label('Age'),
+            members_base_table.c.new_member_2026.label('New_Member_2026'),
+            members_base_table.c.paid_up_card_sent.label('Paid_up_Card_Sent'),
+            members_base_table.c.cr2023.label('CR2023'),
+            members_base_table.c.cr2024.label('CR2024'),
+            members_base_table.c.cr2025.label('CR2025'),
+            members_base_table.c.details_confirmed_2026.label('Details_Confirmed_2026'),
+            members_base_table.c.full_address.label('Full_Address'),
+            members_base_table.c.address_street.label('Address___Street_Address'),
+            members_base_table.c.address_line_2.label('Address___Address_Line_2'),
+            members_base_table.c.address_city.label('Address___City'),
+            members_base_table.c.county.label('County'),
+            members_base_table.c.address_state_region.label('Address___State/Prov/Region'),
+            members_base_table.c.address_zip_postal.label('Address___ZIP/Postal'),
+            members_base_table.c.address_country.label('Address___Country'),
+            members_base_table.c.phone.label('Phone'),
+            members_base_table.c.mobile.label('Mobile'),
+            members_base_table.c.email.label('E_Mail'),
+            members_base_table.c.ea_licence.label('EA_Licence'),
+            members_base_table.c.licence_exp.label('Licence_Exp'),
+            members_base_table.c.car_reg.label('Car_Reg'),
+            members_base_table.c.username.label('username'),
+            members_base_table.c.password.label('password'),
+        ).where(members_base_table.c.club_id == club_id).subquery(f'{club.lower()}_members_read')
+
+        newsletter_query = select(
+            newsletter_base_table.c.template_key.label('id'),
+            newsletter_base_table.c.name.label('name'),
+            newsletter_base_table.c.subject.label('subject'),
+            newsletter_base_table.c.body.label('body'),
+        ).where(newsletter_base_table.c.club_id == club_id).subquery(f'{club.lower()}_newsletter_templates_read')
+
+        class Member:
+            pass
+
+        mapper_registry.map_imperatively(Member, members_query, primary_key=[members_query.c.ID])
+        backend['read_club_cache'][club] = {
+            'club_id': club_id,
+            'mapper_registry': mapper_registry,
+            'members_table': members_query,
+            'newsletter_templates_table': newsletter_query,
+            'Member': Member,
+        }
+
+    cache = backend['read_club_cache'][club]
+    session = backend['session_factory']()
+    return {
+        'session': session,
+        'engine': backend['engine'],
+        'members_table': cache['members_table'],
+        'newsletter_templates_table': cache['newsletter_templates_table'],
+        'Member': cache['Member'],
+        'mapper_registry': cache['mapper_registry'],
+        'club_id': cache['club_id'],
+    }
+
+
+def load_clubs_config():
+    if is_postgres_reads_enabled():
+        try:
+            postgres_clubs = _load_clubs_config_from_postgres()
+            if postgres_clubs:
+                return postgres_clubs
+        except Exception as exc:
+            app.logger.warning(f'Failed to load clubs from PostgreSQL, falling back to JSON: {exc}')
+    return _load_clubs_config_from_json()
+
+
 def get_smtp_config_for_club(club_short_name):
     """Return SMTP settings for a club, falling back to environment variables."""
     clubs = load_clubs_config()
@@ -334,46 +625,12 @@ def get_smtp_config_for_club(club_short_name):
 
 
 def load_server_config():
-    default_config = {
-        'server': {
-            'host': '127.0.0.1',
-            'port': 5050,
-            'url': 'http://127.0.0.1:5050',
-        },
-        'tls': {
-            'enabled': False,
-            'adhoc': True,
-            'certFile': '',
-            'keyFile': '',
-        },
-        'startup': {
-            'delayMs': 3000,
-        },
-        'runtime': {
-            'debug': False,
-            'useReloader': False,
-        },
-        'logging': {
-            'level': 'INFO',
-        },
-    }
-
-    if not os.path.exists(SERVER_CONFIG_PATH):
-        return default_config
-
-    try:
-        with open(SERVER_CONFIG_PATH, 'r', encoding='utf-8') as config_file:
-            loaded_config = json.load(config_file)
-    except (OSError, json.JSONDecodeError):
-        return default_config
-
-    merged = default_config.copy()
-    for section in ('server', 'tls', 'startup', 'runtime', 'logging'):
-        merged[section] = {**default_config.get(section, {}), **loaded_config.get(section, {})}
-    # Admin section is merged shallowly as a flat dict
-    if 'admin' in loaded_config:
-        merged['admin'] = loaded_config['admin']
-    return merged
+    if is_postgres_reads_enabled():
+        try:
+            return _load_server_config_from_postgres()
+        except Exception as exc:
+            app.logger.warning(f'Failed to load server config from PostgreSQL, falling back to JSON: {exc}')
+    return _load_server_config_from_json()
 
 def save_clubs_config(clubs):
     """Overwrite clubs.config.json with the supplied list."""
@@ -572,9 +829,19 @@ def configure_logging():
 
 
 def log_database_target(club):
+    if is_postgres_reads_enabled():
+        app.logger.info(json.dumps({
+            'event': 'database.selected',
+            'club': club,
+            'backend': 'postgresql',
+            'database_url_configured': bool(os.getenv('DATABASE_URL', '').strip()),
+        }))
+        return
+
     app.logger.info(json.dumps({
         'event': 'database.selected',
         'club': club,
+        'backend': 'sqlite',
         'db_path': os.path.join(APP_DATA_DIR, f'{club}.db'),
     }))
 
@@ -704,7 +971,7 @@ def login():
         return jsonify({'error': 'Invalid club selection'}), 400
 
     log_database_target(club)
-    db_info = get_db_for_club(club)
+    db_info = get_read_db_for_club(club)
     session = db_info['session']
     members_table = db_info['members_table']
     Member = db_info['Member']
@@ -753,7 +1020,7 @@ def get_members():
     sort_order = request.args.get('sort_order', 'asc')
 
     log_database_target(club)
-    db_info = get_db_for_club(club)
+    db_info = get_read_db_for_club(club)
     session = db_info['session']
     members_table = db_info['members_table']
     Member = db_info['Member']
@@ -890,7 +1157,7 @@ def delete_member(member_id):
 def get_member_by_number(number):
     club = request.args.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
     log_database_target(club)
-    db_info = get_db_for_club(club)
+    db_info = get_read_db_for_club(club)
     session = db_info['session']
     members_table = db_info['members_table']
     Member = db_info['Member']
@@ -928,7 +1195,7 @@ def prepare_newsletter_recipients():
         return jsonify({'error': 'No valid member IDs supplied'}), 400
 
     log_database_target(club)
-    db_info = get_db_for_club(club)
+    db_info = get_read_db_for_club(club)
     session = db_info['session']
     members_table = db_info['members_table']
     Member = db_info['Member']
@@ -1002,7 +1269,7 @@ def get_newsletter_templates():
     }
 
     try:
-        db_info = get_db_for_club(club)
+        db_info = get_read_db_for_club(club)
         session = db_info['session']
         newsletter_templates_table = db_info['newsletter_templates_table']
         
@@ -1157,7 +1424,7 @@ def get_newsletter_filtered_member_ids():
     normalized_filters = normalize_newsletter_filters(filters_source)
 
     log_database_target(club)
-    db_info = get_db_for_club(club)
+    db_info = get_read_db_for_club(club)
     session = db_info['session']
     members_table = db_info['members_table']
     Member = db_info['Member']
@@ -1206,7 +1473,7 @@ def send_newsletter():
     # Load template from database first, fall back to hardcoded defaults
     template = None
     try:
-        db_info_tmpl = get_db_for_club(club)
+        db_info_tmpl = get_read_db_for_club(club)
         sess_tmpl = db_info_tmpl['session']
         nl_tbl = db_info_tmpl['newsletter_templates_table']
         row = sess_tmpl.execute(select(nl_tbl).where(nl_tbl.c.id == template_id)).fetchone()
@@ -1235,7 +1502,7 @@ def send_newsletter():
         return jsonify({'error': f'SMTP is not configured for club {club}. Set host and fromEmail in the club SMTP settings or via environment variables.'}), 503
 
     log_database_target(club)
-    db_info = get_db_for_club(club)
+    db_info = get_read_db_for_club(club)
     session = db_info['session']
     members_table = db_info['members_table']
     Member = db_info['Member']
