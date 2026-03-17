@@ -268,6 +268,7 @@ def load_clubs_config():
         short_name = str(club.get('shortName', '')).strip()
         if not short_name:
             continue
+        raw_smtp = club.get('smtp', {}) or {}
         normalized_clubs.append({
             'fullName': str(club.get('fullName', short_name)).strip() or short_name,
             'shortName': short_name,
@@ -276,9 +277,60 @@ def load_clubs_config():
             'adminEmail': str(club.get('adminEmail', '')).strip(),
             'logoUrl': str(club.get('logoUrl', '')).strip() or (get_club_logo_url(short_name) if os.path.exists(get_club_logo_path(short_name)) else ''),
             'beats': normalize_beats(club.get('beats', [])),
+            'smtp': {
+                'host': str(raw_smtp.get('host', '')).strip(),
+                'port': int(raw_smtp.get('port', 587)) if str(raw_smtp.get('port', 587)).isdigit() else 587,
+                'username': str(raw_smtp.get('username', '')).strip(),
+                'password': str(raw_smtp.get('password', '')).strip(),
+                'fromEmail': str(raw_smtp.get('fromEmail', '')).strip(),
+                'fromName': str(raw_smtp.get('fromName', '')).strip(),
+                'useSsl': bool(raw_smtp.get('useSsl', False)),
+                'useTls': bool(raw_smtp.get('useTls', True)),
+            },
         })
 
     return normalized_clubs or default_clubs
+
+
+def get_smtp_config_for_club(club_short_name):
+    """Return SMTP settings for a club, falling back to environment variables."""
+    clubs = load_clubs_config()
+    club_cfg = next((c for c in clubs if c.get('shortName') == club_short_name), {})
+    smtp = club_cfg.get('smtp', {}) or {}
+
+    host      = smtp.get('host', '').strip()     or os.getenv('SMTP_HOST', '').strip()
+    port_raw  = str(smtp.get('port', '') or os.getenv('SMTP_PORT', '587')).strip()
+    username  = smtp.get('username', '').strip()  or os.getenv('SMTP_USERNAME', '').strip()
+    password  = smtp.get('password', '').strip()  or os.getenv('SMTP_PASSWORD', '').strip()
+    from_email = smtp.get('fromEmail', '').strip() or os.getenv('SMTP_FROM_EMAIL', username).strip()
+    from_name  = smtp.get('fromName', '').strip()  or os.getenv('SMTP_FROM_NAME', f'{club_short_name} Newsletter').strip()
+
+    # Boolean flags: club config takes precedence when explicitly set, else env vars
+    if 'useSsl' in smtp:
+        use_ssl = bool(smtp['useSsl'])
+    else:
+        use_ssl = os.getenv('SMTP_USE_SSL', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+    if 'useTls' in smtp:
+        use_tls = bool(smtp['useTls'])
+    else:
+        use_tls = os.getenv('SMTP_USE_TLS', 'true').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+    try:
+        port = int(port_raw)
+    except ValueError:
+        port = 587
+
+    return {
+        'host': host,
+        'port': port,
+        'username': username,
+        'password': password,
+        'fromEmail': from_email,
+        'fromName': from_name,
+        'useSsl': use_ssl,
+        'useTls': use_tls,
+    }
 
 
 def load_server_config():
@@ -983,9 +1035,12 @@ def get_newsletter_templates():
             for template in NEWSLETTER_TEMPLATES.values()
         ]
     
+    smtp_cfg = get_smtp_config_for_club(club)
     return jsonify({
         'templates': templates,
         'availableTags': NEWSLETTER_TEMPLATE_TAGS,
+        'smtpFromEmail': smtp_cfg.get('fromEmail', ''),
+        'smtpFromName': smtp_cfg.get('fromName', ''),
     })
 
 
@@ -1148,26 +1203,36 @@ def send_newsletter():
     if club not in valid_clubs:
         return jsonify({'error': 'Invalid club selection'}), 400
 
-    template = NEWSLETTER_TEMPLATES.get(template_id)
+    # Load template from database first, fall back to hardcoded defaults
+    template = None
+    try:
+        db_info_tmpl = get_db_for_club(club)
+        sess_tmpl = db_info_tmpl['session']
+        nl_tbl = db_info_tmpl['newsletter_templates_table']
+        row = sess_tmpl.execute(select(nl_tbl).where(nl_tbl.c.id == template_id)).fetchone()
+        sess_tmpl.close()
+        if row:
+            template = {'id': row.id, 'name': row.name, 'subject': row.subject, 'body': row.body}
+    except Exception as tmpl_exc:
+        app.logger.warning(f'Could not load template from DB: {tmpl_exc}')
+    if template is None:
+        template = NEWSLETTER_TEMPLATES.get(template_id)
     if template is None:
         return jsonify({'error': 'Invalid newsletter template selection'}), 400
 
-    smtp_host = os.getenv('SMTP_HOST', '').strip()
-    smtp_port_raw = os.getenv('SMTP_PORT', '587').strip()
-    smtp_username = os.getenv('SMTP_USERNAME', '').strip()
-    smtp_password = os.getenv('SMTP_PASSWORD', '').strip()
-    smtp_from_email = os.getenv('SMTP_FROM_EMAIL', smtp_username).strip()
-    smtp_from_name = os.getenv('SMTP_FROM_NAME', f'{club} Newsletter').strip()
-    smtp_use_ssl = os.getenv('SMTP_USE_SSL', 'false').strip().lower() in {'1', 'true', 'yes', 'on'}
-    smtp_use_tls = os.getenv('SMTP_USE_TLS', 'true').strip().lower() in {'1', 'true', 'yes', 'on'}
+    # Resolve per-club SMTP configuration
+    smtp_cfg = get_smtp_config_for_club(club)
+    smtp_host      = smtp_cfg['host']
+    smtp_port      = smtp_cfg['port']
+    smtp_username  = smtp_cfg['username']
+    smtp_password  = smtp_cfg['password']
+    smtp_from_email = smtp_cfg['fromEmail']
+    smtp_from_name  = smtp_cfg['fromName']
+    smtp_use_ssl   = smtp_cfg['useSsl']
+    smtp_use_tls   = smtp_cfg['useTls']
 
     if not smtp_host or not smtp_from_email:
-        return jsonify({'error': 'SMTP is not configured. Set SMTP_HOST and SMTP_FROM_EMAIL environment variables.'}), 503
-
-    try:
-        smtp_port = int(smtp_port_raw)
-    except ValueError:
-        return jsonify({'error': 'SMTP_PORT must be a valid integer'}), 500
+        return jsonify({'error': f'SMTP is not configured for club {club}. Set host and fromEmail in the club SMTP settings or via environment variables.'}), 503
 
     log_database_target(club)
     db_info = get_db_for_club(club)
@@ -1389,6 +1454,16 @@ def admin_add_club():
         'adminEmail': str(data.get('adminEmail', '')).strip(),
         'logoUrl': logo_url,
         'beats': [],
+        'smtp': {
+            'host': '',
+            'port': 587,
+            'username': '',
+            'password': '',
+            'fromEmail': str(data.get('adminEmail', '')).strip(),
+            'fromName': f"{str(data.get('fullName', short_name)).strip()} Newsletter",
+            'useSsl': False,
+            'useTls': True,
+        },
     })
     save_clubs_config(clubs)
     return jsonify({'success': True})
@@ -1402,6 +1477,9 @@ def admin_update_club(short_name):
     clubs = load_clubs_config()
     for i, club in enumerate(clubs):
         if club.get('shortName') == short_name:
+            existing_smtp = club.get('smtp', {})
+            incoming_smtp = data.get('smtp', existing_smtp) or existing_smtp
+            raw_smtp = incoming_smtp if isinstance(incoming_smtp, dict) else {}
             clubs[i] = {
                 'fullName': str(data.get('fullName', club.get('fullName', short_name))).strip(),
                 'shortName': short_name,
@@ -1410,6 +1488,16 @@ def admin_update_club(short_name):
                 'adminEmail': str(data.get('adminEmail', club.get('adminEmail', ''))).strip(),
                 'logoUrl': str(data.get('logoUrl', club.get('logoUrl', ''))).strip(),
                 'beats': normalize_beats(data.get('beats', club.get('beats', []))),
+                'smtp': {
+                    'host': str(raw_smtp.get('host', existing_smtp.get('host', ''))).strip(),
+                    'port': int(raw_smtp.get('port', existing_smtp.get('port', 587))) if str(raw_smtp.get('port', existing_smtp.get('port', 587))).isdigit() else 587,
+                    'username': str(raw_smtp.get('username', existing_smtp.get('username', ''))).strip(),
+                    'password': str(raw_smtp.get('password', existing_smtp.get('password', ''))).strip(),
+                    'fromEmail': str(raw_smtp.get('fromEmail', existing_smtp.get('fromEmail', ''))).strip(),
+                    'fromName': str(raw_smtp.get('fromName', existing_smtp.get('fromName', ''))).strip(),
+                    'useSsl': bool(raw_smtp.get('useSsl', existing_smtp.get('useSsl', False))),
+                    'useTls': bool(raw_smtp.get('useTls', existing_smtp.get('useTls', True))),
+                },
             }
             save_clubs_config(clubs)
             return jsonify({'success': True})
@@ -1426,6 +1514,99 @@ def admin_delete_club(short_name):
         return jsonify({'error': f'Club "{short_name}" not found'}), 404
     save_clubs_config(updated)
     return jsonify({'success': True})
+
+
+@app.route('/admin/clubs/<short_name>/smtp', methods=['GET'])
+def admin_get_club_smtp(short_name):
+    """Return the SMTP configuration for a club (password masked)."""
+    if not require_admin_token():
+        return jsonify({'error': 'Unauthorized'}), 401
+    clubs = load_clubs_config()
+    club = next((c for c in clubs if c.get('shortName') == short_name), None)
+    if club is None:
+        return jsonify({'error': f'Club "{short_name}" not found'}), 404
+    smtp = club.get('smtp', {})
+    # Return config with password masked for display (not the actual value)
+    return jsonify({
+        'shortName': short_name,
+        'smtp': {
+            'host': smtp.get('host', ''),
+            'port': smtp.get('port', 587),
+            'username': smtp.get('username', ''),
+            'passwordSet': bool(smtp.get('password', '').strip()),
+            'fromEmail': smtp.get('fromEmail', ''),
+            'fromName': smtp.get('fromName', ''),
+            'useSsl': smtp.get('useSsl', False),
+            'useTls': smtp.get('useTls', True),
+        }
+    })
+
+
+@app.route('/admin/clubs/<short_name>/smtp', methods=['PUT'])
+def admin_update_club_smtp(short_name):
+    """Update the SMTP configuration for a club."""
+    if not require_admin_token():
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    clubs = load_clubs_config()
+    for i, club in enumerate(clubs):
+        if club.get('shortName') == short_name:
+            existing_smtp = club.get('smtp', {}) or {}
+            new_password = str(data.get('password', '')).strip()
+            # Keep existing password if blank is supplied (avoid wiping it on every save)
+            if not new_password:
+                new_password = existing_smtp.get('password', '')
+            clubs[i]['smtp'] = {
+                'host': str(data.get('host', existing_smtp.get('host', ''))).strip(),
+                'port': int(data.get('port', existing_smtp.get('port', 587))) if str(data.get('port', existing_smtp.get('port', 587))).isdigit() else 587,
+                'username': str(data.get('username', existing_smtp.get('username', ''))).strip(),
+                'password': new_password,
+                'fromEmail': str(data.get('fromEmail', existing_smtp.get('fromEmail', ''))).strip(),
+                'fromName': str(data.get('fromName', existing_smtp.get('fromName', ''))).strip(),
+                'useSsl': bool(data.get('useSsl', existing_smtp.get('useSsl', False))),
+                'useTls': bool(data.get('useTls', existing_smtp.get('useTls', True))),
+            }
+            save_clubs_config(clubs)
+            return jsonify({'success': True})
+    return jsonify({'error': f'Club "{short_name}" not found'}), 404
+
+
+@app.route('/admin/clubs/<short_name>/smtp/test', methods=['POST'])
+def admin_test_club_smtp(short_name):
+    """Send a test email using the club's SMTP configuration."""
+    if not require_admin_token():
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    to_email = str(data.get('toEmail', '')).strip()
+    if not to_email:
+        return jsonify({'error': 'toEmail is required'}), 400
+
+    smtp_cfg = get_smtp_config_for_club(short_name)
+    if not smtp_cfg['host'] or not smtp_cfg['fromEmail']:
+        return jsonify({'error': f'SMTP is not configured for club {short_name}'}), 503
+
+    try:
+        message = EmailMessage()
+        message['Subject'] = f'HLaS SMTP Test – {short_name}'
+        message['From'] = f"{smtp_cfg['fromName']} <{smtp_cfg['fromEmail']}>"
+        message['To'] = to_email
+        message.set_content(f'This is a test email from the HLaS application for club {short_name}.\n\nIf you received this, SMTP is configured correctly.')
+
+        if smtp_cfg['useSsl']:
+            server = smtplib.SMTP_SSL(smtp_cfg['host'], smtp_cfg['port'], timeout=20)
+        else:
+            server = smtplib.SMTP(smtp_cfg['host'], smtp_cfg['port'], timeout=20)
+
+        with server:
+            if not smtp_cfg['useSsl'] and smtp_cfg['useTls']:
+                server.starttls()
+            if smtp_cfg['username']:
+                server.login(smtp_cfg['username'], smtp_cfg['password'])
+            server.send_message(message)
+
+        return jsonify({'success': True, 'message': f'Test email sent to {to_email}'})
+    except Exception as exc:
+        return jsonify({'error': f'SMTP test failed: {exc}'}), 502
 
 
 if __name__ == '__main__':

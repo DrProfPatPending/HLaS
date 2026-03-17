@@ -495,6 +495,12 @@
         >
           {{ newsletterSendBusy ? 'Sending…' : 'Send Newsletter to Selected' }}
         </button>
+        <span v-if="clubSmtpFromEmail" class="newsletter-from-indicator">
+          Sending from: <strong>{{ clubSmtpFromEmail }}</strong>
+        </span>
+        <span v-else class="newsletter-from-indicator newsletter-from-not-set">
+          Sending address not configured
+        </span>
       </div>
       <div v-if="newsletterPrepareMessage" class="newsletter-status">{{ newsletterPrepareMessage }}</div>
       <div v-if="newsletterPrepareError" class="newsletter-error">{{ newsletterPrepareError }}</div>
@@ -800,6 +806,8 @@ export default {
       newsletterTemplates: [],
       newsletterAvailableTags: [],
       selectedNewsletterTemplateId: '',
+      clubSmtpFromEmail: '',
+      clubSmtpFromName: '',
       newsletterFilterSelectBusy: false,
       newsletterSendBusy: false,
       newsletterPrepareMessage: '',
@@ -1448,10 +1456,14 @@ export default {
           if (!this.selectedNewsletterTemplateId && this.newsletterTemplates.length) {
             this.selectedNewsletterTemplateId = this.newsletterTemplates[0].id;
           }
+          this.clubSmtpFromEmail = res.data.smtpFromEmail || '';
+          this.clubSmtpFromName  = res.data.smtpFromName  || '';
         })
         .catch(() => {
           this.newsletterTemplates = [];
           this.newsletterAvailableTags = [];
+          this.clubSmtpFromEmail = '';
+          this.clubSmtpFromName  = '';
         });
     },
     openTemplateManager() {
@@ -2021,6 +2033,13 @@ export default {
   flex-wrap: wrap;
   gap: 10px;
   margin: 10px 0;
+}
+#app .newsletter-from-indicator {
+  font-size: 9pt;
+  color: #555;
+}
+#app .newsletter-from-not-set {
+  color: #a94442;
 }
 #app .newsletter-toolbar {
   margin-bottom: 12px;

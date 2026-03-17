@@ -91,6 +91,69 @@
         </tbody>
       </table>
 
+      <!-- SMTP / Email Settings per club -->
+      <h2>Email / SMTP Settings</h2>
+      <p style="font-size:9pt;color:#555;">Configure the outgoing mail account for each club's newsletters. Leave Host empty to fall back to server-level environment variables.</p>
+      <div class="smtp-club-selector">
+        <label for="smtp-club-select"><strong>Club:</strong></label>
+        <select id="smtp-club-select" v-model="smtpSelectedClub" class="field-input short-input" style="width:160px;margin-left:8px;" @change="loadSmtpConfig">
+          <option value="">Select club…</option>
+          <option v-for="c in clubs" :key="c.shortName" :value="c.shortName">{{ c.shortName }} – {{ c.fullName }}</option>
+        </select>
+      </div>
+      <div v-if="smtpSelectedClub && smtpForm" class="smtp-form-panel">
+        <div v-if="smtpStatusMsg" :class="smtpStatusError ? 'error-msg' : 'success-msg'">{{ smtpStatusMsg }}</div>
+        <table class="smtp-form-table">
+          <tbody>
+            <tr>
+              <td class="smtp-label">SMTP Host</td>
+              <td><input v-model="smtpForm.host" class="field-input" placeholder="e.g. smtp.gmail.com" /></td>
+              <td class="smtp-hint">Hostname of your outgoing mail server</td>
+            </tr>
+            <tr>
+              <td class="smtp-label">Port</td>
+              <td><input v-model.number="smtpForm.port" type="number" class="field-input" placeholder="587" style="width:90px;" /></td>
+              <td class="smtp-hint">587 (STARTTLS) or 465 (SSL)</td>
+            </tr>
+            <tr>
+              <td class="smtp-label">Username</td>
+              <td><input v-model="smtpForm.username" class="field-input" placeholder="user@example.com" autocomplete="off" /></td>
+              <td class="smtp-hint">Login username for the mail server</td>
+            </tr>
+            <tr>
+              <td class="smtp-label">Password</td>
+              <td><input v-model="smtpForm.password" type="password" class="field-input" placeholder="Leave blank to keep current" autocomplete="new-password" /></td>
+              <td class="smtp-hint"><span v-if="smtpForm.passwordSet" style="color:#1a7a3a;">✓ Password is set</span><span v-else style="color:#888;">No password stored</span> — leave blank to keep existing</td>
+            </tr>
+            <tr>
+              <td class="smtp-label">From Email</td>
+              <td><input v-model="smtpForm.fromEmail" class="field-input" placeholder="e.g. committee@gaaffs.org" /></td>
+              <td class="smtp-hint">The email address newsletters are sent <em>from</em></td>
+            </tr>
+            <tr>
+              <td class="smtp-label">From Name</td>
+              <td><input v-model="smtpForm.fromName" class="field-input" placeholder="e.g. GAAFFS Newsletter" /></td>
+              <td class="smtp-hint">Friendly name shown to recipients</td>
+            </tr>
+            <tr>
+              <td class="smtp-label">Encryption</td>
+              <td>
+                <label style="margin-right:14px;"><input type="checkbox" v-model="smtpForm.useTls" /> STARTTLS (port 587)</label>
+                <label><input type="checkbox" v-model="smtpForm.useSsl" /> SSL/TLS (port 465)</label>
+              </td>
+              <td class="smtp-hint">Enable STARTTLS or direct SSL – enable one, not both</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="smtp-actions">
+          <button type="button" class="save-btn" @click="saveSmtpConfig">Save SMTP Settings</button>
+          <span style="margin:0 10px;">|</span>
+          <label for="smtp-test-to">Test to:</label>
+          <input id="smtp-test-to" v-model="smtpTestEmail" class="field-input" style="width:220px;display:inline-block;margin:0 6px;" placeholder="your@email.com" />
+          <button type="button" @click="testSmtpConfig">Send Test Email</button>
+        </div>
+      </div>
+
       <!-- Add new club -->
       <h2>Add New Club</h2>
       <table class="clubs-table">
@@ -151,6 +214,11 @@ export default {
       newClubLogoFile: null,
       statusMsg: '',
       statusMsgError: false,
+      smtpSelectedClub: '',
+      smtpForm: null,
+      smtpStatusMsg: '',
+      smtpStatusError: false,
+      smtpTestEmail: '',
     };
   },
   created() {
@@ -286,6 +354,54 @@ export default {
         })
         .catch(err => {
           this.showStatus(err.response?.data?.error || 'Add failed', true);
+        });
+    },
+    loadSmtpConfig() {
+      if (!this.smtpSelectedClub) { this.smtpForm = null; return; }
+      this.smtpStatusMsg = '';
+      axios.get(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp`,
+        { headers: this.authHeaders() })
+        .then(res => {
+          this.smtpForm = { ...res.data.smtp };
+        })
+        .catch(err => {
+          this.smtpStatusMsg = err.response?.data?.error || 'Failed to load SMTP config';
+          this.smtpStatusError = true;
+        });
+    },
+    saveSmtpConfig() {
+      this.smtpStatusMsg = '';
+      axios.put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp`,
+        this.smtpForm,
+        { headers: this.authHeaders() })
+        .then(() => {
+          this.smtpStatusMsg = 'SMTP settings saved.';
+          this.smtpStatusError = false;
+          this.loadSmtpConfig(); // Reload to refresh passwordSet
+        })
+        .catch(err => {
+          this.smtpStatusMsg = err.response?.data?.error || 'Save failed';
+          this.smtpStatusError = true;
+        });
+    },
+    testSmtpConfig() {
+      if (!this.smtpTestEmail.trim()) {
+        this.smtpStatusMsg = 'Please enter a recipient email address for the test.';
+        this.smtpStatusError = true;
+        return;
+      }
+      this.smtpStatusMsg = 'Sending test email…';
+      this.smtpStatusError = false;
+      axios.post(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp/test`,
+        { toEmail: this.smtpTestEmail },
+        { headers: this.authHeaders() })
+        .then(res => {
+          this.smtpStatusMsg = res.data.message || 'Test email sent successfully.';
+          this.smtpStatusError = false;
+        })
+        .catch(err => {
+          this.smtpStatusMsg = err.response?.data?.error || 'Test email failed';
+          this.smtpStatusError = true;
         });
     },
   },
@@ -438,6 +554,46 @@ body {
 }
 #app .desc-textarea {
   resize: vertical;
+}
+#app .smtp-club-selector {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+#app .smtp-form-panel {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 30px;
+  max-width: 860px;
+}
+#app .smtp-form-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+}
+#app .smtp-form-table td {
+  padding: 6px 8px;
+  vertical-align: middle;
+  font-size: 9pt;
+}
+#app .smtp-label {
+  width: 110px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #333;
+}
+#app .smtp-hint {
+  color: #666;
+  font-size: 8.5pt;
+  padding-left: 12px;
+}
+#app .smtp-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 #app .error-msg {
   color: #c00;
