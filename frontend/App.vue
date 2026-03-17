@@ -795,6 +795,9 @@ export default {
       loggedIn: false,
       loggedInUser: null,
       memberAuthToken: '',
+      memberRefreshToken: '',
+      authInterceptorId: null,
+      refreshRequestPromise: null,
       loggedInUsername: '',
       clubLogoLoadFailed: false,
       activeSection: 'home',
@@ -1039,12 +1042,17 @@ export default {
   created() {
     this.restoreMemberSession();
     this.applyMemberAuthHeader();
+    this.initializeAuthInterceptor();
     this.loadClubs();
     if (this.loggedIn) {
       this.fetchMembers();
     }
   },
   beforeUnmount() {
+    if (this.authInterceptorId !== null) {
+      axios.interceptors.response.eject(this.authInterceptorId);
+      this.authInterceptorId = null;
+    }
     if (this.filterDebounceTimer) {
       clearTimeout(this.filterDebounceTimer);
     }
@@ -1054,12 +1062,94 @@ export default {
     this.destroyFishingBeatMap();
   },
   methods: {
+    setMemberTokens(accessToken, refreshToken) {
+      this.memberAuthToken = accessToken || '';
+      this.memberRefreshToken = refreshToken || '';
+      this.applyMemberAuthHeader();
+      this.persistMemberSession();
+    },
     applyMemberAuthHeader() {
       if (this.memberAuthToken) {
         axios.defaults.headers.common.Authorization = `Bearer ${this.memberAuthToken}`;
       } else {
         delete axios.defaults.headers.common.Authorization;
       }
+    },
+    initializeAuthInterceptor() {
+      if (this.authInterceptorId !== null) {
+        return;
+      }
+
+      this.authInterceptorId = axios.interceptors.response.use(
+        response => response,
+        async error => {
+          const statusCode = error && error.response ? error.response.status : 0;
+          const originalRequest = error && error.config ? error.config : null;
+
+          if (!originalRequest || statusCode !== 401) {
+            return Promise.reject(error);
+          }
+
+          const requestUrl = String(originalRequest.url || '');
+          const skipRefresh = Boolean(originalRequest.skipAuthRefresh)
+            || requestUrl.includes('/login')
+            || requestUrl.includes('/logout')
+            || requestUrl.includes('/token/refresh');
+
+          if (skipRefresh || originalRequest._retry || !this.memberRefreshToken || !this.loggedIn) {
+            return Promise.reject(error);
+          }
+
+          originalRequest._retry = true;
+
+          try {
+            await this.refreshMemberAuthToken();
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${this.memberAuthToken}`;
+            return axios(originalRequest);
+          } catch (refreshError) {
+            this.handleAuthSessionExpired();
+            return Promise.reject(refreshError);
+          }
+        }
+      );
+    },
+    async refreshMemberAuthToken() {
+      if (!this.memberRefreshToken) {
+        throw new Error('Missing refresh token');
+      }
+
+      if (this.refreshRequestPromise) {
+        return this.refreshRequestPromise;
+      }
+
+      this.refreshRequestPromise = axios.post(`${API_BASE_URL}/token/refresh`, {
+        refreshToken: this.memberRefreshToken,
+      }, {
+        skipAuthRefresh: true,
+      })
+        .then(response => {
+          const responseData = response && response.data ? response.data : {};
+          if (!responseData.token || !responseData.refreshToken) {
+            throw new Error('Invalid refresh response payload');
+          }
+          this.setMemberTokens(responseData.token, responseData.refreshToken);
+        })
+        .finally(() => {
+          this.refreshRequestPromise = null;
+        });
+
+      return this.refreshRequestPromise;
+    },
+    handleAuthSessionExpired() {
+      this.loggedIn = false;
+      this.loggedInUser = null;
+      this.memberAuthToken = '';
+      this.memberRefreshToken = '';
+      this.loggedInUsername = '';
+      this.applyMemberAuthHeader();
+      this.clearMemberSession();
+      this.loginError = 'Session expired. Please log in again.';
     },
     persistMemberSession() {
       try {
@@ -1069,6 +1159,7 @@ export default {
           loggedInClub: this.loggedInClub || this.selectedClub || 'GAAFFS',
           loggedInUser: this.loggedInUser || null,
           memberAuthToken: this.memberAuthToken || '',
+          memberRefreshToken: this.memberRefreshToken || '',
         };
         window.localStorage.setItem(MEMBER_SESSION_STORAGE_KEY, JSON.stringify(payload));
       } catch {
@@ -1088,7 +1179,7 @@ export default {
         }
 
         const payload = JSON.parse(raw);
-        if (!payload || payload.loggedIn !== true || !payload.memberAuthToken) {
+        if (!payload || payload.loggedIn !== true || !payload.memberAuthToken || !payload.memberRefreshToken) {
           return;
         }
 
@@ -1102,6 +1193,7 @@ export default {
         this.selectedClub = restoredClub;
         this.loggedInUser = payload.loggedInUser || null;
         this.memberAuthToken = typeof payload.memberAuthToken === 'string' ? payload.memberAuthToken : '';
+        this.memberRefreshToken = typeof payload.memberRefreshToken === 'string' ? payload.memberRefreshToken : '';
       } catch {
         this.clearMemberSession();
       }
@@ -1879,17 +1971,15 @@ export default {
       })
         .then(res => {
           if (res.data.success) {
-            if (!res.data.token) {
+            if (!res.data.token || !res.data.refreshToken) {
               this.loginError = 'Login failed: missing session token';
               return;
             }
             this.loggedIn = true;
             this.loggedInUser = res.data.user;
-            this.memberAuthToken = res.data.token;
+            this.setMemberTokens(res.data.token, res.data.refreshToken);
             this.loggedInUsername = this.loginUsername;
             this.loggedInClub = this.selectedClub;
-            this.applyMemberAuthHeader();
-            this.persistMemberSession();
             this.clubLogoLoadFailed = false;
             this.activeSection = 'home';
             this.currentPage = 1;
@@ -1904,14 +1994,18 @@ export default {
     },
     logout() {
       if (this.memberAuthToken) {
-        axios.post(`${API_BASE_URL}/logout`, {}, {
+        axios.post(`${API_BASE_URL}/logout`, {
+          refreshToken: this.memberRefreshToken,
+        }, {
           headers: { Authorization: `Bearer ${this.memberAuthToken}` },
+          skipAuthRefresh: true,
         }).catch(() => {
         });
       }
       this.loggedIn = false;
       this.loggedInUser = null;
       this.memberAuthToken = '';
+      this.memberRefreshToken = '';
       this.loggedInUsername = '';
       this.applyMemberAuthHeader();
       this.clearMemberSession();

@@ -153,8 +153,10 @@ _postgres_cache = {}
 # In-memory admin session tokens (cleared on restart)
 _admin_tokens = set()
 _member_tokens_fallback = {}
+_member_refresh_tokens_fallback = {}
 
 MEMBER_TOKEN_TTL_SECONDS = int(os.getenv('HLAS_MEMBER_TOKEN_TTL_SECONDS', '43200'))
+MEMBER_REFRESH_TOKEN_TTL_SECONDS = int(os.getenv('HLAS_MEMBER_REFRESH_TOKEN_TTL_SECONDS', str(60 * 60 * 24 * 30)))
 
 
 def get_club_logo_path(short_name):
@@ -300,6 +302,10 @@ def _member_token_expiry():
     return _utcnow() + timedelta(seconds=max(60, MEMBER_TOKEN_TTL_SECONDS))
 
 
+def _member_refresh_token_expiry():
+    return _utcnow() + timedelta(seconds=max(300, MEMBER_REFRESH_TOKEN_TTL_SECONDS))
+
+
 def ensure_postgres_member_sessions_table(engine):
     create_table_sql = text(
         """
@@ -326,6 +332,32 @@ def ensure_postgres_member_sessions_table(engine):
         conn.execute(create_index_sql)
 
 
+def ensure_postgres_member_refresh_sessions_table(engine):
+    create_table_sql = text(
+        """
+        CREATE TABLE IF NOT EXISTS member_refresh_sessions (
+            refresh_token_hash VARCHAR(64) PRIMARY KEY,
+            member_id INTEGER NOT NULL,
+            club_short_name VARCHAR(64) NOT NULL,
+            username VARCHAR(255),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            expires_at TIMESTAMPTZ NOT NULL,
+            last_seen_at TIMESTAMPTZ,
+            revoked_at TIMESTAMPTZ
+        )
+        """
+    )
+    create_index_sql = text(
+        """
+        CREATE INDEX IF NOT EXISTS ix_member_refresh_sessions_club_member
+        ON member_refresh_sessions (club_short_name, member_id)
+        """
+    )
+    with engine.begin() as conn:
+        conn.execute(create_table_sql)
+        conn.execute(create_index_sql)
+
+
 def get_postgres_backend():
     database_url = os.getenv('DATABASE_URL', '').strip()
     if not database_url:
@@ -335,8 +367,9 @@ def get_postgres_backend():
     if cache_key not in _postgres_cache:
         engine = create_engine(database_url, future=True)
         ensure_postgres_member_sessions_table(engine)
+        ensure_postgres_member_refresh_sessions_table(engine)
         metadata = MetaData()
-        metadata.reflect(bind=engine, only=['app_settings', 'clubs', 'club_smtp_settings', 'club_beats', 'members', 'newsletter_templates', 'member_sessions'])
+        metadata.reflect(bind=engine, only=['app_settings', 'clubs', 'club_smtp_settings', 'club_beats', 'members', 'newsletter_templates', 'member_sessions', 'member_refresh_sessions'])
         session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
         _postgres_cache[cache_key] = {
             'engine': engine,
@@ -349,6 +382,7 @@ def get_postgres_backend():
             'members_table': metadata.tables['members'],
             'newsletter_templates_table': metadata.tables['newsletter_templates'],
             'member_sessions_table': metadata.tables['member_sessions'],
+            'member_refresh_sessions_table': metadata.tables['member_refresh_sessions'],
             'read_club_cache': {},
         }
     return _postgres_cache[cache_key]
@@ -927,6 +961,126 @@ def issue_member_session_token(member_id, club_short_name, username):
     return token_value
 
 
+def issue_member_refresh_token(member_id, club_short_name, username):
+    token_value = secrets.token_urlsafe(48)
+    token_hash = _hash_member_token(token_value)
+    expires_at = _member_refresh_token_expiry()
+
+    if is_postgres_reads_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            session.execute(
+                backend['member_refresh_sessions_table'].insert().values(
+                    refresh_token_hash=token_hash,
+                    member_id=int(member_id),
+                    club_short_name=str(club_short_name or '').strip(),
+                    username=str(username or '').strip(),
+                    expires_at=expires_at,
+                    last_seen_at=_utcnow(),
+                )
+            )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    else:
+        _member_refresh_tokens_fallback[token_hash] = {
+            'member_id': int(member_id),
+            'club_short_name': str(club_short_name or '').strip(),
+            'username': str(username or '').strip(),
+            'expires_at': expires_at,
+            'revoked_at': None,
+            'last_seen_at': _utcnow(),
+        }
+
+    return token_value
+
+
+def revoke_member_refresh_token(token_value):
+    token_hash = _hash_member_token(token_value)
+    if is_postgres_reads_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            session.execute(
+                backend['member_refresh_sessions_table'].update().where(
+                    backend['member_refresh_sessions_table'].c.refresh_token_hash == token_hash
+                ).values(revoked_at=_utcnow())
+            )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    else:
+        row = _member_refresh_tokens_fallback.get(token_hash)
+        if row is not None:
+            row['revoked_at'] = _utcnow()
+
+
+def get_member_refresh_session_from_token(token_value):
+    token_hash = _hash_member_token(token_value)
+    now_value = _utcnow()
+    if is_postgres_reads_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            row = session.execute(
+                select(backend['member_refresh_sessions_table']).where(
+                    and_(
+                        backend['member_refresh_sessions_table'].c.refresh_token_hash == token_hash,
+                        backend['member_refresh_sessions_table'].c.revoked_at.is_(None),
+                        backend['member_refresh_sessions_table'].c.expires_at > now_value,
+                    )
+                )
+            ).fetchone()
+            if row is None:
+                return None
+
+            session.execute(
+                backend['member_refresh_sessions_table'].update().where(
+                    backend['member_refresh_sessions_table'].c.refresh_token_hash == token_hash
+                ).values(last_seen_at=now_value)
+            )
+            session.commit()
+            return {
+                'member_id': row.member_id,
+                'club_short_name': row.club_short_name,
+                'username': row.username,
+            }
+        finally:
+            session.close()
+
+    row = _member_refresh_tokens_fallback.get(token_hash)
+    if row is None:
+        return None
+    if row.get('revoked_at') is not None:
+        return None
+    if row.get('expires_at') is None or row['expires_at'] <= now_value:
+        return None
+    row['last_seen_at'] = now_value
+    return {
+        'member_id': row.get('member_id'),
+        'club_short_name': row.get('club_short_name', ''),
+        'username': row.get('username', ''),
+    }
+
+
+def issue_member_token_pair(member_id, club_short_name, username):
+    access_token = issue_member_session_token(member_id, club_short_name, username)
+    refresh_token = issue_member_refresh_token(member_id, club_short_name, username)
+    return {
+        'token': access_token,
+        'refreshToken': refresh_token,
+        'expiresInSeconds': MEMBER_TOKEN_TTL_SECONDS,
+        'refreshExpiresInSeconds': MEMBER_REFRESH_TOKEN_TTL_SECONDS,
+    }
+
+
 def revoke_member_session_token(token_value):
     token_hash = _hash_member_token(token_value)
     if is_postgres_reads_enabled():
@@ -1358,9 +1512,9 @@ def login():
             if check_password_hash(stored_password, password):
                 user_dict = member_to_dict(user, members_table)
                 member_id = user_dict.get(id_column.name)
-                token_value = issue_member_session_token(member_id, club, username)
+                token_payload = issue_member_token_pair(member_id, club, username)
                 user_dict.pop('password', None)
-                return jsonify({'success': True, 'user': user_dict, 'token': token_value, 'expiresInSeconds': MEMBER_TOKEN_TTL_SECONDS})
+                return jsonify({'success': True, 'user': user_dict, **token_payload})
             else:
                 user = None  # Password didn't match, reset user
 
@@ -1373,9 +1527,9 @@ def login():
             if check_password_hash(stored_password, password):
                 user_dict = member_to_dict(user, members_table)
                 member_id = user_dict.get(id_column.name)
-                token_value = issue_member_session_token(member_id, club, username)
+                token_payload = issue_member_token_pair(member_id, club, username)
                 user_dict.pop('password', None)
-                return jsonify({'success': True, 'user': user_dict, 'token': token_value, 'expiresInSeconds': MEMBER_TOKEN_TTL_SECONDS})
+                return jsonify({'success': True, 'user': user_dict, **token_payload})
 
     return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
 
@@ -1383,12 +1537,44 @@ def login():
 @app.route('/logout', methods=['POST'])
 def logout():
     token_value = _extract_bearer_token()
+    data = request.json or {}
+    refresh_token_value = str(data.get('refreshToken', '')).strip()
     if token_value:
         try:
             revoke_member_session_token(token_value)
         except Exception:
             app.logger.warning('Failed to revoke member session token during logout', exc_info=True)
+    if refresh_token_value:
+        try:
+            revoke_member_refresh_token(refresh_token_value)
+        except Exception:
+            app.logger.warning('Failed to revoke member refresh token during logout', exc_info=True)
     return jsonify({'success': True})
+
+
+@app.route('/token/refresh', methods=['POST'])
+def refresh_member_token():
+    data = request.json or {}
+    refresh_token_value = str(data.get('refreshToken', '')).strip()
+    if not refresh_token_value:
+        return jsonify({'error': 'refreshToken is required'}), 400
+
+    refresh_session = get_member_refresh_session_from_token(refresh_token_value)
+    if refresh_session is None:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        revoke_member_refresh_token(refresh_token_value)
+    except Exception:
+        app.logger.warning('Failed to rotate refresh token', exc_info=True)
+        return jsonify({'error': 'Failed to refresh session'}), 500
+
+    token_payload = issue_member_token_pair(
+        refresh_session.get('member_id'),
+        refresh_session.get('club_short_name'),
+        refresh_session.get('username'),
+    )
+    return jsonify({'success': True, **token_payload})
 
 
 @app.route('/members', methods=['GET'])
