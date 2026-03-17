@@ -40,6 +40,9 @@
         <input v-model="loginPassword" placeholder="Password" type="password" required />
         <button type="submit">Login</button>
       </form>
+      <div class="admin-login-link">
+        <a href="/admin.html">Admin login</a>
+      </div>
       <div v-if="loginError" style="color: red;">{{ loginError }}</div>
     </div>
     <div v-else>
@@ -2439,6 +2442,13 @@ export default {
 }
 #app .login-container button {
   width: 100%;
+}
+#app .login-container .admin-login-link {
+  margin-top: 10px;
+  text-align: center;
+}
+#app .login-container .admin-login-link a {
+  font-size: 10pt;
 }
 #app .logo-table {
   position: fixed;
