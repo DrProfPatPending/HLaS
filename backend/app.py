@@ -41,16 +41,57 @@ NEWSLETTER_TEMPLATES = {
     'club-update': {
         'id': 'club-update',
         'name': 'Club Update',
-        'subject': '{club} Newsletter Update',
-        'body': 'Hello {name},\n\nThis is your latest newsletter update from {club}.\n\nKind regards,\n{club} Committee',
+        'subject': '<Club> Newsletter Update',
+        'body': (
+            'Dear <Title> <Last_Name>,\n\n'
+            'This is your latest newsletter update from <Club>.\n\n'
+            'Your membership number is <Number>.\n\n'
+            'Kind regards,\n'
+            '<Club> Committee'
+        ),
     },
     'membership-reminder': {
         'id': 'membership-reminder',
         'name': 'Membership Reminder',
-        'subject': '{club} Membership Reminder',
-        'body': 'Hello {name},\n\nThis is a reminder from {club} regarding your membership.\n\nKind regards,\n{club} Committee',
+        'subject': '<Club> Membership Reminder',
+        'body': (
+            'Hello <Preferred_Name>,\n\n'
+            'This is a friendly reminder from <Club> regarding your membership renewal.\n\n'
+            'Name:   <Members_Name>\n'
+            'Number: <Number>\n\n'
+            'Please ensure your subscription is up to date.\n\n'
+            'Kind regards,\n'
+            '<Club> Committee'
+        ),
     },
 }
+
+# Tags that can be embedded in newsletter templates as <Tag_Name>.
+# Values map to either a DB column name (string) or a special key handled at render time.
+NEWSLETTER_TEMPLATE_TAGS = [
+    {'tag': 'Club',          'description': 'Club name',                   'source': 'special'},
+    {'tag': 'Title',         'description': "Member's title (Mr/Mrs/etc)",  'source': 'column'},
+    {'tag': 'First_Name',    'description': "Member's first name",          'source': 'column'},
+    {'tag': 'Last_Name',     'description': "Member's last name",           'source': 'column'},
+    {'tag': 'Preferred_Name','description': "Member's preferred name",      'source': 'column'},
+    {'tag': 'Members_Name',  'description': 'Full name (as stored)',        'source': 'column'},
+    {'tag': 'Number',        'description': 'Membership number',            'source': 'column'},
+    {'tag': 'Member_Type',   'description': 'Membership type',              'source': 'column'},
+    {'tag': 'E_Mail',        'description': "Member's email address",       'source': 'column'},
+]
+_TEMPLATE_TAG_RE = re.compile(r'<([A-Za-z_][A-Za-z0-9_]*)>')
+
+def render_newsletter_template(template_str: str, context: dict) -> str:
+    """Replace <Tag> placeholders in template_str using context dict.
+
+    Unknown tags are left unchanged so authors can spot typos.
+    """
+    return _TEMPLATE_TAG_RE.sub(
+        lambda m: str(context.get(m.group(1), m.group(0))),
+        template_str,
+    )
+
+
 SERVER_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'server.config.json')
 CLUBS_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'clubs.config.json')
 CLUB_LOGOS_DIR = os.path.join(APP_DATA_DIR, 'club_logos')
@@ -856,24 +897,34 @@ def prepare_newsletter_recipients():
 @app.route('/newsletter/templates', methods=['GET'])
 def get_newsletter_templates():
     club = request.args.get('club', 'GAAFFS')
-    context = {
-        'club': club,
-        'name': 'Member',
-        'number': '',
+    # Sample context used to render the preview shown in the UI
+    sample_context = {
+        'Club':           club,
+        'Title':          'Mr',
+        'First_Name':     'John',
+        'Last_Name':      'Smith',
+        'Preferred_Name': 'John',
+        'Members_Name':   'John Smith',
+        'Number':         '42',
+        'Member_Type':    'Standard',
+        'E_Mail':         'john.smith@example.com',
     }
 
     templates = [
         {
-            'id': template['id'],
-            'name': template['name'],
+            'id':              template['id'],
+            'name':            template['name'],
             'subjectTemplate': template['subject'],
-            'bodyTemplate': template['body'],
-            'previewSubject': template['subject'].format_map(context),
-            'previewBody': template['body'].format_map(context),
+            'bodyTemplate':    template['body'],
+            'previewSubject':  render_newsletter_template(template['subject'], sample_context),
+            'previewBody':     render_newsletter_template(template['body'],    sample_context),
         }
         for template in NEWSLETTER_TEMPLATES.values()
     ]
-    return jsonify({'templates': templates})
+    return jsonify({
+        'templates': templates,
+        'availableTags': NEWSLETTER_TEMPLATE_TAGS,
+    })
 
 
 @app.route('/newsletter/filtered_member_ids', methods=['POST'])
@@ -1004,6 +1055,14 @@ def send_newsletter():
     recipients = []
     missing_email_count = 0
 
+    # Pre-resolve optional tag columns once, outside the loop
+    tag_column_map = {}
+    for tag_info in NEWSLETTER_TEMPLATE_TAGS:
+        if tag_info['source'] == 'column':
+            col = get_column(tag_info['tag'], members_table)
+            if col is not None:
+                tag_column_map[tag_info['tag']] = col
+
     for member in matched_members:
         member_payload = member_to_dict(member, members_table)
         email_value = str(member_payload.get(email_column.name, '')).strip() if email_column is not None else ''
@@ -1011,10 +1070,14 @@ def send_newsletter():
             missing_email_count += 1
             continue
 
+        # Build per-member render context covering every known tag
+        member_context = {'Club': club}
+        for tag, col in tag_column_map.items():
+            member_context[tag] = str(member_payload.get(col.name, '') or '').strip()
+
         recipients.append({
             'memberId': str(member_payload.get(id_column.name, '')).strip(),
-            'name': str(member_payload.get(name_column.name, '')).strip() if name_column is not None else '',
-            'number': str(member_payload.get(number_column.name, '')).strip() if number_column is not None else '',
+            'context': member_context,
             'email': email_value,
         })
 
@@ -1037,13 +1100,9 @@ def send_newsletter():
                 server.login(smtp_username, smtp_password)
 
             for recipient in recipients:
-                context = {
-                    'club': club,
-                    'name': recipient.get('name') or 'Member',
-                    'number': recipient.get('number') or '',
-                }
-                subject = template['subject'].format_map(context)
-                body = template['body'].format_map(context)
+                render_ctx = recipient['context']
+                subject = render_newsletter_template(template['subject'], render_ctx)
+                body    = render_newsletter_template(template['body'],    render_ctx)
 
                 message = EmailMessage()
                 message['Subject'] = subject

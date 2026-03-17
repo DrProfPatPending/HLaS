@@ -283,9 +283,18 @@
         <span>Filtered: {{ newsletterTotalMembers }}</span>
       </div>
       <div v-if="selectedNewsletterTemplate" class="newsletter-template-preview">
-        <h3>Template Preview</h3>
+        <h3>Template Preview <span class="newsletter-preview-note">(sample values shown)</span></h3>
         <p><strong>Subject:</strong> {{ selectedNewsletterTemplate.previewSubject }}</p>
         <pre class="newsletter-template-preview-body">{{ selectedNewsletterTemplate.previewBody }}</pre>
+        <div v-if="newsletterAvailableTags.length" class="newsletter-template-tags-hint">
+          <strong>Available tags:</strong>
+          <span
+            v-for="tag in newsletterAvailableTags"
+            :key="tag.tag"
+            class="newsletter-tag-chip"
+            :title="tag.description"
+          >&lt;{{ tag.tag }}&gt;</span>
+        </div>
       </div>
       <table class="newsletter-table">
         <thead>
@@ -689,6 +698,7 @@ export default {
       newsletterPageSize: 10,
       newsletterSelectedMemberIds: [],
       newsletterTemplates: [],
+      newsletterAvailableTags: [],
       selectedNewsletterTemplateId: '',
       newsletterFilterSelectBusy: false,
       newsletterSendBusy: false,
@@ -1324,12 +1334,17 @@ export default {
               previewBody: template.previewBody || template.bodyTemplate || '',
             }));
 
+          this.newsletterAvailableTags = Array.isArray(res.data && res.data.availableTags)
+            ? res.data.availableTags
+            : [];
+
           if (!this.selectedNewsletterTemplateId && this.newsletterTemplates.length) {
             this.selectedNewsletterTemplateId = this.newsletterTemplates[0].id;
           }
         })
         .catch(() => {
           this.newsletterTemplates = [];
+          this.newsletterAvailableTags = [];
         });
     },
     buildNewsletterActiveFilters() {
@@ -1591,6 +1606,7 @@ export default {
       this.newsletterCurrentPage = 1;
       this.newsletterSelectedMemberIds = [];
       this.newsletterTemplates = [];
+      this.newsletterAvailableTags = [];
       this.selectedNewsletterTemplateId = '';
       this.newsletterFilterSelectBusy = false;
       this.newsletterSendBusy = false;
@@ -1807,6 +1823,28 @@ export default {
   white-space: pre-wrap;
   font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;
+}
+#app .newsletter-preview-note {
+  font-size: 8.5pt;
+  font-weight: normal;
+  color: #888;
+}
+#app .newsletter-template-tags-hint {
+  margin-top: 10px;
+  font-size: 9.5pt;
+  color: #444;
+}
+#app .newsletter-tag-chip {
+  display: inline-block;
+  margin: 3px 4px 0 0;
+  padding: 2px 6px;
+  background: #e8f0fe;
+  border: 1px solid #b3c6f0;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 9pt;
+  color: #1a3a7a;
+  cursor: default;
 }
 #app .newsletter-status {
   color: #1c6b2a;
