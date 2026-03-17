@@ -47,6 +47,16 @@ from core.common import (
     normalize_newsletter_filters,
 )
 from core.defaults import _default_clubs_config, _default_server_config
+from db import (
+    _build_postgres_member_values,
+    _resolve_postgres_club_id,
+    get_db_for_club,
+    get_postgres_backend,
+    get_read_db_for_club,
+    initialize_database,
+    is_postgres_reads_enabled,
+    is_postgres_writes_enabled,
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -60,10 +70,6 @@ SERVER_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'server.config.json')
 CLUBS_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'clubs.config.json')
 CLUB_LOGOS_DIR = os.path.join(APP_DATA_DIR, 'club_logos')
 CLUB_DB_TEMPLATE_PATH = os.path.join(DB_DIR, 'template.db')
-
-# Cache for club database engines and metadata
-_club_db_cache = {}
-_postgres_cache = {}
 
 # In-memory admin session tokens (cleared on restart)
 _admin_tokens = set()
@@ -112,15 +118,6 @@ def create_empty_club_database(short_name):
     shutil.copyfile(CLUB_DB_TEMPLATE_PATH, target_db_path)
 
 
-def is_postgres_reads_enabled():
-    flag_value = os.getenv('HLAS_USE_POSTGRES_READS', os.getenv('USE_POSTGRES_READS', '')).strip().lower()
-    return flag_value in {'1', 'true', 'yes', 'on'} and bool(os.getenv('DATABASE_URL', '').strip())
-
-
-def is_postgres_writes_enabled():
-    return is_postgres_reads_enabled()
-
-
 def _hash_member_token(raw_token):
     return hashlib.sha256(str(raw_token or '').encode('utf-8')).hexdigest()
 
@@ -135,132 +132,6 @@ def _member_token_expiry():
 
 def _member_refresh_token_expiry():
     return _utcnow() + timedelta(seconds=max(300, MEMBER_REFRESH_TOKEN_TTL_SECONDS))
-
-
-def ensure_postgres_member_sessions_table(engine):
-    create_table_sql = text(
-        """
-        CREATE TABLE IF NOT EXISTS member_sessions (
-            token_hash VARCHAR(64) PRIMARY KEY,
-            member_id INTEGER NOT NULL,
-            club_short_name VARCHAR(64) NOT NULL,
-            username VARCHAR(255),
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            expires_at TIMESTAMPTZ NOT NULL,
-            last_seen_at TIMESTAMPTZ,
-            revoked_at TIMESTAMPTZ
-        )
-        """
-    )
-    create_index_sql = text(
-        """
-        CREATE INDEX IF NOT EXISTS ix_member_sessions_club_member
-        ON member_sessions (club_short_name, member_id)
-        """
-    )
-    with engine.begin() as conn:
-        conn.execute(create_table_sql)
-        conn.execute(create_index_sql)
-
-
-def ensure_postgres_member_refresh_sessions_table(engine):
-    create_table_sql = text(
-        """
-        CREATE TABLE IF NOT EXISTS member_refresh_sessions (
-            refresh_token_hash VARCHAR(64) PRIMARY KEY,
-            member_id INTEGER NOT NULL,
-            club_short_name VARCHAR(64) NOT NULL,
-            username VARCHAR(255),
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            expires_at TIMESTAMPTZ NOT NULL,
-            last_seen_at TIMESTAMPTZ,
-            revoked_at TIMESTAMPTZ
-        )
-        """
-    )
-    create_index_sql = text(
-        """
-        CREATE INDEX IF NOT EXISTS ix_member_refresh_sessions_club_member
-        ON member_refresh_sessions (club_short_name, member_id)
-        """
-    )
-    with engine.begin() as conn:
-        conn.execute(create_table_sql)
-        conn.execute(create_index_sql)
-
-
-def get_postgres_backend():
-    database_url = os.getenv('DATABASE_URL', '').strip()
-    if not database_url:
-        raise RuntimeError('DATABASE_URL is not configured')
-
-    cache_key = database_url
-    if cache_key not in _postgres_cache:
-        engine = create_engine(database_url, future=True)
-        ensure_postgres_member_sessions_table(engine)
-        ensure_postgres_member_refresh_sessions_table(engine)
-        metadata = MetaData()
-        metadata.reflect(bind=engine, only=['app_settings', 'clubs', 'club_smtp_settings', 'club_beats', 'members', 'newsletter_templates', 'member_sessions', 'member_refresh_sessions'])
-        session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-        _postgres_cache[cache_key] = {
-            'engine': engine,
-            'metadata': metadata,
-            'session_factory': session_factory,
-            'app_settings_table': metadata.tables['app_settings'],
-            'clubs_table': metadata.tables['clubs'],
-            'club_smtp_settings_table': metadata.tables['club_smtp_settings'],
-            'club_beats_table': metadata.tables['club_beats'],
-            'members_table': metadata.tables['members'],
-            'newsletter_templates_table': metadata.tables['newsletter_templates'],
-            'member_sessions_table': metadata.tables['member_sessions'],
-            'member_refresh_sessions_table': metadata.tables['member_refresh_sessions'],
-            'read_club_cache': {},
-        }
-    return _postgres_cache[cache_key]
-
-
-def _resolve_postgres_club_id(session, short_name):
-    backend = get_postgres_backend()
-    clubs_table = backend['clubs_table']
-    return session.execute(
-        select(clubs_table.c.id).where(
-            and_(clubs_table.c.short_name == short_name, clubs_table.c.is_active.is_(True))
-        )
-    ).scalar_one_or_none()
-
-
-def _build_postgres_member_values(data):
-    values = {}
-    for field_name, field_value in (data or {}).items():
-        postgres_column = LEGACY_TO_POSTGRES_MEMBER_COLUMNS.get(field_name)
-        if not postgres_column:
-            continue
-        if field_name == 'password' and field_value:
-            if not str(field_value).startswith(('scrypt:', 'pbkdf2:', 'bcrypt:')):
-                field_value = generate_password_hash(str(field_value))
-        if postgres_column == 'date_of_birth':
-            field_value = _parse_date(field_value)
-        values[postgres_column] = field_value
-    return values
-
-
-def _parse_date(raw_value):
-    value = str(raw_value or '').strip()
-    if not value:
-        return None
-
-    from datetime import datetime
-
-    for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%m/%d/%Y'):
-        try:
-            return datetime.strptime(value, fmt).date()
-        except ValueError:
-            continue
-
-    try:
-        return datetime.fromisoformat(value).date()
-    except Exception:
-        return None
 
 
 def _load_clubs_config_from_json():
@@ -424,108 +295,6 @@ def _load_server_config_from_postgres():
     if 'admin' in loaded_config:
         merged['admin'] = loaded_config['admin']
     return merged
-
-
-def get_read_db_for_club(club):
-    if not is_postgres_reads_enabled():
-        return get_db_for_club(club)
-
-    backend = get_postgres_backend()
-    if club not in backend['read_club_cache']:
-        session = backend['session_factory']()
-        clubs_table = backend['clubs_table']
-        members_base_table = backend['members_table']
-        newsletter_base_table = backend['newsletter_templates_table']
-
-        try:
-            club_id = session.execute(
-                select(clubs_table.c.id).where(
-                    and_(clubs_table.c.short_name == club, clubs_table.c.is_active.is_(True))
-                )
-            ).scalar_one_or_none()
-        finally:
-            session.close()
-
-        if club_id is None:
-            raise RuntimeError(f'Club {club} not found in PostgreSQL')
-
-        mapper_registry = registry()
-        members_query = select(
-            members_base_table.c.id.label('ID'),
-            members_base_table.c.number.label('Number'),
-            members_base_table.c.members_name.label('Members_Name'),
-            members_base_table.c.title.label('Title'),
-            members_base_table.c.first_name.label('First_Name'),
-            members_base_table.c.last_name.label('Last_Name'),
-            members_base_table.c.photo_path.label('Photo_Path'),
-            members_base_table.c.preferred_name.label('Preferred_Name'),
-            members_base_table.c.first_names.label('First_Names'),
-            members_base_table.c.paused.label('Paused'),
-            members_base_table.c.resigned.label('Resigned'),
-            members_base_table.c.member_type.label('Member_Type'),
-            members_base_table.c.subs_expected.label('Subs_Expected'),
-            members_base_table.c.subs_paid.label('Subs_paid'),
-            members_base_table.c.join_fee.label('Join_Fee'),
-            members_base_table.c.paid_up_2026.label('Paid_Up_2026'),
-            members_base_table.c.photo_received.label('Photo_Received'),
-            members_base_table.c.in_whatsapp.label('In_WhatsApp'),
-            members_base_table.c.in_fb.label('In_FB'),
-            cast(members_base_table.c.date_of_birth, String).label('Date_of_Birth'),
-            members_base_table.c.age.label('Age'),
-            members_base_table.c.new_member_2026.label('New_Member_2026'),
-            members_base_table.c.paid_up_card_sent.label('Paid_up_Card_Sent'),
-            members_base_table.c.cr2023.label('CR2023'),
-            members_base_table.c.cr2024.label('CR2024'),
-            members_base_table.c.cr2025.label('CR2025'),
-            members_base_table.c.details_confirmed_2026.label('Details_Confirmed_2026'),
-            members_base_table.c.full_address.label('Full_Address'),
-            members_base_table.c.address_street.label('Address___Street_Address'),
-            members_base_table.c.address_line_2.label('Address___Address_Line_2'),
-            members_base_table.c.address_city.label('Address___City'),
-            members_base_table.c.county.label('County'),
-            members_base_table.c.address_state_region.label('Address___State/Prov/Region'),
-            members_base_table.c.address_zip_postal.label('Address___ZIP/Postal'),
-            members_base_table.c.address_country.label('Address___Country'),
-            members_base_table.c.phone.label('Phone'),
-            members_base_table.c.mobile.label('Mobile'),
-            members_base_table.c.email.label('E_Mail'),
-            members_base_table.c.ea_licence.label('EA_Licence'),
-            members_base_table.c.licence_exp.label('Licence_Exp'),
-            members_base_table.c.car_reg.label('Car_Reg'),
-            members_base_table.c.username.label('username'),
-            members_base_table.c.password.label('password'),
-        ).where(members_base_table.c.club_id == club_id).subquery(f'{club.lower()}_members_read')
-
-        newsletter_query = select(
-            newsletter_base_table.c.template_key.label('id'),
-            newsletter_base_table.c.name.label('name'),
-            newsletter_base_table.c.subject.label('subject'),
-            newsletter_base_table.c.body.label('body'),
-        ).where(newsletter_base_table.c.club_id == club_id).subquery(f'{club.lower()}_newsletter_templates_read')
-
-        class Member:
-            pass
-
-        mapper_registry.map_imperatively(Member, members_query, primary_key=[members_query.c.ID])
-        backend['read_club_cache'][club] = {
-            'club_id': club_id,
-            'mapper_registry': mapper_registry,
-            'members_table': members_query,
-            'newsletter_templates_table': newsletter_query,
-            'Member': Member,
-        }
-
-    cache = backend['read_club_cache'][club]
-    session = backend['session_factory']()
-    return {
-        'session': session,
-        'engine': backend['engine'],
-        'members_table': cache['members_table'],
-        'newsletter_templates_table': cache['newsletter_templates_table'],
-        'Member': cache['Member'],
-        'mapper_registry': cache['mapper_registry'],
-        'club_id': cache['club_id'],
-    }
 
 
 def load_clubs_config():
@@ -951,92 +720,6 @@ def require_member_token_for_club(club_short_name):
     g.member_session = session_payload
     return None
 
-
-def ensure_newsletter_templates_table(engine):
-    """Ensure newsletter_templates table exists; create with defaults if needed."""
-    inspector_metadata = MetaData()
-    inspector_metadata.reflect(bind=engine)
-    
-    if 'newsletter_templates' not in inspector_metadata.tables:
-        # Table doesn't exist - create it
-        template_metadata = MetaData()
-        Table(
-            'newsletter_templates',
-            template_metadata,
-            Column('id', String, primary_key=True),
-            Column('name', String, nullable=False),
-            Column('subject', String, nullable=False),
-            Column('body', String, nullable=False),
-        )
-        template_metadata.create_all(bind=engine)
-        
-        # Insert default templates
-        with engine.connect() as conn:
-            conn.execute(
-                '''INSERT INTO newsletter_templates (id, name, subject, body) VALUES (?, ?, ?, ?)''',
-                [
-                    ('club-update', 'Club Update', '<Club> Newsletter Update',
-                     'Dear <Title> <Last_Name>,\n\nThis is your latest newsletter update from <Club>.\n\nYour membership number is <Number>.\n\nKind regards,\n<Club> Committee'),
-                    ('membership-reminder', 'Membership Reminder', '<Club> Membership Reminder',
-                     'Hello <Preferred_Name>,\n\nThis is a friendly reminder from <Club> regarding your membership renewal.\n\nName:   <Members_Name>\nNumber: <Number>\n\nPlease ensure your subscription is up to date.\n\nKind regards,\n<Club> Committee'),
-                ]
-            )
-            conn.commit()
-
-
-def get_db_for_club(club):
-    """Get or create database engine and session for the specified club."""
-    if club not in _club_db_cache:
-        db_path = os.path.join(APP_DATA_DIR, f'{club}.db')
-        database_url = f"sqlite:///{db_path.replace(os.sep, '/')}"
-        engine = create_engine(database_url, future=True)
-        session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-        
-        # Ensure newsletter templates table exists
-        ensure_newsletter_templates_table(engine)
-        
-        # Load metadata for this club's database
-        mapper_registry = registry()
-        metadata = mapper_registry.metadata
-        members_table = Table('members', metadata, autoload_with=engine)
-        newsletter_templates_table = Table('newsletter_templates', metadata, autoload_with=engine)
-        
-        if len(members_table.primary_key.columns) == 0:
-            fallback_primary_key = None
-            for candidate_key in ('ID', 'id', 'Number', 'username'):
-                if candidate_key in members_table.c:
-                    fallback_primary_key = candidate_key
-                    break
-            if fallback_primary_key is None:
-                raise RuntimeError(f'Could not determine a primary key for members table in {club}.db')
-            members_table.append_constraint(PrimaryKeyConstraint(members_table.c[fallback_primary_key]))
-        
-        class Member:
-            pass
-        
-        mapper_registry.map_imperatively(Member, members_table)
-        
-        _club_db_cache[club] = {
-            'engine': engine,
-            'session_factory': session_factory,
-            'mapper_registry': mapper_registry,
-            'metadata': metadata,
-            'members_table': members_table,
-            'newsletter_templates_table': newsletter_templates_table,
-            'Member': Member
-        }
-    
-    cache = _club_db_cache[club]
-    session = cache['session_factory']()
-    return {
-        'session': session,
-        'engine': cache['engine'],
-        'members_table': cache['members_table'],
-        'newsletter_templates_table': cache['newsletter_templates_table'],
-        'Member': cache['Member'],
-        'mapper_registry': cache['mapper_registry']
-    }
-
 def get_column(column_name, members_table):
     """Get column from members table."""
     return members_table.c.get(column_name)
@@ -1064,25 +747,6 @@ def get_identifier_column(members_table):
     if id_column is None:
         id_column = get_column('Number', members_table)
     return id_column
-
-
-def initialize_database(club):
-    """Initialize database for a club if it doesn't exist."""
-    db_path = os.path.join(APP_DATA_DIR, f'{club}.db')
-    database_url = f"sqlite:///{db_path.replace(os.sep, '/')}"
-    engine = create_engine(database_url, future=True)
-    bootstrap_metadata = MetaData()
-    Table(
-        'members',
-        bootstrap_metadata,
-        Column('id', Integer, primary_key=True, autoincrement=True),
-        Column('name', String, nullable=False),
-        Column('email', String),
-        Column('phone', String),
-        Column('membership_type', String),
-        Column('password', String),
-    )
-    bootstrap_metadata.create_all(bind=engine)
 
 
 def configure_logging():
