@@ -17,6 +17,7 @@ from sqlalchemy import (
     select,
     and_,
     or_,
+    text,
 )
 from sqlalchemy.orm import registry, scoped_session, sessionmaker
 import os
@@ -26,6 +27,9 @@ import time
 import uuid
 import re
 import shutil
+import secrets
+import hashlib
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
@@ -148,6 +152,9 @@ _postgres_cache = {}
 
 # In-memory admin session tokens (cleared on restart)
 _admin_tokens = set()
+_member_tokens_fallback = {}
+
+MEMBER_TOKEN_TTL_SECONDS = int(os.getenv('HLAS_MEMBER_TOKEN_TTL_SECONDS', '43200'))
 
 
 def get_club_logo_path(short_name):
@@ -281,6 +288,44 @@ def is_postgres_writes_enabled():
     return is_postgres_reads_enabled()
 
 
+def _hash_member_token(raw_token):
+    return hashlib.sha256(str(raw_token or '').encode('utf-8')).hexdigest()
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
+
+
+def _member_token_expiry():
+    return _utcnow() + timedelta(seconds=max(60, MEMBER_TOKEN_TTL_SECONDS))
+
+
+def ensure_postgres_member_sessions_table(engine):
+    create_table_sql = text(
+        """
+        CREATE TABLE IF NOT EXISTS member_sessions (
+            token_hash VARCHAR(64) PRIMARY KEY,
+            member_id INTEGER NOT NULL,
+            club_short_name VARCHAR(64) NOT NULL,
+            username VARCHAR(255),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            expires_at TIMESTAMPTZ NOT NULL,
+            last_seen_at TIMESTAMPTZ,
+            revoked_at TIMESTAMPTZ
+        )
+        """
+    )
+    create_index_sql = text(
+        """
+        CREATE INDEX IF NOT EXISTS ix_member_sessions_club_member
+        ON member_sessions (club_short_name, member_id)
+        """
+    )
+    with engine.begin() as conn:
+        conn.execute(create_table_sql)
+        conn.execute(create_index_sql)
+
+
 def get_postgres_backend():
     database_url = os.getenv('DATABASE_URL', '').strip()
     if not database_url:
@@ -289,8 +334,9 @@ def get_postgres_backend():
     cache_key = database_url
     if cache_key not in _postgres_cache:
         engine = create_engine(database_url, future=True)
+        ensure_postgres_member_sessions_table(engine)
         metadata = MetaData()
-        metadata.reflect(bind=engine, only=['app_settings', 'clubs', 'club_smtp_settings', 'club_beats', 'members', 'newsletter_templates'])
+        metadata.reflect(bind=engine, only=['app_settings', 'clubs', 'club_smtp_settings', 'club_beats', 'members', 'newsletter_templates', 'member_sessions'])
         session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
         _postgres_cache[cache_key] = {
             'engine': engine,
@@ -302,6 +348,7 @@ def get_postgres_backend():
             'club_beats_table': metadata.tables['club_beats'],
             'members_table': metadata.tables['members'],
             'newsletter_templates_table': metadata.tables['newsletter_templates'],
+            'member_sessions_table': metadata.tables['member_sessions'],
             'read_club_cache': {},
         }
     return _postgres_cache[cache_key]
@@ -835,6 +882,140 @@ def require_admin_token():
     return auth_header[7:] in _admin_tokens
 
 
+def _extract_bearer_token():
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return ''
+    return auth_header[7:].strip()
+
+
+def issue_member_session_token(member_id, club_short_name, username):
+    token_value = secrets.token_urlsafe(32)
+    token_hash = _hash_member_token(token_value)
+    expires_at = _member_token_expiry()
+
+    if is_postgres_reads_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            session.execute(
+                backend['member_sessions_table'].insert().values(
+                    token_hash=token_hash,
+                    member_id=int(member_id),
+                    club_short_name=str(club_short_name or '').strip(),
+                    username=str(username or '').strip(),
+                    expires_at=expires_at,
+                    last_seen_at=_utcnow(),
+                )
+            )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    else:
+        _member_tokens_fallback[token_hash] = {
+            'member_id': int(member_id),
+            'club_short_name': str(club_short_name or '').strip(),
+            'username': str(username or '').strip(),
+            'expires_at': expires_at,
+            'revoked_at': None,
+            'last_seen_at': _utcnow(),
+        }
+
+    return token_value
+
+
+def revoke_member_session_token(token_value):
+    token_hash = _hash_member_token(token_value)
+    if is_postgres_reads_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            session.execute(
+                backend['member_sessions_table'].update().where(
+                    backend['member_sessions_table'].c.token_hash == token_hash
+                ).values(revoked_at=_utcnow())
+            )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    else:
+        row = _member_tokens_fallback.get(token_hash)
+        if row is not None:
+            row['revoked_at'] = _utcnow()
+
+
+def get_member_session_from_token(token_value):
+    token_hash = _hash_member_token(token_value)
+    now_value = _utcnow()
+    if is_postgres_reads_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            row = session.execute(
+                select(backend['member_sessions_table']).where(
+                    and_(
+                        backend['member_sessions_table'].c.token_hash == token_hash,
+                        backend['member_sessions_table'].c.revoked_at.is_(None),
+                        backend['member_sessions_table'].c.expires_at > now_value,
+                    )
+                )
+            ).fetchone()
+            if row is None:
+                return None
+
+            session.execute(
+                backend['member_sessions_table'].update().where(
+                    backend['member_sessions_table'].c.token_hash == token_hash
+                ).values(last_seen_at=now_value)
+            )
+            session.commit()
+            return {
+                'member_id': row.member_id,
+                'club_short_name': row.club_short_name,
+                'username': row.username,
+            }
+        finally:
+            session.close()
+
+    row = _member_tokens_fallback.get(token_hash)
+    if row is None:
+        return None
+    if row.get('revoked_at') is not None:
+        return None
+    if row.get('expires_at') is None or row['expires_at'] <= now_value:
+        return None
+    row['last_seen_at'] = now_value
+    return {
+        'member_id': row.get('member_id'),
+        'club_short_name': row.get('club_short_name', ''),
+        'username': row.get('username', ''),
+    }
+
+
+def require_member_token_for_club(club_short_name):
+    token_value = _extract_bearer_token()
+    if not token_value:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    session_payload = get_member_session_from_token(token_value)
+    if session_payload is None:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    expected = str(club_short_name or '').strip()
+    actual = str(session_payload.get('club_short_name', '')).strip()
+    if expected and actual and expected != actual:
+        return jsonify({'error': 'Forbidden for selected club'}), 403
+
+    g.member_session = session_payload
+    return None
+
+
 def ensure_newsletter_templates_table(engine):
     """Ensure newsletter_templates table exists; create with defaults if needed."""
     inspector_metadata = MetaData()
@@ -1162,8 +1343,9 @@ def login():
     password_column = get_column('password', members_table)
     name_column = get_column('Members_Name', members_table)
     username_column = get_column('username', members_table)
+    id_column = get_identifier_column(members_table)
 
-    if password_column is None or (name_column is None and username_column is None):
+    if password_column is None or id_column is None or (name_column is None and username_column is None):
         return jsonify({'success': False, 'error': 'Login columns are missing from members table'}), 500
 
     # Try matching by Members_Name
@@ -1175,8 +1357,10 @@ def login():
             stored_password = getattr(user, password_column.name)
             if check_password_hash(stored_password, password):
                 user_dict = member_to_dict(user, members_table)
+                member_id = user_dict.get(id_column.name)
+                token_value = issue_member_session_token(member_id, club, username)
                 user_dict.pop('password', None)
-                return jsonify({'success': True, 'user': user_dict})
+                return jsonify({'success': True, 'user': user_dict, 'token': token_value, 'expiresInSeconds': MEMBER_TOKEN_TTL_SECONDS})
             else:
                 user = None  # Password didn't match, reset user
 
@@ -1188,15 +1372,31 @@ def login():
             stored_password = getattr(user, password_column.name)
             if check_password_hash(stored_password, password):
                 user_dict = member_to_dict(user, members_table)
+                member_id = user_dict.get(id_column.name)
+                token_value = issue_member_session_token(member_id, club, username)
                 user_dict.pop('password', None)
-                return jsonify({'success': True, 'user': user_dict})
+                return jsonify({'success': True, 'user': user_dict, 'token': token_value, 'expiresInSeconds': MEMBER_TOKEN_TTL_SECONDS})
 
     return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    token_value = _extract_bearer_token()
+    if token_value:
+        try:
+            revoke_member_session_token(token_value)
+        except Exception:
+            app.logger.warning('Failed to revoke member session token during logout', exc_info=True)
+    return jsonify({'success': True})
 
 
 @app.route('/members', methods=['GET'])
 def get_members():
     club = request.args.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     limit = int(request.args.get('limit', 10))
     offset = int(request.args.get('offset', 0))
     sort_by = request.args.get('sort_by')
@@ -1265,6 +1465,9 @@ def get_members():
 def add_member():
     data = request.json or {}
     club = data.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     log_database_target(club)
     if is_postgres_writes_enabled():
         backend = get_postgres_backend()
@@ -1306,6 +1509,9 @@ def add_member():
 def update_member(member_id):
     data = request.json or {}
     club = data.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     log_database_target(club)
     if is_postgres_writes_enabled():
         backend = get_postgres_backend()
@@ -1364,6 +1570,9 @@ def update_member(member_id):
 @app.route('/members/<int:member_id>', methods=['DELETE'])
 def delete_member(member_id):
     club = request.args.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     log_database_target(club)
     if is_postgres_writes_enabled():
         backend = get_postgres_backend()
@@ -1407,6 +1616,9 @@ def delete_member(member_id):
 @app.route('/member_by_number/<number>', methods=['GET'])
 def get_member_by_number(number):
     club = request.args.get('club', 'GAAFFS')  # Default to GAAFFS if not provided
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     log_database_target(club)
     db_info = get_read_db_for_club(club)
     session = db_info['session']
@@ -1428,6 +1640,9 @@ def get_member_by_number(number):
 def prepare_newsletter_recipients():
     data = request.json or {}
     club = data.get('club', 'GAAFFS')
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     member_ids = data.get('memberIds', [])
 
     if not isinstance(member_ids, list) or not member_ids:
@@ -1506,6 +1721,9 @@ def prepare_newsletter_recipients():
 @app.route('/newsletter/templates', methods=['GET'])
 def get_newsletter_templates():
     club = request.args.get('club', 'GAAFFS')
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     # Sample context used to render the preview shown in the UI
     sample_context = {
         'Club':           club,
@@ -1567,6 +1785,9 @@ def update_newsletter_template(template_id):
     """Update an existing newsletter template."""
     data = request.json or {}
     club = data.get('club', 'GAAFFS')
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     name = data.get('name', '').strip()
     subject = data.get('subject', '').strip()
     body = data.get('body', '').strip()
@@ -1615,6 +1836,9 @@ def update_newsletter_template(template_id):
 def delete_newsletter_template(template_id):
     """Delete a newsletter template (except defaults)."""
     club = request.args.get('club', 'GAAFFS')
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     
     # Prevent deletion of default templates
     if template_id in ('club-update', 'membership-reminder'):
@@ -1662,6 +1886,9 @@ def create_newsletter_template():
     """Create a new newsletter template."""
     data = request.json or {}
     club = data.get('club', 'GAAFFS')
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     template_id = data.get('id', '').strip()
     name = data.get('name', '').strip()
     subject = data.get('subject', '').strip()
@@ -1715,6 +1942,9 @@ def create_newsletter_template():
 def get_newsletter_filtered_member_ids():
     data = request.json or {}
     club = data.get('club', 'GAAFFS')
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     filters_source = data.get('filters', {})
 
     valid_clubs = get_valid_club_short_names()
@@ -1761,6 +1991,9 @@ def get_newsletter_filtered_member_ids():
 def send_newsletter():
     data = request.json or {}
     club = data.get('club', 'GAAFFS')
+    auth_error = require_member_token_for_club(club)
+    if auth_error:
+        return auth_error
     template_id = str(data.get('templateId', '')).strip()
     scope = str(data.get('scope', 'all_club')).strip().lower()
     member_ids = data.get('memberIds', [])

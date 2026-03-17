@@ -794,6 +794,7 @@ export default {
       clubs: [],
       loggedIn: false,
       loggedInUser: null,
+      memberAuthToken: '',
       loggedInUsername: '',
       clubLogoLoadFailed: false,
       activeSection: 'home',
@@ -1037,6 +1038,7 @@ export default {
   },
   created() {
     this.restoreMemberSession();
+    this.applyMemberAuthHeader();
     this.loadClubs();
     if (this.loggedIn) {
       this.fetchMembers();
@@ -1052,6 +1054,13 @@ export default {
     this.destroyFishingBeatMap();
   },
   methods: {
+    applyMemberAuthHeader() {
+      if (this.memberAuthToken) {
+        axios.defaults.headers.common.Authorization = `Bearer ${this.memberAuthToken}`;
+      } else {
+        delete axios.defaults.headers.common.Authorization;
+      }
+    },
     persistMemberSession() {
       try {
         const payload = {
@@ -1059,6 +1068,7 @@ export default {
           loggedInUsername: this.loggedInUsername || '',
           loggedInClub: this.loggedInClub || this.selectedClub || 'GAAFFS',
           loggedInUser: this.loggedInUser || null,
+          memberAuthToken: this.memberAuthToken || '',
         };
         window.localStorage.setItem(MEMBER_SESSION_STORAGE_KEY, JSON.stringify(payload));
       } catch {
@@ -1078,7 +1088,7 @@ export default {
         }
 
         const payload = JSON.parse(raw);
-        if (!payload || payload.loggedIn !== true) {
+        if (!payload || payload.loggedIn !== true || !payload.memberAuthToken) {
           return;
         }
 
@@ -1091,6 +1101,7 @@ export default {
         this.loggedInClub = restoredClub;
         this.selectedClub = restoredClub;
         this.loggedInUser = payload.loggedInUser || null;
+        this.memberAuthToken = typeof payload.memberAuthToken === 'string' ? payload.memberAuthToken : '';
       } catch {
         this.clearMemberSession();
       }
@@ -1868,10 +1879,16 @@ export default {
       })
         .then(res => {
           if (res.data.success) {
+            if (!res.data.token) {
+              this.loginError = 'Login failed: missing session token';
+              return;
+            }
             this.loggedIn = true;
             this.loggedInUser = res.data.user;
+            this.memberAuthToken = res.data.token;
             this.loggedInUsername = this.loginUsername;
             this.loggedInClub = this.selectedClub;
+            this.applyMemberAuthHeader();
             this.persistMemberSession();
             this.clubLogoLoadFailed = false;
             this.activeSection = 'home';
@@ -1886,10 +1903,18 @@ export default {
         });
     },
     logout() {
-      this.clearMemberSession();
+      if (this.memberAuthToken) {
+        axios.post(`${API_BASE_URL}/logout`, {}, {
+          headers: { Authorization: `Bearer ${this.memberAuthToken}` },
+        }).catch(() => {
+        });
+      }
       this.loggedIn = false;
       this.loggedInUser = null;
+      this.memberAuthToken = '';
       this.loggedInUsername = '';
+      this.applyMemberAuthHeader();
+      this.clearMemberSession();
       this.clubLogoLoadFailed = false;
       this.activeSection = 'home';
       this.loginPassword = '';
