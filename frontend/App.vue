@@ -477,9 +477,6 @@
         </button>
       </div>
       <div class="newsletter-actions">
-        <button type="button" :disabled="!newsletterSelectedMemberIds.length" @click="prepareNewsletterRecipients">
-          Prepare Selected for Email
-        </button>
         <button
           type="button"
           :disabled="!selectedNewsletterTemplateId || newsletterSendBusy"
@@ -487,7 +484,17 @@
         >
           {{ newsletterSendBusy ? 'Sending…' : 'Send Newsletter to All' }}
         </button>
+        <button type="button" :disabled="!newsletterSelectedMemberIds.length" @click="prepareNewsletterRecipients">
+          Prepare Selected for Email
+        </button>
         <span>Selected: {{ newsletterSelectedMemberIds.length }}</span>
+        <button
+          type="button"
+          :disabled="!selectedNewsletterTemplateId || !newsletterSelectedMemberIds.length || newsletterSendBusy"
+          @click="sendNewsletterToSelectedMembers"
+        >
+          {{ newsletterSendBusy ? 'Sending…' : 'Send Newsletter to Selected' }}
+        </button>
       </div>
       <div v-if="newsletterPrepareMessage" class="newsletter-status">{{ newsletterPrepareMessage }}</div>
       <div v-if="newsletterPrepareError" class="newsletter-error">{{ newsletterPrepareError }}</div>
@@ -1644,6 +1651,41 @@ export default {
           this.newsletterPrepareError = err.response && err.response.data && err.response.data.error
             ? err.response.data.error
             : 'Failed to send newsletter to all members';
+        })
+        .finally(() => {
+          this.newsletterSendBusy = false;
+        });
+    },
+    sendNewsletterToSelectedMembers() {
+      this.newsletterPrepareMessage = '';
+      this.newsletterPrepareError = '';
+
+      if (!this.selectedNewsletterTemplateId) {
+        this.newsletterPrepareError = 'Please select a newsletter template.';
+        return;
+      }
+
+      if (!this.newsletterSelectedMemberIds.length) {
+        this.newsletterPrepareError = 'Please select at least one member.';
+        return;
+      }
+
+      this.newsletterSendBusy = true;
+
+      axios.post(`${API_BASE_URL}/newsletter/send`, {
+        club: this.loggedInClub,
+        templateId: this.selectedNewsletterTemplateId,
+        scope: 'selected',
+        memberIds: this.newsletterSelectedMemberIds,
+      })
+        .then(res => {
+          const summary = res.data || {};
+          this.newsletterPrepareMessage = `Sent ${summary.sentCount || 0} emails to ${summary.emailableCount || 0} selected emailable members.`;
+        })
+        .catch(err => {
+          this.newsletterPrepareError = err.response && err.response.data && err.response.data.error
+            ? err.response.data.error
+            : 'Failed to send newsletter to selected members';
         })
         .finally(() => {
           this.newsletterSendBusy = false;
