@@ -65,9 +65,6 @@ from auth import (
     revoke_member_session_token,
 )
 
-app = Flask(__name__)
-CORS(app)
-
 # Store database configurations per club in Flask's g object
 DB_DIR = os.path.dirname(__file__)
 APP_DATA_DIR = os.getenv('HLAS_DATA_DIR', DB_DIR)
@@ -470,13 +467,26 @@ def get_identifier_column(members_table):
     return id_column
 
 
-def configure_logging():
+def configure_logging(app_context=None):
+    """Configure logging for the Flask application.
+    
+    Loads logging configuration from server.config.json and environment variables,
+    then applies it to the Flask app logger and werkzeug logger.
+    
+    Args:
+        app_context: Optional Flask app instance to configure. If not provided,
+                     uses the module-level app instance. This enables the function
+                     to work both at module initialization and in tests.
+    """
+    if app_context is None:
+        app_context = app
+    
     config = load_server_config()
     configured_level = config.get('logging', {}).get('level', 'INFO')
     log_level = os.getenv('LOG_LEVEL', str(configured_level)).upper()
-    app.logger.setLevel(log_level)
+    app_context.logger.setLevel(log_level)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
-    for handler in app.logger.handlers:
+    for handler in app_context.logger.handlers:
         handler.setFormatter(formatter)
     werkzeug_logger = logging.getLogger('werkzeug')
     werkzeug_logger.setLevel(logging.ERROR)
@@ -504,37 +514,32 @@ def member_to_dict(member, members_table):
     return {column.name: getattr(member, column.name) for column in members_table.columns}
 
 
-def get_column(column_name, members_table):
-    """Get column from members table."""
-    return members_table.c.get(column_name)
+def _register_infrastructure_hooks(app_instance):
+    """Register teardown, before_request, and after_request hooks."""
+    @app_instance.teardown_appcontext
+    def remove_session(exception=None):
+        pass  # Individual sessions are managed per request
 
+    @app_instance.before_request
+    def start_request_timer():
+        g.request_start_time = time.perf_counter()
 
-@app.teardown_appcontext
-def remove_session(exception=None):
-    pass  # Individual sessions are managed per request
+    @app_instance.after_request
+    def log_request(response):
+        start_time = getattr(g, 'request_start_time', None)
+        duration_ms = None
+        if start_time is not None:
+            duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
-
-@app.before_request
-def start_request_timer():
-    g.request_start_time = time.perf_counter()
-
-
-@app.after_request
-def log_request(response):
-    start_time = getattr(g, 'request_start_time', None)
-    duration_ms = None
-    if start_time is not None:
-        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
-
-    app.logger.info(json.dumps({
-        'event': 'http.request',
-        'method': request.method,
-        'path': request.path,
-        'query_string': request.query_string.decode('utf-8'),
-        'status_code': response.status_code,
-        'duration_ms': duration_ms,
-    }))
-    return response
+        app_instance.logger.info(json.dumps({
+            'event': 'http.request',
+            'method': request.method,
+            'path': request.path,
+            'query_string': request.query_string.decode('utf-8'),
+            'status_code': response.status_code,
+            'duration_ms': duration_ms,
+        }))
+        return response
 
 
 def get_valid_club_short_names():
@@ -553,51 +558,78 @@ from routes import (
     create_public_blueprint,
 )
 
-_route_deps = {
-    'APP_DATA_DIR': APP_DATA_DIR,
-    'CLUB_LOGOS_DIR': CLUB_LOGOS_DIR,
-    'FILTERABLE_COLUMNS': FILTERABLE_COLUMNS,
-    'NEWSLETTER_TEMPLATES': NEWSLETTER_TEMPLATES,
-    'NEWSLETTER_TEMPLATE_TAGS': NEWSLETTER_TEMPLATE_TAGS,
-    'load_clubs_config': load_clubs_config,
-    'normalize_what3words_words': normalize_what3words_words,
-    'get_valid_club_short_names': get_valid_club_short_names,
-    'get_club_logo_path': get_club_logo_path,
-    'log_database_target': log_database_target,
-    'get_read_db_for_club': get_read_db_for_club,
-    'get_db_for_club': get_db_for_club,
-    'get_column': get_column,
-    'get_identifier_column': get_identifier_column,
-    'member_to_dict': member_to_dict,
-    'issue_member_token_pair': issue_member_token_pair,
-    'extract_bearer_token': extract_bearer_token,
-    'revoke_member_session_token': revoke_member_session_token,
-    'revoke_member_refresh_token': revoke_member_refresh_token,
-    'get_member_refresh_session_from_token': get_member_refresh_session_from_token,
-    'require_member_token_for_club': require_member_token_for_club,
-    'wildcard_to_sql_like': wildcard_to_sql_like,
-    'is_postgres_writes_enabled': is_postgres_writes_enabled,
-    'get_postgres_backend': get_postgres_backend,
-    '_resolve_postgres_club_id': _resolve_postgres_club_id,
-    '_build_postgres_member_values': _build_postgres_member_values,
-    'normalize_newsletter_filters': normalize_newsletter_filters,
-    'build_member_filters': build_member_filters,
-    'render_newsletter_template': render_newsletter_template,
-    'get_smtp_config_for_club': get_smtp_config_for_club,
-    'get_admin_config': get_admin_config,
-    'issue_admin_token': issue_admin_token,
-    'revoke_admin_token_from_request': revoke_admin_token_from_request,
-    'require_admin_token': require_admin_token,
-    'save_clubs_config': save_clubs_config,
-    'save_uploaded_logo': save_uploaded_logo,
-    'create_empty_club_database': create_empty_club_database,
-    'normalize_beats': normalize_beats,
-}
 
-app.register_blueprint(create_public_blueprint(_route_deps))
-app.register_blueprint(create_member_blueprint(_route_deps))
-app.register_blueprint(create_newsletter_blueprint(_route_deps))
-app.register_blueprint(create_admin_blueprint(_route_deps))
+def create_app():
+    """Application factory function to create and configure the Flask app.
+    
+    This factory enables testability and allows multiple app instances
+    to be created with different configurations. Returns a fully initialized
+    Flask application ready to handle requests.
+    
+    Returns:
+        Flask: Configured Flask application instance with blueprints registered
+               and infrastructure hooks installed.
+    """
+    app_instance = Flask(__name__)
+    CORS(app_instance)
+
+    # Build dependency injection dictionary for routes
+    route_deps = {
+        'APP_DATA_DIR': APP_DATA_DIR,
+        'CLUB_LOGOS_DIR': CLUB_LOGOS_DIR,
+        'FILTERABLE_COLUMNS': FILTERABLE_COLUMNS,
+        'NEWSLETTER_TEMPLATES': NEWSLETTER_TEMPLATES,
+        'NEWSLETTER_TEMPLATE_TAGS': NEWSLETTER_TEMPLATE_TAGS,
+        'load_clubs_config': load_clubs_config,
+        'normalize_what3words_words': normalize_what3words_words,
+        'get_valid_club_short_names': get_valid_club_short_names,
+        'get_club_logo_path': get_club_logo_path,
+        'log_database_target': log_database_target,
+        'get_read_db_for_club': get_read_db_for_club,
+        'get_db_for_club': get_db_for_club,
+        'get_column': get_column,
+        'get_identifier_column': get_identifier_column,
+        'member_to_dict': member_to_dict,
+        'issue_member_token_pair': issue_member_token_pair,
+        'extract_bearer_token': extract_bearer_token,
+        'revoke_member_session_token': revoke_member_session_token,
+        'revoke_member_refresh_token': revoke_member_refresh_token,
+        'get_member_refresh_session_from_token': get_member_refresh_session_from_token,
+        'require_member_token_for_club': require_member_token_for_club,
+        'wildcard_to_sql_like': wildcard_to_sql_like,
+        'is_postgres_writes_enabled': is_postgres_writes_enabled,
+        'get_postgres_backend': get_postgres_backend,
+        '_resolve_postgres_club_id': _resolve_postgres_club_id,
+        '_build_postgres_member_values': _build_postgres_member_values,
+        'normalize_newsletter_filters': normalize_newsletter_filters,
+        'build_member_filters': build_member_filters,
+        'render_newsletter_template': render_newsletter_template,
+        'get_smtp_config_for_club': get_smtp_config_for_club,
+        'get_admin_config': get_admin_config,
+        'issue_admin_token': issue_admin_token,
+        'revoke_admin_token_from_request': revoke_admin_token_from_request,
+        'require_admin_token': require_admin_token,
+        'save_clubs_config': save_clubs_config,
+        'save_uploaded_logo': save_uploaded_logo,
+        'create_empty_club_database': create_empty_club_database,
+        'normalize_beats': normalize_beats,
+    }
+
+    # Register infrastructure hooks (teardown, before_request, after_request)
+    _register_infrastructure_hooks(app_instance)
+
+    # Register blueprints for route organization by domain
+    app_instance.register_blueprint(create_public_blueprint(route_deps))
+    app_instance.register_blueprint(create_member_blueprint(route_deps))
+    app_instance.register_blueprint(create_newsletter_blueprint(route_deps))
+    app_instance.register_blueprint(create_admin_blueprint(route_deps))
+
+    return app_instance
+
+
+# Module-level instance for backward compatibility with `from app import app`
+app = create_app()
+
 
 
 if __name__ == '__main__':
