@@ -274,6 +274,9 @@
             {{ template.name }}
           </option>
         </select>
+        <button type="button" class="manage-templates-button" @click="openTemplateManager">
+          Manage Templates
+        </button>
         <button type="button" :disabled="newsletterFilterSelectBusy" @click="selectAllNewsletterFiltered">
           {{ newsletterFilterSelectBusy ? 'Selecting…' : 'Select All Filtered' }}
         </button>
@@ -281,6 +284,96 @@
           Clear Selection
         </button>
         <span>Filtered: {{ newsletterTotalMembers }}</span>
+      </div>
+      <div v-if="showTemplateManager" class="template-manager-modal">
+        <div class="template-manager-content">
+          <div class="template-manager-header">
+            <h3>Manage Newsletter Templates</h3>
+            <button type="button" class="close-button" @click="closeTemplateManager">×</button>
+          </div>
+          <div class="template-list-section">
+            <h4>Existing Templates</h4>
+            <div v-if="templateEditError" class="error-message">{{ templateEditError }}</div>
+            <div class="template-list">
+              <div v-for="template in newsletterTemplates" :key="template.id" class="template-item">
+                <div class="template-item-header">
+                  <span class="template-item-name">{{ template.name }}</span>
+                  <div class="template-item-actions">
+                    <button type="button" class="edit-button" @click="editTemplate(template)">Edit</button>
+                    <button 
+                      type="button" 
+                      class="delete-button" 
+                      :disabled="template.id === 'club-update' || template.id === 'membership-reminder'"
+                      @click="deleteTemplate(template.id)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="template-edit-section">
+            <h4>{{ templateEditingId ? 'Edit Template' : 'Create New Template' }}</h4>
+            <form @submit.prevent="saveTemplate">
+              <div v-if="templateCreateError" class="error-message">{{ templateCreateError }}</div>
+              <div class="form-group">
+                <label for="template-id-input">Template ID:</label>
+                <input
+                  id="template-id-input"
+                  v-model="templateEditingData.id"
+                  type="text"
+                  placeholder="e.g., special-event (lowercase letters, numbers, hyphens)"
+                  :disabled="templateEditingId !== null"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="template-name-input">Template Name:</label>
+                <input
+                  id="template-name-input"
+                  v-model="templateEditingData.name"
+                  type="text"
+                  placeholder="e.g., Special Event"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="template-subject-input">Subject:</label>
+                <input
+                  id="template-subject-input"
+                  v-model="templateEditingData.subject"
+                  type="text"
+                  placeholder="e.g., <Club> Special Event"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="template-body-input">Body:</label>
+                <textarea
+                  id="template-body-input"
+                  v-model="templateEditingData.body"
+                  placeholder="Use tags like <Club>, <Title>, <Last_Name>, <Number>, etc."
+                  rows="8"
+                  required
+                ></textarea>
+              </div>
+              <div v-if="newsletterAvailableTags.length" class="available-tags-info">
+                <strong>Available tags:</strong>
+                <span
+                  v-for="tag in newsletterAvailableTags"
+                  :key="tag.tag"
+                  class="tag-chip"
+                  :title="tag.description"
+                >&lt;{{ tag.tag }}&gt;</span>
+              </div>
+              <div class="template-form-actions">
+                <button type="submit" class="save-button">{{ templateEditingId ? 'Update Template' : 'Create Template' }}</button>
+                <button type="button" class="cancel-button" @click="cancelTemplateEdit">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
       <div v-if="selectedNewsletterTemplate" class="newsletter-template-preview">
         <h3>Template Preview <span class="newsletter-preview-note">(sample values shown)</span></h3>
@@ -704,6 +797,11 @@ export default {
       newsletterSendBusy: false,
       newsletterPrepareMessage: '',
       newsletterPrepareError: '',
+      showTemplateManager: false,
+      templateEditingId: null,
+      templateEditingData: { id: '', name: '', subject: '', body: '' },
+      templateCreateError: '',
+      templateEditError: '',
       selectedFishingBeatKey: '',
       fishingBeatMapInstance: null,
       fishingBeatMapLayers: [],
@@ -1330,6 +1428,8 @@ export default {
             .map(template => ({
               id: String(template.id),
               name: template.name || String(template.id),
+              subjectTemplate: template.subjectTemplate || '',
+              bodyTemplate: template.bodyTemplate || '',
               previewSubject: template.previewSubject || template.subjectTemplate || '',
               previewBody: template.previewBody || template.bodyTemplate || '',
             }));
@@ -1345,6 +1445,97 @@ export default {
         .catch(() => {
           this.newsletterTemplates = [];
           this.newsletterAvailableTags = [];
+        });
+    },
+    openTemplateManager() {
+      this.showTemplateManager = true;
+      this.templateEditingId = null;
+      this.templateEditingData = { id: '', name: '', subject: '', body: '' };
+      this.templateCreateError = '';
+      this.templateEditError = '';
+    },
+    closeTemplateManager() {
+      this.showTemplateManager = false;
+      this.templateEditingId = null;
+      this.templateEditingData = { id: '', name: '', subject: '', body: '' };
+      this.templateCreateError = '';
+      this.templateEditError = '';
+    },
+    editTemplate(template) {
+      this.templateEditingId = template.id;
+      this.templateEditingData = {
+        id: template.id,
+        name: template.name,
+        subject: template.subjectTemplate,
+        body: template.bodyTemplate,
+      };
+      this.templateCreateError = '';
+      this.templateEditError = '';
+    },
+    cancelTemplateEdit() {
+      this.templateEditingId = null;
+      this.templateEditingData = { id: '', name: '', subject: '', body: '' };
+      this.templateCreateError = '';
+      this.templateEditError = '';
+    },
+    saveTemplate() {
+      const { id, name, subject, body } = this.templateEditingData;
+      if (!id || !name || !subject || !body) {
+        this.templateCreateError = 'All fields are required';
+        return;
+      }
+
+      if (this.templateEditingId) {
+        // Update existing template
+        axios.put(`${API_BASE_URL}/newsletter/templates/${this.templateEditingId}`, {
+          club: this.loggedInClub,
+          name,
+          subject,
+          body,
+        })
+          .then(() => {
+            this.fetchNewsletterTemplates();
+            this.cancelTemplateEdit();
+          })
+          .catch(err => {
+            this.templateEditError = err.response?.data?.error || 'Failed to update template';
+          });
+      } else {
+        // Create new template
+        axios.post(`${API_BASE_URL}/newsletter/templates`, {
+          club: this.loggedInClub,
+          id,
+          name,
+          subject,
+          body,
+        })
+          .then(() => {
+            this.fetchNewsletterTemplates();
+            this.cancelTemplateEdit();
+          })
+          .catch(err => {
+            this.templateCreateError = err.response?.data?.error || 'Failed to create template';
+          });
+      }
+    },
+    deleteTemplate(templateId) {
+      if (templateId === 'club-update' || templateId === 'membership-reminder') {
+        alert('Cannot delete default templates');
+        return;
+      }
+      if (!confirm(`Delete template "${templateId}"?`)) {
+        return;
+      }
+      axios.delete(`${API_BASE_URL}/newsletter/templates/${templateId}`, {
+        params: {
+          club: this.loggedInClub,
+        },
+      })
+        .then(() => {
+          this.fetchNewsletterTemplates();
+        })
+        .catch(err => {
+          this.templateEditError = err.response?.data?.error || 'Failed to delete template';
         });
     },
     buildNewsletterActiveFilters() {
@@ -2300,5 +2491,183 @@ export default {
 #app .w3w-link:hover,
 #app .w3w-link:focus {
   color: #0056b3;
+}
+#app .manage-templates-button {
+  margin-left: 10px;
+}
+#app .template-manager-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+#app .template-manager-content {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 900px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+#app .template-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+}
+#app .template-manager-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+#app .close-button {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  color: #666;
+}
+#app .close-button:hover {
+  color: #000;
+}
+#app .template-list-section,
+#app .template-edit-section {
+  margin-bottom: 20px;
+}
+#app .template-list-section h4,
+#app .template-edit-section h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #333;
+}
+#app .template-list {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+#app .template-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#app .template-item:last-child {
+  border-bottom: none;
+}
+#app .template-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+#app .template-item-name {
+  font-weight: 500;
+  flex: 1;
+}
+#app .template-item-actions {
+  display: flex;
+  gap: 5px;
+}
+#app .edit-button,
+#app .delete-button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+#app .delete-button {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+#app .delete-button:hover:not(:disabled) {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+#app .form-group {
+  margin-bottom: 12px;
+}
+#app .form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  font-size: 13px;
+  color: #333;
+}
+#app .form-group input,
+#app .form-group textarea {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+#app .form-group textarea {
+  resize: vertical;
+  font-family: monospace;
+}
+#app .available-tags-info {
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-left: 3px solid #007bff;
+  font-size: 12px;
+}
+#app .tag-chip {
+  display: inline-block;
+  background-color: #e9ecef;
+  padding: 2px 6px;
+  margin: 2px 2px 2px 0;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 11px;
+  cursor: help;
+}
+#app .template-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+#app .save-button {
+  background-color: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+#app .save-button:hover:not(:disabled) {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+#app .cancel-button {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+#app .cancel-button:hover:not(:disabled) {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+#app .error-message {
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  font-size: 13px;
 }
 </style>

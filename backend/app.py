@@ -343,6 +343,38 @@ def require_admin_token():
     return auth_header[7:] in _admin_tokens
 
 
+def ensure_newsletter_templates_table(engine):
+    """Ensure newsletter_templates table exists; create with defaults if needed."""
+    inspector_metadata = MetaData()
+    inspector_metadata.reflect(bind=engine)
+    
+    if 'newsletter_templates' not in inspector_metadata.tables:
+        # Table doesn't exist - create it
+        template_metadata = MetaData()
+        Table(
+            'newsletter_templates',
+            template_metadata,
+            Column('id', String, primary_key=True),
+            Column('name', String, nullable=False),
+            Column('subject', String, nullable=False),
+            Column('body', String, nullable=False),
+        )
+        template_metadata.create_all(bind=engine)
+        
+        # Insert default templates
+        with engine.connect() as conn:
+            conn.execute(
+                '''INSERT INTO newsletter_templates (id, name, subject, body) VALUES (?, ?, ?, ?)''',
+                [
+                    ('club-update', 'Club Update', '<Club> Newsletter Update',
+                     'Dear <Title> <Last_Name>,\n\nThis is your latest newsletter update from <Club>.\n\nYour membership number is <Number>.\n\nKind regards,\n<Club> Committee'),
+                    ('membership-reminder', 'Membership Reminder', '<Club> Membership Reminder',
+                     'Hello <Preferred_Name>,\n\nThis is a friendly reminder from <Club> regarding your membership renewal.\n\nName:   <Members_Name>\nNumber: <Number>\n\nPlease ensure your subscription is up to date.\n\nKind regards,\n<Club> Committee'),
+                ]
+            )
+            conn.commit()
+
+
 def get_db_for_club(club):
     """Get or create database engine and session for the specified club."""
     if club not in _club_db_cache:
@@ -351,10 +383,14 @@ def get_db_for_club(club):
         engine = create_engine(database_url, future=True)
         session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
         
+        # Ensure newsletter templates table exists
+        ensure_newsletter_templates_table(engine)
+        
         # Load metadata for this club's database
         mapper_registry = registry()
         metadata = mapper_registry.metadata
         members_table = Table('members', metadata, autoload_with=engine)
+        newsletter_templates_table = Table('newsletter_templates', metadata, autoload_with=engine)
         
         if len(members_table.primary_key.columns) == 0:
             fallback_primary_key = None
@@ -377,6 +413,7 @@ def get_db_for_club(club):
             'mapper_registry': mapper_registry,
             'metadata': metadata,
             'members_table': members_table,
+            'newsletter_templates_table': newsletter_templates_table,
             'Member': Member
         }
     
@@ -384,7 +421,9 @@ def get_db_for_club(club):
     session = cache['session_factory']()
     return {
         'session': session,
+        'engine': cache['engine'],
         'members_table': cache['members_table'],
+        'newsletter_templates_table': cache['newsletter_templates_table'],
         'Member': cache['Member'],
         'mapper_registry': cache['mapper_registry']
     }
@@ -910,21 +949,144 @@ def get_newsletter_templates():
         'E_Mail':         'john.smith@example.com',
     }
 
-    templates = [
-        {
-            'id':              template['id'],
-            'name':            template['name'],
-            'subjectTemplate': template['subject'],
-            'bodyTemplate':    template['body'],
-            'previewSubject':  render_newsletter_template(template['subject'], sample_context),
-            'previewBody':     render_newsletter_template(template['body'],    sample_context),
-        }
-        for template in NEWSLETTER_TEMPLATES.values()
-    ]
+    try:
+        db_info = get_db_for_club(club)
+        session = db_info['session']
+        newsletter_templates_table = db_info['newsletter_templates_table']
+        
+        # Fetch templates from database
+        stmt = select(newsletter_templates_table)
+        rows = session.execute(stmt).fetchall()
+        session.close()
+        
+        templates = []
+        for row in rows:
+            templates.append({
+                'id':              row.id,
+                'name':            row.name,
+                'subjectTemplate': row.subject,
+                'bodyTemplate':    row.body,
+                'previewSubject':  render_newsletter_template(row.subject, sample_context),
+                'previewBody':     render_newsletter_template(row.body, sample_context),
+            })
+    except Exception as e:
+        app.logger.warning(f'Error loading newsletter templates from database: {e}, using defaults')
+        templates = [
+            {
+                'id':              template['id'],
+                'name':            template['name'],
+                'subjectTemplate': template['subject'],
+                'bodyTemplate':    template['body'],
+                'previewSubject':  render_newsletter_template(template['subject'], sample_context),
+                'previewBody':     render_newsletter_template(template['body'], sample_context),
+            }
+            for template in NEWSLETTER_TEMPLATES.values()
+        ]
+    
     return jsonify({
         'templates': templates,
         'availableTags': NEWSLETTER_TEMPLATE_TAGS,
     })
+
+
+@app.route('/newsletter/templates/<template_id>', methods=['PUT'])
+def update_newsletter_template(template_id):
+    """Update an existing newsletter template."""
+    data = request.json or {}
+    club = data.get('club', 'GAAFFS')
+    name = data.get('name', '').strip()
+    subject = data.get('subject', '').strip()
+    body = data.get('body', '').strip()
+    
+    if not name or not subject or not body:
+        return jsonify({'error': 'Template name, subject, and body are required'}), 400
+    
+    try:
+        db_info = get_db_for_club(club)
+        session = db_info['session']
+        newsletter_templates_table = db_info['newsletter_templates_table']
+        
+        # Update template
+        stmt = newsletter_templates_table.update().where(
+            newsletter_templates_table.c.id == template_id
+        ).values(name=name, subject=subject, body=body)
+        result = session.execute(stmt)
+        session.commit()
+        session.close()
+        
+        if result.rowcount == 0:
+            return jsonify({'error': 'Template not found'}), 404
+        
+        return jsonify({'message': 'Template updated successfully', 'id': template_id}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/newsletter/templates/<template_id>', methods=['DELETE'])
+def delete_newsletter_template(template_id):
+    """Delete a newsletter template (except defaults)."""
+    club = request.args.get('club', 'GAAFFS')
+    
+    # Prevent deletion of default templates
+    if template_id in ('club-update', 'membership-reminder'):
+        return jsonify({'error': 'Cannot delete default templates'}), 400
+    
+    try:
+        db_info = get_db_for_club(club)
+        session = db_info['session']
+        newsletter_templates_table = db_info['newsletter_templates_table']
+        
+        # Delete template
+        stmt = newsletter_templates_table.delete().where(
+            newsletter_templates_table.c.id == template_id
+        )
+        result = session.execute(stmt)
+        session.commit()
+        session.close()
+        
+        if result.rowcount == 0:
+            return jsonify({'error': 'Template not found'}), 404
+        
+        return jsonify({'message': 'Template deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/newsletter/templates', methods=['POST'])
+def create_newsletter_template():
+    """Create a new newsletter template."""
+    data = request.json or {}
+    club = data.get('club', 'GAAFFS')
+    template_id = data.get('id', '').strip()
+    name = data.get('name', '').strip()
+    subject = data.get('subject', '').strip()
+    body = data.get('body', '').strip()
+    
+    if not template_id or not name or not subject or not body:
+        return jsonify({'error': 'Template id, name, subject, and body are required'}), 400
+    
+    # Validate template_id format
+    if not re.match(r'^[a-z0-9\-]+$', template_id):
+        return jsonify({'error': 'Template id must contain only lowercase letters, numbers, and hyphens'}), 400
+    
+    try:
+        db_info = get_db_for_club(club)
+        session = db_info['session']
+        newsletter_templates_table = db_info['newsletter_templates_table']
+        
+        # Insert new template
+        stmt = newsletter_templates_table.insert().values(
+            id=template_id, name=name, subject=subject, body=body
+        )
+        session.execute(stmt)
+        session.commit()
+        session.close()
+        
+        return jsonify({'message': 'Template created successfully', 'id': template_id}), 201
+    except Exception as e:
+        if 'UNIQUE constraint failed' in str(e) or 'already exists' in str(e):
+            return jsonify({'error': 'Template id already exists'}), 409
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/newsletter/filtered_member_ids', methods=['POST'])
