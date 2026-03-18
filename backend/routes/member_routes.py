@@ -89,7 +89,7 @@ def create_member_blueprint(deps):
                     member_id = user_dict.get(id_column.name)
                     user_id = resolve_user_id_for_member(member_id)
                     token_payload = issue_member_token_pair(member_id, club, username, user_id=user_id)
-                    role_payload = load_member_roles(member_id, club)
+                    role_payload = load_member_roles(member_id, club, user_id=user_id)
                     user_dict.pop('password', None)
                     return jsonify({
                         'success': True,
@@ -111,7 +111,7 @@ def create_member_blueprint(deps):
                     member_id = user_dict.get(id_column.name)
                     user_id = resolve_user_id_for_member(member_id)
                     token_payload = issue_member_token_pair(member_id, club, username, user_id=user_id)
-                    role_payload = load_member_roles(member_id, club)
+                    role_payload = load_member_roles(member_id, club, user_id=user_id)
                     user_dict.pop('password', None)
                     return jsonify({
                         'success': True,

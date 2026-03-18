@@ -28,9 +28,30 @@ def _resolve_club_id(session, clubs_table, club_short_name):
     ).scalar_one_or_none()
 
 
-def load_member_roles(member_id, club_short_name=''):
+def _resolve_member_ids_for_user(session, links_table, user_id_int, member_id_int):
+    """Return list of member IDs to query roles for.
+
+    When user_id is available, returns ALL member IDs linked to that user
+    (enabling multi-club role aggregation).  Falls back to [member_id_int]
+    when links table is unavailable or yields no rows.
+    """
+    if user_id_int is not None and links_table is not None:
+        try:
+            rows = session.execute(
+                select(links_table.c.member_id).where(links_table.c.user_id == user_id_int)
+            ).fetchall()
+            ids = [row.member_id for row in rows if row.member_id is not None]
+            if ids:
+                return ids
+        except Exception:
+            pass
+    return [member_id_int] if member_id_int is not None else []
+
+
+def load_member_roles(member_id, club_short_name='', user_id=None):
     member_id_int = _safe_int(member_id)
-    if member_id_int is None:
+    user_id_int = _safe_int(user_id)
+    if member_id_int is None and user_id_int is None:
         return {
             'global_roles': [],
             'club_roles': [DEFAULT_ROLE_CODE],
@@ -51,11 +72,21 @@ def load_member_roles(member_id, club_short_name=''):
     roles_table = backend['roles_table']
     assignments_table = backend['member_role_assignments_table']
     clubs_table = backend['clubs_table']
+    links_table = backend.get('member_user_links_table')
 
     global_roles = set()
     club_roles = set()
 
     try:
+        member_ids = _resolve_member_ids_for_user(session, links_table, user_id_int, member_id_int)
+        if not member_ids:
+            return {
+                'global_roles': [],
+                'club_roles': [DEFAULT_ROLE_CODE],
+                'effective_roles': [DEFAULT_ROLE_CODE],
+                'permissions': list_permissions({DEFAULT_ROLE_CODE}),
+            }
+
         target_club_id = _resolve_club_id(session, clubs_table, club_short_name)
 
         rows = session.execute(
@@ -67,7 +98,7 @@ def load_member_roles(member_id, club_short_name=''):
                 assignments_table.join(roles_table, assignments_table.c.role_id == roles_table.c.id)
             ).where(
                 and_(
-                    assignments_table.c.member_id == member_id_int,
+                    assignments_table.c.member_id.in_(member_ids),
                     assignments_table.c.revoked_at.is_(None),
                 )
             )
@@ -121,7 +152,11 @@ def get_current_principal(club_short_name=''):
 
     session_club = str(member_session.get('club_short_name', '')).strip()
     scope_club = requested_club or session_club
-    roles_info = load_member_roles(member_session.get('member_id'), scope_club)
+    roles_info = load_member_roles(
+        member_session.get('member_id'),
+        scope_club,
+        user_id=member_session.get('user_id'),
+    )
 
     principal = {
         'user_id': _safe_int(member_session.get('user_id')),
@@ -140,6 +175,39 @@ def get_current_principal(club_short_name=''):
     return principal
 
 
+def _user_can_access_club(user_id_int, club_short_name):
+    """Return True if the user has a member_user_links row for the given club."""
+    if not user_id_int or not club_short_name:
+        return False
+    if not is_postgres_reads_enabled():
+        return False
+    try:
+        backend = get_postgres_backend()
+        links_table = backend.get('member_user_links_table')
+        clubs_table = backend.get('clubs_table')
+        if links_table is None or clubs_table is None:
+            return False
+        session = backend['session_factory']()
+        try:
+            result = session.execute(
+                select(links_table.c.id)
+                .select_from(
+                    links_table.join(clubs_table, links_table.c.club_id == clubs_table.c.id)
+                )
+                .where(
+                    and_(
+                        links_table.c.user_id == user_id_int,
+                        clubs_table.c.short_name == club_short_name,
+                    )
+                )
+            ).scalar_one_or_none()
+            return result is not None
+        finally:
+            session.close()
+    except Exception:
+        return False
+
+
 def require_authenticated(club_short_name=''):
     principal = get_current_principal(club_short_name)
     if principal is None:
@@ -149,8 +217,11 @@ def require_authenticated(club_short_name=''):
     actual_club = str(principal.get('club_short_name', '')).strip()
     effective_roles = set(principal.get('effective_roles', []))
 
-    if expected_club and actual_club and expected_club != actual_club and not effective_roles.intersection(GLOBAL_ADMIN_ROLES):
-        return jsonify({'error': 'Forbidden for selected club'}), 403
+    if expected_club and expected_club != actual_club and not effective_roles.intersection(GLOBAL_ADMIN_ROLES):
+        # Allow access if user has a membership link to the requested club
+        user_id_int = _safe_int(principal.get('user_id'))
+        if not _user_can_access_club(user_id_int, expected_club):
+            return jsonify({'error': 'Forbidden for selected club'}), 403
 
     return None
 
