@@ -71,6 +71,96 @@ def ensure_postgres_member_refresh_sessions_table(engine):
         conn.execute(create_index_sql)
 
 
+def ensure_postgres_rbac_tables(engine):
+    """Ensure RBAC tables exist. Idempotent — mirrors the Alembic RBAC migration.
+    Keeps the app functional whether or not Alembic has been run yet.
+    """
+    statements = [
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS roles (
+                id         BIGSERIAL PRIMARY KEY,
+                code       VARCHAR(32)  NOT NULL UNIQUE,
+                name       VARCHAR(120) NOT NULL,
+                scope_type VARCHAR(16)  NOT NULL DEFAULT 'club',
+                is_system  BOOLEAN      NOT NULL DEFAULT FALSE,
+                created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            )
+            """
+        ),
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS member_role_assignments (
+                id                   BIGSERIAL PRIMARY KEY,
+                member_id            BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                role_id              BIGINT NOT NULL REFERENCES roles(id)   ON DELETE CASCADE,
+                club_id              BIGINT          REFERENCES clubs(id)   ON DELETE CASCADE,
+                granted_by_member_id BIGINT          REFERENCES members(id) ON DELETE SET NULL,
+                granted_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                revoked_at           TIMESTAMPTZ
+            )
+            """
+        ),
+        # Partial unique indexes enforce one active assignment per (member, role) pair,
+        # handling NULLable club_id correctly for global vs club-scoped roles.
+        text(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_mra_member_role_club_active
+            ON member_role_assignments (member_id, role_id, club_id)
+            WHERE club_id IS NOT NULL AND revoked_at IS NULL
+            """
+        ),
+        text(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_mra_member_role_global_active
+            ON member_role_assignments (member_id, role_id)
+            WHERE club_id IS NULL AND revoked_at IS NULL
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_mra_member_id
+            ON member_role_assignments (member_id)
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_mra_club_role
+            ON member_role_assignments (club_id, role_id)
+            """
+        ),
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS security_audit_log (
+                id               BIGSERIAL PRIMARY KEY,
+                actor_member_id  BIGINT      REFERENCES members(id) ON DELETE SET NULL,
+                action           VARCHAR(64) NOT NULL,
+                target_type      VARCHAR(32) NOT NULL,
+                target_id        BIGINT,
+                club_id          BIGINT      REFERENCES clubs(id) ON DELETE SET NULL,
+                metadata         JSONB       NOT NULL DEFAULT '{}',
+                created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_sal_actor_member_id
+            ON security_audit_log (actor_member_id)
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_sal_action_created_at
+            ON security_audit_log (action, created_at DESC)
+            """
+        ),
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(stmt)
+
+
 def get_postgres_backend():
     database_url = os.getenv('DATABASE_URL', '').strip()
     if not database_url:
@@ -81,6 +171,7 @@ def get_postgres_backend():
         engine = create_engine(database_url, future=True)
         ensure_postgres_member_sessions_table(engine)
         ensure_postgres_member_refresh_sessions_table(engine)
+        ensure_postgres_rbac_tables(engine)
         metadata = MetaData()
         metadata.reflect(
             bind=engine,
@@ -93,6 +184,9 @@ def get_postgres_backend():
                 'newsletter_templates',
                 'member_sessions',
                 'member_refresh_sessions',
+                'roles',
+                'member_role_assignments',
+                'security_audit_log',
             ],
         )
         session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
@@ -108,6 +202,9 @@ def get_postgres_backend():
             'newsletter_templates_table': metadata.tables['newsletter_templates'],
             'member_sessions_table': metadata.tables['member_sessions'],
             'member_refresh_sessions_table': metadata.tables['member_refresh_sessions'],
+            'roles_table': metadata.tables['roles'],
+            'member_role_assignments_table': metadata.tables['member_role_assignments'],
+            'security_audit_log_table': metadata.tables['security_audit_log'],
             'read_club_cache': {},
         }
     return _postgres_cache[cache_key]

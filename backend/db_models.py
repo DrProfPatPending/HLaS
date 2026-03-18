@@ -13,7 +13,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 metadata = MetaData()
 
@@ -144,4 +144,54 @@ newsletter_templates = Table(
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     UniqueConstraint("club_id", "template_key", name="uq_newsletter_templates_club_template_key"),
+)
+
+# ---------------------------------------------------------------------------
+# RBAC tables
+# ---------------------------------------------------------------------------
+
+roles = Table(
+    "roles",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("code", String(32), nullable=False, unique=True),
+    Column("name", String(120), nullable=False),
+    # 'global' roles apply across all clubs; 'club' roles are scoped to one club
+    Column("scope_type", String(16), nullable=False, server_default="club"),
+    # True for the five built-in roles seeded by migration
+    Column("is_system", Boolean, nullable=False, server_default="false"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
+member_role_assignments = Table(
+    "member_role_assignments",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("member_id", BigInteger, ForeignKey("members.id", ondelete="CASCADE"), nullable=False),
+    Column("role_id", BigInteger, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False),
+    # NULL for globally-scoped roles (app_admin, app_owner)
+    Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=True),
+    Column("granted_by_member_id", BigInteger, ForeignKey("members.id", ondelete="SET NULL"), nullable=True),
+    Column("granted_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    # NULL = active; set to revoke without deleting history
+    Column("revoked_at", DateTime(timezone=True), nullable=True),
+    # Uniqueness is enforced via partial indexes in the migration,
+    # not a standard UniqueConstraint, due to nullable club_id.
+)
+
+security_audit_log = Table(
+    "security_audit_log",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    # NULL for system-generated actions (bootstrap, migrations)
+    Column("actor_member_id", BigInteger, ForeignKey("members.id", ondelete="SET NULL"), nullable=True),
+    # e.g. 'role.grant', 'role.revoke', 'member.delete', 'club.create'
+    Column("action", String(64), nullable=False),
+    # 'member', 'club', 'role_assignment', 'setting'
+    Column("target_type", String(32), nullable=False),
+    Column("target_id", BigInteger, nullable=True),
+    # NULL for app-level events
+    Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="SET NULL"), nullable=True),
+    Column("metadata", JSONB, nullable=False, server_default="{}"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
