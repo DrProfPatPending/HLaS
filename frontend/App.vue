@@ -52,9 +52,27 @@
       <table class="home-nav-table">
         <tbody>
           <tr>
-            <td><button type="button" class="home-nav-button" @click="navigateToSection('membership-admin')">Membership Admin</button></td>
+            <td>
+              <button
+                v-if="canAccessMembershipAdmin"
+                type="button"
+                class="home-nav-button"
+                @click="navigateToSection('membership-admin')"
+              >
+                Membership Admin
+              </button>
+            </td>
             <td><button type="button" class="home-nav-button" @click="navigateToSection('club-information')">Club Information</button></td>
-            <td><button type="button" class="home-nav-button" @click="navigateToSection('newsletters')">Newsletters</button></td>
+            <td>
+              <button
+                v-if="canAccessNewsletters"
+                type="button"
+                class="home-nav-button"
+                @click="navigateToSection('newsletters')"
+              >
+                Newsletters
+              </button>
+            </td>
           </tr>
           <tr>
             <td><button type="button" class="home-nav-button" @click="navigateToSection('my-club')">My Club</button></td>
@@ -63,6 +81,7 @@
           </tr>
         </tbody>
       </table>
+      <p v-if="accessError" class="access-error">{{ accessError }}</p>
     </div>
     <div v-else-if="activeSection === 'membership-admin'">
     <div class="membership-admin-header">
@@ -796,9 +815,12 @@ export default {
       loggedInUser: null,
       memberAuthToken: '',
       memberRefreshToken: '',
+      memberRoles: [],
+      memberPermissions: [],
       authInterceptorId: null,
       refreshRequestPromise: null,
       loggedInUsername: '',
+      accessError: '',
       clubLogoLoadFailed: false,
       activeSection: 'home',
       selectedClub: 'GAAFFS',
@@ -1025,6 +1047,12 @@ export default {
         return '';
       }
       return `Member ${this.editMemberIndex + 1} of ${this.members.length}`;
+    },
+    canAccessMembershipAdmin() {
+      return this.hasPermission('member.club.list');
+    },
+    canAccessNewsletters() {
+      return this.hasPermission('newsletter.send');
     }
   },
   watch: {
@@ -1044,7 +1072,7 @@ export default {
     this.applyMemberAuthHeader();
     this.initializeAuthInterceptor();
     this.loadClubs();
-    if (this.loggedIn) {
+    if (this.loggedIn && this.canAccessMembershipAdmin) {
       this.fetchMembers();
     }
   },
@@ -1067,6 +1095,35 @@ export default {
       this.memberRefreshToken = refreshToken || '';
       this.applyMemberAuthHeader();
       this.persistMemberSession();
+    },
+    normalizeStringList(values) {
+      if (!Array.isArray(values)) {
+        return [];
+      }
+      return values
+        .filter(value => typeof value === 'string')
+        .map(value => value.trim())
+        .filter(Boolean);
+    },
+    setMemberAuthz(roles, permissions) {
+      this.memberRoles = this.normalizeStringList(roles);
+      this.memberPermissions = this.normalizeStringList(permissions);
+      this.persistMemberSession();
+    },
+    hasPermission(permissionCode) {
+      if (!permissionCode) {
+        return false;
+      }
+      return this.memberPermissions.includes(permissionCode);
+    },
+    canNavigateToSection(sectionKey) {
+      if (sectionKey === 'membership-admin') {
+        return this.canAccessMembershipAdmin;
+      }
+      if (sectionKey === 'newsletters') {
+        return this.canAccessNewsletters;
+      }
+      return true;
     },
     applyMemberAuthHeader() {
       if (this.memberAuthToken) {
@@ -1146,10 +1203,13 @@ export default {
       this.loggedInUser = null;
       this.memberAuthToken = '';
       this.memberRefreshToken = '';
+      this.memberRoles = [];
+      this.memberPermissions = [];
       this.loggedInUsername = '';
       this.applyMemberAuthHeader();
       this.clearMemberSession();
       this.loginError = 'Session expired. Please log in again.';
+      this.accessError = '';
     },
     persistMemberSession() {
       try {
@@ -1160,6 +1220,8 @@ export default {
           loggedInUser: this.loggedInUser || null,
           memberAuthToken: this.memberAuthToken || '',
           memberRefreshToken: this.memberRefreshToken || '',
+          memberRoles: this.memberRoles || [],
+          memberPermissions: this.memberPermissions || [],
         };
         window.localStorage.setItem(MEMBER_SESSION_STORAGE_KEY, JSON.stringify(payload));
       } catch {
@@ -1194,6 +1256,8 @@ export default {
         this.loggedInUser = payload.loggedInUser || null;
         this.memberAuthToken = typeof payload.memberAuthToken === 'string' ? payload.memberAuthToken : '';
         this.memberRefreshToken = typeof payload.memberRefreshToken === 'string' ? payload.memberRefreshToken : '';
+        this.memberRoles = this.normalizeStringList(payload.memberRoles);
+        this.memberPermissions = this.normalizeStringList(payload.memberPermissions);
       } catch {
         this.clearMemberSession();
       }
@@ -1563,6 +1627,13 @@ export default {
       }).then(res => {
         this.members = res.data.members;
         this.totalMembers = res.data.total;
+      }).catch(err => {
+        if (err.response?.status === 403) {
+          this.members = [];
+          this.totalMembers = 0;
+          this.accessError = 'You do not have permission to view club members.';
+          this.activeSection = 'home';
+        }
       });
     },
     fetchNewsletterMembers() {
@@ -1579,6 +1650,13 @@ export default {
       }).then(res => {
         this.newsletterMembers = res.data.members || [];
         this.newsletterTotalMembers = res.data.total || 0;
+      }).catch(err => {
+        if (err.response?.status === 403) {
+          this.newsletterMembers = [];
+          this.newsletterTotalMembers = 0;
+          this.accessError = 'You do not have permission to access newsletters.';
+          this.activeSection = 'home';
+        }
       });
     },
     fetchNewsletterTemplates() {
@@ -1914,6 +1992,12 @@ export default {
       this.fetchMembers();
     },
     navigateToSection(sectionKey) {
+      this.accessError = '';
+      if (!this.canNavigateToSection(sectionKey)) {
+        this.accessError = 'You do not have permission to access this section.';
+        this.activeSection = 'home';
+        return;
+      }
       if (sectionKey === 'membership-admin') {
         this.activeSection = 'membership-admin';
         this.showMembershipDetails = false;
@@ -1978,12 +2062,16 @@ export default {
             this.loggedIn = true;
             this.loggedInUser = res.data.user;
             this.setMemberTokens(res.data.token, res.data.refreshToken);
+            this.setMemberAuthz(res.data.roles, res.data.permissions);
             this.loggedInUsername = this.loginUsername;
             this.loggedInClub = this.selectedClub;
             this.clubLogoLoadFailed = false;
             this.activeSection = 'home';
             this.currentPage = 1;
-            this.fetchMembers();
+            this.accessError = '';
+            if (this.canAccessMembershipAdmin) {
+              this.fetchMembers();
+            }
           } else {
             this.loginError = res.data.error || 'Login failed';
           }
@@ -2006,11 +2094,14 @@ export default {
       this.loggedInUser = null;
       this.memberAuthToken = '';
       this.memberRefreshToken = '';
+      this.memberRoles = [];
+      this.memberPermissions = [];
       this.loggedInUsername = '';
       this.applyMemberAuthHeader();
       this.clearMemberSession();
       this.clubLogoLoadFailed = false;
       this.activeSection = 'home';
+      this.accessError = '';
       this.loginPassword = '';
       this.members = [];
       this.totalMembers = 0;
@@ -2163,6 +2254,10 @@ export default {
 #app .home-nav-button {
   width: 220px;
   padding: 12px 10px;
+}
+#app .access-error {
+  margin-top: 16px;
+  color: #b00020;
 }
 #app .section-placeholder {
   max-width: 900px;
