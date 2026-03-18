@@ -23,10 +23,99 @@ def create_member_blueprint(deps):
     require_self_or_permission = deps['require_self_or_permission']
     wildcard_to_sql_like = deps['wildcard_to_sql_like']
     FILTERABLE_COLUMNS = deps['FILTERABLE_COLUMNS']
+    is_postgres_reads_enabled = deps.get('is_postgres_reads_enabled', lambda: False)
     is_postgres_writes_enabled = deps['is_postgres_writes_enabled']
     get_postgres_backend = deps['get_postgres_backend']
     _resolve_postgres_club_id = deps['_resolve_postgres_club_id']
     _build_postgres_member_values = deps['_build_postgres_member_values']
+
+    def try_app_user_login(username, password, club):
+        """Try to authenticate against the central app_users table.
+
+        Returns a Flask Response on success or definitive failure.
+        Returns None when the username is not found in app_users,
+        signalling that the caller should fall through to the per-club
+        members-table lookup (transition-period fallback).
+        """
+        if not is_postgres_reads_enabled():
+            return None
+
+        backend = get_postgres_backend()
+        app_users_table = backend.get('app_users_table')
+        links_table = backend.get('member_user_links_table')
+        clubs_table = backend.get('clubs_table')
+        if app_users_table is None or links_table is None or clubs_table is None:
+            return None
+
+        # Case-insensitive username lookup; skip rows with empty username
+        session = backend['session_factory']()
+        try:
+            au_row = session.execute(
+                select(
+                    app_users_table.c.id,
+                    app_users_table.c.username,
+                    app_users_table.c.display_name,
+                    app_users_table.c.password_hash,
+                    app_users_table.c.is_active,
+                ).where(
+                    and_(
+                        func.lower(app_users_table.c.username) == username.lower(),
+                        app_users_table.c.username != '',
+                    )
+                )
+            ).fetchone()
+        finally:
+            session.close()
+
+        if au_row is None:
+            return None  # Not in app_users — fall through to per-club lookup
+
+        # User found; all further responses are definitive (no fall-through)
+        if not au_row.is_active:
+            return jsonify({'success': False, 'error': 'Account is inactive'}), 401
+
+        if not au_row.password_hash or not check_password_hash(au_row.password_hash, password):
+            return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+
+        # Resolve the member_id for the selected club via member_user_links
+        session2 = backend['session_factory']()
+        try:
+            link_row = session2.execute(
+                select(links_table.c.member_id)
+                .select_from(
+                    links_table.join(clubs_table, links_table.c.club_id == clubs_table.c.id)
+                )
+                .where(
+                    and_(
+                        links_table.c.user_id == au_row.id,
+                        clubs_table.c.short_name == club,
+                    )
+                )
+            ).fetchone()
+        finally:
+            session2.close()
+
+        if link_row is None:
+            return jsonify({'success': False, 'error': 'Not a member of the selected club'}), 403
+
+        user_id = au_row.id
+        member_id = link_row.member_id
+        token_payload = issue_member_token_pair(member_id, club, au_row.username, user_id=user_id)
+        role_payload = load_member_roles(member_id, club, user_id=user_id)
+        return jsonify({
+            'success': True,
+            'userId': user_id,
+            'user': {
+                'id': user_id,
+                'username': au_row.username,
+                'display_name': au_row.display_name,
+            },
+            'roles': role_payload.get('effective_roles', []),
+            'global_roles': role_payload.get('global_roles', []),
+            'club_roles': role_payload.get('club_roles', []),
+            'permissions': role_payload.get('permissions', []),
+            **token_payload,
+        })
 
     def resolve_user_id_for_member(member_id):
         try:
@@ -64,6 +153,12 @@ def create_member_blueprint(deps):
         if club not in valid_clubs:
             return jsonify({'error': 'Invalid club selection'}), 400
 
+        # --- Primary: authenticate against central app_users table ---
+        app_user_response = try_app_user_login(username, password, club)
+        if app_user_response is not None:
+            return app_user_response
+
+        # --- Fallback: per-club members table (transition period / empty username) ---
         log_database_target(club)
         db_info = get_read_db_for_club(club)
         session = db_info['session']

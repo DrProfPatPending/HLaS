@@ -601,6 +601,7 @@ def create_app():
         'require_permission': require_permission,
         'require_self_or_permission': require_self_or_permission,
         'wildcard_to_sql_like': wildcard_to_sql_like,
+        'is_postgres_reads_enabled': is_postgres_reads_enabled,
         'is_postgres_writes_enabled': is_postgres_writes_enabled,
         'get_postgres_backend': get_postgres_backend,
         '_resolve_postgres_club_id': _resolve_postgres_club_id,
