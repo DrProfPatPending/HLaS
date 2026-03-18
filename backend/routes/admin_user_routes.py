@@ -21,6 +21,142 @@ def create_admin_user_blueprint(deps):
         backend = get_postgres_backend()
         return backend['session_factory']()
 
+    def _merge_users_in_session(session, source_user_id, target_user_id):
+        if source_user_id == target_user_id:
+            raise ValueError('sourceUserId and targetUserId must be different')
+
+        source_user = session.execute(text("""
+            SELECT id, username, display_name, is_active
+            FROM app_users
+            WHERE id = :uid
+        """), {'uid': source_user_id}).first()
+        target_user = session.execute(text("""
+            SELECT id, username, display_name, is_active
+            FROM app_users
+            WHERE id = :uid
+        """), {'uid': target_user_id}).first()
+
+        if not source_user:
+            raise ValueError('Source user not found')
+        if not target_user:
+            raise ValueError('Target user not found')
+        if not source_user.is_active:
+            raise ValueError('Source user is already inactive')
+        if not target_user.is_active:
+            raise ValueError('Target user is inactive')
+
+        now = datetime.now(timezone.utc)
+
+        revoked_duplicates = session.execute(text("""
+            UPDATE member_role_assignments src
+            SET revoked_at = :now
+            FROM member_role_assignments tgt
+            WHERE src.user_id = :source_user_id
+              AND src.revoked_at IS NULL
+              AND tgt.user_id = :target_user_id
+              AND tgt.revoked_at IS NULL
+              AND src.role_id = tgt.role_id
+              AND (
+                    (src.club_id IS NULL AND tgt.club_id IS NULL)
+                    OR src.club_id = tgt.club_id
+              )
+            RETURNING src.id
+        """), {
+            'now': now,
+            'source_user_id': source_user_id,
+            'target_user_id': target_user_id,
+        }).fetchall()
+
+        moved_links = session.execute(text("""
+            UPDATE member_user_links
+            SET user_id = :target_user_id,
+                is_primary = FALSE
+            WHERE user_id = :source_user_id
+            RETURNING id
+        """), {
+            'source_user_id': source_user_id,
+            'target_user_id': target_user_id,
+        }).fetchall()
+
+        moved_assignments = session.execute(text("""
+            UPDATE member_role_assignments
+            SET user_id = :target_user_id
+            WHERE user_id = :source_user_id
+            RETURNING id
+        """), {
+            'source_user_id': source_user_id,
+            'target_user_id': target_user_id,
+        }).fetchall()
+
+        moved_member_sessions = session.execute(text("""
+            UPDATE member_sessions
+            SET user_id = :target_user_id
+            WHERE user_id = :source_user_id
+              AND revoked_at IS NULL
+            RETURNING token_hash
+        """), {
+            'source_user_id': source_user_id,
+            'target_user_id': target_user_id,
+        }).fetchall()
+
+        moved_refresh_sessions = session.execute(text("""
+            UPDATE member_refresh_sessions
+            SET user_id = :target_user_id
+            WHERE user_id = :source_user_id
+              AND revoked_at IS NULL
+            RETURNING refresh_token_hash
+        """), {
+            'source_user_id': source_user_id,
+            'target_user_id': target_user_id,
+        }).fetchall()
+
+        session.execute(text("""
+            UPDATE app_users
+            SET
+                display_name = CASE
+                    WHEN COALESCE(NULLIF(display_name, ''), '') = '' THEN COALESCE(:source_display_name, display_name)
+                    ELSE display_name
+                END,
+                email = CASE
+                    WHEN COALESCE(NULLIF(email, ''), '') = '' THEN (
+                        SELECT COALESCE(NULLIF(email, ''), '') FROM app_users WHERE id = :source_user_id
+                    )
+                    ELSE email
+                END,
+                updated_at = :now
+            WHERE id = :target_user_id
+        """), {
+            'source_user_id': source_user_id,
+            'target_user_id': target_user_id,
+            'source_display_name': source_user.display_name,
+            'now': now,
+        })
+
+        source_username = str(source_user.username or '').strip()
+        source_username_archived = (
+            f"{source_username}__merged__{source_user_id}" if source_username else f"merged__{source_user_id}"
+        )
+        session.execute(text("""
+            UPDATE app_users
+            SET
+                is_active = FALSE,
+                username = :archived_username,
+                updated_at = :now
+            WHERE id = :source_user_id
+        """), {
+            'source_user_id': source_user_id,
+            'archived_username': source_username_archived,
+            'now': now,
+        })
+
+        return {
+            'movedLinks': len(moved_links),
+            'movedAssignments': len(moved_assignments),
+            'revokedDuplicateAssignments': len(revoked_duplicates),
+            'movedMemberSessions': len(moved_member_sessions),
+            'movedRefreshSessions': len(moved_refresh_sessions),
+        }
+
     # -------------------------------------------------------------------------
     # GET /admin/clubs-list
     # Returns all active clubs with their database IDs for use in the grant
@@ -277,7 +413,7 @@ def create_admin_user_blueprint(deps):
         try:
             # Verify target user exists and is active
             user_row = session.execute(text(
-                "SELECT id, legacy_member_id FROM app_users WHERE id = :uid AND is_active = TRUE"
+                "SELECT id FROM app_users WHERE id = :uid AND is_active = TRUE"
             ), {'uid': user_id}).first()
             if not user_row:
                 return jsonify({'error': 'User not found or inactive'}), 404
@@ -310,11 +446,13 @@ def create_admin_user_blueprint(deps):
                     return jsonify({'error': 'User is not a member of the selected club'}), 400
                 member_id = link_row.member_id
             else:
-                # Global role: use the first linked member_id (or legacy_member_id fallback)
+                # Global role: use the first linked member_id.
                 link_row = session.execute(text(
                     "SELECT member_id FROM member_user_links WHERE user_id = :uid LIMIT 1"
                 ), {'uid': user_id}).first()
-                member_id = link_row.member_id if link_row else user_row.legacy_member_id
+                if not link_row:
+                    return jsonify({'error': 'User has no member links'}), 400
+                member_id = link_row.member_id
 
             # Check for an existing active assignment (keyed on user_id)
             existing = session.execute(text("""
@@ -466,138 +604,7 @@ def create_admin_user_blueprint(deps):
 
         session = _get_session()
         try:
-            source_user = session.execute(text("""
-                SELECT id, username, display_name, is_active
-                FROM app_users
-                WHERE id = :uid
-            """), {'uid': source_user_id}).first()
-            target_user = session.execute(text("""
-                SELECT id, username, display_name, is_active
-                FROM app_users
-                WHERE id = :uid
-            """), {'uid': target_user_id}).first()
-
-            if not source_user:
-                return jsonify({'error': 'Source user not found'}), 404
-            if not target_user:
-                return jsonify({'error': 'Target user not found'}), 404
-            if not source_user.is_active:
-                return jsonify({'error': 'Source user is already inactive'}), 409
-            if not target_user.is_active:
-                return jsonify({'error': 'Target user is inactive'}), 400
-
-            source_link_count = session.execute(text("""
-                SELECT COUNT(*) FROM member_user_links WHERE user_id = :uid
-            """), {'uid': source_user_id}).scalar() or 0
-            if source_link_count == 0:
-                return jsonify({'error': 'Source user has no member links to merge'}), 400
-
-            now = datetime.now(timezone.utc)
-
-            # If both users currently hold the same active role for the same club scope,
-            # revoke the source duplicate first so we keep one active assignment.
-            revoked_duplicates = session.execute(text("""
-                UPDATE member_role_assignments src
-                SET revoked_at = :now
-                FROM member_role_assignments tgt
-                WHERE src.user_id = :source_user_id
-                  AND src.revoked_at IS NULL
-                  AND tgt.user_id = :target_user_id
-                  AND tgt.revoked_at IS NULL
-                  AND src.role_id = tgt.role_id
-                  AND (
-                        (src.club_id IS NULL AND tgt.club_id IS NULL)
-                        OR src.club_id = tgt.club_id
-                  )
-                RETURNING src.id
-            """), {
-                'now': now,
-                'source_user_id': source_user_id,
-                'target_user_id': target_user_id,
-            }).fetchall()
-
-            moved_links = session.execute(text("""
-                UPDATE member_user_links
-                SET user_id = :target_user_id,
-                    is_primary = FALSE
-                WHERE user_id = :source_user_id
-                RETURNING id
-            """), {
-                'source_user_id': source_user_id,
-                'target_user_id': target_user_id,
-            }).fetchall()
-
-            moved_assignments = session.execute(text("""
-                UPDATE member_role_assignments
-                SET user_id = :target_user_id
-                WHERE user_id = :source_user_id
-                RETURNING id
-            """), {
-                'source_user_id': source_user_id,
-                'target_user_id': target_user_id,
-            }).fetchall()
-
-            moved_member_sessions = session.execute(text("""
-                UPDATE member_sessions
-                SET user_id = :target_user_id
-                WHERE user_id = :source_user_id
-                  AND revoked_at IS NULL
-                RETURNING token_hash
-            """), {
-                'source_user_id': source_user_id,
-                'target_user_id': target_user_id,
-            }).fetchall()
-
-            moved_refresh_sessions = session.execute(text("""
-                UPDATE member_refresh_sessions
-                SET user_id = :target_user_id
-                WHERE user_id = :source_user_id
-                  AND revoked_at IS NULL
-                RETURNING refresh_token_hash
-            """), {
-                'source_user_id': source_user_id,
-                'target_user_id': target_user_id,
-            }).fetchall()
-
-            # Preserve source data in target if target has blanks
-            session.execute(text("""
-                UPDATE app_users
-                SET
-                    display_name = CASE
-                        WHEN COALESCE(NULLIF(display_name, ''), '') = '' THEN COALESCE(:source_display_name, display_name)
-                        ELSE display_name
-                    END,
-                    email = CASE
-                        WHEN COALESCE(NULLIF(email, ''), '') = '' THEN (
-                            SELECT COALESCE(NULLIF(email, ''), '') FROM app_users WHERE id = :source_user_id
-                        )
-                        ELSE email
-                    END,
-                    updated_at = :now
-                WHERE id = :target_user_id
-            """), {
-                'source_user_id': source_user_id,
-                'target_user_id': target_user_id,
-                'source_display_name': source_user.display_name,
-                'now': now,
-            })
-
-            source_username = str(source_user.username or '').strip()
-            source_username_archived = (
-                f"{source_username}__merged__{source_user_id}" if source_username else f"merged__{source_user_id}"
-            )
-            session.execute(text("""
-                UPDATE app_users
-                SET
-                    is_active = FALSE,
-                    username = :archived_username,
-                    updated_at = :now
-                WHERE id = :source_user_id
-            """), {
-                'source_user_id': source_user_id,
-                'archived_username': source_username_archived,
-                'now': now,
-            })
+            summary = _merge_users_in_session(session, source_user_id, target_user_id)
 
             session.commit()
 
@@ -605,30 +612,163 @@ def create_admin_user_blueprint(deps):
                 "Merged app_user %s into %s (links=%s assignments=%s dup_revoked=%s member_sessions=%s refresh_sessions=%s)",
                 source_user_id,
                 target_user_id,
-                len(moved_links),
-                len(moved_assignments),
-                len(revoked_duplicates),
-                len(moved_member_sessions),
-                len(moved_refresh_sessions),
+                summary['movedLinks'],
+                summary['movedAssignments'],
+                summary['revokedDuplicateAssignments'],
+                summary['movedMemberSessions'],
+                summary['movedRefreshSessions'],
             )
 
             return jsonify({
                 'success': True,
                 'sourceUserId': source_user_id,
                 'targetUserId': target_user_id,
-                'summary': {
-                    'movedLinks': len(moved_links),
-                    'movedAssignments': len(moved_assignments),
-                    'revokedDuplicateAssignments': len(revoked_duplicates),
-                    'movedMemberSessions': len(moved_member_sessions),
-                    'movedRefreshSessions': len(moved_refresh_sessions),
-                },
+                'summary': summary,
             })
+
+        except ValueError as exc:
+            session.rollback()
+            error = str(exc)
+            if error == 'Source user not found' or error == 'Target user not found':
+                return jsonify({'error': error}), 404
+            if error == 'Source user is already inactive':
+                return jsonify({'error': error}), 409
+            return jsonify({'error': error}), 400
 
         except Exception as exc:
             session.rollback()
             logger.error("Error merging users: %s", exc, exc_info=True)
             return jsonify({'error': f'Failed to merge users: {exc}'}), 500
+        finally:
+            session.close()
+
+    # -------------------------------------------------------------------------
+    # POST /admin/users/merge/cleanup
+    # Auto-merge safe duplicate active users that share normalized email and
+    # either normalized username or display_name.
+    # Body: { dryRun?: bool }
+    # -------------------------------------------------------------------------
+    @bp.route('/admin/users/merge/cleanup', methods=['POST'])
+    def admin_merge_cleanup():
+        auth_error = require_permission('role.assign.global')
+        if auth_error:
+            return auth_error
+
+        data = request.json or {}
+        dry_run = bool(data.get('dryRun', True))
+
+        session = _get_session()
+        try:
+            rows = session.execute(text("""
+                SELECT
+                    au.id,
+                    au.username,
+                    au.display_name,
+                    au.email,
+                    COALESCE(link_counts.link_count, 0) AS link_count,
+                    COALESCE(assign_counts.active_assignment_count, 0) AS active_assignment_count,
+                    COALESCE(sess_counts.active_member_session_count, 0) AS active_member_session_count,
+                    COALESCE(refresh_counts.active_refresh_session_count, 0) AS active_refresh_session_count
+                FROM app_users au
+                LEFT JOIN (
+                    SELECT user_id, COUNT(*) AS link_count
+                    FROM member_user_links
+                    GROUP BY user_id
+                ) link_counts ON link_counts.user_id = au.id
+                LEFT JOIN (
+                    SELECT user_id, COUNT(*) AS active_assignment_count
+                    FROM member_role_assignments
+                    WHERE revoked_at IS NULL
+                    GROUP BY user_id
+                ) assign_counts ON assign_counts.user_id = au.id
+                LEFT JOIN (
+                    SELECT user_id, COUNT(*) AS active_member_session_count
+                    FROM member_sessions
+                    WHERE revoked_at IS NULL
+                    GROUP BY user_id
+                ) sess_counts ON sess_counts.user_id = au.id
+                LEFT JOIN (
+                    SELECT user_id, COUNT(*) AS active_refresh_session_count
+                    FROM member_refresh_sessions
+                    WHERE revoked_at IS NULL
+                    GROUP BY user_id
+                ) refresh_counts ON refresh_counts.user_id = au.id
+                WHERE au.is_active = TRUE
+                ORDER BY au.id
+            """)).fetchall()
+
+            users = []
+            by_email = {}
+            for row in rows:
+                username_key = str(row.username or '').strip().lower()
+                display_name_key = str(row.display_name or '').strip().lower()
+                email_key = str(row.email or '').strip().lower()
+                score = (
+                    int(row.link_count or 0) * 1000
+                    + int(row.active_assignment_count or 0) * 100
+                    + int(row.active_member_session_count or 0) * 10
+                    + int(row.active_refresh_session_count or 0)
+                )
+                record = {
+                    'id': int(row.id),
+                    'usernameKey': username_key,
+                    'displayNameKey': display_name_key,
+                    'emailKey': email_key,
+                    'score': score,
+                }
+                users.append(record)
+                if email_key:
+                    by_email.setdefault(email_key, []).append(record)
+
+            candidate_groups = [group for group in by_email.values() if len(group) > 1]
+
+            planned = []
+            skipped = []
+            merged_user_ids = set()
+
+            for group in candidate_groups:
+                group_sorted = sorted(group, key=lambda u: (-u['score'], u['id']))
+                target = group_sorted[0]
+                for source in group_sorted[1:]:
+                    if source['id'] in merged_user_ids or target['id'] in merged_user_ids:
+                        skipped.append({
+                            'sourceUserId': source['id'],
+                            'targetUserId': target['id'],
+                            'reason': 'Already merged in this run',
+                        })
+                        continue
+
+                    same_username = bool(source['usernameKey']) and source['usernameKey'] == target['usernameKey']
+                    same_display = bool(source['displayNameKey']) and source['displayNameKey'] == target['displayNameKey']
+                    if not (same_username or same_display):
+                        skipped.append({
+                            'sourceUserId': source['id'],
+                            'targetUserId': target['id'],
+                            'reason': 'Email matches but username/display_name do not match',
+                        })
+                        continue
+
+                    planned.append({'sourceUserId': source['id'], 'targetUserId': target['id']})
+                    if not dry_run:
+                        summary = _merge_users_in_session(session, source['id'], target['id'])
+                        merged_user_ids.add(source['id'])
+                        planned[-1]['summary'] = summary
+
+            if not dry_run:
+                session.commit()
+
+            return jsonify({
+                'success': True,
+                'dryRun': dry_run,
+                'plannedMerges': planned,
+                'skipped': skipped,
+                'mergeCount': len(planned),
+            })
+
+        except Exception as exc:
+            session.rollback()
+            logger.error("Error running merge cleanup: %s", exc, exc_info=True)
+            return jsonify({'error': f'Failed to run merge cleanup: {exc}'}), 500
         finally:
             session.close()
 

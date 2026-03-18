@@ -297,6 +297,23 @@
             <button type="button" class="save-btn" :disabled="!uaCanMerge || uaMerge.busy" @click="mergeUsers">{{ uaMerge.busy ? 'Merging…' : 'Merge Users' }}</button>
             <button type="button" @click="resetMergeState">Reset</button>
           </div>
+
+          <hr style="margin:14px 0;border:none;border-top:1px solid #ddd;" />
+          <div class="ua-search-row" style="gap:8px;">
+            <button type="button" :disabled="uaMergeCleanup.busy" @click="runMergeCleanup(true)">
+              {{ uaMergeCleanup.busy ? 'Working…' : 'Cleanup Dry Run' }}
+            </button>
+            <button type="button" class="save-btn" :disabled="uaMergeCleanup.busy" @click="runMergeCleanup(false)">
+              {{ uaMergeCleanup.busy ? 'Working…' : 'Apply Cleanup' }}
+            </button>
+            <span style="font-size:9pt;color:#666;">Auto-merges safe duplicates by email + username/display-name match.</span>
+          </div>
+          <div v-if="uaMergeCleanup.statusMsg" :class="uaMergeCleanup.statusError ? 'error-msg' : 'success-msg'" style="margin-top:8px;">
+            {{ uaMergeCleanup.statusMsg }}
+          </div>
+          <div v-if="uaMergeCleanup.lastResult" style="font-size:9pt;color:#444;margin-top:4px;">
+            Planned: {{ uaMergeCleanup.lastResult.mergeCount || 0 }}, Skipped: {{ (uaMergeCleanup.lastResult.skipped || []).length }}
+          </div>
         </div>
         <p v-else style="font-size:9pt;color:#777;margin:-8px 0 20px;">Merge Users is available only to app owners.</p>
 
@@ -416,6 +433,12 @@ export default {
         statusMsg: '',
         statusError: false,
         busy: false,
+      },
+      uaMergeCleanup: {
+        busy: false,
+        statusMsg: '',
+        statusError: false,
+        lastResult: null,
       },
     };
   },
@@ -714,6 +737,10 @@ export default {
       this.uaMerge.statusMsg = '';
       this.uaMerge.statusError = false;
       this.uaMerge.busy = false;
+      this.uaMergeCleanup.statusMsg = '';
+      this.uaMergeCleanup.statusError = false;
+      this.uaMergeCleanup.lastResult = null;
+      this.uaMergeCleanup.busy = false;
     },
 
     mergeUsers() {
@@ -749,6 +776,36 @@ export default {
         this.uaMerge.statusError = true;
       }).finally(() => {
         this.uaMerge.busy = false;
+      });
+    },
+
+    runMergeCleanup(dryRun = true) {
+      if (!dryRun) {
+        const confirmed = window.confirm('Apply merge cleanup now? This will merge eligible duplicate active users.');
+        if (!confirmed) return;
+      }
+
+      this.uaMergeCleanup.busy = true;
+      this.uaMergeCleanup.statusMsg = '';
+      this.uaMergeCleanup.statusError = false;
+
+      axios.post(`${API_BASE_URL}/admin/users/merge/cleanup`, {
+        dryRun,
+      }, {
+        headers: this.authHeaders(),
+      }).then(res => {
+        const payload = res.data || {};
+        this.uaMergeCleanup.lastResult = payload;
+        this.uaMergeCleanup.statusMsg = dryRun
+          ? `Dry run complete. Planned merges: ${payload.mergeCount || 0}.`
+          : `Cleanup applied. Merges completed: ${payload.mergeCount || 0}.`;
+        this.uaMergeCleanup.statusError = false;
+        if (!dryRun) this.loadUserAdmin();
+      }).catch(err => {
+        this.uaMergeCleanup.statusMsg = err.response?.data?.error || 'Cleanup failed';
+        this.uaMergeCleanup.statusError = true;
+      }).finally(() => {
+        this.uaMergeCleanup.busy = false;
       });
     },
 

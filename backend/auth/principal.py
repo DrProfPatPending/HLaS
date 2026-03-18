@@ -28,30 +28,20 @@ def _resolve_club_id(session, clubs_table, club_short_name):
     ).scalar_one_or_none()
 
 
-def _resolve_member_ids_for_user(session, links_table, user_id_int, member_id_int):
-    """Return list of member IDs to query roles for.
-
-    When user_id is available, returns ALL member IDs linked to that user
-    (enabling multi-club role aggregation).  Falls back to [member_id_int]
-    when links table is unavailable or yields no rows.
-    """
-    if user_id_int is not None and links_table is not None:
-        try:
-            rows = session.execute(
-                select(links_table.c.member_id).where(links_table.c.user_id == user_id_int)
-            ).fetchall()
-            ids = [row.member_id for row in rows if row.member_id is not None]
-            if ids:
-                return ids
-        except Exception:
-            pass
-    return [member_id_int] if member_id_int is not None else []
+def _resolve_user_id_for_member(session, links_table, member_id_int):
+    if member_id_int is None or links_table is None:
+        return None
+    try:
+        return session.execute(
+            select(links_table.c.user_id).where(links_table.c.member_id == member_id_int)
+        ).scalar_one_or_none()
+    except Exception:
+        return None
 
 
 def load_member_roles(member_id, club_short_name='', user_id=None):
-    member_id_int = _safe_int(member_id)
     user_id_int = _safe_int(user_id)
-    if member_id_int is None and user_id_int is None:
+    if user_id_int is None:
         return {
             'global_roles': [],
             'club_roles': [DEFAULT_ROLE_CODE],
@@ -78,15 +68,6 @@ def load_member_roles(member_id, club_short_name='', user_id=None):
     club_roles = set()
 
     try:
-        member_ids = _resolve_member_ids_for_user(session, links_table, user_id_int, member_id_int)
-        if not member_ids:
-            return {
-                'global_roles': [],
-                'club_roles': [DEFAULT_ROLE_CODE],
-                'effective_roles': [DEFAULT_ROLE_CODE],
-                'permissions': list_permissions({DEFAULT_ROLE_CODE}),
-            }
-
         target_club_id = _resolve_club_id(session, clubs_table, club_short_name)
 
         rows = session.execute(
@@ -98,7 +79,7 @@ def load_member_roles(member_id, club_short_name='', user_id=None):
                 assignments_table.join(roles_table, assignments_table.c.role_id == roles_table.c.id)
             ).where(
                 and_(
-                    assignments_table.c.member_id.in_(member_ids),
+                    assignments_table.c.user_id == user_id_int,
                     assignments_table.c.revoked_at.is_(None),
                 )
             )
@@ -246,11 +227,19 @@ def require_self_or_permission(target_member_id, permission, club_short_name='')
         return auth_error
 
     principal = getattr(g, 'principal', None)
-    principal_member_id = _safe_int((principal or {}).get('member_id'))
+    principal_user_id = _safe_int((principal or {}).get('user_id'))
     target_member_id_int = _safe_int(target_member_id)
 
-    if principal_member_id is not None and target_member_id_int is not None and principal_member_id == target_member_id_int:
-        return None
+    if principal_user_id is not None and target_member_id_int is not None and is_postgres_reads_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            links_table = backend.get('member_user_links_table')
+            target_user_id = _resolve_user_id_for_member(session, links_table, target_member_id_int)
+            if target_user_id is not None and target_user_id == principal_user_id:
+                return None
+        finally:
+            session.close()
 
     role_codes = set(principal.get('effective_roles', [])) if principal else set()
     if has_permission(role_codes, permission):
