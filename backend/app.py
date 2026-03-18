@@ -57,15 +57,12 @@ from auth import (
     extract_bearer_token,
     get_current_principal,
     get_member_refresh_session_from_token,
-    issue_admin_token,
     issue_member_token_pair,
     load_member_roles,
-    require_admin_token,
     require_authenticated,
     require_permission,
     require_member_token_for_club,
     require_self_or_permission,
-    revoke_admin_token_from_request,
     revoke_member_refresh_token,
     revoke_member_session_token,
 )
@@ -438,11 +435,6 @@ def save_clubs_config(clubs):
         session.close()
 
 
-def get_admin_config():
-    """Return admin credentials from server config, with safe defaults."""
-    config = load_server_config()
-    return config.get('admin', {'username': 'admin', 'password': 'admin123'})
-
 def get_column(column_name, members_table):
     """Get column from members table."""
     return members_table.c.get(column_name)
@@ -616,10 +608,6 @@ def create_app():
         'build_member_filters': build_member_filters,
         'render_newsletter_template': render_newsletter_template,
         'get_smtp_config_for_club': get_smtp_config_for_club,
-        'get_admin_config': get_admin_config,
-        'issue_admin_token': issue_admin_token,
-        'revoke_admin_token_from_request': revoke_admin_token_from_request,
-        'require_admin_token': require_admin_token,
         'save_clubs_config': save_clubs_config,
         'save_uploaded_logo': save_uploaded_logo,
         'create_empty_club_database': create_empty_club_database,

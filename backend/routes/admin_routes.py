@@ -4,15 +4,11 @@ import smtplib
 
 from email.message import EmailMessage
 from flask import Blueprint, jsonify, request
-from werkzeug.security import check_password_hash
 
 
 def create_admin_blueprint(deps):
     bp = Blueprint('admin', __name__)
 
-    get_admin_config = deps['get_admin_config']
-    issue_admin_token = deps['issue_admin_token']
-    revoke_admin_token_from_request = deps['revoke_admin_token_from_request']
     require_permission = deps['require_permission']
     load_clubs_config = deps['load_clubs_config']
     save_clubs_config = deps['save_clubs_config']
@@ -22,33 +18,6 @@ def create_admin_blueprint(deps):
     is_postgres_writes_enabled = deps['is_postgres_writes_enabled']
     normalize_beats = deps['normalize_beats']
     get_smtp_config_for_club = deps['get_smtp_config_for_club']
-
-    @bp.route('/admin/login', methods=['POST'])
-    def admin_login():
-        data = request.json or {}
-        username = data.get('username', '')
-        password = data.get('password', '')
-
-        admin_cfg = get_admin_config()
-        stored_password = admin_cfg.get('password', '')
-
-        try:
-            if stored_password.startswith(('scrypt:', 'pbkdf2:', 'bcrypt:')):
-                valid = check_password_hash(stored_password, password)
-            else:
-                valid = (password == stored_password)
-        except Exception:
-            valid = False
-
-        if username == admin_cfg.get('username', 'admin') and valid:
-            token = issue_admin_token()
-            return jsonify({'success': True, 'token': token})
-        return jsonify({'success': False, 'error': 'Invalid admin credentials'}), 401
-
-    @bp.route('/admin/logout', methods=['POST'])
-    def admin_logout():
-        revoke_admin_token_from_request()
-        return jsonify({'success': True})
 
     @bp.route('/admin/clubs', methods=['GET'])
     def admin_get_clubs():
