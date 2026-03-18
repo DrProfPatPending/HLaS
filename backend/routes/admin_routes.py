@@ -37,59 +37,63 @@ def create_admin_blueprint(deps):
         if not username or not password:
             return jsonify({'error': 'Username and password required'}), 400
 
-        # Try to authenticate against GAAFFS club (primary admin club)
+        # Try to authenticate against PostgreSQL central database (admin users are global)
         try:
             logger.info(f"Admin login attempt for user: {username}")
-            db_info = get_read_db_for_club('GAAFFS')
-            session = db_info['session']
+            from db import get_postgres_backend
             
-            # Query member by username
-            member = session.execute(text("""
-                SELECT id, username, members_name, password FROM members
-                WHERE username = :username LIMIT 1
-            """), {'username': username}).first()
+            backend = get_postgres_backend()
+            session = backend['session_factory']()
             
-            if not member:
-                logger.warning(f"Admin login failed: user '{username}' not found")
-                return jsonify({'error': 'Invalid credentials'}), 401
+            try:
+                # Query member by username from central database
+                # Admin users can be in any club, but we look for those with app_admin/app_owner roles
+                member = session.execute(text("""
+                    SELECT m.id, m.username, m.members_name, m.password, m.club_id
+                    FROM members m
+                    INNER JOIN member_role_assignments mra ON m.id = mra.member_id
+                    INNER JOIN roles r ON mra.role_id = r.id
+                    WHERE m.username = :username AND r.code IN ('app_admin', 'app_owner')
+                    AND mra.revoked_at IS NULL
+                    LIMIT 1
+                """), {'username': username}).first()
+                
+                if not member:
+                    logger.warning(f"Admin login failed: user '{username}' not found or doesn't have admin role")
+                    return jsonify({'error': 'Invalid credentials'}), 401
+                
+                member_id, db_username, member_name, stored_password, club_id = member
+                logger.info(f"Found user: {db_username} (ID {member_id}, club_id={club_id})")
+                
+                # Check password
+                if not check_password_hash(stored_password, password):
+                    logger.warning(f"Admin login failed for {username}: password mismatch")
+                    return jsonify({'error': 'Invalid credentials'}), 401
+                
+                logger.info(f"Password valid for {username}")
+                
+                # Load roles to get complete role list
+                role_payload = load_member_roles(member_id, 'GAAFFS')  # Use GAAFFS as reference club
+                effective_roles = role_payload.get('effective_roles', [])
+                logger.info(f"Loaded roles for {username}: {effective_roles}")
+                
+                # Issue token pair (use GAAFFS as the club context for admin token)
+                token_payload = issue_member_token_pair(member_id, 'GAAFFS', username)
+                logger.info(f"Issued token for {username}")
+                
+                return jsonify({
+                    'success': True,
+                    'token': token_payload.get('sessionToken'),
+                    'user': {
+                        'id': member_id,
+                        'username': db_username,
+                        'name': member_name,
+                    },
+                    'roles': effective_roles,
+                })
             
-            member_id, db_username, member_name, stored_password = member
-            logger.info(f"Found user: {db_username} (ID {member_id})")
-            
-            # Check password
-            if not check_password_hash(stored_password, password):
-                logger.warning(f"Admin login failed for {username}: password mismatch")
-                return jsonify({'error': 'Invalid credentials'}), 401
-            
-            logger.info(f"Password valid for {username}")
-            
-            # Load roles to verify app_admin or app_owner
-            role_payload = load_member_roles(member_id, 'GAAFFS')
-            effective_roles = role_payload.get('effective_roles', [])
-            logger.info(f"Loaded roles for {username}: {effective_roles}")
-            
-            # Check if user has global admin role
-            is_admin = any(r in ['app_admin', 'app_owner'] for r in effective_roles)
-            logger.info(f"Is admin: {is_admin}")
-            
-            if not is_admin:
-                logger.warning(f"Admin login failed for {username}: not an admin user")
-                return jsonify({'error': 'User does not have admin privileges'}), 403
-            
-            # Issue token pair
-            token_payload = issue_member_token_pair(member_id, 'GAAFFS', username)
-            logger.info(f"Issued token for {username}")
-            
-            return jsonify({
-                'success': True,
-                'token': token_payload.get('sessionToken'),
-                'user': {
-                    'id': member_id,
-                    'username': db_username,
-                    'name': member_name,
-                },
-                'roles': effective_roles,
-            })
+            finally:
+                session.close()
             
         except Exception as e:
             logger.error(f"Admin login error: {str(e)}", exc_info=True)
