@@ -235,6 +235,70 @@
           </div>
         </div>
 
+        <div v-if="uaCanAccessMerge" class="ua-panel">
+          <h2>Merge Users</h2>
+          <p style="font-size:9pt;color:#555;margin-top:0;">Merge a duplicate source user into a target user. This requires global admin permission.</p>
+
+          <div class="ua-search-row" style="margin-bottom:8px;">
+            <label style="width:70px;">Source:</label>
+            <input
+              v-model="uaMerge.sourceQuery"
+              @input="uaMergeSearchDebounced('source')"
+              placeholder="Search source user (min 2 chars)…"
+              class="field-input"
+              style="width:340px;"
+            />
+          </div>
+          <div v-if="uaMerge.sourceResults.length" style="margin:0 0 10px 70px;max-width:720px;">
+            <table class="ua-table">
+              <thead><tr><th>Username</th><th>Name</th><th>Clubs</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="u in uaMerge.sourceResults" :key="'src-' + u.userId">
+                  <td>{{ u.username }}</td>
+                  <td>{{ u.displayName }}</td>
+                  <td>{{ (u.clubs || []).map(c => c.shortName).join(', ') }}</td>
+                  <td><button type="button" @click="selectMergeUser('source', u)">Select</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="ua-search-row" style="margin-bottom:8px;">
+            <label style="width:70px;">Target:</label>
+            <input
+              v-model="uaMerge.targetQuery"
+              @input="uaMergeSearchDebounced('target')"
+              placeholder="Search target user (min 2 chars)…"
+              class="field-input"
+              style="width:340px;"
+            />
+          </div>
+          <div v-if="uaMerge.targetResults.length" style="margin:0 0 10px 70px;max-width:720px;">
+            <table class="ua-table">
+              <thead><tr><th>Username</th><th>Name</th><th>Clubs</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="u in uaMerge.targetResults" :key="'tgt-' + u.userId">
+                  <td>{{ u.username }}</td>
+                  <td>{{ u.displayName }}</td>
+                  <td>{{ (u.clubs || []).map(c => c.shortName).join(', ') }}</td>
+                  <td><button type="button" @click="selectMergeUser('target', u)">Select</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="font-size:9pt;color:#444;margin:8px 0;">
+            <div><strong>Selected Source:</strong> <span v-if="uaMerge.sourceUser">{{ uaMerge.sourceUser.username }} — {{ uaMerge.sourceUser.displayName }} (id {{ uaMerge.sourceUser.userId }})</span><span v-else>None</span></div>
+            <div><strong>Selected Target:</strong> <span v-if="uaMerge.targetUser">{{ uaMerge.targetUser.username }} — {{ uaMerge.targetUser.displayName }} (id {{ uaMerge.targetUser.userId }})</span><span v-else>None</span></div>
+          </div>
+
+          <div v-if="uaMerge.statusMsg" :class="uaMerge.statusError ? 'error-msg' : 'success-msg'">{{ uaMerge.statusMsg }}</div>
+          <div class="ua-search-row">
+            <button type="button" class="save-btn" :disabled="!uaCanMerge || uaMerge.busy" @click="mergeUsers">{{ uaMerge.busy ? 'Merging…' : 'Merge Users' }}</button>
+            <button type="button" @click="resetMergeState">Reset</button>
+          </div>
+        </div>
+
         <!-- Role assignment table -->
         <h2>Current Role Assignments</h2>
         <div v-if="uaLoading" style="padding:12px;color:#666;">Loading…</div>
@@ -339,6 +403,19 @@ export default {
       uaSearchResults: [],
       uaSearchTimer: null,
       uaGrant: { visible: false, member: null, roleCode: '', clubId: null, statusMsg: '', statusError: false },
+      uaMerge: {
+        sourceQuery: '',
+        targetQuery: '',
+        sourceResults: [],
+        targetResults: [],
+        sourceTimer: null,
+        targetTimer: null,
+        sourceUser: null,
+        targetUser: null,
+        statusMsg: '',
+        statusError: false,
+        busy: false,
+      },
     };
   },
   created() {
@@ -355,6 +432,14 @@ export default {
       if (!this.uaGrant.roleCode) return false;
       const role = this.uaAvailableRoles.find(r => r.code === this.uaGrant.roleCode);
       return role ? role.scopeType === 'club' : false;
+    },
+    uaCanAccessMerge() {
+      return this.uaAvailableRoles.some(r => r.code === 'app_owner');
+    },
+    uaCanMerge() {
+      const sourceId = this.uaMerge.sourceUser?.userId;
+      const targetId = this.uaMerge.targetUser?.userId;
+      return !!sourceId && !!targetId && sourceId !== targetId;
     },
   },
   methods: {
@@ -570,6 +655,94 @@ export default {
           this.uaSearchResults = res.data.members || [];
         }).catch(() => { this.uaSearchResults = []; });
       }, 300);
+    },
+
+    uaMergeSearchDebounced(which) {
+      const isSource = which === 'source';
+      const query = (isSource ? this.uaMerge.sourceQuery : this.uaMerge.targetQuery) || '';
+      const timerKey = isSource ? 'sourceTimer' : 'targetTimer';
+      const resultsKey = isSource ? 'sourceResults' : 'targetResults';
+
+      clearTimeout(this.uaMerge[timerKey]);
+      if (query.length < 2) {
+        this.uaMerge[resultsKey] = [];
+        return;
+      }
+
+      this.uaMerge[timerKey] = setTimeout(() => {
+        axios.get(`${API_BASE_URL}/admin/users/search`, {
+          params: { q: query },
+          headers: this.authHeaders(),
+        }).then(res => {
+          const list = res.data.members || [];
+          const oppositeUserId = isSource ? this.uaMerge.targetUser?.userId : this.uaMerge.sourceUser?.userId;
+          this.uaMerge[resultsKey] = list.filter(u => u.userId !== oppositeUserId);
+        }).catch(() => {
+          this.uaMerge[resultsKey] = [];
+        });
+      }, 300);
+    },
+
+    selectMergeUser(which, user) {
+      if (which === 'source') {
+        this.uaMerge.sourceUser = user;
+        this.uaMerge.sourceQuery = user.username || '';
+        this.uaMerge.sourceResults = [];
+      } else {
+        this.uaMerge.targetUser = user;
+        this.uaMerge.targetQuery = user.username || '';
+        this.uaMerge.targetResults = [];
+      }
+      this.uaMerge.statusMsg = '';
+      this.uaMerge.statusError = false;
+    },
+
+    resetMergeState() {
+      this.uaMerge.sourceQuery = '';
+      this.uaMerge.targetQuery = '';
+      this.uaMerge.sourceResults = [];
+      this.uaMerge.targetResults = [];
+      this.uaMerge.sourceUser = null;
+      this.uaMerge.targetUser = null;
+      this.uaMerge.statusMsg = '';
+      this.uaMerge.statusError = false;
+      this.uaMerge.busy = false;
+    },
+
+    mergeUsers() {
+      if (!this.uaCanMerge) {
+        this.uaMerge.statusMsg = 'Select different source and target users.';
+        this.uaMerge.statusError = true;
+        return;
+      }
+
+      const source = this.uaMerge.sourceUser;
+      const target = this.uaMerge.targetUser;
+      const confirmed = window.confirm(
+        `Merge source user "${source.username}" (id ${source.userId}) into target user "${target.username}" (id ${target.userId})?`
+      );
+      if (!confirmed) return;
+
+      this.uaMerge.busy = true;
+      this.uaMerge.statusMsg = '';
+      this.uaMerge.statusError = false;
+
+      axios.post(`${API_BASE_URL}/admin/users/merge`, {
+        sourceUserId: source.userId,
+        targetUserId: target.userId,
+      }, {
+        headers: this.authHeaders(),
+      }).then(res => {
+        const summary = res.data.summary || {};
+        this.uaMerge.statusMsg = `Merge complete. Links moved: ${summary.movedLinks || 0}, assignments moved: ${summary.movedAssignments || 0}.`;
+        this.uaMerge.statusError = false;
+        this.loadUserAdmin();
+      }).catch(err => {
+        this.uaMerge.statusMsg = err.response?.data?.error || 'Merge failed';
+        this.uaMerge.statusError = true;
+      }).finally(() => {
+        this.uaMerge.busy = false;
+      });
     },
 
     openGrantModal(member) {
