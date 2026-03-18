@@ -4,6 +4,8 @@ import smtplib
 
 from email.message import EmailMessage
 from flask import Blueprint, jsonify, request
+from sqlalchemy import select
+from werkzeug.security import check_password_hash
 
 
 def create_admin_blueprint(deps):
@@ -18,6 +20,71 @@ def create_admin_blueprint(deps):
     is_postgres_writes_enabled = deps['is_postgres_writes_enabled']
     normalize_beats = deps['normalize_beats']
     get_smtp_config_for_club = deps['get_smtp_config_for_club']
+    issue_member_token_pair = deps.get('issue_member_token_pair')
+    load_member_roles = deps.get('load_member_roles')
+    get_read_db_for_club = deps.get('get_read_db_for_club')
+    get_column = deps.get('get_column')
+    member_to_dict = deps.get('member_to_dict')
+
+    @bp.route('/admin/login', methods=['POST'])
+    def admin_login():
+        """Authenticate admin users (members with app_admin or app_owner role)"""
+        data = request.json or {}
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+            return jsonify({'error': 'Username and password required'}), 400
+
+        # Try to authenticate against GAAFFS club (primary admin club)
+        try:
+            db_info = get_read_db_for_club('GAAFFS')
+            session = db_info['session']
+            members_table = db_info['members_table']
+            Member = db_info['Member']
+
+            password_column = get_column('password', members_table)
+            username_column = get_column('username', members_table)
+            id_column = get_column('id', members_table)
+
+            if not password_column or not id_column or not username_column:
+                return jsonify({'error': 'Login columns missing'}), 500
+
+            # Find user by username
+            query = select(Member).where(username_column == username)
+            user = session.scalars(query).first()
+
+            if user and check_password_hash(getattr(user, password_column.name), password):
+                user_dict = member_to_dict(user, members_table)
+                member_id = user_dict.get(id_column.name)
+                
+                # Load roles to verify app_admin or app_owner
+                role_payload = load_member_roles(member_id, 'GAAFFS')
+                effective_roles = role_payload.get('effective_roles', [])
+                
+                # Check if user has global admin role
+                is_admin = any(r in ['app_admin', 'app_owner'] for r in effective_roles)
+                
+                if is_admin:
+                    token_payload = issue_member_token_pair(member_id, 'GAAFFS', username)
+                    user_dict.pop('password', None)
+                    return jsonify({
+                        'success': True,
+                        'token': token_payload.get('sessionToken'),
+                        'user': user_dict,
+                        'roles': effective_roles,
+                    })
+                else:
+                    return jsonify({'error': 'User does not have admin privileges'}), 403
+
+            return jsonify({'error': 'Invalid credentials'}), 401
+        except Exception as e:
+            return jsonify({'error': f'Authentication error: {str(e)}'}), 500
+
+    @bp.route('/admin/logout', methods=['POST'])
+    def admin_logout():
+        """Admin logout endpoint (no-op for now, token revocation happens client-side)"""
+        return jsonify({'success': True})
 
     @bp.route('/admin/clubs', methods=['GET'])
     def admin_get_clubs():
