@@ -224,10 +224,10 @@
             <table class="ua-table">
               <thead><tr><th>Username</th><th>Name</th><th>Club</th><th></th></tr></thead>
               <tbody>
-                <tr v-for="m in uaSearchResults" :key="m.memberId + '-' + m.clubId">
+                <tr v-for="m in uaSearchResults" :key="m.userId">
                   <td>{{ m.username }}</td>
-                  <td>{{ m.membersName }}</td>
-                  <td>{{ m.clubShortName }}</td>
+                  <td>{{ m.displayName }}</td>
+                  <td>{{ m.clubs && m.clubs.map(c => c.shortName).join(', ') }}</td>
                   <td><button type="button" class="save-btn" style="white-space:nowrap;" @click="openGrantModal(m)">Grant Role…</button></td>
                 </tr>
               </tbody>
@@ -249,10 +249,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="u in uaUsers" :key="u.memberId">
+            <tr v-for="u in uaUsers" :key="u.userId">
               <td>{{ u.username }}</td>
-              <td>{{ u.membersName }}</td>
-              <td>{{ u.clubShortName }}</td>
+              <td>{{ u.displayName }}</td>
+              <td></td>
               <td class="roles-cell">
                 <span
                   v-for="a in u.assignments"
@@ -272,7 +272,7 @@
         <div v-if="uaGrant.visible" class="modal-overlay" @click.self="closeGrantModal">
           <div class="modal-box">
             <h3 style="margin-top:0;">Grant Role</h3>
-            <p style="margin:0 0 14px;">Member: <strong>{{ uaGrant.member && uaGrant.member.username }}</strong> — {{ uaGrant.member && uaGrant.member.membersName }}<span v-if="uaGrant.member && uaGrant.member.clubShortName"> ({{ uaGrant.member.clubShortName }})</span></p>
+            <p style="margin:0 0 14px;">User: <strong>{{ uaGrant.member && uaGrant.member.username }}</strong> — {{ uaGrant.member && uaGrant.member.displayName }}</p>
             <div class="form-field">
               <label style="width:70px;">Role:</label>
               <select v-model="uaGrant.roleCode" class="field-input" style="width:220px;">
@@ -593,7 +593,7 @@ export default {
         return;
       }
       axios.post(
-        `${API_BASE_URL}/admin/users/${this.uaGrant.member.memberId}/roles`,
+        `${API_BASE_URL}/admin/users/${this.uaGrant.member.userId}/roles`,
         { roleCode: this.uaGrant.roleCode, clubId: this.uaGrant.clubId || null },
         { headers: this.authHeaders() }
       ).then(() => {
@@ -614,7 +614,7 @@ export default {
         : ' (global)';
       if (!window.confirm(`Revoke "${assignment.roleName}"${scopeLabel} from ${user.username}?`)) return;
       axios.delete(
-        `${API_BASE_URL}/admin/users/${user.memberId}/roles/${assignment.assignmentId}`,
+        `${API_BASE_URL}/admin/users/${user.userId}/roles/${assignment.assignmentId}`,
         { headers: this.authHeaders() }
       ).then(() => {
         this.uaShowStatus('Role revoked successfully.');

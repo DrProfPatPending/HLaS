@@ -280,6 +280,40 @@ def ensure_postgres_global_user_tables(engine):
             conn.execute(stmt)
 
 
+def ensure_postgres_role_assignment_user_id(engine):
+    """Idempotently add user_id FK to member_role_assignments and backfill.
+
+    Must be called AFTER both ensure_postgres_rbac_tables and
+    ensure_postgres_global_user_tables so that both referenced tables exist.
+    """
+    statements = [
+        text(
+            """
+            ALTER TABLE member_role_assignments
+            ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES app_users(id) ON DELETE SET NULL
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_mra_user_id
+            ON member_role_assignments (user_id)
+            """
+        ),
+        text(
+            """
+            UPDATE member_role_assignments mra
+            SET user_id = mul.user_id
+            FROM member_user_links mul
+            WHERE mul.member_id = mra.member_id
+              AND mra.user_id IS NULL
+            """
+        ),
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(stmt)
+
+
 def get_postgres_backend():
     database_url = os.getenv('DATABASE_URL', '').strip()
     if not database_url:
@@ -298,6 +332,7 @@ def get_postgres_backend():
         ensure_postgres_member_refresh_sessions_table(engine)
         ensure_postgres_rbac_tables(engine)
         ensure_postgres_global_user_tables(engine)
+        ensure_postgres_role_assignment_user_id(engine)
         metadata = MetaData()
         metadata.reflect(
             bind=engine,

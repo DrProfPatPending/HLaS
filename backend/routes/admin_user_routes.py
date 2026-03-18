@@ -1,3 +1,4 @@
+import json as _json
 import logging
 from datetime import datetime, timezone
 
@@ -84,8 +85,8 @@ def create_admin_user_blueprint(deps):
 
     # -------------------------------------------------------------------------
     # GET /admin/users
-    # Returns all members who have at least one active role assignment,
-    # with their full assignment list.
+    # Returns all app_users with at least one active role assignment, grouped
+    # by user_id.
     # -------------------------------------------------------------------------
     @bp.route('/admin/users', methods=['GET'])
     def admin_list_users_with_roles():
@@ -97,10 +98,9 @@ def create_admin_user_blueprint(deps):
         try:
             rows = session.execute(text("""
                 SELECT
-                    m.id            AS member_id,
-                    m.username,
-                    m.members_name,
-                    c.short_name    AS club_short_name,
+                    au.id           AS user_id,
+                    au.username,
+                    au.display_name,
                     mra.id          AS assignment_id,
                     r.code          AS role_code,
                     r.name          AS role_name,
@@ -108,29 +108,28 @@ def create_admin_user_blueprint(deps):
                     rc.id           AS role_club_id,
                     rc.short_name   AS role_club_short_name,
                     mra.granted_at
-                FROM members m
-                JOIN  member_role_assignments mra ON m.id  = mra.member_id
+                FROM app_users au
+                JOIN  member_role_assignments mra ON mra.user_id = au.id
                 JOIN  roles r                     ON r.id  = mra.role_id
-                LEFT JOIN clubs c                 ON c.id  = m.club_id
                 LEFT JOIN clubs rc                ON rc.id = mra.club_id
                 WHERE mra.revoked_at IS NULL
-                ORDER BY m.username, r.scope_type DESC, r.code
+                  AND au.is_active = TRUE
+                ORDER BY au.username, r.scope_type DESC, r.code
             """)).fetchall()
         finally:
             session.close()
 
-        members_map = {}
+        users_map = {}
         for row in rows:
-            mid = row.member_id
-            if mid not in members_map:
-                members_map[mid] = {
-                    'memberId': mid,
+            uid = row.user_id
+            if uid not in users_map:
+                users_map[uid] = {
+                    'userId': uid,
                     'username': row.username,
-                    'membersName': row.members_name,
-                    'clubShortName': row.club_short_name,
+                    'displayName': row.display_name,
                     'assignments': [],
                 }
-            members_map[mid]['assignments'].append({
+            users_map[uid]['assignments'].append({
                 'assignmentId': row.assignment_id,
                 'roleCode': row.role_code,
                 'roleName': row.role_name,
@@ -140,11 +139,12 @@ def create_admin_user_blueprint(deps):
                 'grantedAt': row.granted_at.isoformat() if row.granted_at else None,
             })
 
-        return jsonify({'users': list(members_map.values())})
+        return jsonify({'users': list(users_map.values())})
 
     # -------------------------------------------------------------------------
     # GET /admin/users/search?q=<term>&limit=<n>
-    # Typeahead search across all members (any club) by username or name.
+    # Typeahead search across app_users by username or display_name.
+    # Returns userId, username, displayName, and a clubs array.
     # Minimum 2-character query.
     # -------------------------------------------------------------------------
     @bp.route('/admin/users/search', methods=['GET'])
@@ -166,40 +166,47 @@ def create_admin_user_blueprint(deps):
         session = _get_session()
         try:
             rows = session.execute(text("""
-                SELECT DISTINCT ON (m.username)
-                    m.id,
-                    m.username,
-                    m.members_name,
-                    c.short_name AS club_short_name,
-                    c.id         AS club_id
-                FROM members m
-                LEFT JOIN clubs c ON c.id = m.club_id
-                WHERE
-                    LOWER(m.username)     LIKE LOWER(:pattern)
-                    OR LOWER(m.members_name) LIKE LOWER(:pattern)
-                ORDER BY m.username, m.id
+                SELECT
+                    au.id           AS user_id,
+                    au.username,
+                    au.display_name,
+                    json_agg(
+                        json_build_object('id', c.id, 'shortName', c.short_name)
+                        ORDER BY c.short_name
+                    ) AS clubs
+                FROM app_users au
+                JOIN member_user_links mul ON mul.user_id = au.id
+                JOIN clubs c ON c.id = mul.club_id
+                WHERE au.username != ''
+                  AND (
+                      LOWER(au.username)     LIKE LOWER(:pattern)
+                      OR LOWER(au.display_name) LIKE LOWER(:pattern)
+                  )
+                GROUP BY au.id, au.username, au.display_name
+                ORDER BY au.username
                 LIMIT :limit
             """), {'pattern': pattern, 'limit': limit}).fetchall()
         finally:
             session.close()
 
-        return jsonify({'members': [
-            {
-                'memberId': r.id,
+        members = []
+        for r in rows:
+            clubs_raw = r.clubs
+            clubs = clubs_raw if isinstance(clubs_raw, list) else _json.loads(clubs_raw)
+            members.append({
+                'userId': r.user_id,
                 'username': r.username,
-                'membersName': r.members_name,
-                'clubShortName': r.club_short_name,
-                'clubId': r.club_id,
-            }
-            for r in rows
-        ]})
+                'displayName': r.display_name,
+                'clubs': clubs,
+            })
+        return jsonify({'members': members})
 
     # -------------------------------------------------------------------------
-    # GET /admin/users/<member_id>/roles
-    # Full assignment history (active + revoked) for a single member.
+    # GET /admin/users/<user_id>/roles
+    # Full assignment history (active + revoked) for a single user.
     # -------------------------------------------------------------------------
-    @bp.route('/admin/users/<int:member_id>/roles', methods=['GET'])
-    def admin_get_user_roles(member_id):
+    @bp.route('/admin/users/<int:user_id>/roles', methods=['GET'])
+    def admin_get_user_roles(user_id):
         auth_error = require_permission('role.assign.club')
         if auth_error:
             return auth_error
@@ -220,9 +227,9 @@ def create_admin_user_blueprint(deps):
                 JOIN  roles r    ON r.id  = mra.role_id
                 LEFT JOIN clubs rc ON rc.id = mra.club_id
                 LEFT JOIN members gb ON gb.id = mra.granted_by_member_id
-                WHERE mra.member_id = :member_id
+                WHERE mra.user_id = :user_id
                 ORDER BY mra.granted_at DESC
-            """), {'member_id': member_id}).fetchall()
+            """), {'user_id': user_id}).fetchall()
         finally:
             session.close()
 
@@ -242,13 +249,14 @@ def create_admin_user_blueprint(deps):
         ]})
 
     # -------------------------------------------------------------------------
-    # POST /admin/users/<member_id>/roles
-    # Grant a role to a member.
+    # POST /admin/users/<user_id>/roles
+    # Grant a role to a user.
     # Body: { roleCode: str, clubId: int|null }
     # clubId is required for club-scoped roles, ignored for global roles.
+    # member_id is derived from member_user_links for backward-compat FK.
     # -------------------------------------------------------------------------
-    @bp.route('/admin/users/<int:member_id>/roles', methods=['POST'])
-    def admin_grant_role(member_id):
+    @bp.route('/admin/users/<int:user_id>/roles', methods=['POST'])
+    def admin_grant_role(user_id):
         data = request.json or {}
         role_code = str(data.get('roleCode', '')).strip()
         club_id = data.get('clubId')
@@ -262,10 +270,18 @@ def create_admin_user_blueprint(deps):
             return auth_error
 
         principal = getattr(g, 'principal', None)
-        grantor_id = (principal or {}).get('member_id')
+        grantor_member_id = (principal or {}).get('member_id')
 
         session = _get_session()
         try:
+            # Verify target user exists and is active
+            user_row = session.execute(text(
+                "SELECT id, legacy_member_id FROM app_users WHERE id = :uid AND is_active = TRUE"
+            ), {'uid': user_id}).first()
+            if not user_row:
+                return jsonify({'error': 'User not found or inactive'}), 404
+
+            # Fetch role
             role_row = session.execute(
                 text("SELECT id, scope_type FROM roles WHERE code = :code"),
                 {'code': role_code}
@@ -283,41 +299,58 @@ def create_admin_user_blueprint(deps):
             if scope_type == 'global':
                 club_id = None
 
-            # Check for an existing active assignment
+            # Derive member_id for the FK column (backward compat with per-club tables)
+            if scope_type == 'club':
+                link_row = session.execute(text("""
+                    SELECT member_id FROM member_user_links
+                    WHERE user_id = :uid AND club_id = :club_id
+                """), {'uid': user_id, 'club_id': club_id}).first()
+                if not link_row:
+                    return jsonify({'error': 'User is not a member of the selected club'}), 400
+                member_id = link_row.member_id
+            else:
+                # Global role: use the first linked member_id (or legacy_member_id fallback)
+                link_row = session.execute(text(
+                    "SELECT member_id FROM member_user_links WHERE user_id = :uid LIMIT 1"
+                ), {'uid': user_id}).first()
+                member_id = link_row.member_id if link_row else user_row.legacy_member_id
+
+            # Check for an existing active assignment (keyed on user_id)
             existing = session.execute(text("""
                 SELECT id FROM member_role_assignments
-                WHERE member_id = :member_id
-                  AND role_id   = :role_id
+                WHERE user_id  = :user_id
+                  AND role_id  = :role_id
                   AND (
                       (:club_id IS NULL AND club_id IS NULL)
                       OR club_id = :club_id
                   )
                   AND revoked_at IS NULL
-            """), {'member_id': member_id, 'role_id': role_id, 'club_id': club_id}).first()
+            """), {'user_id': user_id, 'role_id': role_id, 'club_id': club_id}).first()
 
             if existing:
-                return jsonify({'error': 'Role already assigned to this member'}), 409
+                return jsonify({'error': 'Role already assigned to this user'}), 409
 
             now = datetime.now(timezone.utc)
             result = session.execute(text("""
                 INSERT INTO member_role_assignments
-                    (member_id, role_id, club_id, granted_by_member_id, granted_at)
+                    (user_id, member_id, role_id, club_id, granted_by_member_id, granted_at)
                 VALUES
-                    (:member_id, :role_id, :club_id, :grantor_id, :now)
+                    (:user_id, :member_id, :role_id, :club_id, :grantor_id, :now)
                 RETURNING id
             """), {
+                'user_id': user_id,
                 'member_id': member_id,
                 'role_id': role_id,
                 'club_id': club_id,
-                'grantor_id': grantor_id,
+                'grantor_id': grantor_member_id,
                 'now': now,
             })
             assignment_id = result.scalar()
             session.commit()
 
             logger.info(
-                "Role '%s' granted to member %d by member %s (assignment %d)",
-                role_code, member_id, grantor_id, assignment_id
+                "Role '%s' granted to user %d (member %s) by member %s (assignment %d)",
+                role_code, user_id, member_id, grantor_member_id, assignment_id
             )
 
             return jsonify({
@@ -339,14 +372,14 @@ def create_admin_user_blueprint(deps):
             session.close()
 
     # -------------------------------------------------------------------------
-    # DELETE /admin/users/<member_id>/roles/<assignment_id>
+    # DELETE /admin/users/<user_id>/roles/<assignment_id>
     # Revoke a role assignment (soft delete: sets revoked_at).
     # Anti-lockout: a user cannot revoke their own last global admin assignment.
     # -------------------------------------------------------------------------
-    @bp.route('/admin/users/<int:member_id>/roles/<int:assignment_id>', methods=['DELETE'])
-    def admin_revoke_role(member_id, assignment_id):
+    @bp.route('/admin/users/<int:user_id>/roles/<int:assignment_id>', methods=['DELETE'])
+    def admin_revoke_role(user_id, assignment_id):
         principal = getattr(g, 'principal', None)
-        actor_id = (principal or {}).get('member_id')
+        actor_user_id = (principal or {}).get('user_id')
 
         session = _get_session()
         try:
@@ -354,8 +387,8 @@ def create_admin_user_blueprint(deps):
                 SELECT mra.id, r.code AS role_code, r.scope_type, mra.revoked_at
                 FROM member_role_assignments mra
                 JOIN roles r ON r.id = mra.role_id
-                WHERE mra.id = :assignment_id AND mra.member_id = :member_id
-            """), {'assignment_id': assignment_id, 'member_id': member_id}).first()
+                WHERE mra.id = :assignment_id AND mra.user_id = :user_id
+            """), {'assignment_id': assignment_id, 'user_id': user_id}).first()
 
             if not assignment:
                 return jsonify({'error': 'Assignment not found'}), 404
@@ -369,15 +402,15 @@ def create_admin_user_blueprint(deps):
                 return auth_error
 
             # Anti-lockout: prevent an admin removing their own last global role
-            if actor_id == member_id and is_global:
+            if actor_user_id == user_id and is_global:
                 remaining = session.execute(text("""
                     SELECT COUNT(*) FROM member_role_assignments mra
                     JOIN roles r ON r.id = mra.role_id
-                    WHERE mra.member_id = :member_id
+                    WHERE mra.user_id = :user_id
                       AND r.code IN ('app_admin', 'app_owner')
                       AND mra.revoked_at IS NULL
                       AND mra.id != :assignment_id
-                """), {'member_id': member_id, 'assignment_id': assignment_id}).scalar()
+                """), {'user_id': user_id, 'assignment_id': assignment_id}).scalar()
                 if remaining == 0:
                     return jsonify({'error': 'Cannot revoke your own last global admin role'}), 403
 
@@ -390,8 +423,8 @@ def create_admin_user_blueprint(deps):
             session.commit()
 
             logger.info(
-                "Assignment %d (role '%s') revoked from member %d by member %s",
-                assignment_id, assignment.role_code, member_id, actor_id
+                "Assignment %d (role '%s') revoked from user %d by user %s",
+                assignment_id, assignment.role_code, user_id, actor_user_id
             )
 
             return jsonify({'success': True})
