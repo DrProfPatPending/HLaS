@@ -83,13 +83,13 @@ def create_admin_blueprint(deps):
                 
                 return jsonify({
                     'success': True,
-                    'token': token_payload.get('sessionToken'),
                     'user': {
                         'id': member_id,
                         'username': db_username,
                         'name': member_name,
                     },
                     'roles': effective_roles,
+                    **token_payload,  # Spread token, refreshToken, expiresInSeconds, refreshExpiresInSeconds
                 })
             
             finally:
