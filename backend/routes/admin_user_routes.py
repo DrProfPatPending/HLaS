@@ -351,7 +351,7 @@ def create_admin_user_blueprint(deps):
         session = _get_session()
         try:
             assignment = session.execute(text("""
-                SELECT mra.id, r.code, r.scope_type, mra.revoked_at
+                SELECT mra.id, r.code AS role_code, r.scope_type, mra.revoked_at
                 FROM member_role_assignments mra
                 JOIN roles r ON r.id = mra.role_id
                 WHERE mra.id = :assignment_id AND mra.member_id = :member_id
