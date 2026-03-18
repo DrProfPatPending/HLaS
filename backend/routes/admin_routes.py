@@ -1,11 +1,14 @@
 import os
 import re
 import smtplib
+import logging
 
 from email.message import EmailMessage
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from sqlalchemy import select, text
 from werkzeug.security import check_password_hash
+
+logger = logging.getLogger(__name__)
 
 
 def create_admin_blueprint(deps):
@@ -36,6 +39,7 @@ def create_admin_blueprint(deps):
 
         # Try to authenticate against GAAFFS club (primary admin club)
         try:
+            logger.info(f"Admin login attempt for user: {username}")
             db_info = get_read_db_for_club('GAAFFS')
             session = db_info['session']
             
@@ -46,26 +50,35 @@ def create_admin_blueprint(deps):
             """), {'username': username}).first()
             
             if not member:
+                logger.warning(f"Admin login failed: user '{username}' not found")
                 return jsonify({'error': 'Invalid credentials'}), 401
             
             member_id, db_username, member_name, stored_password = member
+            logger.info(f"Found user: {db_username} (ID {member_id})")
             
             # Check password
             if not check_password_hash(stored_password, password):
+                logger.warning(f"Admin login failed for {username}: password mismatch")
                 return jsonify({'error': 'Invalid credentials'}), 401
+            
+            logger.info(f"Password valid for {username}")
             
             # Load roles to verify app_admin or app_owner
             role_payload = load_member_roles(member_id, 'GAAFFS')
             effective_roles = role_payload.get('effective_roles', [])
+            logger.info(f"Loaded roles for {username}: {effective_roles}")
             
             # Check if user has global admin role
             is_admin = any(r in ['app_admin', 'app_owner'] for r in effective_roles)
+            logger.info(f"Is admin: {is_admin}")
             
             if not is_admin:
+                logger.warning(f"Admin login failed for {username}: not an admin user")
                 return jsonify({'error': 'User does not have admin privileges'}), 403
             
             # Issue token pair
             token_payload = issue_member_token_pair(member_id, 'GAAFFS', username)
+            logger.info(f"Issued token for {username}")
             
             return jsonify({
                 'success': True,
@@ -79,8 +92,7 @@ def create_admin_blueprint(deps):
             })
             
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Admin login error: {str(e)}", exc_info=True)
             return jsonify({'error': f'Authentication error: {str(e)}'}), 500
 
     @bp.route('/admin/logout', methods=['POST'])
