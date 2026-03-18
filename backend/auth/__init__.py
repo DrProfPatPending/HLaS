@@ -10,6 +10,13 @@ from auth.session_tokens import (
     revoke_member_refresh_token,
     revoke_member_session_token,
 )
+from auth.principal import (
+    get_current_principal,
+    load_member_roles,
+    require_authenticated,
+    require_permission,
+    require_self_or_permission,
+)
 
 __all__ = [
     'issue_admin_token',
@@ -24,4 +31,9 @@ __all__ = [
     'revoke_member_session_token',
     'get_member_session_from_token',
     'require_member_token_for_club',
+    'load_member_roles',
+    'get_current_principal',
+    'require_authenticated',
+    'require_permission',
+    'require_self_or_permission',
 ]
