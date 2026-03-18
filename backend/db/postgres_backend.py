@@ -166,6 +166,12 @@ def get_postgres_backend():
     if not database_url:
         raise RuntimeError('DATABASE_URL is not configured')
 
+    # Ensure psycopg driver is specified (not psycopg2)
+    if database_url.startswith('postgresql://') and 'psycopg' not in database_url:
+        database_url = database_url.replace('postgresql://', 'postgresql+psycopg://')
+    elif database_url.startswith('postgres://') and 'psycopg' not in database_url:
+        database_url = database_url.replace('postgres://', 'postgresql+psycopg://')
+
     cache_key = database_url
     if cache_key not in _postgres_cache:
         engine = create_engine(database_url, future=True)
