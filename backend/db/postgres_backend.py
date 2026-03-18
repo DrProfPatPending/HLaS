@@ -310,15 +310,9 @@ def ensure_postgres_role_assignment_user_id(engine):
             ON member_role_assignments (user_id)
             """
         ),
-        text(
-            """
-            UPDATE member_role_assignments mra
-            SET user_id = mul.user_id
-            FROM member_user_links mul
-            WHERE mul.member_id = mra.member_id
-              AND mra.user_id IS NULL
-            """
-        ),
+        # NOTE: the backfill UPDATE (SET user_id FROM member_user_links WHERE mul.member_id = mra.member_id)
+        # was removed; mra.member_id was dropped in migration 0007 and all assignments
+        # were backfilled during migration 0006.
         text(
             """
             WITH ranked AS (
