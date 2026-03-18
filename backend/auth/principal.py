@@ -41,13 +41,7 @@ def _resolve_user_id_for_member(session, links_table, member_id_int):
 
 def load_member_roles(member_id, club_short_name='', user_id=None):
     user_id_int = _safe_int(user_id)
-    if user_id_int is None:
-        return {
-            'global_roles': [],
-            'club_roles': [DEFAULT_ROLE_CODE],
-            'effective_roles': [DEFAULT_ROLE_CODE],
-            'permissions': list_permissions({DEFAULT_ROLE_CODE}),
-        }
+    member_id_int = _safe_int(member_id)
 
     if not is_postgres_reads_enabled():
         return {
@@ -63,6 +57,20 @@ def load_member_roles(member_id, club_short_name='', user_id=None):
     assignments_table = backend['member_role_assignments_table']
     clubs_table = backend['clubs_table']
     links_table = backend.get('member_user_links_table')
+
+    # If no user_id in the session token, try to resolve from member_user_links
+    # (handles tokens issued before user_id propagation)
+    if user_id_int is None and member_id_int is not None:
+        user_id_int = _resolve_user_id_for_member(session, links_table, member_id_int)
+
+    if user_id_int is None:
+        session.close()
+        return {
+            'global_roles': [],
+            'club_roles': [DEFAULT_ROLE_CODE],
+            'effective_roles': [DEFAULT_ROLE_CODE],
+            'permissions': list_permissions({DEFAULT_ROLE_CODE}),
+        }
 
     global_roles = set()
     club_roles = set()

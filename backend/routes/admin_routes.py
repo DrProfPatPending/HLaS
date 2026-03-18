@@ -46,39 +46,62 @@ def create_admin_blueprint(deps):
             session = backend['session_factory']()
             
             try:
-                # Query member by username from central database
-                # Admin users can be in any club, but we look for those with app_admin/app_owner roles
+                # Query member by username; verify an app_admin/app_owner role exists via user_id
                 member = session.execute(text("""
-                    SELECT m.id, m.username, m.members_name, m.password, m.club_id
+                    SELECT
+                        m.id          AS member_id,
+                        m.username,
+                        m.members_name,
+                        m.password,
+                        m.club_id,
+                        au.id         AS user_id
                     FROM members m
-                    INNER JOIN member_role_assignments mra ON m.id = mra.member_id
-                    INNER JOIN roles r ON mra.role_id = r.id
-                    WHERE m.username = :username AND r.code IN ('app_admin', 'app_owner')
-                    AND mra.revoked_at IS NULL
+                    JOIN app_users au ON au.id = (
+                        SELECT mul.user_id FROM member_user_links mul WHERE mul.member_id = m.id LIMIT 1
+                    )
+                    WHERE m.username = :username
                     LIMIT 1
                 """), {'username': username}).first()
-                
+
                 if not member:
-                    logger.warning(f"Admin login failed: user '{username}' not found or doesn't have admin role")
+                    logger.warning(f"Admin login failed: user '{username}' not found")
                     return jsonify({'error': 'Invalid credentials'}), 401
-                
-                member_id, db_username, member_name, stored_password, club_id = member
-                logger.info(f"Found user: {db_username} (ID {member_id}, club_id={club_id})")
-                
+
+                member_id   = member.member_id
+                user_id     = member.user_id
+                db_username = member.username
+                member_name = member.members_name
+                stored_password = member.password
+                logger.info(f"Found user: {db_username} (member {member_id}, user {user_id})")
+
                 # Check password
                 if not check_password_hash(stored_password, password):
                     logger.warning(f"Admin login failed for {username}: password mismatch")
                     return jsonify({'error': 'Invalid credentials'}), 401
-                
+
                 logger.info(f"Password valid for {username}")
-                
+
+                # Verify at least one active app_admin/app_owner role assignment exists for this user
+                has_admin_role = session.execute(text("""
+                    SELECT 1 FROM member_role_assignments mra
+                    JOIN roles r ON r.id = mra.role_id
+                    WHERE mra.user_id = :user_id
+                      AND r.code IN ('app_admin', 'app_owner')
+                      AND mra.revoked_at IS NULL
+                    LIMIT 1
+                """), {'user_id': user_id}).first()
+
+                if not has_admin_role:
+                    logger.warning(f"Admin login failed: user '{username}' has no active admin role")
+                    return jsonify({'error': 'Invalid credentials'}), 401
+
                 # Load roles to get complete role list
-                role_payload = load_member_roles(member_id, 'GAAFFS')  # Use GAAFFS as reference club
+                role_payload = load_member_roles(member_id, 'GAAFFS', user_id=user_id)
                 effective_roles = role_payload.get('effective_roles', [])
                 logger.info(f"Loaded roles for {username}: {effective_roles}")
-                
+
                 # Issue token pair (use GAAFFS as the club context for admin token)
-                token_payload = issue_member_token_pair(member_id, 'GAAFFS', username)
+                token_payload = issue_member_token_pair(member_id, 'GAAFFS', username, user_id=user_id)
                 logger.info(f"Issued token for {username}")
                 
                 return jsonify({
