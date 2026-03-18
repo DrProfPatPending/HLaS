@@ -308,6 +308,64 @@ def ensure_postgres_role_assignment_user_id(engine):
               AND mra.user_id IS NULL
             """
         ),
+        text(
+            """
+            WITH ranked AS (
+                SELECT
+                    id,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY user_id, role_id, club_id
+                        ORDER BY granted_at DESC, id DESC
+                    ) AS rn
+                FROM member_role_assignments
+                WHERE revoked_at IS NULL
+                  AND club_id IS NOT NULL
+                  AND user_id IS NOT NULL
+            )
+            UPDATE member_role_assignments mra
+            SET revoked_at = NOW()
+            FROM ranked
+            WHERE ranked.id = mra.id
+              AND ranked.rn > 1
+            """
+        ),
+        text(
+            """
+            WITH ranked AS (
+                SELECT
+                    id,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY user_id, role_id
+                        ORDER BY granted_at DESC, id DESC
+                    ) AS rn
+                FROM member_role_assignments
+                WHERE revoked_at IS NULL
+                  AND club_id IS NULL
+                  AND user_id IS NOT NULL
+            )
+            UPDATE member_role_assignments mra
+            SET revoked_at = NOW()
+            FROM ranked
+            WHERE ranked.id = mra.id
+              AND ranked.rn > 1
+            """
+        ),
+        text("DROP INDEX IF EXISTS uq_mra_member_role_club_active"),
+        text("DROP INDEX IF EXISTS uq_mra_member_role_global_active"),
+        text(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_mra_user_role_club_active
+            ON member_role_assignments (user_id, role_id, club_id)
+            WHERE club_id IS NOT NULL AND revoked_at IS NULL
+            """
+        ),
+        text(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_mra_user_role_global_active
+            ON member_role_assignments (user_id, role_id)
+            WHERE club_id IS NULL AND revoked_at IS NULL
+            """
+        ),
     ]
     with engine.begin() as conn:
         for stmt in statements:

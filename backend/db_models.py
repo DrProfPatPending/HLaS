@@ -195,6 +195,7 @@ member_role_assignments = Table(
     "member_role_assignments",
     metadata,
     Column("id", BigInteger, primary_key=True),
+    Column("user_id", BigInteger, ForeignKey("app_users.id", ondelete="SET NULL"), nullable=True),
     Column("member_id", BigInteger, ForeignKey("members.id", ondelete="CASCADE"), nullable=False),
     Column("role_id", BigInteger, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False),
     # NULL for globally-scoped roles (app_admin, app_owner)
