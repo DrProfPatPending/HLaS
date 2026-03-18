@@ -1,11 +1,29 @@
 name: hlas
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hlas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hlas}
+      POSTGRES_DB: ${POSTGRES_DB:-hlas}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hlas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     image: ${BACKEND_IMAGE}
     build:
       context: .
       dockerfile: backend/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       HLAS_DATA_DIR: /data
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -56,6 +74,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres_data:
   hlas_data:
   caddy_data:
   caddy_config:
