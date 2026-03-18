@@ -37,8 +37,16 @@
       <div v-if="loginError" class="error-msg">{{ loginError }}</div>
     </div>
 
-    <!-- Club management -->
+    <!-- Club management & user admin -->
     <div v-else class="admin-container">
+      <!-- Tab navigation -->
+      <div class="tab-nav">
+        <button :class="['tab-btn', activeTab === 'clubs' ? 'tab-btn-active' : '']" @click="switchTab('clubs')">Clubs Configuration</button>
+        <button :class="['tab-btn', activeTab === 'users' ? 'tab-btn-active' : '']" @click="switchTab('users')">User Administration</button>
+      </div>
+
+      <!-- ===== CLUBS TAB ===== -->
+      <div v-show="activeTab === 'clubs'">
       <h1>Clubs Configuration</h1>
 
       <div v-if="statusMsg" :class="statusMsgError ? 'error-msg' : 'success-msg'">{{ statusMsg }}</div>
@@ -190,8 +198,108 @@
           </tr>
         </tbody>
       </table>
-    </div>
-  </div>
+      </div><!-- end clubs tab -->
+
+      <!-- ===== USER ADMINISTRATION TAB ===== -->
+      <div v-show="activeTab === 'users'">
+        <h1>User Administration</h1>
+        <p style="font-size:9pt;color:#555;">Manage role assignments for members across all clubs. Changes take effect immediately.</p>
+
+        <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
+
+        <!-- Search panel to find a member and grant a role -->
+        <div class="ua-panel">
+          <h2>Grant Role to Member</h2>
+          <div class="ua-search-row">
+            <input
+              v-model="uaSearch"
+              @input="uaSearchDebounced"
+              placeholder="Search by username or name (min 2 chars)…"
+              class="field-input"
+              style="width:340px;"
+            />
+            <span v-if="uaSearch.length >= 2 && !uaSearchResults.length" class="ua-hint">No results.</span>
+          </div>
+          <div v-if="uaSearchResults.length" style="margin-top:8px;">
+            <table class="ua-table">
+              <thead><tr><th>Username</th><th>Name</th><th>Club</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="m in uaSearchResults" :key="m.memberId + '-' + m.clubId">
+                  <td>{{ m.username }}</td>
+                  <td>{{ m.membersName }}</td>
+                  <td>{{ m.clubShortName }}</td>
+                  <td><button type="button" class="save-btn" style="white-space:nowrap;" @click="openGrantModal(m)">Grant Role…</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Role assignment table -->
+        <h2>Current Role Assignments</h2>
+        <div v-if="uaLoading" style="padding:12px;color:#666;">Loading…</div>
+        <p v-else-if="!uaUsers.length" style="font-size:9pt;color:#888;">No members with role assignments found.</p>
+        <table v-else class="ua-table" style="margin-bottom:30px;">
+          <thead>
+            <tr>
+              <th style="width:180px;">Username</th>
+              <th style="width:180px;">Name</th>
+              <th style="width:110px;">Home Club</th>
+              <th>Roles</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="u in uaUsers" :key="u.memberId">
+              <td>{{ u.username }}</td>
+              <td>{{ u.membersName }}</td>
+              <td>{{ u.clubShortName }}</td>
+              <td class="roles-cell">
+                <span
+                  v-for="a in u.assignments"
+                  :key="a.assignmentId"
+                  :class="['role-badge', 'role-' + a.roleCode.replace(/_/g, '-')]"
+                >
+                  {{ a.roleName }}<span v-if="a.roleClubShortName" style="opacity:.75;"> / {{ a.roleClubShortName }}</span>
+                  <button type="button" class="role-revoke-btn" @click="revokeRole(u, a)" title="Revoke this role">×</button>
+                </span>
+                <button type="button" class="ua-add-role-btn" @click="openGrantModal(u)" title="Grant additional role">+ Role</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Grant role modal -->
+        <div v-if="uaGrant.visible" class="modal-overlay" @click.self="closeGrantModal">
+          <div class="modal-box">
+            <h3 style="margin-top:0;">Grant Role</h3>
+            <p style="margin:0 0 14px;">Member: <strong>{{ uaGrant.member && uaGrant.member.username }}</strong> — {{ uaGrant.member && uaGrant.member.membersName }}<span v-if="uaGrant.member && uaGrant.member.clubShortName"> ({{ uaGrant.member.clubShortName }})</span></p>
+            <div class="form-field">
+              <label style="width:70px;">Role:</label>
+              <select v-model="uaGrant.roleCode" class="field-input" style="width:220px;">
+                <option value="">Select role…</option>
+                <option v-for="r in uaAvailableRoles" :key="r.code" :value="r.code">
+                  {{ r.name }} ({{ r.scopeType === 'global' ? 'global' : 'club-scoped' }})
+                </option>
+              </select>
+            </div>
+            <div v-if="uaGrantNeedsClub" class="form-field">
+              <label style="width:70px;">Club:</label>
+              <select v-model="uaGrant.clubId" class="field-input" style="width:220px;">
+                <option :value="null">Select club…</option>
+                <option v-for="c in uaClubs" :key="c.id" :value="c.id">{{ c.shortName }} – {{ c.fullName }}</option>
+              </select>
+            </div>
+            <div v-if="uaGrant.statusMsg" :class="uaGrant.statusError ? 'error-msg' : 'success-msg'" style="margin:8px 0;">{{ uaGrant.statusMsg }}</div>
+            <div class="modal-actions">
+              <button type="button" class="save-btn" @click="grantRole">Grant Role</button>
+              <button type="button" style="margin-left:8px;" @click="closeGrantModal">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end users tab -->
+    </div><!-- end admin-container -->
+  </div><!-- end app -->
 </template>
 
 <script>
@@ -219,6 +327,18 @@ export default {
       smtpStatusMsg: '',
       smtpStatusError: false,
       smtpTestEmail: '',
+      // User administration tab
+      activeTab: 'clubs',
+      uaUsers: [],
+      uaAvailableRoles: [],
+      uaClubs: [],
+      uaLoading: false,
+      uaStatusMsg: '',
+      uaStatusError: false,
+      uaSearch: '',
+      uaSearchResults: [],
+      uaSearchTimer: null,
+      uaGrant: { visible: false, member: null, roleCode: '', clubId: null, statusMsg: '', statusError: false },
     };
   },
   created() {
@@ -229,6 +349,13 @@ export default {
       this.loggedIn = true;
       this.loadClubs();
     }
+  },
+  computed: {
+    uaGrantNeedsClub() {
+      if (!this.uaGrant.roleCode) return false;
+      const role = this.uaAvailableRoles.find(r => r.code === this.uaGrant.roleCode);
+      return role ? role.scopeType === 'club' : false;
+    },
   },
   methods: {
     authHeaders() {
@@ -403,6 +530,105 @@ export default {
           this.smtpStatusMsg = err.response?.data?.error || 'Test email failed';
           this.smtpStatusError = true;
         });
+    },
+
+    // ── User Administration ──────────────────────────────────────────────────
+    switchTab(tab) {
+      this.activeTab = tab;
+      if (tab === 'users' && !this.uaUsers.length && !this.uaLoading) {
+        this.loadUserAdmin();
+      }
+    },
+
+    loadUserAdmin() {
+      this.uaLoading = true;
+      this.uaStatusMsg = '';
+      Promise.all([
+        axios.get(`${API_BASE_URL}/admin/users`,       { headers: this.authHeaders() }),
+        axios.get(`${API_BASE_URL}/admin/roles`,       { headers: this.authHeaders() }),
+        axios.get(`${API_BASE_URL}/admin/clubs-list`,  { headers: this.authHeaders() }),
+      ]).then(([usersRes, rolesRes, clubsRes]) => {
+        this.uaUsers          = usersRes.data.users  || [];
+        this.uaAvailableRoles = rolesRes.data.roles  || [];
+        this.uaClubs          = clubsRes.data.clubs  || [];
+      }).catch(err => {
+        if (err.response?.status === 401) { this.logout(); return; }
+        this.uaStatusMsg  = err.response?.data?.error || 'Failed to load user data';
+        this.uaStatusError = true;
+      }).finally(() => {
+        this.uaLoading = false;
+      });
+    },
+
+    uaSearchDebounced() {
+      clearTimeout(this.uaSearchTimer);
+      if (this.uaSearch.length < 2) { this.uaSearchResults = []; return; }
+      this.uaSearchTimer = setTimeout(() => {
+        axios.get(`${API_BASE_URL}/admin/users/search`,
+          { params: { q: this.uaSearch }, headers: this.authHeaders() }
+        ).then(res => {
+          this.uaSearchResults = res.data.members || [];
+        }).catch(() => { this.uaSearchResults = []; });
+      }, 300);
+    },
+
+    openGrantModal(member) {
+      this.uaGrant = { visible: true, member, roleCode: '', clubId: null, statusMsg: '', statusError: false };
+    },
+
+    closeGrantModal() {
+      this.uaGrant.visible = false;
+    },
+
+    grantRole() {
+      if (!this.uaGrant.roleCode) {
+        this.uaGrant.statusMsg   = 'Please select a role.';
+        this.uaGrant.statusError = true;
+        return;
+      }
+      const selectedRole = this.uaAvailableRoles.find(r => r.code === this.uaGrant.roleCode);
+      if (selectedRole?.scopeType === 'club' && !this.uaGrant.clubId) {
+        this.uaGrant.statusMsg   = 'Please select a club for this role.';
+        this.uaGrant.statusError = true;
+        return;
+      }
+      axios.post(
+        `${API_BASE_URL}/admin/users/${this.uaGrant.member.memberId}/roles`,
+        { roleCode: this.uaGrant.roleCode, clubId: this.uaGrant.clubId || null },
+        { headers: this.authHeaders() }
+      ).then(() => {
+        this.closeGrantModal();
+        this.uaSearch = '';
+        this.uaSearchResults = [];
+        this.uaShowStatus('Role granted successfully.');
+        this.loadUserAdmin();
+      }).catch(err => {
+        this.uaGrant.statusMsg   = err.response?.data?.error || 'Grant failed';
+        this.uaGrant.statusError = true;
+      });
+    },
+
+    revokeRole(user, assignment) {
+      const scopeLabel = assignment.roleClubShortName
+        ? ` (${assignment.roleClubShortName})`
+        : ' (global)';
+      if (!window.confirm(`Revoke "${assignment.roleName}"${scopeLabel} from ${user.username}?`)) return;
+      axios.delete(
+        `${API_BASE_URL}/admin/users/${user.memberId}/roles/${assignment.assignmentId}`,
+        { headers: this.authHeaders() }
+      ).then(() => {
+        this.uaShowStatus('Role revoked successfully.');
+        this.loadUserAdmin();
+      }).catch(err => {
+        this.uaStatusMsg  = err.response?.data?.error || 'Revoke failed';
+        this.uaStatusError = true;
+      });
+    },
+
+    uaShowStatus(msg, isError = false) {
+      this.uaStatusMsg   = msg;
+      this.uaStatusError = isError;
+      setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
     },
   },
 };
@@ -604,5 +830,138 @@ body {
   color: #1a7a3a;
   margin: 8px 0;
   font-size: 10pt;
+}
+/* ── Tab navigation ───────────────────────────────────────────────────────── */
+#app .tab-nav {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #ccc;
+  margin-bottom: 20px;
+}
+#app .tab-btn {
+  padding: 7px 20px;
+  font-size: 10pt;
+  font-family: Helvetica, Arial, sans-serif;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  color: #555;
+}
+#app .tab-btn-active {
+  background: #fff;
+  border-color: #ccc;
+  border-bottom: 2px solid #fff;
+  margin-bottom: -2px;
+  color: #111;
+  font-weight: bold;
+}
+/* ── User Administration panel ────────────────────────────────────────────── */
+#app .ua-panel {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 28px;
+  max-width: 900px;
+}
+#app .ua-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#app .ua-hint {
+  font-size: 9pt;
+  color: #888;
+}
+#app .ua-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 10px;
+}
+#app .ua-table th,
+#app .ua-table td {
+  border: 1px solid #ccc;
+  padding: 6px 9px;
+  text-align: left;
+  vertical-align: middle;
+}
+#app .ua-table th {
+  background: #f0f0f0;
+  font-size: 9.5pt;
+  white-space: nowrap;
+}
+#app .roles-cell {
+  min-width: 240px;
+}
+/* Role badges */
+#app .role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 8pt;
+  font-weight: 600;
+  margin: 2px 3px 2px 0;
+  white-space: nowrap;
+}
+#app .role-app-owner   { background: #4a1a8a; color: #fff; }
+#app .role-app-admin   { background: #1a4a8a; color: #fff; }
+#app .role-club-admin   { background: #1a6a3a; color: #fff; }
+#app .role-club-manager { background: #7a5a1a; color: #fff; }
+#app .role-user         { background: #e0e0e0; color: #333; }
+#app .role-revoke-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 11pt;
+  line-height: 1;
+  padding: 0 0 0 2px;
+}
+#app .role-revoke-btn:hover {
+  opacity: 1;
+}
+#app .ua-add-role-btn {
+  display: inline-block;
+  font-size: 8pt;
+  padding: 2px 7px;
+  border-radius: 12px;
+  border: 1px dashed #999;
+  background: none;
+  color: #555;
+  cursor: pointer;
+  margin-left: 2px;
+}
+#app .ua-add-role-btn:hover {
+  border-color: #444;
+  color: #222;
+}
+/* ── Modal ────────────────────────────────────────────────────────────────── */
+#app .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+#app .modal-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 28px 32px;
+  min-width: 420px;
+  max-width: 520px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+}
+#app .modal-actions {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
 }
 </style>
