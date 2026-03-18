@@ -9,7 +9,7 @@ from sqlalchemy import String, and_, cast, select
 def create_newsletter_blueprint(deps):
     bp = Blueprint('newsletter', __name__)
 
-    require_member_token_for_club = deps['require_member_token_for_club']
+    require_permission = deps['require_permission']
     get_valid_club_short_names = deps['get_valid_club_short_names']
     log_database_target = deps['log_database_target']
     get_read_db_for_club = deps['get_read_db_for_club']
@@ -31,7 +31,7 @@ def create_newsletter_blueprint(deps):
     def prepare_newsletter_recipients():
         data = request.json or {}
         club = data.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
         member_ids = data.get('memberIds', [])
@@ -96,7 +96,7 @@ def create_newsletter_blueprint(deps):
     @bp.route('/newsletter/templates', methods=['GET'])
     def get_newsletter_templates():
         club = request.args.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
 
@@ -155,7 +155,7 @@ def create_newsletter_blueprint(deps):
     def update_newsletter_template(template_id):
         data = request.json or {}
         club = data.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
         name = data.get('name', '').strip()
@@ -204,7 +204,7 @@ def create_newsletter_blueprint(deps):
     @bp.route('/newsletter/templates/<template_id>', methods=['DELETE'])
     def delete_newsletter_template(template_id):
         club = request.args.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
 
@@ -249,7 +249,7 @@ def create_newsletter_blueprint(deps):
     def create_newsletter_template():
         data = request.json or {}
         club = data.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
         template_id = data.get('id', '').strip()
@@ -301,7 +301,7 @@ def create_newsletter_blueprint(deps):
     def get_newsletter_filtered_member_ids():
         data = request.json or {}
         club = data.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
         filters_source = data.get('filters', {})
@@ -345,7 +345,7 @@ def create_newsletter_blueprint(deps):
     def send_newsletter():
         data = request.json or {}
         club = data.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
         template_id = str(data.get('templateId', '')).strip()

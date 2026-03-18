@@ -18,7 +18,8 @@ def create_member_blueprint(deps):
     revoke_member_session_token = deps['revoke_member_session_token']
     revoke_member_refresh_token = deps['revoke_member_refresh_token']
     get_member_refresh_session_from_token = deps['get_member_refresh_session_from_token']
-    require_member_token_for_club = deps['require_member_token_for_club']
+    require_permission = deps['require_permission']
+    require_self_or_permission = deps['require_self_or_permission']
     wildcard_to_sql_like = deps['wildcard_to_sql_like']
     FILTERABLE_COLUMNS = deps['FILTERABLE_COLUMNS']
     is_postgres_writes_enabled = deps['is_postgres_writes_enabled']
@@ -126,7 +127,7 @@ def create_member_blueprint(deps):
     @bp.route('/members', methods=['GET'])
     def get_members():
         club = request.args.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('member.club.list', club)
         if auth_error:
             return auth_error
         limit = int(request.args.get('limit', 10))
@@ -190,7 +191,7 @@ def create_member_blueprint(deps):
     def add_member():
         data = request.json or {}
         club = data.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('member.club.create', club)
         if auth_error:
             return auth_error
         log_database_target(club)
@@ -233,7 +234,7 @@ def create_member_blueprint(deps):
     def update_member(member_id):
         data = request.json or {}
         club = data.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_self_or_permission(member_id, 'member.club.update', club)
         if auth_error:
             return auth_error
         log_database_target(club)
@@ -293,7 +294,7 @@ def create_member_blueprint(deps):
     @bp.route('/members/<int:member_id>', methods=['DELETE'])
     def delete_member(member_id):
         club = request.args.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('member.club.delete', club)
         if auth_error:
             return auth_error
         log_database_target(club)
@@ -338,7 +339,7 @@ def create_member_blueprint(deps):
     @bp.route('/member_by_number/<number>', methods=['GET'])
     def get_member_by_number(number):
         club = request.args.get('club', 'GAAFFS')
-        auth_error = require_member_token_for_club(club)
+        auth_error = require_permission('member.club.list', club)
         if auth_error:
             return auth_error
         log_database_target(club)

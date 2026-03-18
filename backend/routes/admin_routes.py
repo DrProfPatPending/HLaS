@@ -13,7 +13,7 @@ def create_admin_blueprint(deps):
     get_admin_config = deps['get_admin_config']
     issue_admin_token = deps['issue_admin_token']
     revoke_admin_token_from_request = deps['revoke_admin_token_from_request']
-    require_admin_token = deps['require_admin_token']
+    require_permission = deps['require_permission']
     load_clubs_config = deps['load_clubs_config']
     save_clubs_config = deps['save_clubs_config']
     get_club_logo_path = deps['get_club_logo_path']
@@ -52,14 +52,16 @@ def create_admin_blueprint(deps):
 
     @bp.route('/admin/clubs', methods=['GET'])
     def admin_get_clubs():
-        if not require_admin_token():
-            return jsonify({'error': 'Unauthorized'}), 401
+        auth_error = require_permission('club.read')
+        if auth_error:
+            return auth_error
         return jsonify({'clubs': load_clubs_config()})
 
     @bp.route('/admin/clubs', methods=['POST'])
     def admin_add_club():
-        if not require_admin_token():
-            return jsonify({'error': 'Unauthorized'}), 401
+        auth_error = require_permission('club.create')
+        if auth_error:
+            return auth_error
         data = request.form if request.form else (request.json or {})
         short_name = str(data.get('shortName', '')).strip()
         if not short_name:
@@ -120,8 +122,9 @@ def create_admin_blueprint(deps):
 
     @bp.route('/admin/clubs/<short_name>', methods=['PUT'])
     def admin_update_club(short_name):
-        if not require_admin_token():
-            return jsonify({'error': 'Unauthorized'}), 401
+        auth_error = require_permission('club.update', short_name)
+        if auth_error:
+            return auth_error
         data = request.json or {}
         clubs = load_clubs_config()
         for i, club in enumerate(clubs):
@@ -154,8 +157,9 @@ def create_admin_blueprint(deps):
 
     @bp.route('/admin/clubs/<short_name>', methods=['DELETE'])
     def admin_delete_club(short_name):
-        if not require_admin_token():
-            return jsonify({'error': 'Unauthorized'}), 401
+        auth_error = require_permission('club.delete')
+        if auth_error:
+            return auth_error
         clubs = load_clubs_config()
         updated = [c for c in clubs if c.get('shortName') != short_name]
         if len(updated) == len(clubs):
@@ -165,8 +169,9 @@ def create_admin_blueprint(deps):
 
     @bp.route('/admin/clubs/<short_name>/smtp', methods=['GET'])
     def admin_get_club_smtp(short_name):
-        if not require_admin_token():
-            return jsonify({'error': 'Unauthorized'}), 401
+        auth_error = require_permission('smtp.club.manage', short_name)
+        if auth_error:
+            return auth_error
         clubs = load_clubs_config()
         club = next((c for c in clubs if c.get('shortName') == short_name), None)
         if club is None:
@@ -188,8 +193,9 @@ def create_admin_blueprint(deps):
 
     @bp.route('/admin/clubs/<short_name>/smtp', methods=['PUT'])
     def admin_update_club_smtp(short_name):
-        if not require_admin_token():
-            return jsonify({'error': 'Unauthorized'}), 401
+        auth_error = require_permission('smtp.club.manage', short_name)
+        if auth_error:
+            return auth_error
         data = request.json or {}
         clubs = load_clubs_config()
         for i, club in enumerate(clubs):
@@ -214,8 +220,9 @@ def create_admin_blueprint(deps):
 
     @bp.route('/admin/clubs/<short_name>/smtp/test', methods=['POST'])
     def admin_test_club_smtp(short_name):
-        if not require_admin_token():
-            return jsonify({'error': 'Unauthorized'}), 401
+        auth_error = require_permission('smtp.club.manage', short_name)
+        if auth_error:
+            return auth_error
         data = request.json or {}
         to_email = str(data.get('toEmail', '')).strip()
         if not to_email:
