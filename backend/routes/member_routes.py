@@ -14,6 +14,7 @@ def create_member_blueprint(deps):
     get_identifier_column = deps['get_identifier_column']
     member_to_dict = deps['member_to_dict']
     issue_member_token_pair = deps['issue_member_token_pair']
+    load_member_roles = deps['load_member_roles']
     extract_bearer_token = deps['extract_bearer_token']
     revoke_member_session_token = deps['revoke_member_session_token']
     revoke_member_refresh_token = deps['revoke_member_refresh_token']
@@ -65,8 +66,15 @@ def create_member_blueprint(deps):
                     user_dict = member_to_dict(user, members_table)
                     member_id = user_dict.get(id_column.name)
                     token_payload = issue_member_token_pair(member_id, club, username)
+                    role_payload = load_member_roles(member_id, club)
                     user_dict.pop('password', None)
-                    return jsonify({'success': True, 'user': user_dict, **token_payload})
+                    return jsonify({
+                        'success': True,
+                        'user': user_dict,
+                        'roles': role_payload.get('effective_roles', []),
+                        'permissions': role_payload.get('permissions', []),
+                        **token_payload,
+                    })
                 user = None
 
         if username_column is not None and user is None:
@@ -78,8 +86,15 @@ def create_member_blueprint(deps):
                     user_dict = member_to_dict(user, members_table)
                     member_id = user_dict.get(id_column.name)
                     token_payload = issue_member_token_pair(member_id, club, username)
+                    role_payload = load_member_roles(member_id, club)
                     user_dict.pop('password', None)
-                    return jsonify({'success': True, 'user': user_dict, **token_payload})
+                    return jsonify({
+                        'success': True,
+                        'user': user_dict,
+                        'roles': role_payload.get('effective_roles', []),
+                        'permissions': role_payload.get('permissions', []),
+                        **token_payload,
+                    })
 
         return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
 

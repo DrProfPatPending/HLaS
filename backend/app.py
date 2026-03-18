@@ -55,10 +55,13 @@ from db import (
 )
 from auth import (
     extract_bearer_token,
+    get_current_principal,
     get_member_refresh_session_from_token,
     issue_admin_token,
     issue_member_token_pair,
+    load_member_roles,
     require_admin_token,
+    require_authenticated,
     require_permission,
     require_member_token_for_club,
     require_self_or_permission,
@@ -558,6 +561,7 @@ from routes import (
     create_member_blueprint,
     create_newsletter_blueprint,
     create_public_blueprint,
+    create_role_blueprint,
 )
 
 
@@ -593,10 +597,13 @@ def create_app():
         'get_identifier_column': get_identifier_column,
         'member_to_dict': member_to_dict,
         'issue_member_token_pair': issue_member_token_pair,
+        'load_member_roles': load_member_roles,
         'extract_bearer_token': extract_bearer_token,
         'revoke_member_session_token': revoke_member_session_token,
         'revoke_member_refresh_token': revoke_member_refresh_token,
         'get_member_refresh_session_from_token': get_member_refresh_session_from_token,
+        'get_current_principal': get_current_principal,
+        'require_authenticated': require_authenticated,
         'require_member_token_for_club': require_member_token_for_club,
         'require_permission': require_permission,
         'require_self_or_permission': require_self_or_permission,
@@ -627,6 +634,7 @@ def create_app():
     app_instance.register_blueprint(create_member_blueprint(route_deps))
     app_instance.register_blueprint(create_newsletter_blueprint(route_deps))
     app_instance.register_blueprint(create_admin_blueprint(route_deps))
+    app_instance.register_blueprint(create_role_blueprint(route_deps))
 
     return app_instance
 
