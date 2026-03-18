@@ -298,6 +298,7 @@
             <button type="button" @click="resetMergeState">Reset</button>
           </div>
         </div>
+        <p v-else style="font-size:9pt;color:#777;margin:-8px 0 20px;">Merge Users is available only to app owners.</p>
 
         <!-- Role assignment table -->
         <h2>Current Role Assignments</h2>
@@ -622,6 +623,12 @@ export default {
       this.activeTab = tab;
       if (tab === 'users' && !this.uaUsers.length && !this.uaLoading) {
         this.loadUserAdmin();
+      }
+      if (tab !== 'users') {
+        this.resetMergeState();
+        this.closeGrantModal();
+        this.uaGrant.statusMsg = '';
+        this.uaGrant.statusError = false;
       }
     },
 
