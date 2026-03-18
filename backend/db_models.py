@@ -136,7 +136,6 @@ app_users = Table(
     "app_users",
     metadata,
     Column("id", BigInteger, primary_key=True),
-    Column("legacy_member_id", BigInteger, ForeignKey("members.id", ondelete="SET NULL"), nullable=True),
     Column("username", String(255), nullable=False, server_default=""),
     Column("email", String(255), nullable=False, server_default=""),
     Column("display_name", String(255), nullable=False, server_default=""),
@@ -144,7 +143,6 @@ app_users = Table(
     Column("is_active", Boolean, nullable=False, server_default="true"),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
-    UniqueConstraint("legacy_member_id", name="uq_app_users_legacy_member_id"),
 )
 
 member_user_links = Table(
@@ -196,7 +194,6 @@ member_role_assignments = Table(
     metadata,
     Column("id", BigInteger, primary_key=True),
     Column("user_id", BigInteger, ForeignKey("app_users.id", ondelete="SET NULL"), nullable=True),
-    Column("member_id", BigInteger, ForeignKey("members.id", ondelete="CASCADE"), nullable=False),
     Column("role_id", BigInteger, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False),
     # NULL for globally-scoped roles (app_admin, app_owner)
     Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=True),

@@ -390,7 +390,6 @@ def create_admin_user_blueprint(deps):
     # Grant a role to a user.
     # Body: { roleCode: str, clubId: int|null }
     # clubId is required for club-scoped roles, ignored for global roles.
-    # member_id is derived from member_user_links for backward-compat FK.
     # -------------------------------------------------------------------------
     @bp.route('/admin/users/<int:user_id>/roles', methods=['POST'])
     def admin_grant_role(user_id):
@@ -436,23 +435,21 @@ def create_admin_user_blueprint(deps):
             if scope_type == 'global':
                 club_id = None
 
-            # Derive member_id for the FK column (backward compat with per-club tables)
+            # Validate club membership for club-scoped roles.
             if scope_type == 'club':
-                link_row = session.execute(text("""
-                    SELECT member_id FROM member_user_links
+                link_exists = session.execute(text("""
+                    SELECT 1 FROM member_user_links
                     WHERE user_id = :uid AND club_id = :club_id
                 """), {'uid': user_id, 'club_id': club_id}).first()
-                if not link_row:
+                if not link_exists:
                     return jsonify({'error': 'User is not a member of the selected club'}), 400
-                member_id = link_row.member_id
             else:
-                # Global role: use the first linked member_id.
-                link_row = session.execute(text(
-                    "SELECT member_id FROM member_user_links WHERE user_id = :uid LIMIT 1"
+                # Global role: confirm user has at least one member link.
+                link_exists = session.execute(text(
+                    "SELECT 1 FROM member_user_links WHERE user_id = :uid LIMIT 1"
                 ), {'uid': user_id}).first()
-                if not link_row:
+                if not link_exists:
                     return jsonify({'error': 'User has no member links'}), 400
-                member_id = link_row.member_id
 
             # Check for an existing active assignment (keyed on user_id)
             existing = session.execute(text("""
@@ -472,13 +469,12 @@ def create_admin_user_blueprint(deps):
             now = datetime.now(timezone.utc)
             result = session.execute(text("""
                 INSERT INTO member_role_assignments
-                    (user_id, member_id, role_id, club_id, granted_by_member_id, granted_at)
+                    (user_id, role_id, club_id, granted_by_member_id, granted_at)
                 VALUES
-                    (:user_id, :member_id, :role_id, :club_id, :grantor_id, :now)
+                    (:user_id, :role_id, :club_id, :grantor_id, :now)
                 RETURNING id
             """), {
                 'user_id': user_id,
-                'member_id': member_id,
                 'role_id': role_id,
                 'club_id': club_id,
                 'grantor_id': grantor_member_id,
@@ -488,8 +484,8 @@ def create_admin_user_blueprint(deps):
             session.commit()
 
             logger.info(
-                "Role '%s' granted to user %d (member %s) by member %s (assignment %d)",
-                role_code, user_id, member_id, grantor_member_id, assignment_id
+                "Role '%s' granted to user %d by member %s (assignment %d)",
+                role_code, user_id, grantor_member_id, assignment_id
             )
 
             return jsonify({

@@ -122,7 +122,7 @@ def ensure_postgres_rbac_tables(engine):
             """
             CREATE TABLE IF NOT EXISTS member_role_assignments (
                 id                   BIGSERIAL PRIMARY KEY,
-                member_id            BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                user_id              BIGINT          REFERENCES app_users(id) ON DELETE SET NULL,
                 role_id              BIGINT NOT NULL REFERENCES roles(id)   ON DELETE CASCADE,
                 club_id              BIGINT          REFERENCES clubs(id)   ON DELETE CASCADE,
                 granted_by_member_id BIGINT          REFERENCES members(id) ON DELETE SET NULL,
@@ -131,26 +131,26 @@ def ensure_postgres_rbac_tables(engine):
             )
             """
         ),
-        # Partial unique indexes enforce one active assignment per (member, role) pair,
+        # Partial unique indexes enforce one active assignment per (user, role) pair,
         # handling NULLable club_id correctly for global vs club-scoped roles.
         text(
             """
-            CREATE UNIQUE INDEX IF NOT EXISTS uq_mra_member_role_club_active
-            ON member_role_assignments (member_id, role_id, club_id)
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_mra_user_role_club_active
+            ON member_role_assignments (user_id, role_id, club_id)
             WHERE club_id IS NOT NULL AND revoked_at IS NULL
             """
         ),
         text(
             """
-            CREATE UNIQUE INDEX IF NOT EXISTS uq_mra_member_role_global_active
-            ON member_role_assignments (member_id, role_id)
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_mra_user_role_global_active
+            ON member_role_assignments (user_id, role_id)
             WHERE club_id IS NULL AND revoked_at IS NULL
             """
         ),
         text(
             """
-            CREATE INDEX IF NOT EXISTS ix_mra_member_id
-            ON member_role_assignments (member_id)
+            CREATE INDEX IF NOT EXISTS ix_mra_user_id
+            ON member_role_assignments (user_id)
             """
         ),
         text(
@@ -198,7 +198,6 @@ def ensure_postgres_global_user_tables(engine):
             """
             CREATE TABLE IF NOT EXISTS app_users (
                 id               BIGSERIAL PRIMARY KEY,
-                legacy_member_id BIGINT UNIQUE REFERENCES members(id) ON DELETE SET NULL,
                 username         VARCHAR(255) NOT NULL DEFAULT '',
                 email            VARCHAR(255) NOT NULL DEFAULT '',
                 display_name     VARCHAR(255) NOT NULL DEFAULT '',
@@ -247,30 +246,42 @@ def ensure_postgres_global_user_tables(engine):
             ON member_user_links (club_id)
             """
         ),
+        # Seed app_users + member_user_links together for members that are not yet linked.
+        # Uses a CTE with ROW_NUMBER to correlate inserted user IDs back to member IDs without
+        # needing a legacy_member_id backlink column.
+        # For fully-migrated databases this is a no-op (WHERE NOT EXISTS short-circuits).
         text(
             """
-            INSERT INTO app_users (legacy_member_id, username, email, display_name, password_hash, is_active)
-            SELECT
-                m.id,
-                COALESCE(m.username, ''),
-                COALESCE(m.email, ''),
-                COALESCE(NULLIF(m.members_name, ''), NULLIF(m.username, ''), CONCAT('member-', m.id::text)),
-                COALESCE(m.password, ''),
-                TRUE
-            FROM members m
-            ON CONFLICT (legacy_member_id) DO NOTHING
-            """
-        ),
-        text(
-            """
+            WITH members_without_users AS (
+                SELECT
+                    m.id       AS member_id,
+                    m.club_id,
+                    COALESCE(m.username, '')                                                         AS username,
+                    COALESCE(m.email, '')                                                            AS email,
+                    COALESCE(NULLIF(m.members_name, ''), NULLIF(m.username, ''), 'member-' || m.id::text) AS display_name,
+                    COALESCE(m.password, '')                                                         AS password_hash
+                FROM members m
+                WHERE NOT EXISTS (SELECT 1 FROM member_user_links mul WHERE mul.member_id = m.id)
+                ORDER BY m.id
+            ),
+            new_users AS (
+                INSERT INTO app_users (username, email, display_name, password_hash, is_active)
+                SELECT username, email, display_name, password_hash, TRUE
+                FROM members_without_users
+                ORDER BY member_id
+                RETURNING id
+            ),
+            ranked_new_users AS (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn FROM new_users
+            ),
+            ranked_members AS (
+                SELECT member_id, club_id, ROW_NUMBER() OVER (ORDER BY member_id) AS rn
+                FROM members_without_users
+            )
             INSERT INTO member_user_links (user_id, member_id, club_id, is_primary)
-            SELECT
-                au.id,
-                m.id,
-                m.club_id,
-                TRUE
-            FROM members m
-            JOIN app_users au ON au.legacy_member_id = m.id
+            SELECT rnu.id, rm.member_id, rm.club_id, TRUE
+            FROM ranked_new_users rnu
+            JOIN ranked_members rm ON rm.rn = rnu.rn
             ON CONFLICT (member_id) DO NOTHING
             """
         ),

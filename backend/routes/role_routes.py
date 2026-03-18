@@ -172,11 +172,12 @@ def create_role_blueprint(deps):
         roles_table = backend['roles_table']
         assignments_table = backend['member_role_assignments_table']
         clubs_table = backend['clubs_table']
+        links_table = backend['member_user_links_table']
 
         try:
             query = select(
                 assignments_table.c.id.label('assignment_id'),
-                assignments_table.c.member_id,
+                members_table.c.id.label('member_id'),
                 members_table.c.username,
                 members_table.c.members_name.label('member_name'),
                 members_table.c.email,
@@ -192,7 +193,14 @@ def create_role_blueprint(deps):
             ).select_from(
                 assignments_table
                 .join(roles_table, assignments_table.c.role_id == roles_table.c.id)
-                .join(members_table, assignments_table.c.member_id == members_table.c.id)
+                .outerjoin(
+                    links_table,
+                    and_(
+                        assignments_table.c.user_id == links_table.c.user_id,
+                        links_table.c.is_primary.is_(True),
+                    ),
+                )
+                .outerjoin(members_table, links_table.c.member_id == members_table.c.id)
                 .outerjoin(clubs_table, assignments_table.c.club_id == clubs_table.c.id)
             ).where(roles_table.c.scope_type == 'global')
 
@@ -224,6 +232,7 @@ def create_role_blueprint(deps):
         roles_table = backend['roles_table']
         assignments_table = backend['member_role_assignments_table']
         clubs_table = backend['clubs_table']
+        links_table = backend['member_user_links_table']
 
         try:
             club_row = _resolve_club(session, clubs_table, short_name)
@@ -232,7 +241,7 @@ def create_role_blueprint(deps):
 
             query = select(
                 assignments_table.c.id.label('assignment_id'),
-                assignments_table.c.member_id,
+                members_table.c.id.label('member_id'),
                 members_table.c.username,
                 members_table.c.members_name.label('member_name'),
                 members_table.c.email,
@@ -248,7 +257,14 @@ def create_role_blueprint(deps):
             ).select_from(
                 assignments_table
                 .join(roles_table, assignments_table.c.role_id == roles_table.c.id)
-                .join(members_table, assignments_table.c.member_id == members_table.c.id)
+                .outerjoin(
+                    links_table,
+                    and_(
+                        assignments_table.c.user_id == links_table.c.user_id,
+                        assignments_table.c.club_id == links_table.c.club_id,
+                    ),
+                )
+                .outerjoin(members_table, links_table.c.member_id == members_table.c.id)
                 .outerjoin(clubs_table, assignments_table.c.club_id == clubs_table.c.id)
             ).where(
                 and_(
@@ -300,6 +316,15 @@ def create_role_blueprint(deps):
             if target_member is None:
                 return jsonify({'error': 'Target member not found (provide memberId, username, or email)'}), 404
 
+            # Resolve the user account for this member.
+            links_table = backend['member_user_links_table']
+            link_row = session.execute(
+                select(links_table.c.user_id).where(links_table.c.member_id == target_member.id)
+            ).first()
+            if link_row is None:
+                return jsonify({'error': 'Target member has no associated user account'}), 400
+            target_user_id = link_row.user_id
+
             role_row = session.execute(
                 select(roles_table.c.id, roles_table.c.code, roles_table.c.name, roles_table.c.scope_type).where(
                     roles_table.c.code == role_code
@@ -313,7 +338,7 @@ def create_role_blueprint(deps):
             existing = session.execute(
                 select(assignments_table.c.id).where(
                     and_(
-                        assignments_table.c.member_id == target_member.id,
+                        assignments_table.c.user_id == target_user_id,
                         assignments_table.c.role_id == role_row.id,
                         assignments_table.c.club_id.is_(None),
                         assignments_table.c.revoked_at.is_(None),
@@ -325,7 +350,7 @@ def create_role_blueprint(deps):
 
             insert_result = session.execute(
                 assignments_table.insert().values(
-                    member_id=target_member.id,
+                    user_id=target_user_id,
                     role_id=role_row.id,
                     club_id=None,
                     granted_by_member_id=(principal or {}).get('member_id'),
@@ -400,6 +425,20 @@ def create_role_blueprint(deps):
             if target_member is None:
                 return jsonify({'error': 'Target member not found (provide memberId, username, or email)'}), 404
 
+            # Resolve the user account for this member in this club.
+            links_table = backend['member_user_links_table']
+            link_row = session.execute(
+                select(links_table.c.user_id).where(
+                    and_(
+                        links_table.c.member_id == target_member.id,
+                        links_table.c.club_id == club_row.id,
+                    )
+                )
+            ).first()
+            if link_row is None:
+                return jsonify({'error': 'Target member is not linked to this club'}), 400
+            target_user_id = link_row.user_id
+
             role_row = session.execute(
                 select(roles_table.c.id, roles_table.c.code, roles_table.c.name, roles_table.c.scope_type).where(
                     roles_table.c.code == role_code
@@ -413,7 +452,7 @@ def create_role_blueprint(deps):
             existing = session.execute(
                 select(assignments_table.c.id).where(
                     and_(
-                        assignments_table.c.member_id == target_member.id,
+                        assignments_table.c.user_id == target_user_id,
                         assignments_table.c.role_id == role_row.id,
                         assignments_table.c.club_id == club_row.id,
                         assignments_table.c.revoked_at.is_(None),
@@ -425,7 +464,7 @@ def create_role_blueprint(deps):
 
             insert_result = session.execute(
                 assignments_table.insert().values(
-                    member_id=target_member.id,
+                    user_id=target_user_id,
                     role_id=role_row.id,
                     club_id=club_row.id,
                     granted_by_member_id=(principal or {}).get('member_id'),
@@ -487,7 +526,7 @@ def create_role_blueprint(deps):
             row = session.execute(
                 select(
                     assignments_table.c.id,
-                    assignments_table.c.member_id,
+                    assignments_table.c.user_id,
                     assignments_table.c.club_id,
                     assignments_table.c.revoked_at,
                     roles_table.c.code.label('role_code'),
@@ -519,9 +558,6 @@ def create_role_blueprint(deps):
                 if active_owner_count <= 1:
                     return jsonify({'error': 'Cannot revoke the last active app_owner assignment'}), 409
 
-                if _safe_int((principal or {}).get('member_id')) == _safe_int(row.member_id) and active_owner_count <= 1:
-                    return jsonify({'error': 'Cannot self-revoke the last active app_owner assignment'}), 409
-
             session.execute(
                 assignments_table.update().where(assignments_table.c.id == assignment_id).values(
                     revoked_at=func.now()
@@ -537,7 +573,7 @@ def create_role_blueprint(deps):
                     club_id=row.club_id,
                     metadata={
                         'roleCode': row.role_code,
-                        'memberId': row.member_id,
+                        'userId': row.user_id,
                         'scope': row.scope_type,
                         'clubShortName': row.club_short_name or '',
                     },
