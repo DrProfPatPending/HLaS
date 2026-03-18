@@ -711,6 +711,8 @@ def create_admin_user_blueprint(deps):
                 )
                 record = {
                     'id': int(row.id),
+                    'username': str(row.username or '').strip(),
+                    'display_name': str(row.display_name or '').strip(),
                     'usernameKey': username_key,
                     'displayNameKey': display_name_key,
                     'emailKey': email_key,
@@ -748,7 +750,14 @@ def create_admin_user_blueprint(deps):
                         })
                         continue
 
-                    planned.append({'sourceUserId': source['id'], 'targetUserId': target['id']})
+                    planned.append({
+                        'sourceUserId': source['id'],
+                        'sourceUsername': source.get('username', ''),
+                        'sourceDisplayName': source.get('display_name', ''),
+                        'targetUserId': target['id'],
+                        'targetUsername': target.get('username', ''),
+                        'targetDisplayName': target.get('display_name', ''),
+                    })
                     if not dry_run:
                         summary = _merge_users_in_session(session, source['id'], target['id'])
                         merged_user_ids.add(source['id'])

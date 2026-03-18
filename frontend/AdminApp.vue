@@ -314,6 +314,31 @@
           <div v-if="uaMergeCleanup.lastResult" style="font-size:9pt;color:#444;margin-top:4px;">
             Planned: {{ uaMergeCleanup.lastResult.mergeCount || 0 }}, Skipped: {{ (uaMergeCleanup.lastResult.skipped || []).length }}
           </div>
+          <div v-if="uaMergeCleanupPreview.length" style="margin-top:8px;max-width:520px;">
+            <table class="ua-table" style="margin-bottom:4px;">
+              <thead>
+                <tr>
+                  <th style="width:220px;">Source</th>
+                  <th style="width:220px;">Target</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(m, idx) in uaMergeCleanupPreview" :key="'cleanup-preview-' + idx">
+                  <td>
+                    <div><strong>{{ m.sourceUsername || '(no username)' }}</strong> (id {{ m.sourceUserId }})</div>
+                    <div style="font-size:8.5pt;color:#666;">{{ m.sourceDisplayName || '(no name)' }}</div>
+                  </td>
+                  <td>
+                    <div><strong>{{ m.targetUsername || '(no username)' }}</strong> (id {{ m.targetUserId }})</div>
+                    <div style="font-size:8.5pt;color:#666;">{{ m.targetDisplayName || '(no name)' }}</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="uaMergeCleanupRemaining > 0" style="font-size:8.5pt;color:#666;">
+              +{{ uaMergeCleanupRemaining }} more planned merge{{ uaMergeCleanupRemaining === 1 ? '' : 's' }}
+            </div>
+          </div>
         </div>
         <p v-else style="font-size:9pt;color:#777;margin:-8px 0 20px;">Merge Users is available only to app owners.</p>
 
@@ -464,6 +489,14 @@ export default {
       const sourceId = this.uaMerge.sourceUser?.userId;
       const targetId = this.uaMerge.targetUser?.userId;
       return !!sourceId && !!targetId && sourceId !== targetId;
+    },
+    uaMergeCleanupPreview() {
+      const planned = (this.uaMergeCleanup.lastResult && this.uaMergeCleanup.lastResult.plannedMerges) || [];
+      return planned.slice(0, 10);
+    },
+    uaMergeCleanupRemaining() {
+      const planned = (this.uaMergeCleanup.lastResult && this.uaMergeCleanup.lastResult.plannedMerges) || [];
+      return Math.max(0, planned.length - 10);
     },
   },
   methods: {
