@@ -124,6 +124,7 @@ def get_current_principal(club_short_name=''):
     roles_info = load_member_roles(member_session.get('member_id'), scope_club)
 
     principal = {
+        'user_id': _safe_int(member_session.get('user_id')),
         'member_id': _safe_int(member_session.get('member_id')),
         'username': str(member_session.get('username', '')).strip(),
         'club_short_name': session_club,

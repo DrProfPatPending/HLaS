@@ -132,6 +132,34 @@ members = Table(
     UniqueConstraint("club_id", "number", name="uq_members_club_number"),
 )
 
+app_users = Table(
+    "app_users",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("legacy_member_id", BigInteger, ForeignKey("members.id", ondelete="SET NULL"), nullable=True),
+    Column("username", String(255), nullable=False, server_default=""),
+    Column("email", String(255), nullable=False, server_default=""),
+    Column("display_name", String(255), nullable=False, server_default=""),
+    Column("password_hash", String(255), nullable=False, server_default=""),
+    Column("is_active", Boolean, nullable=False, server_default="true"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("legacy_member_id", name="uq_app_users_legacy_member_id"),
+)
+
+member_user_links = Table(
+    "member_user_links",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("user_id", BigInteger, ForeignKey("app_users.id", ondelete="CASCADE"), nullable=False),
+    Column("member_id", BigInteger, ForeignKey("members.id", ondelete="CASCADE"), nullable=False),
+    Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False),
+    Column("is_primary", Boolean, nullable=False, server_default="true"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("member_id", name="uq_member_user_links_member_id"),
+    UniqueConstraint("user_id", "member_id", name="uq_member_user_links_user_member"),
+)
+
 newsletter_templates = Table(
     "newsletter_templates",
     metadata,

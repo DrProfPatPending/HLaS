@@ -28,6 +28,28 @@ def create_member_blueprint(deps):
     _resolve_postgres_club_id = deps['_resolve_postgres_club_id']
     _build_postgres_member_values = deps['_build_postgres_member_values']
 
+    def resolve_user_id_for_member(member_id):
+        try:
+            member_id_int = int(member_id)
+        except (TypeError, ValueError):
+            return None
+
+        if not is_postgres_writes_enabled():
+            return None
+
+        backend = get_postgres_backend()
+        links_table = backend.get('member_user_links_table')
+        if links_table is None:
+            return None
+
+        session = backend['session_factory']()
+        try:
+            return session.execute(
+                select(links_table.c.user_id).where(links_table.c.member_id == member_id_int)
+            ).scalar_one_or_none()
+        finally:
+            session.close()
+
     @bp.route('/login', methods=['POST'])
     def login():
         data = request.json or {}
@@ -65,11 +87,13 @@ def create_member_blueprint(deps):
                 if check_password_hash(stored_password, password):
                     user_dict = member_to_dict(user, members_table)
                     member_id = user_dict.get(id_column.name)
-                    token_payload = issue_member_token_pair(member_id, club, username)
+                    user_id = resolve_user_id_for_member(member_id)
+                    token_payload = issue_member_token_pair(member_id, club, username, user_id=user_id)
                     role_payload = load_member_roles(member_id, club)
                     user_dict.pop('password', None)
                     return jsonify({
                         'success': True,
+                        'userId': user_id,
                         'user': user_dict,
                         'roles': role_payload.get('effective_roles', []),
                         'permissions': role_payload.get('permissions', []),
@@ -85,11 +109,13 @@ def create_member_blueprint(deps):
                 if check_password_hash(stored_password, password):
                     user_dict = member_to_dict(user, members_table)
                     member_id = user_dict.get(id_column.name)
-                    token_payload = issue_member_token_pair(member_id, club, username)
+                    user_id = resolve_user_id_for_member(member_id)
+                    token_payload = issue_member_token_pair(member_id, club, username, user_id=user_id)
                     role_payload = load_member_roles(member_id, club)
                     user_dict.pop('password', None)
                     return jsonify({
                         'success': True,
+                        'userId': user_id,
                         'user': user_dict,
                         'roles': role_payload.get('effective_roles', []),
                         'permissions': role_payload.get('permissions', []),
@@ -136,6 +162,7 @@ def create_member_blueprint(deps):
             refresh_session.get('member_id'),
             refresh_session.get('club_short_name'),
             refresh_session.get('username'),
+            user_id=refresh_session.get('user_id'),
         )
         return jsonify({'success': True, **token_payload})
 

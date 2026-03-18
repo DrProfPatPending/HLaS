@@ -24,6 +24,7 @@ def ensure_postgres_member_sessions_table(engine):
         """
         CREATE TABLE IF NOT EXISTS member_sessions (
             token_hash VARCHAR(64) PRIMARY KEY,
+            user_id BIGINT,
             member_id INTEGER NOT NULL,
             club_short_name VARCHAR(64) NOT NULL,
             username VARCHAR(255),
@@ -40,9 +41,23 @@ def ensure_postgres_member_sessions_table(engine):
         ON member_sessions (club_short_name, member_id)
         """
     )
+    ensure_user_id_column_sql = text(
+        """
+        ALTER TABLE member_sessions
+        ADD COLUMN IF NOT EXISTS user_id BIGINT
+        """
+    )
+    create_user_index_sql = text(
+        """
+        CREATE INDEX IF NOT EXISTS ix_member_sessions_user_id
+        ON member_sessions (user_id)
+        """
+    )
     with engine.begin() as conn:
         conn.execute(create_table_sql)
+        conn.execute(ensure_user_id_column_sql)
         conn.execute(create_index_sql)
+        conn.execute(create_user_index_sql)
 
 
 def ensure_postgres_member_refresh_sessions_table(engine):
@@ -50,6 +65,7 @@ def ensure_postgres_member_refresh_sessions_table(engine):
         """
         CREATE TABLE IF NOT EXISTS member_refresh_sessions (
             refresh_token_hash VARCHAR(64) PRIMARY KEY,
+            user_id BIGINT,
             member_id INTEGER NOT NULL,
             club_short_name VARCHAR(64) NOT NULL,
             username VARCHAR(255),
@@ -66,9 +82,23 @@ def ensure_postgres_member_refresh_sessions_table(engine):
         ON member_refresh_sessions (club_short_name, member_id)
         """
     )
+    ensure_user_id_column_sql = text(
+        """
+        ALTER TABLE member_refresh_sessions
+        ADD COLUMN IF NOT EXISTS user_id BIGINT
+        """
+    )
+    create_user_index_sql = text(
+        """
+        CREATE INDEX IF NOT EXISTS ix_member_refresh_sessions_user_id
+        ON member_refresh_sessions (user_id)
+        """
+    )
     with engine.begin() as conn:
         conn.execute(create_table_sql)
+        conn.execute(ensure_user_id_column_sql)
         conn.execute(create_index_sql)
+        conn.execute(create_user_index_sql)
 
 
 def ensure_postgres_rbac_tables(engine):
@@ -161,6 +191,95 @@ def ensure_postgres_rbac_tables(engine):
             conn.execute(stmt)
 
 
+def ensure_postgres_global_user_tables(engine):
+    """Ensure Phase 2 global-user tables exist (non-breaking foundation)."""
+    statements = [
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS app_users (
+                id               BIGSERIAL PRIMARY KEY,
+                legacy_member_id BIGINT UNIQUE REFERENCES members(id) ON DELETE SET NULL,
+                username         VARCHAR(255) NOT NULL DEFAULT '',
+                email            VARCHAR(255) NOT NULL DEFAULT '',
+                display_name     VARCHAR(255) NOT NULL DEFAULT '',
+                password_hash    VARCHAR(255) NOT NULL DEFAULT '',
+                is_active        BOOLEAN      NOT NULL DEFAULT TRUE,
+                created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            )
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_app_users_username
+            ON app_users (username)
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_app_users_email
+            ON app_users (email)
+            """
+        ),
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS member_user_links (
+                id         BIGSERIAL PRIMARY KEY,
+                user_id    BIGINT NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+                member_id  BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                club_id    BIGINT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                is_primary BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT uq_member_user_links_member_id UNIQUE (member_id),
+                CONSTRAINT uq_member_user_links_user_member UNIQUE (user_id, member_id)
+            )
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_member_user_links_user_id
+            ON member_user_links (user_id)
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_member_user_links_club_id
+            ON member_user_links (club_id)
+            """
+        ),
+        text(
+            """
+            INSERT INTO app_users (legacy_member_id, username, email, display_name, password_hash, is_active)
+            SELECT
+                m.id,
+                COALESCE(m.username, ''),
+                COALESCE(m.email, ''),
+                COALESCE(NULLIF(m.members_name, ''), NULLIF(m.username, ''), CONCAT('member-', m.id::text)),
+                COALESCE(m.password, ''),
+                TRUE
+            FROM members m
+            ON CONFLICT (legacy_member_id) DO NOTHING
+            """
+        ),
+        text(
+            """
+            INSERT INTO member_user_links (user_id, member_id, club_id, is_primary)
+            SELECT
+                au.id,
+                m.id,
+                m.club_id,
+                TRUE
+            FROM members m
+            JOIN app_users au ON au.legacy_member_id = m.id
+            ON CONFLICT (member_id) DO NOTHING
+            """
+        ),
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(stmt)
+
+
 def get_postgres_backend():
     database_url = os.getenv('DATABASE_URL', '').strip()
     if not database_url:
@@ -178,6 +297,7 @@ def get_postgres_backend():
         ensure_postgres_member_sessions_table(engine)
         ensure_postgres_member_refresh_sessions_table(engine)
         ensure_postgres_rbac_tables(engine)
+        ensure_postgres_global_user_tables(engine)
         metadata = MetaData()
         metadata.reflect(
             bind=engine,
@@ -190,6 +310,8 @@ def get_postgres_backend():
                 'newsletter_templates',
                 'member_sessions',
                 'member_refresh_sessions',
+                'app_users',
+                'member_user_links',
                 'roles',
                 'member_role_assignments',
                 'security_audit_log',
@@ -208,6 +330,8 @@ def get_postgres_backend():
             'newsletter_templates_table': metadata.tables['newsletter_templates'],
             'member_sessions_table': metadata.tables['member_sessions'],
             'member_refresh_sessions_table': metadata.tables['member_refresh_sessions'],
+            'app_users_table': metadata.tables['app_users'],
+            'member_user_links_table': metadata.tables['member_user_links'],
             'roles_table': metadata.tables['roles'],
             'member_role_assignments_table': metadata.tables['member_role_assignments'],
             'security_audit_log_table': metadata.tables['security_audit_log'],

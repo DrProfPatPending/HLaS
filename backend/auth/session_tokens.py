@@ -38,7 +38,7 @@ def extract_bearer_token():
     return auth_header[7:].strip()
 
 
-def issue_member_session_token(member_id, club_short_name, username):
+def issue_member_session_token(member_id, club_short_name, username, user_id=None):
     token_value = secrets.token_urlsafe(32)
     token_hash = _hash_member_token(token_value)
     expires_at = _member_token_expiry()
@@ -50,6 +50,7 @@ def issue_member_session_token(member_id, club_short_name, username):
             session.execute(
                 backend['member_sessions_table'].insert().values(
                     token_hash=token_hash,
+                    user_id=_safe_int(user_id),
                     member_id=int(member_id),
                     club_short_name=str(club_short_name or '').strip(),
                     username=str(username or '').strip(),
@@ -65,6 +66,7 @@ def issue_member_session_token(member_id, club_short_name, username):
             session.close()
     else:
         _member_tokens_fallback[token_hash] = {
+            'user_id': _safe_int(user_id),
             'member_id': int(member_id),
             'club_short_name': str(club_short_name or '').strip(),
             'username': str(username or '').strip(),
@@ -76,7 +78,7 @@ def issue_member_session_token(member_id, club_short_name, username):
     return token_value
 
 
-def issue_member_refresh_token(member_id, club_short_name, username):
+def issue_member_refresh_token(member_id, club_short_name, username, user_id=None):
     token_value = secrets.token_urlsafe(48)
     token_hash = _hash_member_token(token_value)
     expires_at = _member_refresh_token_expiry()
@@ -88,6 +90,7 @@ def issue_member_refresh_token(member_id, club_short_name, username):
             session.execute(
                 backend['member_refresh_sessions_table'].insert().values(
                     refresh_token_hash=token_hash,
+                    user_id=_safe_int(user_id),
                     member_id=int(member_id),
                     club_short_name=str(club_short_name or '').strip(),
                     username=str(username or '').strip(),
@@ -103,6 +106,7 @@ def issue_member_refresh_token(member_id, club_short_name, username):
             session.close()
     else:
         _member_refresh_tokens_fallback[token_hash] = {
+            'user_id': _safe_int(user_id),
             'member_id': int(member_id),
             'club_short_name': str(club_short_name or '').strip(),
             'username': str(username or '').strip(),
@@ -163,6 +167,7 @@ def get_member_refresh_session_from_token(token_value):
             )
             session.commit()
             return {
+                'user_id': _safe_int(getattr(row, 'user_id', None)),
                 'member_id': row.member_id,
                 'club_short_name': row.club_short_name,
                 'username': row.username,
@@ -179,15 +184,16 @@ def get_member_refresh_session_from_token(token_value):
         return None
     row['last_seen_at'] = now_value
     return {
+        'user_id': _safe_int(row.get('user_id')),
         'member_id': row.get('member_id'),
         'club_short_name': row.get('club_short_name', ''),
         'username': row.get('username', ''),
     }
 
 
-def issue_member_token_pair(member_id, club_short_name, username):
-    access_token = issue_member_session_token(member_id, club_short_name, username)
-    refresh_token = issue_member_refresh_token(member_id, club_short_name, username)
+def issue_member_token_pair(member_id, club_short_name, username, user_id=None):
+    access_token = issue_member_session_token(member_id, club_short_name, username, user_id=user_id)
+    refresh_token = issue_member_refresh_token(member_id, club_short_name, username, user_id=user_id)
     return {
         'token': access_token,
         'refreshToken': refresh_token,
@@ -245,6 +251,7 @@ def get_member_session_from_token(token_value):
             )
             session.commit()
             return {
+                'user_id': _safe_int(getattr(row, 'user_id', None)),
                 'member_id': row.member_id,
                 'club_short_name': row.club_short_name,
                 'username': row.username,
@@ -261,10 +268,18 @@ def get_member_session_from_token(token_value):
         return None
     row['last_seen_at'] = now_value
     return {
+        'user_id': _safe_int(row.get('user_id')),
         'member_id': row.get('member_id'),
         'club_short_name': row.get('club_short_name', ''),
         'username': row.get('username', ''),
     }
+
+
+def _safe_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def require_member_token_for_club(club_short_name):
