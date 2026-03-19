@@ -359,7 +359,7 @@
             <tr v-for="u in uaUsers" :key="u.userId">
               <td>{{ u.username }}</td>
               <td>{{ u.displayName }}</td>
-              <td></td>
+              <td>{{ u.homeClub || '—' }}</td>
               <td class="roles-cell">
                 <span
                   v-for="a in u.assignments"

@@ -243,11 +243,14 @@ def create_admin_user_blueprint(deps):
                     r.scope_type    AS role_scope,
                     rc.id           AS role_club_id,
                     rc.short_name   AS role_club_short_name,
-                    mra.granted_at
+                    mra.granted_at,
+                    hc.short_name   AS home_club_short_name
                 FROM app_users au
                 JOIN  member_role_assignments mra ON mra.user_id = au.id
                 JOIN  roles r                     ON r.id  = mra.role_id
                 LEFT JOIN clubs rc                ON rc.id = mra.club_id
+                LEFT JOIN member_user_links hcl   ON hcl.user_id = au.id AND hcl.is_primary = TRUE
+                LEFT JOIN clubs hc                ON hc.id = hcl.club_id
                 WHERE mra.revoked_at IS NULL
                   AND au.is_active = TRUE
                 ORDER BY au.username, r.scope_type DESC, r.code
@@ -263,6 +266,7 @@ def create_admin_user_blueprint(deps):
                     'userId': uid,
                     'username': row.username,
                     'displayName': row.display_name,
+                    'homeClub': row.home_club_short_name or None,
                     'assignments': [],
                 }
             users_map[uid]['assignments'].append({
