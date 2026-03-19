@@ -82,6 +82,15 @@ export default {
   },
   methods: {
     formatFieldName,
+    loadFromSessionUser() {
+      const fallbackPayload = this.sanitizeMemberPayload(store.loggedInUser || {});
+      if (!Object.keys(fallbackPayload).length) {
+        return false;
+      }
+      this.memberData = fallbackPayload;
+      this.editData = { ...this.memberData };
+      return true;
+    },
     isReadOnlyField(field) {
       return field === 'ID' || field === 'id';
     },
@@ -105,10 +114,23 @@ export default {
         .get(`${this.apiBaseUrl}/members/me`, { params: { club: this.loggedInClub } })
         .then(res => {
           const payload = (res.data && res.data.member) || {};
-          this.memberData = this.sanitizeMemberPayload(payload);
+          const sanitized = this.sanitizeMemberPayload(payload);
+          if (!Object.keys(sanitized).length) {
+            const loadedFromSession = this.loadFromSessionUser();
+            if (!loadedFromSession) {
+              this.error = 'No member information available for this session';
+            }
+            return;
+          }
+          this.memberData = sanitized;
           this.editData = { ...this.memberData };
         })
         .catch(err => {
+          const loadedFromSession = this.loadFromSessionUser();
+          if (loadedFromSession) {
+            this.error = '';
+            return;
+          }
           this.error =
             err.response && err.response.data && err.response.data.error
               ? err.response.data.error
