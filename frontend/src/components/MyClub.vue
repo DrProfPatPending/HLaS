@@ -17,6 +17,16 @@
 
       <div v-if="status" class="success-msg">{{ status }}</div>
 
+      <div v-if="memberPhotoSrc" class="my-club-photo-row">
+        <img
+          :src="memberPhotoSrc"
+          :alt="memberPhotoAlt"
+          class="my-club-photo"
+          @error="hideMemberPhoto"
+        />
+        <div v-if="memberPhotoName" class="my-club-photo-name">{{ memberPhotoName }}</div>
+      </div>
+
       <table class="my-club-table">
         <thead>
           <tr>
@@ -55,6 +65,7 @@ export default {
       error: '',
       status: '',
       isEditing: false,
+      photoVisible: true,
       memberData: {},
       editData: {},
     };
@@ -76,6 +87,18 @@ export default {
     memberId() {
       return this.memberData.id || this.memberData.ID || this.editData.id || this.editData.ID || null;
     },
+    memberPhotoName() {
+      return this.memberData.Photo_Path || this.editData.Photo_Path || '';
+    },
+    memberPhotoSrc() {
+      if (!this.photoVisible || !this.memberPhotoName) {
+        return '';
+      }
+      return `${this.apiBaseUrl}/member_photo/${this.loggedInClub}/${encodeURIComponent(this.memberPhotoName)}`;
+    },
+    memberPhotoAlt() {
+      return this.memberData.Members_Name || this.memberData.username || 'Member photo';
+    },
   },
   created() {
     this.fetchMyMemberProfile();
@@ -87,9 +110,13 @@ export default {
       if (!Object.keys(fallbackPayload).length) {
         return false;
       }
+      this.photoVisible = true;
       this.memberData = fallbackPayload;
       this.editData = { ...this.memberData };
       return true;
+    },
+    hideMemberPhoto() {
+      this.photoVisible = false;
     },
     isReadOnlyField(field) {
       return field === 'ID' || field === 'id';
@@ -122,6 +149,7 @@ export default {
             }
             return;
           }
+          this.photoVisible = true;
           this.memberData = sanitized;
           this.editData = { ...this.memberData };
         })
@@ -202,6 +230,25 @@ export default {
 
 .my-club-status {
   margin-bottom: 10px;
+}
+
+.my-club-photo-row {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.my-club-photo {
+  max-width: 220px;
+  max-height: 220px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.my-club-photo-name {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #555;
 }
 
 .my-club-table {
