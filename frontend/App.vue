@@ -6,6 +6,7 @@
       <home-view v-if="activeSection === 'home'" />
     <membership-admin v-else-if="activeSection === 'membership-admin'" />
     <club-information v-else-if="activeSection === 'club-information'" />
+    <my-club v-else-if="activeSection === 'my-club'" />
     <newsletters v-else-if="activeSection === 'newsletters'" />
     <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
     <member-edit v-else-if="activeSection === 'member-edit'" />
@@ -32,6 +33,7 @@ import ClubInformation from './src/components/ClubInformation.vue';
 import Newsletters from './src/components/Newsletters.vue';
 import FishingBeats from './src/components/FishingBeats.vue';
 import MemberEdit from './src/components/MemberEdit.vue';
+import MyClub from './src/components/MyClub.vue';
 import {
   store,
   restoreMemberSession,
@@ -51,6 +53,7 @@ export default {
     HomeView,
     MembershipAdmin,
     ClubInformation,
+    MyClub,
     Newsletters,
     FishingBeats,
     MemberEdit,

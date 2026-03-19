@@ -19,6 +19,8 @@ def create_member_blueprint(deps):
     revoke_member_session_token = deps['revoke_member_session_token']
     revoke_member_refresh_token = deps['revoke_member_refresh_token']
     get_member_refresh_session_from_token = deps['get_member_refresh_session_from_token']
+    get_current_principal = deps['get_current_principal']
+    require_authenticated = deps['require_authenticated']
     require_permission = deps['require_permission']
     require_self_or_permission = deps['require_self_or_permission']
     wildcard_to_sql_like = deps['wildcard_to_sql_like']
@@ -323,6 +325,40 @@ def create_member_blueprint(deps):
 
         members_payload = [member_to_dict(member, members_table) for member in members]
         return jsonify({'members': members_payload, 'total': total})
+
+    @bp.route('/members/me', methods=['GET'])
+    def get_current_member_profile():
+        requested_club = str(request.args.get('club', '')).strip()
+        auth_error = require_authenticated(requested_club)
+        if auth_error:
+            return auth_error
+
+        principal = get_current_principal(requested_club)
+        if principal is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        member_id = principal.get('member_id')
+        club = str(principal.get('scope_club_short_name') or principal.get('club_short_name') or '').strip()
+        if not member_id or not club:
+            return jsonify({'error': 'Member session is missing identity details'}), 400
+
+        log_database_target(club)
+        db_info = get_read_db_for_club(club)
+        session = db_info['session']
+        members_table = db_info['members_table']
+        Member = db_info['Member']
+
+        id_column = get_column('id', members_table) or get_column('ID', members_table)
+        if id_column is None:
+            return jsonify({'error': 'No ID column available for lookup'}), 500
+
+        member = session.scalars(select(Member).where(id_column == member_id)).first()
+        if member is None:
+            return jsonify({'error': 'Member not found'}), 404
+
+        member_payload = member_to_dict(member, members_table)
+        member_payload.pop('password', None)
+        return jsonify({'member': member_payload, 'club': club})
 
     @bp.route('/members', methods=['POST'])
     def add_member():
