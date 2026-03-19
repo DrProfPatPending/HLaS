@@ -1,774 +1,18 @@
 <template>
   <div id="app">
-    <table class="logo-table">
-      <tbody>
-        <tr>
-          <td class="logo-cell">
-            <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" @click="goHome" />
-          </td>
-          <td class="logo-cell">
-            <a v-if="loggedIn && clubDetails.websiteUrl" :href="clubDetails.websiteUrl" target="_blank" rel="noopener noreferrer">
-              <img :src="clubLogoSrc" :alt="`${loggedInClub} logo`" class="club-logo" @error="onClubLogoError" />
-            </a>
-            <img v-else-if="loggedIn" :src="clubLogoSrc" :alt="`${loggedInClub} logo`" class="club-logo" @error="onClubLogoError" />
-          </td>
-          <td class="logo-spacer"></td>
-          <td v-if="loggedIn" class="login-info-cell">Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})</td>
-          <td v-if="loggedIn" class="logout-cell">
-            <button type="button" class="logout-button" @click="logout">Log Out</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <div v-if="!loggedIn" class="login-container">
-      <h2>Welcome to HLaS - please provide your credentials to login</h2>
-      <form @submit.prevent="login">
-        <div class="form-field">
-          <label for="club-select">Select Club:</label>
-          <select id="club-select" v-model="selectedClub" class="club-select">
-            <option
-              v-for="club in clubs"
-              :key="club.shortName"
-              :value="club.shortName"
-              :title="club.description"
-            >
-              {{ club.shortName }}
-            </option>
-          </select>
-        </div>
-        <input v-model="loginUsername" placeholder="Username" required />
-        <input v-model="loginPassword" placeholder="Password" type="password" required />
-        <button type="submit">Login</button>
-      </form>
-      <div class="admin-login-link">
-        <a href="/admin.html">Admin login</a>
-      </div>
-      <div v-if="loginError" style="color: red;">{{ loginError }}</div>
-    </div>
+    <app-header />
+    <login-view v-if="!loggedIn" />
     <div v-else>
-    <div v-if="activeSection === 'home'" class="home-container">
-      <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
-      <h3> Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</h3>
-      <table class="home-nav-table">
-        <tbody>
-          <tr>
-            <td>
-              <button
-                v-if="canAccessMembershipAdmin"
-                type="button"
-                class="home-nav-button"
-                @click="navigateToSection('membership-admin')"
-              >
-                Membership Admin
-              </button>
-            </td>
-            <td><button type="button" class="home-nav-button" @click="navigateToSection('club-information')">Club Information</button></td>
-            <td>
-              <button
-                v-if="canAccessNewsletters"
-                type="button"
-                class="home-nav-button"
-                @click="navigateToSection('newsletters')"
-              >
-                Newsletters
-              </button>
-            </td>
-          </tr>
-          <tr>
-            <td><button type="button" class="home-nav-button" @click="navigateToSection('my-club')">My Club</button></td>
-            <td><button type="button" class="home-nav-button" @click="navigateToSection('fishing-beats')">Fishing Beats</button></td>
-            <td><button type="button" class="home-nav-button" @click="navigateToSection('club-store')">Club Store</button></td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-if="accessError" class="access-error">{{ accessError }}</p>
-    </div>
-    <div v-else-if="activeSection === 'membership-admin'">
-    <div class="membership-admin-header">
-      <button type="button" @click="activeSection = 'home'">Back to Home</button>
-      <h1>{{ selectedClub }} Members</h1>
-    </div>
-    <table class="member-table">
-      <thead>
-        <tr>
-          <th>
-            Rank
-            <span class="sort-arrow" @click="setSort('ID', 'desc')">&#8595;</span>
-            <span class="sort-arrow" @click="setSort('ID', 'asc')">&#8593;</span>
-            <input v-model="columnFilters.ID" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Num
-            <span class="sort-arrow" @click="setSort('Number', 'desc')">&#8595;</span>
-            <span class="sort-arrow" @click="setSort('Number', 'asc')">&#8593;</span>
-            <input v-model="columnFilters.Number" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Name
-            <span class="sort-arrow" @click="setSort('Members_Name', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Members_Name', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Members_Name" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            E-Mail
-            <span class="sort-arrow" @click="setSort('E_Mail', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('E_Mail', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.E_Mail" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Mobile
-            <span class="sort-arrow" @click="setSort('Mobile', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Mobile', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Mobile" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Car_Reg
-            <span class="sort-arrow" @click="setSort('Car_Reg', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Car_Reg', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Car_Reg" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Type
-            <span class="sort-arrow" @click="setSort('Member_Type', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Member_Type', 'desc')">&#8595;</span>
-            <select v-model="columnFilters.Member_Type" @change="onFilterChange" class="column-filter">
-              <option value=""></option>
-              <option value="Ordinary">Ordinary</option>
-              <option value="Senior Citizen">Senior Citizen</option>
-              <option value="Senior 75+">Senior 75+</option>
-              <option value="Octagenarian">Octagenarian</option>
-              <option value="Junior">Junior</option>
-              <option value="Honorary">Honorary</option>
-              <option value="Paused">Paused</option>
-              <option value="Resigned">Resigned</option>
-            </select>
-          </th>
-          <th>
-            EA_Licence
-            <span class="sort-arrow" @click="setSort('EA_Licence', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('EA_Licence', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.EA_Licence" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Licence Expiry
-            <span class="sort-arrow" @click="setSort('Licence_Exp', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Licence_Exp', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Licence_Exp" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Paid Up?
-            <input v-model="columnFilters.Paid_Up_2026" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Paused?
-            <input v-model="columnFilters.Paused" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Resigned?
-            <input v-model="columnFilters.Resigned" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="member in members" :key="member.id || member.ID || member.Number">
-          <td>{{ member.ID }}</td>
-          <td><a href="#" @click.prevent="lookupMemberByNumber(member.Number)" class="member-link">{{ member.Number }}</a></td>
-          <td><a href="#" @click.prevent="openMemberEdit(member)" class="member-link">{{ member.Members_Name }}</a></td>
-          <td>
-            <a v-if="member.E_Mail" :href="`mailto:${member.E_Mail}`">{{ member.E_Mail }}</a>
-            <span v-else>-</span>
-          </td>
-          <td>{{ member.Mobile }}</td>
-          <td>{{ member.Car_Reg }}</td>
-          <td>{{ member.Member_Type }}</td>
-          <td>{{ member.EA_Licence }}</td>
-          <td :style="getExpiryDateStyle(member.Licence_Exp)">{{ member.Licence_Exp }}</td>
-          <td>{{ member.Paid_Up_2026 }}</td>
-          <td>{{ member.Paused }}</td>
-          <td>{{ member.Resigned }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="pagination-controls">
-      <button :disabled="currentPage === 1" @click="firstPage">First Page</button>
-      <button :disabled="currentPage === 1" @click="prevPage">Previous Page</button>
-      <span>Page {{ currentPage }} of {{ totalPages }}&nbsp;</span> 
-      <button :disabled="currentPage === totalPages" @click="nextPage">Next Page</button>
-      <button :disabled="currentPage === totalPages" @click="lastPage">Last Page</button>
-      <select v-model.number="pageSize" @change="onPageSizeChange" class="records-per-page-select">
-        <option value="10">10 per page</option>
-        <option value="25">25 per page</option>
-        <option value="50">50 per page</option>
-        <option value="100">100 per page</option>
-      </select>
-    </div>
-    <div class="page-numbers">
-      <button v-for="pageNum in visiblePages" :key="pageNum" 
-              :class="{ 'active': pageNum === currentPage }" 
-              @click="goToPage(pageNum)">
-        {{ pageNum }}
-      </button>
-    </div>
-    <hr />
-    <div v-if="showMembershipDetails">
-      <div class="membership-details-header">
-        <h2>Membership Details</h2>
-        <button v-if="lookupResult && !lookupError" type="button" @click="hideLookupDetails">Hide Details</button>
-      </div>
-      <form @submit.prevent="lookupMember">
-        <input v-model="lookupNumber" placeholder="Membership Number" required />
-        <button type="submit">Lookup</button>
-      </form>
-      <div v-if="lookupError" style="color: red;">{{ lookupError }}</div>
-      <table v-if="lookupResult" class="lookup-table">
-        <thead>
-          <tr>
-            <th>Field</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(value, key) in lookupResult" :key="key">
-            <td>{{ key }}</td>
-            <td>{{ value }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    </div>
-    <div v-else-if="activeSection === 'club-information'" class="club-information-container">
-      <h2>{{ clubDetails.fullName }}</h2>
-      <table class="club-information-table">
-        <tbody>
-          <tr>
-            <th>Short Name</th>
-            <td>{{ clubDetails.shortName }}</td>
-          </tr>
-          <tr>
-            <th>URL</th>
-            <td>
-              <a
-                v-if="clubDetails.websiteUrl"
-                :href="clubDetails.websiteUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ clubDetails.websiteUrl }}
-              </a>
-              <span v-else>-</span>
-            </td>
-          </tr>
-          <tr>
-            <th>Admin Email</th>
-            <td>
-              <a v-if="clubDetails.adminEmail" :href="`mailto:${clubDetails.adminEmail}`">{{ clubDetails.adminEmail }}</a>
-              <span v-else>-</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <textarea
-        class="club-description-box"
-        :value="clubDetails.description"
-        readonly
-        rows="6"
-      ></textarea>
-      <div>
-        <button type="button" @click="activeSection = 'home'">Back to Home</button>
-      </div>
-    </div>
-    <div v-else-if="activeSection === 'newsletters'" class="newsletters-container">
-      <h2>Newsletters</h2>
-      <p>Filter members, build a selected list, choose a template, and send club newsletters.</p>
-      <div class="newsletter-actions newsletter-toolbar">
-        <label class="newsletter-template-label" for="newsletter-template-select">Template</label>
-        <select
-          id="newsletter-template-select"
-          v-model="selectedNewsletterTemplateId"
-          class="newsletter-template-select"
-        >
-          <option value="">Select template</option>
-          <option
-            v-for="template in newsletterTemplates"
-            :key="`newsletter-template-${template.id}`"
-            :value="template.id"
-          >
-            {{ template.name }}
-          </option>
-        </select>
-        <button type="button" class="manage-templates-button" @click="openTemplateManager">
-          Manage Templates
-        </button>
-        <button type="button" :disabled="newsletterFilterSelectBusy" @click="selectAllNewsletterFiltered">
-          {{ newsletterFilterSelectBusy ? 'Selecting…' : 'Select All Filtered' }}
-        </button>
-        <button type="button" :disabled="!newsletterSelectedMemberIds.length" @click="clearNewsletterSelection">
-          Clear Selection
-        </button>
-        <span>Filtered: {{ newsletterTotalMembers }}</span>
-      </div>
-      <div v-if="showTemplateManager" class="template-manager-modal">
-        <div class="template-manager-content">
-          <div class="template-manager-header">
-            <h3>Manage Newsletter Templates</h3>
-            <button type="button" class="close-button" @click="closeTemplateManager">×</button>
-          </div>
-          <div class="template-list-section">
-            <h4>Existing Templates</h4>
-            <div v-if="templateEditError" class="error-message">{{ templateEditError }}</div>
-            <div class="template-list">
-              <div v-for="template in newsletterTemplates" :key="template.id" class="template-item">
-                <div class="template-item-header">
-                  <span class="template-item-name">{{ template.name }}</span>
-                  <div class="template-item-actions">
-                    <button type="button" class="edit-button" @click="editTemplate(template)">Edit</button>
-                    <button 
-                      type="button" 
-                      class="delete-button" 
-                      :disabled="template.id === 'club-update' || template.id === 'membership-reminder'"
-                      @click="deleteTemplate(template.id)"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="template-edit-section">
-            <h4>{{ templateEditingId ? 'Edit Template' : 'Create New Template' }}</h4>
-            <form @submit.prevent="saveTemplate">
-              <div v-if="templateCreateError" class="error-message">{{ templateCreateError }}</div>
-              <div class="form-group">
-                <label for="template-id-input">Template ID:</label>
-                <input
-                  id="template-id-input"
-                  v-model="templateEditingData.id"
-                  type="text"
-                  placeholder="e.g., special-event (lowercase letters, numbers, hyphens)"
-                  :disabled="templateEditingId !== null"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label for="template-name-input">Template Name:</label>
-                <input
-                  id="template-name-input"
-                  v-model="templateEditingData.name"
-                  type="text"
-                  placeholder="e.g., Special Event"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label for="template-subject-input">Subject:</label>
-                <input
-                  id="template-subject-input"
-                  v-model="templateEditingData.subject"
-                  type="text"
-                  placeholder="e.g., <Club> Special Event"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label for="template-body-input">Body:</label>
-                <textarea
-                  id="template-body-input"
-                  v-model="templateEditingData.body"
-                  placeholder="Use tags like <Club>, <Title>, <Last_Name>, <Number>, etc."
-                  rows="8"
-                  required
-                ></textarea>
-              </div>
-              <div v-if="newsletterAvailableTags.length" class="available-tags-info">
-                <strong>Available tags:</strong>
-                <span
-                  v-for="tag in newsletterAvailableTags"
-                  :key="tag.tag"
-                  class="tag-chip"
-                  :title="tag.description"
-                >&lt;{{ tag.tag }}&gt;</span>
-              </div>
-              <div class="template-form-actions">
-                <button type="submit" class="save-button">{{ templateEditingId ? 'Update Template' : 'Create Template' }}</button>
-                <button type="button" class="cancel-button" @click="cancelTemplateEdit">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      <div v-if="selectedNewsletterTemplate" class="newsletter-template-preview">
-        <h3>Template Preview <span class="newsletter-preview-note">(sample values shown)</span></h3>
-        <p><strong>Subject:</strong> {{ selectedNewsletterTemplate.previewSubject }}</p>
-        <pre class="newsletter-template-preview-body">{{ selectedNewsletterTemplate.previewBody }}</pre>
-        <div v-if="newsletterAvailableTags.length" class="newsletter-template-tags-hint">
-          <strong>Available tags:</strong>
-          <span
-            v-for="tag in newsletterAvailableTags"
-            :key="tag.tag"
-            class="newsletter-tag-chip"
-            :title="tag.description"
-          >&lt;{{ tag.tag }}&gt;</span>
-        </div>
-      </div>
-      <table class="newsletter-table">
-        <thead>
-          <tr>
-            <th>
-              Select
-              <input type="checkbox" :checked="allNewsletterPageSelected" @change="toggleSelectAllNewsletterOnPage" />
-            </th>
-            <th>
-              ID
-              <input v-model="newsletterColumnFilters.ID" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
-            </th>
-            <th>
-              Num
-              <input v-model="newsletterColumnFilters.Number" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
-            </th>
-            <th>
-              Name
-              <input v-model="newsletterColumnFilters.Members_Name" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
-            </th>
-            <th>
-              E-Mail
-              <input v-model="newsletterColumnFilters.E_Mail" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
-            </th>
-            <th>
-              Membership Type
-              <select v-model="newsletterColumnFilters.Member_Type" @change="onNewsletterFilterChange" class="column-filter">
-                <option value=""></option>
-                <option value="Ordinary">Ordinary</option>
-                <option value="Senior Citizen">Senior Citizen</option>
-                <option value="Senior 75+">Senior 75+</option>
-                <option value="Octagenarian">Octagenarian</option>
-                <option value="Junior">Junior</option>
-                <option value="Honorary">Honorary</option>
-                <option value="Paused">Paused</option>
-                <option value="Resigned">Resigned</option>
-              </select>
-            </th>
-            <th>
-              Paid Up?
-              <input v-model="newsletterColumnFilters.Paid_Up_2026" @input="onNewsletterFilterChange" class="column-filter" placeholder="Filter" />
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="member in newsletterMembers" :key="`newsletter-${memberIdentity(member)}`">
-            <td>
-              <input
-                type="checkbox"
-                :value="String(memberIdentity(member))"
-                v-model="newsletterSelectedMemberIds"
-              />
-            </td>
-            <td>{{ member.ID || member.id }}</td>
-            <td>{{ member.Number }}</td>
-            <td>{{ member.Members_Name }}</td>
-            <td>
-              <a v-if="member.E_Mail" :href="`mailto:${member.E_Mail}`">{{ member.E_Mail }}</a>
-              <span v-else>-</span>
-            </td>
-            <td>{{ member.Member_Type }}</td>
-            <td>{{ member.Paid_Up_2026 }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="pagination-controls">
-        <button :disabled="newsletterCurrentPage === 1" @click="firstNewsletterPage">First Page</button>
-        <button :disabled="newsletterCurrentPage === 1" @click="prevNewsletterPage">Previous Page</button>
-        <span>Page {{ newsletterCurrentPage }} of {{ newsletterTotalPages }}&nbsp;</span>
-        <button :disabled="newsletterCurrentPage === newsletterTotalPages" @click="nextNewsletterPage">Next Page</button>
-        <button :disabled="newsletterCurrentPage === newsletterTotalPages" @click="lastNewsletterPage">Last Page</button>
-        <select v-model.number="newsletterPageSize" @change="onNewsletterPageSizeChange" class="records-per-page-select">
-          <option value="10">10 per page</option>
-          <option value="25">25 per page</option>
-          <option value="50">50 per page</option>
-          <option value="100">100 per page</option>
-        </select>
-      </div>
-      <div class="page-numbers">
-        <button
-          v-for="pageNum in newsletterVisiblePages"
-          :key="`newsletter-page-${pageNum}`"
-          :class="{ 'active': pageNum === newsletterCurrentPage }"
-          @click="goToNewsletterPage(pageNum)"
-        >
-          {{ pageNum }}
-        </button>
-      </div>
-      <div class="newsletter-actions">
-        <button
-          type="button"
-          :disabled="!selectedNewsletterTemplateId || newsletterSendBusy"
-          @click="sendNewsletterToAllMembers"
-        >
-          {{ newsletterSendBusy ? 'Sending…' : 'Send Newsletter to All' }}
-        </button>
-        <button type="button" :disabled="!newsletterSelectedMemberIds.length" @click="prepareNewsletterRecipients">
-          Prepare Selected for Email
-        </button>
-        <span>Selected: {{ newsletterSelectedMemberIds.length }}</span>
-        <button
-          type="button"
-          :disabled="!selectedNewsletterTemplateId || !newsletterSelectedMemberIds.length || newsletterSendBusy"
-          @click="sendNewsletterToSelectedMembers"
-        >
-          {{ newsletterSendBusy ? 'Sending…' : 'Send Newsletter to Selected' }}
-        </button>
-        <span v-if="clubSmtpFromEmail" class="newsletter-from-indicator">
-          Sending from: <strong>{{ clubSmtpFromEmail }}</strong>
-        </span>
-        <span v-else class="newsletter-from-indicator newsletter-from-not-set">
-          Sending address not configured
-        </span>
-      </div>
-      <div v-if="newsletterPrepareMessage" class="newsletter-status">{{ newsletterPrepareMessage }}</div>
-      <div v-if="newsletterPrepareError" class="newsletter-error">{{ newsletterPrepareError }}</div>
-      <button type="button" @click="activeSection = 'home'">Back to Home</button>
-    </div>
-    <div v-else-if="activeSection === 'fishing-beats'" class="fishing-beats-container">
-      <h2>{{ clubDetails.fullName }} - Fishing Beats</h2>
-      <div v-if="clubBeats.length" class="fishing-beats-layout">
-        <table class="fishing-beats-table">
-          <thead>
-            <tr>
-              <th>Beat Name</th>
-              <th>Beat ID</th>
-              <th>River</th>
-              <th>Position</th>
-              <th>Beat Upstream</th>
-              <th>Beat Downstream</th>
-              <th>Beat Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="beat in clubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
-              <td>
-                <a
-                  href="#"
-                  class="beat-name-link"
-                  :class="{ 'active': selectedFishingBeat && beatKey(selectedFishingBeat) === beatKey(beat) }"
-                  @click.prevent="selectFishingBeat(beat)"
-                >
-                  {{ beat.Beat_Name }}
-                </a>
-              </td>
-              <td>{{ beat.Beat_ID }}</td>
-              <td>{{ beat.River }}</td>
-              <td>{{ beat.Position }}</td>
-              <td>
-                <a
-                  v-if="beat.Beat_Upstream_W3W"
-                  :href="beat.Beat_Upstream_W3W.url"
-                  rel="noopener noreferrer"
-                  @click.prevent="openReusableMapWindow(beat.Beat_Upstream_W3W.url)"
-                >
-                  {{ beat.Beat_Upstream_W3W.display }}
-                </a>
-                <span v-else>{{ beat.Beat_Upstream }}</span>
-              </td>
-              <td>
-                <a
-                  v-if="beat.Beat_Downstream_W3W"
-                  :href="beat.Beat_Downstream_W3W.url"
-                  rel="noopener noreferrer"
-                  @click.prevent="openReusableMapWindow(beat.Beat_Downstream_W3W.url)"
-                >
-                  {{ beat.Beat_Downstream_W3W.display }}
-                </a>
-                <span v-else>{{ beat.Beat_Downstream }}</span>
-              </td>
-              <td>{{ beat.Beat_Description }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-if="selectedFishingBeat" class="fishing-beat-detail-panel">
-          <h3>{{ selectedFishingBeat.Beat_Name }}</h3>
-          <table class="fishing-beat-detail-table">
-            <tbody>
-              <tr>
-                <th>Beat Name</th>
-                <td>{{ selectedFishingBeat.Beat_Name }}</td>
-              </tr>
-              <tr>
-                <th>Beat ID</th>
-                <td>{{ selectedFishingBeat.Beat_ID }}</td>
-              </tr>
-              <tr>
-                <th>River</th>
-                <td>{{ selectedFishingBeat.River }}</td>
-              </tr>
-              <tr>
-                <th>Position</th>
-                <td>{{ selectedFishingBeat.Position }}</td>
-              </tr>
-              <tr>
-                <th>Beat Upstream</th>
-                <td>
-                  <a
-                    v-if="selectedFishingBeat.Beat_Upstream_W3W"
-                    :href="selectedFishingBeat.Beat_Upstream_W3W.url"
-                    rel="noopener noreferrer"
-                    @click.prevent="openReusableMapWindow(selectedFishingBeat.Beat_Upstream_W3W.url)"
-                  >
-                    {{ selectedFishingBeat.Beat_Upstream_W3W.display }}
-                  </a>
-                  <span v-else>{{ selectedFishingBeat.Beat_Upstream }}</span>
-                </td>
-              </tr>
-              <tr>
-                <th>Beat Downstream</th>
-                <td>
-                  <a
-                    v-if="selectedFishingBeat.Beat_Downstream_W3W"
-                    :href="selectedFishingBeat.Beat_Downstream_W3W.url"
-                    rel="noopener noreferrer"
-                    @click.prevent="openReusableMapWindow(selectedFishingBeat.Beat_Downstream_W3W.url)"
-                  >
-                    {{ selectedFishingBeat.Beat_Downstream_W3W.display }}
-                  </a>
-                  <span v-else>{{ selectedFishingBeat.Beat_Downstream }}</span>
-                </td>
-              </tr>
-              <tr>
-                <th>Beat Description</th>
-                <td>{{ selectedFishingBeat.Beat_Description }}</td>
-              </tr>
-              <tr>
-                <th>Detailed Description</th>
-                <td>{{ selectedFishingBeat.Detailed_Description || '-' }}</td>
-              </tr>
-              <tr>
-                <th>Upstream Co-ords</th>
-                <td>
-                  <span v-if="selectedFishingBeat.Beat_Upstream_Latitude && selectedFishingBeat.Beat_Upstream_Longitude">
-                    {{ selectedFishingBeat.Beat_Upstream_Latitude }}, {{ selectedFishingBeat.Beat_Upstream_Longitude }}
-                  </span>
-                  <span v-else>-</span>
-                </td>
-              </tr>
-              <tr>
-                <th>Downstream Co-ords</th>
-                <td>
-                  <span v-if="selectedFishingBeat.Beat_Downstream_Latitude && selectedFishingBeat.Beat_Downstream_Longitude">
-                    {{ selectedFishingBeat.Beat_Downstream_Latitude }}, {{ selectedFishingBeat.Beat_Downstream_Longitude }}
-                  </span>
-                  <span v-else>-</span>
-                </td>
-              </tr>
-              <tr>
-                <th>Parking</th>
-                <td>
-                  <ul v-if="selectedFishingBeat.Parking_Locations.length" class="fishing-beat-parking-list">
-                    <li v-for="(parking, parkingIndex) in selectedFishingBeat.Parking_Locations" :key="`parking-${parkingIndex}`">
-                      <strong>{{ parking.Name || `Parking ${parkingIndex + 1}` }}</strong>
-                      <span v-if="parking.Latitude && parking.Longitude"> ({{ parking.Latitude }}, {{ parking.Longitude }})</span>
-                      <span v-if="parking.Location_W3W"> &mdash; <a href="#" class="w3w-link" @click.prevent="openReusableMapWindow(parking.Location_W3W.url)">{{ parking.Location_W3W.display }}</a></span>
-                      <span v-if="parking.Description"> - {{ parking.Description }}</span>
-                    </li>
-                  </ul>
-                  <span v-else>-</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="fishing-beat-map-wrap">
-            <div ref="fishingBeatMap" class="fishing-beat-map"></div>
-            <div v-if="fishingBeatMapStatus" class="fishing-beat-map-status">{{ fishingBeatMapStatus }}</div>
-          </div>
-        </div>
-      </div>
-      <p v-else>No fishing beats are configured for this club.</p>
-      <button type="button" @click="activeSection = 'home'">Back to Home</button>
-    </div>
-    <div v-else-if="activeSection === 'member-edit'" class="member-edit-container">
-      <h2>Edit Member Details</h2>
-      <div v-if="editMemberPositionLabel" class="member-edit-position">{{ editMemberPositionLabel }}</div>
-      <div class="member-edit-photo-row">
-        <img
-          v-if="editMemberData.Photo_Path"
-          :key="editMemberId"
-          :src="`${apiBaseUrl}/member_photo/${loggedInClub}/${encodeURIComponent(editMemberData.Photo_Path)}`"
-          :alt="editMemberData.Members_Name || 'Member photo'"
-          class="member-edit-photo"
-          @error="$event.target.style.display='none'"
-        />
-        <div v-if="editMemberData.Photo_Path" class="member-edit-photo-name">{{ editMemberData.Photo_Path }}</div>
-      </div>
-      <div class="member-edit-actions">
-        <button type="button" @click="updateMember">Update Member</button>
-        <button type="button" :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">Previous</button>
-        <button type="button" :disabled="!hasNextEditMember" @click="navigateEditMember(1)">Next</button>
-        <button type="button" @click="cancelEdit">Cancel</button>
-        <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
-      </div>
-      <br />
-      <table class="member-detail-table">
-        <thead>
-          <tr>
-            <th>Field</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="editMemberData.username !== undefined">
-            <td>{{ formatFieldName('username') }}</td>
-            <td>
-              <input
-                v-model="editMemberData.username"
-                class="member-detail-input"
-              />
-            </td>
-          </tr>
-          <tr>
-            <td>New Password</td>
-            <td>
-              <input
-                v-model="newPassword"
-                type="password"
-                class="member-detail-input"
-                placeholder="Leave blank to keep current password"
-              />
-            </td>
-          </tr>
-          <tr>
-            <td>Confirm New Password</td>
-            <td>
-              <input
-                v-model="confirmPassword"
-                type="password"
-                class="member-detail-input"
-              />
-            </td>
-          </tr>
-          <tr v-for="key in remainingEditMemberKeys" :key="key">
-            <td>{{ formatFieldName(key) }}</td>
-            <td>
-              <input
-                v-model="editMemberData[key]"
-                :disabled="key === 'ID' || key === 'id'"
-                class="member-detail-input"
-              />
-            </td>
-          </tr>
-          <tr v-if="passwordError">
-            <td colspan="2" style="color: red; text-align: center;">{{ passwordError }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="member-edit-actions">
-        <button type="button" @click="updateMember">Update Member</button>
-        <button type="button" :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">Previous</button>
-        <button type="button" :disabled="!hasNextEditMember" @click="navigateEditMember(1)">Next</button>
-        <button type="button" @click="cancelEdit">Cancel</button>
-      </div>
-    </div>
+      <home-view v-if="activeSection === 'home'" />
+    <membership-admin v-else-if="activeSection === 'membership-admin'" />
+    <club-information v-else-if="activeSection === 'club-information'" />
+    <newsletters v-else-if="activeSection === 'newsletters'" />
+    <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
+    <member-edit v-else-if="activeSection === 'member-edit'" />
     <div v-else class="section-placeholder">
       <h2>{{ sectionDisplayName(activeSection) }}</h2>
       <p>This section is coming soon.</p>
-      <button type="button" @click="activeSection = 'home'">Back to Home</button>
+      <button type="button" @click="goHome">Back to Home</button>
     </div>
     </div>
     <footer class="app-footer">
@@ -780,13 +24,66 @@
 </template>
 
 <script>
-import axios from 'axios';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import AppHeader from './src/components/AppHeader.vue';
+import LoginView from './src/components/LoginView.vue';
+import HomeView from './src/components/HomeView.vue';
+import MembershipAdmin from './src/components/MembershipAdmin.vue';
+import ClubInformation from './src/components/ClubInformation.vue';
+import Newsletters from './src/components/Newsletters.vue';
+import FishingBeats from './src/components/FishingBeats.vue';
+import MemberEdit from './src/components/MemberEdit.vue';
+import {
+  store,
+  restoreMemberSession,
+  applyMemberAuthHeader,
+  initializeAuthInterceptor,
+  teardownAuthInterceptor,
+  loadClubs,
+  fetchMembers,
+  canAccessMembershipAdmin,
+  sectionDisplayName,
+} from './src/store.js';
 
-const API_BASE_URL = process.env.VUE_APP_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:5050`;
-const MEMBER_SESSION_STORAGE_KEY = 'hlas.memberSession';
-
+export default {
+  components: {
+    AppHeader,
+    LoginView,
+    HomeView,
+    MembershipAdmin,
+    ClubInformation,
+    Newsletters,
+    FishingBeats,
+    MemberEdit,
+  },
+  computed: {
+    loggedIn: () => store.loggedIn,
+    activeSection: () => store.activeSection,
+  },
+  created() {
+    restoreMemberSession();
+    applyMemberAuthHeader();
+    initializeAuthInterceptor();
+    loadClubs();
+    if (store.loggedIn && canAccessMembershipAdmin.value) {
+      fetchMembers();
+    }
+  },
+  beforeUnmount() {
+    teardownAuthInterceptor();
+  },
+  methods: {
+    sectionDisplayName,
+    goHome() {
+      store.activeSection = 'home';
+    },
+  },
+};
+/* eslint-disable */
+/* ================================================================
+ * ORIGINAL App.vue component logic - preserved for reference.
+ * This code has been refactored into src/store.js and
+ * src/components/*.vue.  Safe to delete after verifying the build.
+ * ================================================================
 export default {
   data() {
     return {
@@ -2238,6 +1535,10 @@ export default {
     }
   }
 };
+ * ================================================================
+ * End of original App.vue component.
+ * ================================================================ */
+/* eslint-enable */
 </script>
 
 <style>
