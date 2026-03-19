@@ -235,8 +235,12 @@ def require_self_or_permission(target_member_id, permission, club_short_name='')
         return auth_error
 
     principal = getattr(g, 'principal', None)
+    principal_member_id = _safe_int((principal or {}).get('member_id'))
     principal_user_id = _safe_int((principal or {}).get('user_id'))
     target_member_id_int = _safe_int(target_member_id)
+
+    if principal_member_id is not None and target_member_id_int is not None and principal_member_id == target_member_id_int:
+        return None
 
     if principal_user_id is not None and target_member_id_int is not None and is_postgres_reads_enabled():
         backend = get_postgres_backend()
