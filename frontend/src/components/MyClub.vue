@@ -3,7 +3,7 @@
     <h2>My Club</h2>
 
     <div v-if="loading" class="my-club-status">Loading your member information…</div>
-    <div v-else-if="error" class="my-club-error">{{ error }}</div>
+    <div v-else-if="error" class="error-msg">{{ error }}</div>
 
     <div v-else>
       <div class="my-club-actions">
@@ -15,7 +15,7 @@
         <button type="button" @click="goHome">Back to Home</button>
       </div>
 
-      <div v-if="status" class="my-club-success">{{ status }}</div>
+      <div v-if="status" class="success-msg">{{ status }}</div>
 
       <table class="my-club-table">
         <thead>
@@ -178,18 +178,8 @@ export default {
   margin-bottom: 12px;
 }
 
-.my-club-status,
-.my-club-error,
-.my-club-success {
+.my-club-status {
   margin-bottom: 10px;
-}
-
-.my-club-error {
-  color: #c9302c;
-}
-
-.my-club-success {
-  color: #1a7a3a;
 }
 
 .my-club-table {
@@ -206,7 +196,6 @@ export default {
 }
 
 .my-club-table th {
-  background: #f4f4f4;
   width: 30%;
 }
 
