@@ -79,7 +79,7 @@
 
 <script>
 import axios from 'axios';
-import { store, formatFieldName } from '../store.js';
+import { store, formatFieldName, fieldOrderConfig, loadFieldOrderConfig } from '../store.js';
 
 export default {
   name: 'MyClub',
@@ -102,6 +102,11 @@ export default {
       return store.apiBaseUrl;
     },
     orderedFields() {
+      // Use backend field order if loaded, else fallback to previous logic
+      if (fieldOrderConfig.loaded && fieldOrderConfig.order['my_club']) {
+        // Only include fields present in memberData
+        return fieldOrderConfig.order['my_club'].filter(f => f in this.memberData);
+      }
       const keys = Object.keys(this.memberData || {});
       const preferredTop = ['ID', 'id', 'Number', 'Members_Name', 'username', 'E_Mail'];
       const topKeys = preferredTop.filter(key => keys.includes(key));
@@ -125,7 +130,9 @@ export default {
     },
   },
   created() {
-    this.fetchMyMemberProfile();
+    loadFieldOrderConfig().finally(() => {
+      this.fetchMyMemberProfile();
+    });
   },
   methods: {
     formatFieldName,

@@ -1,3 +1,23 @@
+// ---------------------------------------------------------------------------
+// Field Order Config (shared)
+// ---------------------------------------------------------------------------
+export const fieldOrderConfig = reactive({
+  loaded: false,
+  contexts: [],
+  order: {},
+});
+
+export function loadFieldOrderConfig() {
+  return axios.get(`${API_BASE_URL}/admin/field-order`)
+    .then(res => {
+      fieldOrderConfig.order = res.data.field_order || {};
+      fieldOrderConfig.contexts = Object.keys(fieldOrderConfig.order);
+      fieldOrderConfig.loaded = true;
+    })
+    .catch(() => {
+      fieldOrderConfig.loaded = false;
+    });
+}
 import { reactive, computed } from 'vue';
 import axios from 'axios';
 
