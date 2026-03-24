@@ -92,6 +92,9 @@ import {
   onPageSizeChange,
   lookupMember,
   lookupMemberByNumber,
+  hideLookupDetails,
+  selectMemberForEdit,
+  getExpiryDateStyle,
 } from '../store.js';
 
 export default {
