@@ -61,18 +61,7 @@
           </tr>
         </tbody>
       </table>
-      computed: {
-        // ...existing code...
-        fieldRows() {
-          // Group fields into pairs for 4-column table
-          const fields = this.orderedFields;
-          const rows = [];
-          for (let i = 0; i < fields.length; i += 2) {
-            rows.push([fields[i], fields[i + 1] || null]);
-          }
-          return rows;
-        },
-        // ...existing code...
+      
     </div>
   </div>
 </template>
@@ -95,6 +84,15 @@ export default {
     };
   },
   computed: {
+    fieldRows() {
+      // Group fields into pairs for 4-column table
+      const fields = this.orderedFields;
+      const rows = [];
+      for (let i = 0; i < fields.length; i += 2) {
+        rows.push([fields[i], fields[i + 1] || null]);
+      }
+      return rows;
+    },
     loggedInClub() {
       return store.loggedInClub;
     },
