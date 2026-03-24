@@ -71,7 +71,13 @@
           <button class="save-btn" @click="saveFieldOrder" style="margin-top:12px;">Save Order</button>
         </div>
         <div v-else style="margin-top:16px;">No fields found for this context.</div>
+
       </div>
+
+<script>
+// ...existing imports...
+export default {
+  // ...existing options...
   data() {
     return {
       // ...existing data...
@@ -127,6 +133,8 @@
     },
     // ...existing methods...
   },
+};
+</script>
 
       <!-- ===== CLUBS TAB ===== -->
       <div v-show="activeTab === 'clubs'">
