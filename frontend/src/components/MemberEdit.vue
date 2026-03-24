@@ -58,7 +58,7 @@
             <input v-model="confirmPassword" type="password" class="member-detail-input" />
           </td>
         </tr>
-        <tr v-for="key in remainingEditMemberKeys" :key="key">
+        <tr v-for="key in orderedEditFields" :key="key">
           <td>{{ formatFieldName(key) }}</td>
           <td>
             <input
@@ -92,15 +92,19 @@ import {
   editMemberPositionLabel,
   hasPreviousEditMember,
   hasNextEditMember,
-  remainingEditMemberKeys,
   navigateEditMember,
   updateMember,
   cancelEdit,
   formatFieldName,
+  fieldOrderConfig,
+  loadFieldOrderConfig,
 } from '../store.js';
 
 export default {
   name: 'MemberEdit',
+  created() {
+    loadFieldOrderConfig();
+  },
   computed: {
     apiBaseUrl: () => store.apiBaseUrl,
     loggedInClub: () => store.loggedInClub,
@@ -119,6 +123,13 @@ export default {
     hasPreviousEditMember: () => hasPreviousEditMember.value,
     hasNextEditMember: () => hasNextEditMember.value,
     remainingEditMemberKeys: () => remainingEditMemberKeys.value,
+    orderedEditFields() {
+      if (fieldOrderConfig.loaded && fieldOrderConfig.order['membership_admin']) {
+        return fieldOrderConfig.order['membership_admin'].filter(f => f in this.editMemberData && f !== 'username' && f !== 'password');
+      }
+      const keys = Object.keys(this.editMemberData || {});
+      return keys.filter(k => k !== 'username' && k !== 'password');
+    },
   },
   methods: {
     navigateEditMember,

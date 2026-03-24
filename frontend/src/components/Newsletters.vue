@@ -160,69 +160,7 @@
               @change="toggleSelectAllNewsletterOnPage"
             />
           </th>
-          <th>
-            ID
-            <input
-              v-model="newsletterColumnFilters.ID"
-              @input="onNewsletterFilterChange"
-              class="column-filter"
-              placeholder="Filter"
-            />
-          </th>
-          <th>
-            Num
-            <input
-              v-model="newsletterColumnFilters.Number"
-              @input="onNewsletterFilterChange"
-              class="column-filter"
-              placeholder="Filter"
-            />
-          </th>
-          <th>
-            Name
-            <input
-              v-model="newsletterColumnFilters.Members_Name"
-              @input="onNewsletterFilterChange"
-              class="column-filter"
-              placeholder="Filter"
-            />
-          </th>
-          <th>
-            E-Mail
-            <input
-              v-model="newsletterColumnFilters.E_Mail"
-              @input="onNewsletterFilterChange"
-              class="column-filter"
-              placeholder="Filter"
-            />
-          </th>
-          <th>
-            Membership Type
-            <select
-              v-model="newsletterColumnFilters.Member_Type"
-              @change="onNewsletterFilterChange"
-              class="column-filter"
-            >
-              <option value=""></option>
-              <option value="Ordinary">Ordinary</option>
-              <option value="Senior Citizen">Senior Citizen</option>
-              <option value="Senior 75+">Senior 75+</option>
-              <option value="Octagenarian">Octagenarian</option>
-              <option value="Junior">Junior</option>
-              <option value="Honorary">Honorary</option>
-              <option value="Paused">Paused</option>
-              <option value="Resigned">Resigned</option>
-            </select>
-          </th>
-          <th>
-            Paid Up?
-            <input
-              v-model="newsletterColumnFilters.Paid_Up_2026"
-              @input="onNewsletterFilterChange"
-              class="column-filter"
-              placeholder="Filter"
-            />
-          </th>
+          <th v-for="field in orderedNewsletterFields" :key="field">{{ field }}</th>
         </tr>
       </thead>
       <tbody>
@@ -234,15 +172,12 @@
               v-model="newsletterSelectedMemberIds"
             />
           </td>
-          <td>{{ member.ID || member.id }}</td>
-          <td>{{ member.Number }}</td>
-          <td>{{ member.Members_Name }}</td>
-          <td>
-            <a v-if="member.E_Mail" :href="`mailto:${member.E_Mail}`">{{ member.E_Mail }}</a>
-            <span v-else>-</span>
+          <td v-for="field in orderedNewsletterFields" :key="field">
+            <span v-if="field === 'E_Mail' && member[field]">
+              <a :href="`mailto:${member[field]}`">{{ member[field] }}</a>
+            </span>
+            <span v-else>{{ member[field] }}</span>
           </td>
-          <td>{{ member.Member_Type }}</td>
-          <td>{{ member.Paid_Up_2026 }}</td>
         </tr>
       </tbody>
     </table>
@@ -313,6 +248,7 @@
 <script>
 import axios from 'axios';
 import { store, API_BASE_URL, memberIdentity } from '../store.js';
+import { fieldOrderConfig, loadFieldOrderConfig } from '../store.js';
 
 export default {
   name: 'Newsletters',
@@ -385,9 +321,17 @@ export default {
         selectedIds.has(String(memberIdentity(member)))
       );
     },
+    orderedNewsletterFields() {
+      if (fieldOrderConfig.loaded && fieldOrderConfig.order['membership_admin']) {
+        const sample = this.newsletterMembers[0] || {};
+        return fieldOrderConfig.order['membership_admin'].filter(f => f in sample);
+      }
+      const sample = this.newsletterMembers[0] || {};
+      return Object.keys(sample);
+    },
   },
   created() {
-    this.init();
+    loadFieldOrderConfig();
   },
   beforeUnmount() {
     if (this.newsletterFilterDebounceTimer) clearTimeout(this.newsletterFilterDebounceTimer);

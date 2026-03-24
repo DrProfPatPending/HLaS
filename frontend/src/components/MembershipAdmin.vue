@@ -7,109 +7,17 @@
     <table class="member-table">
       <thead>
         <tr>
-          <th>
-            Rank
-            <span class="sort-arrow" @click="setSort('ID', 'desc')">&#8595;</span>
-            <span class="sort-arrow" @click="setSort('ID', 'asc')">&#8593;</span>
-            <input v-model="columnFilters.ID" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Num
-            <span class="sort-arrow" @click="setSort('Number', 'desc')">&#8595;</span>
-            <span class="sort-arrow" @click="setSort('Number', 'asc')">&#8593;</span>
-            <input v-model="columnFilters.Number" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Name
-            <span class="sort-arrow" @click="setSort('Members_Name', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Members_Name', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Members_Name" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            E-Mail
-            <span class="sort-arrow" @click="setSort('E_Mail', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('E_Mail', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.E_Mail" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Mobile
-            <span class="sort-arrow" @click="setSort('Mobile', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Mobile', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Mobile" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Car_Reg
-            <span class="sort-arrow" @click="setSort('Car_Reg', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Car_Reg', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Car_Reg" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Type
-            <span class="sort-arrow" @click="setSort('Member_Type', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Member_Type', 'desc')">&#8595;</span>
-            <select v-model="columnFilters.Member_Type" @change="onFilterChange" class="column-filter">
-              <option value=""></option>
-              <option value="Ordinary">Ordinary</option>
-              <option value="Senior Citizen">Senior Citizen</option>
-              <option value="Senior 75+">Senior 75+</option>
-              <option value="Octagenarian">Octagenarian</option>
-              <option value="Junior">Junior</option>
-              <option value="Honorary">Honorary</option>
-              <option value="Paused">Paused</option>
-              <option value="Resigned">Resigned</option>
-            </select>
-          </th>
-          <th>
-            EA_Licence
-            <span class="sort-arrow" @click="setSort('EA_Licence', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('EA_Licence', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.EA_Licence" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Licence Expiry
-            <span class="sort-arrow" @click="setSort('Licence_Exp', 'asc')">&#8593;</span>
-            <span class="sort-arrow" @click="setSort('Licence_Exp', 'desc')">&#8595;</span>
-            <input v-model="columnFilters.Licence_Exp" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Paid Up?
-            <input v-model="columnFilters.Paid_Up_2026" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Paused?
-            <input v-model="columnFilters.Paused" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
-          <th>
-            Resigned?
-            <input v-model="columnFilters.Resigned" @input="onFilterChange" class="column-filter" placeholder="Filter" />
-          </th>
+          <th v-for="field in orderedMemberFields" :key="field">{{ field }}</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="member in members" :key="member.id || member.ID || member.Number">
-          <td>{{ member.ID }}</td>
-          <td>
-            <a href="#" @click.prevent="lookupMemberByNumber(member.Number)" class="member-link">
-              {{ member.Number }}
-            </a>
+          <td v-for="field in orderedMemberFields" :key="field">
+            <span v-if="field === 'E_Mail' && member[field]">
+              <a :href="`mailto:${member[field]}`">{{ member[field] }}</a>
+            </span>
+            <span v-else>{{ member[field] }}</span>
           </td>
-          <td>
-            <a href="#" @click.prevent="openMemberEdit(member)" class="member-link">
-              {{ member.Members_Name }}
-            </a>
-          </td>
-          <td>
-            <a v-if="member.E_Mail" :href="`mailto:${member.E_Mail}`">{{ member.E_Mail }}</a>
-            <span v-else>-</span>
-          </td>
-          <td>{{ member.Mobile }}</td>
-          <td>{{ member.Car_Reg }}</td>
-          <td>{{ member.Member_Type }}</td>
-          <td>{{ member.EA_Licence }}</td>
-          <td :style="getExpiryDateStyle(member.Licence_Exp)">{{ member.Licence_Exp }}</td>
-          <td>{{ member.Paid_Up_2026 }}</td>
-          <td>{{ member.Paused }}</td>
-          <td>{{ member.Resigned }}</td>
         </tr>
       </tbody>
     </table>
@@ -178,17 +86,15 @@ import {
   prevPage,
   firstPage,
   lastPage,
-  goToPage,
-  onPageSizeChange,
-  lookupMember,
-  lookupMemberByNumber,
-  hideLookupDetails,
-  selectMemberForEdit,
-  getExpiryDateStyle,
+  fieldOrderConfig,
+  loadFieldOrderConfig,
 } from '../store.js';
 
 export default {
   name: 'MembershipAdmin',
+  created() {
+    loadFieldOrderConfig();
+  },
   computed: {
     loggedInClub: () => store.loggedInClub,
     members: () => store.members,
@@ -210,6 +116,14 @@ export default {
     },
     lookupResult: () => store.lookupResult,
     lookupError: () => store.lookupError,
+    orderedMemberFields() {
+      if (fieldOrderConfig.loaded && fieldOrderConfig.order['membership_admin']) {
+        const sample = this.members[0] || {};
+        return fieldOrderConfig.order['membership_admin'].filter(f => f in sample);
+      }
+      const sample = this.members[0] || {};
+      return Object.keys(sample);
+    },
   },
   methods: {
     goHome() {
