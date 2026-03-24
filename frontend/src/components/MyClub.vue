@@ -32,23 +32,47 @@
           <tr>
             <th>Field</th>
             <th>Value</th>
+            <th>Field</th>
+            <th>Value</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="field in orderedFields" :key="field">
-            <td>{{ formatFieldName(field) }}</td>
-            <td>
-              <span v-if="!isEditing">{{ formatValue(memberData[field]) }}</span>
+          <tr v-for="row in fieldRows" :key="row[0]">
+            <td v-if="row[0]">{{ formatFieldName(row[0]) }}</td>
+            <td v-if="row[0]">
+              <span v-if="!isEditing">{{ formatValue(memberData[row[0]]) }}</span>
               <input
                 v-else
-                v-model="editData[field]"
+                v-model="editData[row[0]]"
                 class="my-club-input"
-                :disabled="isReadOnlyField(field)"
+                :disabled="isReadOnlyField(row[0])"
+              />
+            </td>
+            <td v-if="row[1]">{{ formatFieldName(row[1]) }}</td>
+            <td v-if="row[1]">
+              <span v-if="!isEditing">{{ formatValue(memberData[row[1]]) }}</span>
+              <input
+                v-else
+                v-model="editData[row[1]]"
+                class="my-club-input"
+                :disabled="isReadOnlyField(row[1])"
               />
             </td>
           </tr>
         </tbody>
       </table>
+      computed: {
+        // ...existing code...
+        fieldRows() {
+          // Group fields into pairs for 4-column table
+          const fields = this.orderedFields;
+          const rows = [];
+          for (let i = 0; i < fields.length; i += 2) {
+            rows.push([fields[i], fields[i + 1] || null]);
+          }
+          return rows;
+        },
+        // ...existing code...
     </div>
   </div>
 </template>
