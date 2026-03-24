@@ -559,6 +559,7 @@ export default {
     };
   },
   created() {
+    document.title = 'HLaS Admin login';
     // Restore session from localStorage if available
     const saved = localStorage.getItem('hlasAdminToken');
     if (saved) {
