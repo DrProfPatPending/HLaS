@@ -14,7 +14,11 @@ COPY backend/requirements.txt /tmp/requirements.txt
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r /tmp/requirements.txt gunicorn
 
+
+# Copy backend code
 COPY backend /app
+# Ensure field_order.json is present at /app/field_order.json for the API
+COPY backend/field_order.json /app/field_order.json
 
 RUN mkdir -p /data /data/club_logos /data/ID_photos \
     && cp -n /app/clubs.config.json /data/clubs.config.json || true \
