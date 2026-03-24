@@ -29,6 +29,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       HLAS_USE_POSTGRES_READS: ${HLAS_USE_POSTGRES_READS:-false}
       DATABASE_URL: ${DATABASE_URL:-}
+      GAAFFS_SMTP_PASSWORD: ${GAAFFS_SMTP_PASSWORD}
     volumes:
       - hlas_data:/data
     restart: unless-stopped
