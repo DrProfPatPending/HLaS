@@ -137,7 +137,9 @@ export default {
     prevPage,
     firstPage,
     lastPage,
-    goToPage,
+    goToPage(pageNum) {
+      store.currentPage = pageNum;
+    },
     onPageSizeChange,
     lookupMember,
     lookupMemberByNumber,
