@@ -90,7 +90,9 @@ export default {
     };
   },
   created() {
-    // ...existing created code...
+    // Debug: Log created() execution and API_BASE_URL
+    // eslint-disable-next-line no-console
+    console.log('[AdminApp.vue] created() hook running. API_BASE_URL:', typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '(undefined)');
     this.loadFieldOrder();
   },
   methods: {
