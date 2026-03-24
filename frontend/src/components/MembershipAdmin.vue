@@ -90,6 +90,8 @@ import {
   fieldOrderConfig,
   loadFieldOrderConfig,
   onPageSizeChange,
+  lookupMember,
+  lookupMemberByNumber,
 } from '../store.js';
 
 export default {
