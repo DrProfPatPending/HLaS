@@ -10,7 +10,7 @@
         "host": "smtp.hostinger.com",
         "port": 465,
         "username": "committee@gaaffs.org",
-        "password": "REMOVED",
+        "password": "${GAAFFS_SMTP_PASSWORD}",
         "fromEmail": "committee@gaaffs.org",
         "fromName": "GAAFFS Newsletter",
         "useSsl": true,

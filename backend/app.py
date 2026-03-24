@@ -296,10 +296,17 @@ def get_smtp_config_for_club(club_short_name):
     club_cfg = next((c for c in clubs if c.get('shortName') == club_short_name), {})
     smtp = club_cfg.get('smtp', {}) or {}
 
+
     host      = smtp.get('host', '').strip()     or os.getenv('SMTP_HOST', '').strip()
     port_raw  = str(smtp.get('port', '') or os.getenv('SMTP_PORT', '587')).strip()
     username  = smtp.get('username', '').strip()  or os.getenv('SMTP_USERNAME', '').strip()
-    password  = smtp.get('password', '').strip()  or os.getenv('SMTP_PASSWORD', '').strip()
+    # Support environment variable substitution for password
+    password_val = smtp.get('password', '').strip() or os.getenv('SMTP_PASSWORD', '').strip()
+    if password_val.startswith('${') and password_val.endswith('}'):
+        env_var = password_val[2:-1]
+        password = os.getenv(env_var, '')
+    else:
+        password = password_val
     from_email = smtp.get('fromEmail', '').strip() or os.getenv('SMTP_FROM_EMAIL', username).strip()
     from_name  = smtp.get('fromName', '').strip()  or os.getenv('SMTP_FROM_NAME', f'{club_short_name} Newsletter').strip()
 
