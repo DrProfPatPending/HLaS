@@ -89,6 +89,7 @@ import {
   lastPage,
   fieldOrderConfig,
   loadFieldOrderConfig,
+  onPageSizeChange,
 } from '../store.js';
 
 export default {
