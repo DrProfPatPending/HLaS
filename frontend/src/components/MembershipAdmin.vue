@@ -4,7 +4,7 @@
       <button type="button" @click="goHome">Back to Home</button>
       <h1>{{ loggedInClub }} Members</h1>
     </div>
-    <table class="member-table">
+    <table v-if="orderedMemberFields.length && members.length" class="member-table">
       <thead>
         <tr>
           <th v-for="field in orderedMemberFields" :key="field">{{ field }}</th>
@@ -21,6 +21,7 @@
         </tr>
       </tbody>
     </table>
+    <div v-else style="margin: 24px 0; color: #888;">No members found.</div>
     <div class="pagination-controls">
       <button :disabled="currentPage === 1" @click="firstPage">First Page</button>
       <button :disabled="currentPage === 1" @click="prevPage">Previous Page</button>
@@ -117,6 +118,7 @@ export default {
     lookupResult: () => store.lookupResult,
     lookupError: () => store.lookupError,
     orderedMemberFields() {
+      if (!this.members || !this.members.length) return [];
       if (fieldOrderConfig.loaded && fieldOrderConfig.order['membership_admin']) {
         const sample = this.members[0] || {};
         return fieldOrderConfig.order['membership_admin'].filter(f => f in sample);
