@@ -55,7 +55,7 @@
             <option v-for="ctx in fieldOrderContexts" :key="ctx" :value="ctx">{{ ctx }}</option>
           </select>
         </div>
-        <div v-if="fieldOrderEdit.length">
+        <div v-if="Array.isArray(fieldOrderEdit) && fieldOrderEdit.length">
           <table class="clubs-table" style="max-width:700px;margin-top:16px;">
             <thead><tr><th>Field Name</th><th>Actions</th></tr></thead>
             <tbody>
