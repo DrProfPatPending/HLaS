@@ -43,7 +43,90 @@
       <div class="tab-nav">
         <button :class="['tab-btn', activeTab === 'clubs' ? 'tab-btn-active' : '']" @click="switchTab('clubs')">Clubs Configuration</button>
         <button :class="['tab-btn', activeTab === 'users' ? 'tab-btn-active' : '']" @click="switchTab('users')">User Administration</button>
+        <button :class="['tab-btn', activeTab === 'fields' ? 'tab-btn-active' : '']" @click="switchTab('fields')">Field Order</button>
       </div>
+      <!-- ===== FIELD ORDER TAB ===== -->
+      <div v-show="activeTab === 'fields'">
+        <h1>Field Order Configuration</h1>
+        <div v-if="fieldOrderStatus" :class="fieldOrderStatusError ? 'error-msg' : 'success-msg'">{{ fieldOrderStatus }}</div>
+        <div>
+          <label for="field-order-context">Context:</label>
+          <select id="field-order-context" v-model="fieldOrderContext" @change="loadFieldOrderContext">
+            <option v-for="ctx in fieldOrderContexts" :key="ctx" :value="ctx">{{ ctx }}</option>
+          </select>
+        </div>
+        <div v-if="fieldOrderEdit.length">
+          <table class="clubs-table" style="max-width:700px;margin-top:16px;">
+            <thead><tr><th>Field Name</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr v-for="(field, idx) in fieldOrderEdit" :key="field">
+                <td>{{ field }}</td>
+                <td>
+                  <button @click="moveField(idx, -1)" :disabled="idx === 0">↑</button>
+                  <button @click="moveField(idx, 1)" :disabled="idx === fieldOrderEdit.length-1">↓</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="save-btn" @click="saveFieldOrder" style="margin-top:12px;">Save Order</button>
+        </div>
+        <div v-else style="margin-top:16px;">No fields found for this context.</div>
+      </div>
+  data() {
+    return {
+      // ...existing data...
+      fieldOrder: {},
+      fieldOrderContexts: [],
+      fieldOrderContext: 'default',
+      fieldOrderEdit: [],
+      fieldOrderStatus: '',
+      fieldOrderStatusError: false,
+    };
+  },
+  created() {
+    // ...existing created code...
+    this.loadFieldOrder();
+  },
+  methods: {
+    // ...existing methods...
+    loadFieldOrder() {
+      axios.get(`${API_BASE_URL}/admin/field-order`, { headers: this.authHeaders() })
+        .then(res => {
+          this.fieldOrder = res.data.field_order || {};
+          this.fieldOrderContexts = Object.keys(this.fieldOrder);
+          this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
+          this.loadFieldOrderContext();
+        })
+        .catch(err => {
+          this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
+          this.fieldOrderStatusError = true;
+        });
+    },
+    loadFieldOrderContext() {
+      this.fieldOrderEdit = (this.fieldOrder[this.fieldOrderContext] || []).slice();
+    },
+    moveField(idx, dir) {
+      const newIdx = idx + dir;
+      if (newIdx < 0 || newIdx >= this.fieldOrderEdit.length) return;
+      const arr = this.fieldOrderEdit;
+      [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+      this.fieldOrderEdit = arr.slice();
+    },
+    saveFieldOrder() {
+      const updated = { ...this.fieldOrder, [this.fieldOrderContext]: this.fieldOrderEdit };
+      axios.post(`${API_BASE_URL}/admin/field-order`, updated, { headers: this.authHeaders() })
+        .then(() => {
+          this.fieldOrderStatus = 'Field order updated.';
+          this.fieldOrderStatusError = false;
+          this.fieldOrder = updated;
+        })
+        .catch(err => {
+          this.fieldOrderStatus = err.response?.data?.error || 'Failed to update field order';
+          this.fieldOrderStatusError = true;
+        });
+    },
+    // ...existing methods...
+  },
 
       <!-- ===== CLUBS TAB ===== -->
       <div v-show="activeTab === 'clubs'">
