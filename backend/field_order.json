@@ -1,0 +1,11 @@
+{
+  "default": [
+    "ID", "Number", "Members_Name", "Title", "First_Name", "Last_Name", "Photo_Path", "Preferred_Name", "First_Names", "Paused", "Resigned", "Member_Type", "Subs_Expected", "Subs_paid", "Join_Fee", "Paid_Up_2026", "Photo_Received", "In_WhatsApp", "In_FB", "Date_of_Birth", "Age", "New_Member_2026", "Paid_up_Card_Sent", "CR2023", "CR2024", "CR2025", "Details_Confirmed_2026", "Full_Address", "Address_-_Street_Address", "Address_-_Address_Line_2", "Address_-_City", "County", "Address_-_State/Prov/Region", "Address_-_ZIP/Postal", "Address_-_Country", "Phone", "Mobile", "E_Mail", "EA_Licence", "Licence_Exp", "Car_Reg", "username", "password"
+  ],
+  "my_club": [
+    "ID", "Number", "Members_Name", "Title", "First_Name", "Last_Name", "Photo_Path", "Preferred_Name", "First_Names", "Paused", "Resigned", "Member_Type", "Subs_Expected", "Subs_paid", "Join_Fee", "Paid_Up_2026", "Photo_Received", "In_WhatsApp", "In_FB", "Date_of_Birth", "Age", "New_Member_2026", "Paid_up_Card_Sent", "CR2023", "CR2024", "CR2025", "Details_Confirmed_2026", "Full_Address", "Address_-_Street_Address", "Address_-_Address_Line_2", "Address_-_City", "County", "Address_-_State/Prov/Region", "Address_-_ZIP/Postal", "Address_-_Country", "Phone", "Mobile", "E_Mail", "EA_Licence", "Licence_Exp", "Car_Reg", "username", "password"
+  ],
+  "membership_admin": [
+    "ID", "Number", "Members_Name", "Title", "First_Name", "Last_Name", "Photo_Path", "Preferred_Name", "First_Names", "Paused", "Resigned", "Member_Type", "Subs_Expected", "Subs_paid", "Join_Fee", "Paid_Up_2026", "Photo_Received", "In_WhatsApp", "In_FB", "Date_of_Birth", "Age", "New_Member_2026", "Paid_up_Card_Sent", "CR2023", "CR2024", "CR2025", "Details_Confirmed_2026", "Full_Address", "Address_-_Street_Address", "Address_-_Address_Line_2", "Address_-_City", "County", "Address_-_State/Prov/Region", "Address_-_ZIP/Postal", "Address_-_Country", "Phone", "Mobile", "E_Mail", "EA_Licence", "Licence_Exp", "Car_Reg", "username", "password"
+  ]
+}
