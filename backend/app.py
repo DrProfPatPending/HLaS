@@ -633,6 +633,8 @@ def create_app():
     app_instance.register_blueprint(create_admin_blueprint(route_deps))
     app_instance.register_blueprint(create_admin_user_blueprint(route_deps))
     app_instance.register_blueprint(create_role_blueprint(route_deps))
+    from routes.field_order_routes import create_field_order_blueprint
+    app_instance.register_blueprint(create_field_order_blueprint())
 
     return app_instance
 
