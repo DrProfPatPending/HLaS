@@ -99,9 +99,13 @@ export default {
       axios.get(`${API_BASE_URL}/admin/field-order`, { headers: this.authHeaders() })
         .then(res => {
           this.fieldOrder = res.data.field_order || {};
-          this.fieldOrderContexts = Object.keys(this.fieldOrder);
-          this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
-          this.loadFieldOrderContext();
+          // Force reactivity for fieldOrderContexts
+          this.fieldOrderContexts = [];
+          this.$nextTick(() => {
+            this.fieldOrderContexts = Object.keys(this.fieldOrder);
+            this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
+            this.loadFieldOrderContext();
+          });
         })
         .catch(err => {
           this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
