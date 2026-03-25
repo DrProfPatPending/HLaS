@@ -56,13 +56,15 @@ with app.app_context():
         print(f"✓ Found app_admin role (ID: {app_admin_role_id})")
         
         # Create/update rob@scoffin.com
-        print("\nSettingupuser 'rob@scoffin.com'...")
+        print("\nSetting up user 'rob@scoffin.com'...")
         rob_user = session.execute(
             text("SELECT id FROM members WHERE username = 'rob@scoffin.com' LIMIT 1")
         ).scalar()
-        
+
+        # Always generate the password hash for both tables
+        password_hash = generate_password_hash('password', method='pbkdf2')
+
         if not rob_user:
-            password_hash = generate_password_hash('password', method='pbkdf2')
             session.execute(text("""
                 INSERT INTO members (
                     club_id, members_name, first_name, last_name, username, password,
@@ -85,12 +87,35 @@ with app.app_context():
         else:
             print(f"✓ User rob@scoffin.com already exists (ID: {rob_user})")
             # Update password
-            password_hash = generate_password_hash('password', method='pbkdf2')
             session.execute(text("""
                 UPDATE members SET password = :password WHERE id = :id
             """), {'password': password_hash, 'id': rob_user})
             session.commit()
             print("✓ Updated password for rob@scoffin.com")
+
+        # --- Sync password_hash in app_users table ---
+        app_user_id = session.execute(
+            text("SELECT id FROM app_users WHERE username = 'rob@scoffin.com' LIMIT 1")
+        ).scalar()
+        if app_user_id:
+            session.execute(text("""
+                UPDATE app_users SET password_hash = :password_hash WHERE id = :id
+            """), {'password_hash': password_hash, 'id': app_user_id})
+            session.commit()
+            print("✓ Updated password_hash for rob@scoffin.com in app_users")
+        else:
+            # Insert if not present (should not happen, but for safety)
+            session.execute(text("""
+                INSERT INTO app_users (username, email, display_name, password_hash, is_active, created_at, updated_at)
+                VALUES (:username, :email, :display_name, :password_hash, TRUE, NOW(), NOW())
+            """), {
+                'username': 'rob@scoffin.com',
+                'email': 'rob@scoffin.com',
+                'display_name': 'Rob Scoffin',
+                'password_hash': password_hash
+            })
+            session.commit()
+            print("✓ Inserted rob@scoffin.com into app_users with password_hash")
         
         # Create/update admin user
         print("\nSetting up user 'admin'...")
