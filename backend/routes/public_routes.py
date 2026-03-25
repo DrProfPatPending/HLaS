@@ -69,11 +69,29 @@ def create_public_blueprint(deps):
             return jsonify({'error': 'Photo directory not found'}), 404
         return send_from_directory(photo_dir, filename)
 
+
+    from sqlalchemy import select
+    from db_models import club_logos
+    from flask import Response, current_app
+
     @bp.route('/club_logo/<short_name>', methods=['GET'])
     def club_logo(short_name):
-        logo_path = get_club_logo_path(short_name)
-        if not os.path.exists(logo_path):
-            return jsonify({'error': 'Logo not found'}), 404
-        return send_from_directory(CLUB_LOGOS_DIR, os.path.basename(logo_path))
+        # Use SQLAlchemy to fetch the logo from the database
+        db_engine = deps.get('db_engine')
+        if db_engine is None:
+            # fallback: try current_app if available
+            db_engine = getattr(current_app, 'db_engine', None)
+        if db_engine is None:
+            return jsonify({'error': 'Database engine not available'}), 500
+        with db_engine.connect() as conn:
+            stmt = select([
+                club_logos.c.image_data,
+                club_logos.c.mime_type
+            ]).where(club_logos.c.club_short_name == short_name)
+            result = conn.execute(stmt).first()
+            if not result:
+                return jsonify({'error': 'Logo not found'}), 404
+            image_data, mime_type = result
+            return Response(image_data, mimetype=mime_type)
 
     return bp

@@ -205,6 +205,16 @@ member_role_assignments = Table(
     # not a standard UniqueConstraint, due to nullable club_id.
 )
 
+club_logos = Table(
+    "club_logos",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("club_short_name", String(32), unique=True, nullable=False),
+    Column("image_data", sa.LargeBinary, nullable=False),
+    Column("mime_type", String(64), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
 security_audit_log = Table(
     "security_audit_log",
     metadata,
