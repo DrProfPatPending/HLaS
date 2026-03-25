@@ -60,463 +60,463 @@ export default {
       // Add other state as needed for your admin UI
     };
   },
-  // ...existing JS code (created, computed, methods, etc.) goes here
-  // ===== FIELD ORDER TAB METHODS =====
-  loadFieldOrder() {
-    // Debug: log when called, API_BASE_URL, and Authorization header
-    // eslint-disable-next-line no-console
-    console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
-    const auth = this.authHeaders();
-    // eslint-disable-next-line no-console
-    console.log('[AdminApp.vue] loadFieldOrder() Authorization header:', auth);
-    axios.get(`${API_BASE_URL}/admin/field-order`, { headers: auth })
-      .then(res => {
+    methods: {
+      // ===== FIELD ORDER TAB METHODS =====
+      loadFieldOrder() {
+        // Debug: log when called, API_BASE_URL, and Authorization header
         // eslint-disable-next-line no-console
-        console.log('[AdminApp.vue] /admin/field-order response:', res);
-        this.fieldOrder = res.data.field_order || {};
-        // Force reactivity for fieldOrderContexts
-        this.fieldOrderContexts = [];
-        this.$nextTick(() => {
-          this.fieldOrderContexts = Object.keys(this.fieldOrder);
-          this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
-          this.loadFieldOrderContext();
-        });
-      })
-      .catch(err => {
+        console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
+        const auth = this.authHeaders();
         // eslint-disable-next-line no-console
-        console.error('[AdminApp.vue] /admin/field-order error:', err, err?.response);
-        this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
-        this.fieldOrderStatusError = true;
-      });
-  },
-  loadFieldOrderContext() {
-    this.fieldOrderEdit = (this.fieldOrder[this.fieldOrderContext] || []).slice();
-  },
-  moveField(idx, dir) {
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= this.fieldOrderEdit.length) return;
-    const arr = this.fieldOrderEdit;
-    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-    this.fieldOrderEdit = arr.slice();
-  },
-  saveFieldOrder() {
-    const updated = { ...this.fieldOrder, [this.fieldOrderContext]: this.fieldOrderEdit };
-    axios.post(`${API_BASE_URL}/admin/field-order`, updated, { headers: this.authHeaders() })
-      .then(() => {
-        this.fieldOrderStatus = 'Field order updated.';
-        this.fieldOrderStatusError = false;
-        this.fieldOrder = updated;
-      })
-      .catch(err => {
-        this.fieldOrderStatus = err.response?.data?.error || 'Failed to update field order';
-        this.fieldOrderStatusError = true;
-      });
-  },
-  authHeaders() {
-    return { Authorization: `Bearer ${this.adminToken}` };
-  },
-  showStatus(msg, isError = false) {
-    this.statusMsg = msg;
-    this.statusMsgError = isError;
-    setTimeout(() => { this.statusMsg = ''; }, 4000);
-    },
-    login() {
-      this.loginError = '';
-      axios.post(`${API_BASE_URL}/admin/login`, {
-        username: this.loginUsername,
-        password: this.loginPassword,
-      })
-        .then(res => {
-          if (res.data.success) {
-            this.adminToken = res.data.token;
-            localStorage.setItem('hlasAdminToken', this.adminToken);
-            this.loggedIn = true;
-            this.loginPassword = '';
-            this.loadClubs();
-            // Debug: call loadFieldOrder after login
+        console.log('[AdminApp.vue] loadFieldOrder() Authorization header:', auth);
+        axios.get(`${API_BASE_URL}/admin/field-order`, { headers: auth })
+          .then(res => {
             // eslint-disable-next-line no-console
-            console.log('[AdminApp.vue] login() success, calling loadFieldOrder()');
-            this.loadFieldOrder();
-          } else {
-            this.loginError = res.data.error || 'Login failed';
-          }
+            console.log('[AdminApp.vue] /admin/field-order response:', res);
+            this.fieldOrder = res.data.field_order || {};
+            // Force reactivity for fieldOrderContexts
+            this.fieldOrderContexts = [];
+            this.$nextTick(() => {
+              this.fieldOrderContexts = Object.keys(this.fieldOrder);
+              this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
+              this.loadFieldOrderContext();
+            });
+          })
+          .catch(err => {
+            // eslint-disable-next-line no-console
+            console.error('[AdminApp.vue] /admin/field-order error:', err, err?.response);
+            this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
+            this.fieldOrderStatusError = true;
+          });
+      },
+      loadFieldOrderContext() {
+        this.fieldOrderEdit = (this.fieldOrder[this.fieldOrderContext] || []).slice();
+      },
+      moveField(idx, dir) {
+        const newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= this.fieldOrderEdit.length) return;
+        const arr = this.fieldOrderEdit;
+        [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+        this.fieldOrderEdit = arr.slice();
+      },
+      saveFieldOrder() {
+        const updated = { ...this.fieldOrder, [this.fieldOrderContext]: this.fieldOrderEdit };
+        axios.post(`${API_BASE_URL}/admin/field-order`, updated, { headers: this.authHeaders() })
+          .then(() => {
+            this.fieldOrderStatus = 'Field order updated.';
+            this.fieldOrderStatusError = false;
+            this.fieldOrder = updated;
+          })
+          .catch(err => {
+            this.fieldOrderStatus = err.response?.data?.error || 'Failed to update field order';
+            this.fieldOrderStatusError = true;
+          });
+      },
+      authHeaders() {
+        return { Authorization: `Bearer ${this.adminToken}` };
+      },
+      showStatus(msg, isError = false) {
+        this.statusMsg = msg;
+        this.statusMsgError = isError;
+        setTimeout(() => { this.statusMsg = ''; }, 4000);
+      },
+      login() {
+        this.loginError = '';
+        axios.post(`${API_BASE_URL}/admin/login`, {
+          username: this.loginUsername,
+          password: this.loginPassword,
         })
-        .catch(err => {
-          this.loginError = err.response?.data?.error || 'Login failed';
-        });
-    },
-    logout() {
-      axios.post(`${API_BASE_URL}/admin/logout`, {}, { headers: this.authHeaders() }).catch(() => {});
-      this.adminToken = null;
-      localStorage.removeItem('hlasAdminToken');
-      this.loggedIn = false;
-      this.clubs = [];
-      this.loginUsername = '';
-      this.loginPassword = '';
-    },
-    loadClubs() {
-      axios.get(`${API_BASE_URL}/admin/clubs`, { headers: this.authHeaders() })
-        .then(res => { this.clubs = res.data.clubs || []; })
-        .catch(err => {
-          if (err.response?.status === 401) {
-            this.logout();
-          }
-        });
-    },
-    startEdit(club) {
-      this.editingShortName = club.shortName;
-      this.editForm = { ...club };
-    },
-    cancelEdit() {
-      this.editingShortName = null;
-      this.editForm = {};
-    },
-    saveEdit() {
-      axios.put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.editingShortName)}`,
-        this.editForm,
-        { headers: this.authHeaders() })
-        .then(() => {
-          this.editingShortName = null;
-          this.editForm = {};
-          this.loadClubs();
-          this.showStatus('Club updated successfully.');
-        })
-        .catch(err => {
-          this.showStatus(err.response?.data?.error || 'Update failed', true);
-        });
-    },
-    deleteClub(shortName) {
-      if (!window.confirm(`Delete club "${shortName}"? This cannot be undone.`)) return;
-      axios.delete(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(shortName)}`,
-        { headers: this.authHeaders() })
-        .then(() => {
-          this.loadClubs();
-          this.showStatus(`Club "${shortName}" deleted.`);
-        })
-        .catch(err => {
-          this.showStatus(err.response?.data?.error || 'Delete failed', true);
-        });
-    },
-    onNewClubLogoChange(event) {
-      const file = event.target.files && event.target.files.length ? event.target.files[0] : null;
-      if (!file) {
-        this.newClubLogoFile = null;
-        return;
-      }
-      const isPngType = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
-      if (!isPngType) {
-        this.newClubLogoFile = null;
-        event.target.value = '';
-        this.showStatus('Logo must be a PNG file.', true);
-        return;
-      }
-      this.newClubLogoFile = file;
-    },
-    addClub() {
-      if (!this.newClub.shortName.trim()) {
-        this.showStatus('Short Name is required.', true);
-        return;
-      }
-      const formData = new FormData();
-      formData.append('shortName', this.newClub.shortName);
-      formData.append('fullName', this.newClub.fullName);
-      formData.append('websiteUrl', this.newClub.websiteUrl);
-      formData.append('adminEmail', this.newClub.adminEmail);
-      formData.append('description', this.newClub.description);
-      if (this.newClubLogoFile) {
-        formData.append('logoFile', this.newClubLogoFile);
-      }
-
-      axios.post(`${API_BASE_URL}/admin/clubs`, formData, { headers: this.authHeaders() })
-        .then(() => {
-          this.newClub = { shortName: '', fullName: '', websiteUrl: '', adminEmail: '', description: '' };
+          .then(res => {
+            if (res.data.success) {
+              this.adminToken = res.data.token;
+              localStorage.setItem('hlasAdminToken', this.adminToken);
+              this.loggedIn = true;
+              this.loginPassword = '';
+              this.loadClubs();
+              // Debug: call loadFieldOrder after login
+              // eslint-disable-next-line no-console
+              console.log('[AdminApp.vue] login() success, calling loadFieldOrder()');
+              this.loadFieldOrder();
+            } else {
+              this.loginError = res.data.error || 'Login failed';
+            }
+          })
+          .catch(err => {
+            this.loginError = err.response?.data?.error || 'Login failed';
+          });
+      },
+      logout() {
+        axios.post(`${API_BASE_URL}/admin/logout`, {}, { headers: this.authHeaders() }).catch(() => {});
+        this.adminToken = null;
+        localStorage.removeItem('hlasAdminToken');
+        this.loggedIn = false;
+        this.clubs = [];
+        this.loginUsername = '';
+        this.loginPassword = '';
+      },
+      loadClubs() {
+        axios.get(`${API_BASE_URL}/admin/clubs`, { headers: this.authHeaders() })
+          .then(res => { this.clubs = res.data.clubs || []; })
+          .catch(err => {
+            if (err.response?.status === 401) {
+              this.logout();
+            }
+          });
+      },
+      startEdit(club) {
+        this.editingShortName = club.shortName;
+        this.editForm = { ...club };
+      },
+      cancelEdit() {
+        this.editingShortName = null;
+        this.editForm = {};
+      },
+      saveEdit() {
+        axios.put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.editingShortName)}`,
+          this.editForm,
+          { headers: this.authHeaders() })
+          .then(() => {
+            this.editingShortName = null;
+            this.editForm = {};
+            this.loadClubs();
+            this.showStatus('Club updated successfully.');
+          })
+          .catch(err => {
+            this.showStatus(err.response?.data?.error || 'Update failed', true);
+          });
+      },
+      deleteClub(shortName) {
+        if (!window.confirm(`Delete club "${shortName}"? This cannot be undone.`)) return;
+        axios.delete(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(shortName)}`,
+          { headers: this.authHeaders() })
+          .then(() => {
+            this.loadClubs();
+            this.showStatus(`Club "${shortName}" deleted.`);
+          })
+          .catch(err => {
+            this.showStatus(err.response?.data?.error || 'Delete failed', true);
+          });
+      },
+      onNewClubLogoChange(event) {
+        const file = event.target.files && event.target.files.length ? event.target.files[0] : null;
+        if (!file) {
           this.newClubLogoFile = null;
-          if (this.$refs.newClubLogoInput) {
-            this.$refs.newClubLogoInput.value = '';
-          }
-          this.loadClubs();
-          this.showStatus('Club added successfully.');
-        })
-        .catch(err => {
-          this.showStatus(err.response?.data?.error || 'Add failed', true);
-        });
-    },
-    loadSmtpConfig() {
-      if (!this.smtpSelectedClub) { this.smtpForm = null; return; }
-      this.smtpStatusMsg = '';
-      axios.get(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp`,
-        { headers: this.authHeaders() })
-        .then(res => {
-          this.smtpForm = { ...res.data.smtp };
-        })
-        .catch(err => {
-          this.smtpStatusMsg = err.response?.data?.error || 'Failed to load SMTP config';
+          return;
+        }
+        const isPngType = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+        if (!isPngType) {
+          this.newClubLogoFile = null;
+          event.target.value = '';
+          this.showStatus('Logo must be a PNG file.', true);
+          return;
+        }
+        this.newClubLogoFile = file;
+      },
+      addClub() {
+        if (!this.newClub.shortName.trim()) {
+          this.showStatus('Short Name is required.', true);
+          return;
+        }
+        const formData = new FormData();
+        formData.append('shortName', this.newClub.shortName);
+        formData.append('fullName', this.newClub.fullName);
+        formData.append('websiteUrl', this.newClub.websiteUrl);
+        formData.append('adminEmail', this.newClub.adminEmail);
+        formData.append('description', this.newClub.description);
+        if (this.newClubLogoFile) {
+          formData.append('logoFile', this.newClubLogoFile);
+        }
+
+        axios.post(`${API_BASE_URL}/admin/clubs`, formData, { headers: this.authHeaders() })
+          .then(() => {
+            this.newClub = { shortName: '', fullName: '', websiteUrl: '', adminEmail: '', description: '' };
+            this.newClubLogoFile = null;
+            if (this.$refs.newClubLogoInput) {
+              this.$refs.newClubLogoInput.value = '';
+            }
+            this.loadClubs();
+            this.showStatus('Club added successfully.');
+          })
+          .catch(err => {
+            this.showStatus(err.response?.data?.error || 'Add failed', true);
+          });
+      },
+      loadSmtpConfig() {
+        if (!this.smtpSelectedClub) { this.smtpForm = null; return; }
+        this.smtpStatusMsg = '';
+        axios.get(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp`,
+          { headers: this.authHeaders() })
+          .then(res => {
+            this.smtpForm = { ...res.data.smtp };
+          })
+          .catch(err => {
+            this.smtpStatusMsg = err.response?.data?.error || 'Failed to load SMTP config';
+            this.smtpStatusError = true;
+          });
+      },
+      saveSmtpConfig() {
+        this.smtpStatusMsg = '';
+        axios.put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp`,
+          this.smtpForm,
+          { headers: this.authHeaders() })
+          .then(() => {
+            this.smtpStatusMsg = 'SMTP settings saved.';
+            this.smtpStatusError = false;
+            this.loadSmtpConfig(); // Reload to refresh passwordSet
+          })
+          .catch(err => {
+            this.smtpStatusMsg = err.response?.data?.error || 'Save failed';
+            this.smtpStatusError = true;
+          });
+      },
+      testSmtpConfig() {
+        if (!this.smtpTestEmail.trim()) {
+          this.smtpStatusMsg = 'Please enter a recipient email address for the test.';
           this.smtpStatusError = true;
+          return;
+        }
+        this.smtpStatusMsg = 'Sending test email…';
+        this.smtpStatusError = false;
+        axios.post(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp/test`,
+          { toEmail: this.smtpTestEmail },
+          { headers: this.authHeaders() })
+          .then(res => {
+            this.smtpStatusMsg = res.data.message || 'Test email sent successfully.';
+            this.smtpStatusError = false;
+          })
+          .catch(err => {
+            this.smtpStatusMsg = err.response?.data?.error || 'Test email failed';
+            this.smtpStatusError = true;
+          });
+      },
+
+      // ── User Administration ──────────────────────────────────────────────────
+      switchTab(tab) {
+        this.activeTab = tab;
+        if (tab === 'users' && !this.uaUsers.length && !this.uaLoading) {
+          this.loadUserAdmin();
+        }
+        if (tab !== 'users') {
+          this.resetMergeState();
+          this.closeGrantModal();
+          this.uaGrant.statusMsg = '';
+          this.uaGrant.statusError = false;
+        }
+      },
+
+      loadUserAdmin() {
+        this.uaLoading = true;
+        this.uaStatusMsg = '';
+        Promise.all([
+          axios.get(`${API_BASE_URL}/admin/users`,       { headers: this.authHeaders() }),
+          axios.get(`${API_BASE_URL}/admin/roles`,       { headers: this.authHeaders() }),
+          axios.get(`${API_BASE_URL}/admin/clubs-list`,  { headers: this.authHeaders() }),
+        ]).then(([usersRes, rolesRes, clubsRes]) => {
+          this.uaUsers          = usersRes.data.users  || [];
+          this.uaAvailableRoles = rolesRes.data.roles  || [];
+          this.uaClubs          = clubsRes.data.clubs  || [];
+        }).catch(err => {
+          if (err.response?.status === 401) { this.logout(); return; }
+          this.uaStatusMsg  = err.response?.data?.error || 'Failed to load user data';
+          this.uaStatusError = true;
+        }).finally(() => {
+          this.uaLoading = false;
         });
-    },
-    saveSmtpConfig() {
-      this.smtpStatusMsg = '';
-      axios.put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp`,
-        this.smtpForm,
-        { headers: this.authHeaders() })
-        .then(() => {
-          this.smtpStatusMsg = 'SMTP settings saved.';
-          this.smtpStatusError = false;
-          this.loadSmtpConfig(); // Reload to refresh passwordSet
-        })
-        .catch(err => {
-          this.smtpStatusMsg = err.response?.data?.error || 'Save failed';
-          this.smtpStatusError = true;
-        });
-    },
-    testSmtpConfig() {
-      if (!this.smtpTestEmail.trim()) {
-        this.smtpStatusMsg = 'Please enter a recipient email address for the test.';
-        this.smtpStatusError = true;
-        return;
-      }
-      this.smtpStatusMsg = 'Sending test email…';
-      this.smtpStatusError = false;
-      axios.post(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp/test`,
-        { toEmail: this.smtpTestEmail },
-        { headers: this.authHeaders() })
-        .then(res => {
-          this.smtpStatusMsg = res.data.message || 'Test email sent successfully.';
-          this.smtpStatusError = false;
-        })
-        .catch(err => {
-          this.smtpStatusMsg = err.response?.data?.error || 'Test email failed';
-          this.smtpStatusError = true;
-        });
-    },
+      },
 
-    // ── User Administration ──────────────────────────────────────────────────
-    switchTab(tab) {
-      this.activeTab = tab;
-      if (tab === 'users' && !this.uaUsers.length && !this.uaLoading) {
-        this.loadUserAdmin();
-      }
-      if (tab !== 'users') {
-        this.resetMergeState();
-        this.closeGrantModal();
-        this.uaGrant.statusMsg = '';
-        this.uaGrant.statusError = false;
-      }
-    },
+      uaSearchDebounced() {
+        clearTimeout(this.uaSearchTimer);
+        if (this.uaSearch.length < 2) { this.uaSearchResults = []; return; }
+        this.uaSearchTimer = setTimeout(() => {
+          axios.get(`${API_BASE_URL}/admin/users/search`,
+            { params: { q: this.uaSearch }, headers: this.authHeaders() }
+          ).then(res => {
+            this.uaSearchResults = res.data.members || [];
+          }).catch(() => { this.uaSearchResults = []; });
+        }, 300);
+      },
 
-    loadUserAdmin() {
-      this.uaLoading = true;
-      this.uaStatusMsg = '';
-      Promise.all([
-        axios.get(`${API_BASE_URL}/admin/users`,       { headers: this.authHeaders() }),
-        axios.get(`${API_BASE_URL}/admin/roles`,       { headers: this.authHeaders() }),
-        axios.get(`${API_BASE_URL}/admin/clubs-list`,  { headers: this.authHeaders() }),
-      ]).then(([usersRes, rolesRes, clubsRes]) => {
-        this.uaUsers          = usersRes.data.users  || [];
-        this.uaAvailableRoles = rolesRes.data.roles  || [];
-        this.uaClubs          = clubsRes.data.clubs  || [];
-      }).catch(err => {
-        if (err.response?.status === 401) { this.logout(); return; }
-        this.uaStatusMsg  = err.response?.data?.error || 'Failed to load user data';
-        this.uaStatusError = true;
-      }).finally(() => {
-        this.uaLoading = false;
-      });
-    },
+      uaMergeSearchDebounced(which) {
+        const isSource = which === 'source';
+        const query = (isSource ? this.uaMerge.sourceQuery : this.uaMerge.targetQuery) || '';
+        const timerKey = isSource ? 'sourceTimer' : 'targetTimer';
+        const resultsKey = isSource ? 'sourceResults' : 'targetResults';
 
-    uaSearchDebounced() {
-      clearTimeout(this.uaSearchTimer);
-      if (this.uaSearch.length < 2) { this.uaSearchResults = []; return; }
-      this.uaSearchTimer = setTimeout(() => {
-        axios.get(`${API_BASE_URL}/admin/users/search`,
-          { params: { q: this.uaSearch }, headers: this.authHeaders() }
-        ).then(res => {
-          this.uaSearchResults = res.data.members || [];
-        }).catch(() => { this.uaSearchResults = []; });
-      }, 300);
-    },
+        clearTimeout(this.uaMerge[timerKey]);
+        if (query.length < 2) {
+          this.uaMerge[resultsKey] = [];
+          return;
+        }
 
-    uaMergeSearchDebounced(which) {
-      const isSource = which === 'source';
-      const query = (isSource ? this.uaMerge.sourceQuery : this.uaMerge.targetQuery) || '';
-      const timerKey = isSource ? 'sourceTimer' : 'targetTimer';
-      const resultsKey = isSource ? 'sourceResults' : 'targetResults';
+        this.uaMerge[timerKey] = setTimeout(() => {
+          axios.get(`${API_BASE_URL}/admin/users/search`, {
+            params: { q: query },
+            headers: this.authHeaders(),
+          }).then(res => {
+            const list = res.data.members || [];
+            const oppositeUserId = isSource ? this.uaMerge.targetUser?.userId : this.uaMerge.sourceUser?.userId;
+            this.uaMerge[resultsKey] = list.filter(u => u.userId !== oppositeUserId);
+          }).catch(() => {
+            this.uaMerge[resultsKey] = [];
+          });
+        }, 300);
+      },
 
-      clearTimeout(this.uaMerge[timerKey]);
-      if (query.length < 2) {
-        this.uaMerge[resultsKey] = [];
-        return;
-      }
+      selectMergeUser(which, user) {
+        if (which === 'source') {
+          this.uaMerge.sourceUser = user;
+          this.uaMerge.sourceQuery = user.username || '';
+          this.uaMerge.sourceResults = [];
+        } else {
+          this.uaMerge.targetUser = user;
+          this.uaMerge.targetQuery = user.username || '';
+          this.uaMerge.targetResults = [];
+        }
+        this.uaMerge.statusMsg = '';
+        this.uaMerge.statusError = false;
+      },
 
-      this.uaMerge[timerKey] = setTimeout(() => {
-        axios.get(`${API_BASE_URL}/admin/users/search`, {
-          params: { q: query },
+      resetMergeState() {
+        this.uaMerge.sourceQuery = '';
+        this.uaMerge.targetQuery = '';
+        this.uaMerge.sourceResults = [];
+        this.uaMerge.targetResults = [];
+        this.uaMerge.sourceUser = null;
+        this.uaMerge.targetUser = null;
+        this.uaMerge.statusMsg = '';
+        this.uaMerge.statusError = false;
+        this.uaMerge.busy = false;
+        this.uaMergeCleanup.statusMsg = '';
+        this.uaMergeCleanup.statusError = false;
+        this.uaMergeCleanup.lastResult = null;
+        this.uaMergeCleanup.busy = false;
+      },
+
+      mergeUsers() {
+        if (!this.uaCanMerge) {
+          this.uaMerge.statusMsg = 'Select different source and target users.';
+          this.uaMerge.statusError = true;
+          return;
+        }
+
+        const source = this.uaMerge.sourceUser;
+        const target = this.uaMerge.targetUser;
+        const confirmed = window.confirm(
+          `Merge source user "${source.username}" (id ${source.userId}) into target user "${target.username}" (id ${target.userId})?`
+        );
+        if (!confirmed) return;
+
+        this.uaMerge.busy = true;
+        this.uaMerge.statusMsg = '';
+        this.uaMerge.statusError = false;
+
+        axios.post(`${API_BASE_URL}/admin/users/merge`, {
+          sourceUserId: source.userId,
+          targetUserId: target.userId,
+        }, {
           headers: this.authHeaders(),
         }).then(res => {
-          const list = res.data.members || [];
-          const oppositeUserId = isSource ? this.uaMerge.targetUser?.userId : this.uaMerge.sourceUser?.userId;
-          this.uaMerge[resultsKey] = list.filter(u => u.userId !== oppositeUserId);
-        }).catch(() => {
-          this.uaMerge[resultsKey] = [];
+          const summary = res.data.summary || {};
+          this.uaMerge.statusMsg = `Merge complete. Links moved: ${summary.movedLinks || 0}, assignments moved: ${summary.movedAssignments || 0}.`;
+          this.uaMerge.statusError = false;
+          this.loadUserAdmin();
+        }).catch(err => {
+          this.uaMerge.statusMsg = err.response?.data?.error || 'Merge failed';
+          this.uaMerge.statusError = true;
+        }).finally(() => {
+          this.uaMerge.busy = false;
         });
-      }, 300);
-    },
+      },
 
-    selectMergeUser(which, user) {
-      if (which === 'source') {
-        this.uaMerge.sourceUser = user;
-        this.uaMerge.sourceQuery = user.username || '';
-        this.uaMerge.sourceResults = [];
-      } else {
-        this.uaMerge.targetUser = user;
-        this.uaMerge.targetQuery = user.username || '';
-        this.uaMerge.targetResults = [];
-      }
-      this.uaMerge.statusMsg = '';
-      this.uaMerge.statusError = false;
-    },
+      runMergeCleanup(dryRun = true) {
+        if (!dryRun) {
+          const confirmed = window.confirm('Apply merge cleanup now? This will merge eligible duplicate active users.');
+          if (!confirmed) return;
+        }
 
-    resetMergeState() {
-      this.uaMerge.sourceQuery = '';
-      this.uaMerge.targetQuery = '';
-      this.uaMerge.sourceResults = [];
-      this.uaMerge.targetResults = [];
-      this.uaMerge.sourceUser = null;
-      this.uaMerge.targetUser = null;
-      this.uaMerge.statusMsg = '';
-      this.uaMerge.statusError = false;
-      this.uaMerge.busy = false;
-      this.uaMergeCleanup.statusMsg = '';
-      this.uaMergeCleanup.statusError = false;
-      this.uaMergeCleanup.lastResult = null;
-      this.uaMergeCleanup.busy = false;
-    },
-
-    mergeUsers() {
-      if (!this.uaCanMerge) {
-        this.uaMerge.statusMsg = 'Select different source and target users.';
-        this.uaMerge.statusError = true;
-        return;
-      }
-
-      const source = this.uaMerge.sourceUser;
-      const target = this.uaMerge.targetUser;
-      const confirmed = window.confirm(
-        `Merge source user "${source.username}" (id ${source.userId}) into target user "${target.username}" (id ${target.userId})?`
-      );
-      if (!confirmed) return;
-
-      this.uaMerge.busy = true;
-      this.uaMerge.statusMsg = '';
-      this.uaMerge.statusError = false;
-
-      axios.post(`${API_BASE_URL}/admin/users/merge`, {
-        sourceUserId: source.userId,
-        targetUserId: target.userId,
-      }, {
-        headers: this.authHeaders(),
-      }).then(res => {
-        const summary = res.data.summary || {};
-        this.uaMerge.statusMsg = `Merge complete. Links moved: ${summary.movedLinks || 0}, assignments moved: ${summary.movedAssignments || 0}.`;
-        this.uaMerge.statusError = false;
-        this.loadUserAdmin();
-      }).catch(err => {
-        this.uaMerge.statusMsg = err.response?.data?.error || 'Merge failed';
-        this.uaMerge.statusError = true;
-      }).finally(() => {
-        this.uaMerge.busy = false;
-      });
-    },
-
-    runMergeCleanup(dryRun = true) {
-      if (!dryRun) {
-        const confirmed = window.confirm('Apply merge cleanup now? This will merge eligible duplicate active users.');
-        if (!confirmed) return;
-      }
-
-      this.uaMergeCleanup.busy = true;
-      this.uaMergeCleanup.statusMsg = '';
-      this.uaMergeCleanup.statusError = false;
-
-      axios.post(`${API_BASE_URL}/admin/users/merge/cleanup`, {
-        dryRun,
-      }, {
-        headers: this.authHeaders(),
-      }).then(res => {
-        const payload = res.data || {};
-        this.uaMergeCleanup.lastResult = payload;
-        this.uaMergeCleanup.statusMsg = dryRun
-          ? `Dry run complete. Planned merges: ${payload.mergeCount || 0}.`
-          : `Cleanup applied. Merges completed: ${payload.mergeCount || 0}.`;
+        this.uaMergeCleanup.busy = true;
+        this.uaMergeCleanup.statusMsg = '';
         this.uaMergeCleanup.statusError = false;
-        if (!dryRun) this.loadUserAdmin();
-      }).catch(err => {
-        this.uaMergeCleanup.statusMsg = err.response?.data?.error || 'Cleanup failed';
-        this.uaMergeCleanup.statusError = true;
-      }).finally(() => {
-        this.uaMergeCleanup.busy = false;
-      });
-    },
 
-    openGrantModal(member) {
-      this.uaGrant = { visible: true, member, roleCode: '', clubId: null, statusMsg: '', statusError: false };
-    },
+        axios.post(`${API_BASE_URL}/admin/users/merge/cleanup`, {
+          dryRun,
+        }, {
+          headers: this.authHeaders(),
+        }).then(res => {
+          const payload = res.data || {};
+          this.uaMergeCleanup.lastResult = payload;
+          this.uaMergeCleanup.statusMsg = dryRun
+            ? `Dry run complete. Planned merges: ${payload.mergeCount || 0}.`
+            : `Cleanup applied. Merges completed: ${payload.mergeCount || 0}.`;
+          this.uaMergeCleanup.statusError = false;
+          if (!dryRun) this.loadUserAdmin();
+        }).catch(err => {
+          this.uaMergeCleanup.statusMsg = err.response?.data?.error || 'Cleanup failed';
+          this.uaMergeCleanup.statusError = true;
+        }).finally(() => {
+          this.uaMergeCleanup.busy = false;
+        });
+      },
 
-    closeGrantModal() {
-      this.uaGrant.visible = false;
-    },
+      openGrantModal(member) {
+        this.uaGrant = { visible: true, member, roleCode: '', clubId: null, statusMsg: '', statusError: false };
+      },
 
-    grantRole() {
-      if (!this.uaGrant.roleCode) {
-        this.uaGrant.statusMsg   = 'Please select a role.';
-        this.uaGrant.statusError = true;
-        return;
-      }
-      const selectedRole = this.uaAvailableRoles.find(r => r.code === this.uaGrant.roleCode);
-      if (selectedRole?.scopeType === 'club' && !this.uaGrant.clubId) {
-        this.uaGrant.statusMsg   = 'Please select a club for this role.';
-        this.uaGrant.statusError = true;
-        return;
-      }
-      axios.post(
-        `${API_BASE_URL}/admin/users/${this.uaGrant.member.userId}/roles`,
-        { roleCode: this.uaGrant.roleCode, clubId: this.uaGrant.clubId || null },
-        { headers: this.authHeaders() }
-      ).then(() => {
-        this.closeGrantModal();
-        this.uaSearch = '';
-        this.uaSearchResults = [];
-        this.uaShowStatus('Role granted successfully.');
-        this.loadUserAdmin();
-      }).catch(err => {
-        this.uaGrant.statusMsg   = err.response?.data?.error || 'Grant failed';
-        this.uaGrant.statusError = true;
-      });
-    },
+      closeGrantModal() {
+        this.uaGrant.visible = false;
+      },
 
-    revokeRole(user, assignment) {
-      const scopeLabel = assignment.roleClubShortName
-        ? ` (${assignment.roleClubShortName})`
-        : ' (global)';
-      if (!window.confirm(`Revoke "${assignment.roleName}"${scopeLabel} from ${user.username}?`)) return;
-      axios.delete(
-        `${API_BASE_URL}/admin/users/${user.userId}/roles/${assignment.assignmentId}`,
-        { headers: this.authHeaders() }
-      ).then(() => {
-        this.uaShowStatus('Role revoked successfully.');
-        this.loadUserAdmin();
-      }).catch(err => {
-        this.uaStatusMsg  = err.response?.data?.error || 'Revoke failed';
-        this.uaStatusError = true;
-      });
-    },
+      grantRole() {
+        if (!this.uaGrant.roleCode) {
+          this.uaGrant.statusMsg   = 'Please select a role.';
+          this.uaGrant.statusError = true;
+          return;
+        }
+        const selectedRole = this.uaAvailableRoles.find(r => r.code === this.uaGrant.roleCode);
+        if (selectedRole?.scopeType === 'club' && !this.uaGrant.clubId) {
+          this.uaGrant.statusMsg   = 'Please select a club for this role.';
+          this.uaGrant.statusError = true;
+          return;
+        }
+        axios.post(
+          `${API_BASE_URL}/admin/users/${this.uaGrant.member.userId}/roles`,
+          { roleCode: this.uaGrant.roleCode, clubId: this.uaGrant.clubId || null },
+          { headers: this.authHeaders() }
+        ).then(() => {
+          this.closeGrantModal();
+          this.uaSearch = '';
+          this.uaSearchResults = [];
+          this.uaShowStatus('Role granted successfully.');
+          this.loadUserAdmin();
+        }).catch(err => {
+          this.uaGrant.statusMsg   = err.response?.data?.error || 'Grant failed';
+          this.uaGrant.statusError = true;
+        });
+      },
 
-    uaShowStatus(msg, isError = false) {
-      this.uaStatusMsg   = msg;
-      this.uaStatusError = isError;
-      setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
-    },
-  }
+      revokeRole(user, assignment) {
+        const scopeLabel = assignment.roleClubShortName
+          ? ` (${assignment.roleClubShortName})`
+          : ' (global)';
+        if (!window.confirm(`Revoke "${assignment.roleName}"${scopeLabel} from ${user.username}?`)) return;
+        axios.delete(
+          `${API_BASE_URL}/admin/users/${user.userId}/roles/${assignment.assignmentId}`,
+          { headers: this.authHeaders() }
+        ).then(() => {
+          this.uaShowStatus('Role revoked successfully.');
+          this.loadUserAdmin();
+        }).catch(err => {
+          this.uaStatusMsg  = err.response?.data?.error || 'Revoke failed';
+          this.uaStatusError = true;
+        });
+      },
+
+      uaShowStatus(msg, isError = false) {
+        this.uaStatusMsg   = msg;
+        this.uaStatusError = isError;
+        setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
+      },
+    }
 </script>
 
 
