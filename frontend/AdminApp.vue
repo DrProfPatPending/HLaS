@@ -517,6 +517,7 @@ export default {
         setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
       },
     }
+  }
 </script>
 
 
