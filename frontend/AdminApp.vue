@@ -486,8 +486,10 @@ export default {
       this.uaStatusError = isError;
       setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
     },
+</script>
   },
-};
+}
+</script>
 </script>
 
 <style>
