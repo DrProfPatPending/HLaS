@@ -1,11 +1,12 @@
 import os
-from sqlalchemy import create_engine, insert
+from sqlalchemy import create_engine
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import sessionmaker
 from db_models import club_logos, metadata
 from datetime import datetime
 
 # Update this with your actual database URL or use env var
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/hlas")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://hlas:hlas@postgres:5432/hlas")
 LOGOS_DIR = os.getenv("LOGOS_DIR", "/app/club_logos")
 
 def main():
