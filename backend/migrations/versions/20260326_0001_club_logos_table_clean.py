@@ -1,10 +1,16 @@
 """
 Add club_logos table for storing club logo images as BLOBs
 
-Revision ID: 20260325_0001
+Revision ID: 20260326_0001
 Revises: 20260318_0007_remove_legacy_columns
-Create Date: 2026-03-25
+Create Date: 2026-03-26
 """
+
+revision = '20260326_0001'
+down_revision = '20260318_0007_remove_legacy_columns'
+branch_labels = None
+depends_on = None
+
 from alembic import op
 import sqlalchemy as sa
 
