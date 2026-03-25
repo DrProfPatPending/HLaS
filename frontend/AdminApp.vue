@@ -74,7 +74,6 @@
 
       </div>
 
-// (Removed duplicate upper <script> block. All logic is now in the main script block at the bottom.)
     },
     moveField(idx, dir) {
       const newIdx = idx + dir;
