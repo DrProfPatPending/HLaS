@@ -25,10 +25,7 @@
 
 <script>
 // ...existing JS code (data, created, computed, methods, etc.) goes here...
-</script>
-    },
-  },
-  methods: {
+    methods: {
     // ===== FIELD ORDER TAB METHODS =====
     loadFieldOrder() {
       // Debug: log when called, API_BASE_URL, and Authorization header
