@@ -457,15 +457,23 @@ def create_admin_user_blueprint(deps):
 
             # Check for an existing active assignment (keyed on user_id)
             existing = session.execute(text("""
-                SELECT id FROM member_role_assignments
-                WHERE user_id  = :user_id
-                  AND role_id  = :role_id
-                  AND (
-                      (:club_id IS NULL AND club_id IS NULL)
-                      OR club_id = CAST(:club_id AS INTEGER)
-                  )
-                  AND revoked_at IS NULL
-            """), {'user_id': user_id, 'role_id': role_id, 'club_id': club_id}).first()
+
+            if club_id is None:
+                existing = db.session.execute(text("""
+                    SELECT id FROM member_role_assignments
+                    WHERE user_id  = :user_id
+                      AND role_id  = :role_id
+                      AND club_id IS NULL
+                      AND revoked_at IS NULL
+                """), {'user_id': user_id, 'role_id': role_id}).first()
+            else:
+                existing = db.session.execute(text("""
+                    SELECT id FROM member_role_assignments
+                    WHERE user_id  = :user_id
+                      AND role_id  = :role_id
+                      AND club_id = :club_id
+                      AND revoked_at IS NULL
+                """), {'user_id': user_id, 'role_id': role_id, 'club_id': club_id}).first()
 
             if existing:
                 return jsonify({'error': 'Role already assigned to this user'}), 409
