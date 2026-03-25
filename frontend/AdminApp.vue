@@ -98,10 +98,13 @@ export default {
   methods: {
             // ===== FIELD ORDER TAB METHODS =====
             loadFieldOrder() {
-              // Debug: log when called and what API_BASE_URL is
+              // Debug: log when called, API_BASE_URL, and Authorization header
               // eslint-disable-next-line no-console
               console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
-              axios.get(`${API_BASE_URL}/admin/field-order`, { headers: this.authHeaders() })
+              const auth = this.authHeaders();
+              // eslint-disable-next-line no-console
+              console.log('[AdminApp.vue] loadFieldOrder() Authorization header:', auth);
+              axios.get(`${API_BASE_URL}/admin/field-order`, { headers: auth })
                 .then(res => {
                   // eslint-disable-next-line no-console
                   console.log('[AdminApp.vue] /admin/field-order response:', res);
@@ -116,7 +119,7 @@ export default {
                 })
                 .catch(err => {
                   // eslint-disable-next-line no-console
-                  console.error('[AdminApp.vue] /admin/field-order error:', err);
+                  console.error('[AdminApp.vue] /admin/field-order error:', err, err?.response);
                   this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
                   this.fieldOrderStatusError = true;
                 });
@@ -636,6 +639,10 @@ export default {
             this.loggedIn = true;
             this.loginPassword = '';
             this.loadClubs();
+            // Debug: call loadFieldOrder after login
+            // eslint-disable-next-line no-console
+            console.log('[AdminApp.vue] login() success, calling loadFieldOrder()');
+            this.loadFieldOrder();
           } else {
             this.loginError = res.data.error || 'Login failed';
           }
