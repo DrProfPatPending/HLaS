@@ -79,48 +79,48 @@
 export default {
   // ...existing options...
   data() {
-    return {
-      // ...existing data...
-      fieldOrder: {},
-      fieldOrderContexts: [],
-      fieldOrderContext: 'default',
-      fieldOrderEdit: [],
-      fieldOrderStatus: '',
-      fieldOrderStatusError: false,
-    };
+          return {
+            // ...existing data...
+            fieldOrder: {},
+            fieldOrderContexts: [],
+            fieldOrderContext: 'default',
+            fieldOrderEdit: [],
+            fieldOrderStatus: '',
+            fieldOrderStatusError: false,
+          };
   },
   created() {
-    // Debug: Log created() execution and API_BASE_URL
-    // eslint-disable-next-line no-console
-    console.log('[AdminApp.vue] created() hook running. API_BASE_URL:', typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '(undefined)');
-    this.loadFieldOrder();
+          // Debug: Log created() execution and API_BASE_URL
+          // eslint-disable-next-line no-console
+          console.log('[AdminApp.vue] created() hook running. API_BASE_URL:', typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '(undefined)');
+          this.loadFieldOrder();
   },
   methods: {
-    // ...existing methods...
-    loadFieldOrder() {
-      // Debug: log when called and what API_BASE_URL is
-      // eslint-disable-next-line no-console
-      console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
-      axios.get(`${API_BASE_URL}/admin/field-order`, { headers: this.authHeaders() })
-        .then(res => {
-          // eslint-disable-next-line no-console
-          console.log('[AdminApp.vue] /admin/field-order response:', res);
-          this.fieldOrder = res.data.field_order || {};
-          // Force reactivity for fieldOrderContexts
-          this.fieldOrderContexts = [];
-          this.$nextTick(() => {
-            this.fieldOrderContexts = Object.keys(this.fieldOrder);
-            this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
-            this.loadFieldOrderContext();
-          });
-        })
-        .catch(err => {
-          // eslint-disable-next-line no-console
-          console.error('[AdminApp.vue] /admin/field-order error:', err);
-          this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
-          this.fieldOrderStatusError = true;
-        });
-    },
+            // ===== FIELD ORDER TAB METHODS =====
+            loadFieldOrder() {
+              // Debug: log when called and what API_BASE_URL is
+              // eslint-disable-next-line no-console
+              console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
+              axios.get(`${API_BASE_URL}/admin/field-order`, { headers: this.authHeaders() })
+                .then(res => {
+                  // eslint-disable-next-line no-console
+                  console.log('[AdminApp.vue] /admin/field-order response:', res);
+                  this.fieldOrder = res.data.field_order || {};
+                  // Force reactivity for fieldOrderContexts
+                  this.fieldOrderContexts = [];
+                  this.$nextTick(() => {
+                    this.fieldOrderContexts = Object.keys(this.fieldOrder);
+                    this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
+                    this.loadFieldOrderContext();
+                  });
+                })
+                .catch(err => {
+                  // eslint-disable-next-line no-console
+                  console.error('[AdminApp.vue] /admin/field-order error:', err);
+                  this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
+                  this.fieldOrderStatusError = true;
+                });
+            },
     loadFieldOrderContext() {
       this.fieldOrderEdit = (this.fieldOrder[this.fieldOrderContext] || []).slice();
     },
