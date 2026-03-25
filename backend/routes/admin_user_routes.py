@@ -456,10 +456,9 @@ def create_admin_user_blueprint(deps):
                     return jsonify({'error': 'User has no member links'}), 400
 
             # Check for an existing active assignment (keyed on user_id)
-            existing = session.execute(text("""
 
             if club_id is None:
-                existing = db.session.execute(text("""
+                existing = session.execute(text("""
                     SELECT id FROM member_role_assignments
                     WHERE user_id  = :user_id
                       AND role_id  = :role_id
@@ -467,7 +466,7 @@ def create_admin_user_blueprint(deps):
                       AND revoked_at IS NULL
                 """), {'user_id': user_id, 'role_id': role_id}).first()
             else:
-                existing = db.session.execute(text("""
+                existing = session.execute(text("""
                     SELECT id FROM member_role_assignments
                     WHERE user_id  = :user_id
                       AND role_id  = :role_id
