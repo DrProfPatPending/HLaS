@@ -24,66 +24,71 @@
 </template>
 
 <script>
-// ...existing JS code (data, created, computed, methods, etc.) goes here...
-    methods: {
-    // ===== FIELD ORDER TAB METHODS =====
-    loadFieldOrder() {
-      // Debug: log when called, API_BASE_URL, and Authorization header
-      // eslint-disable-next-line no-console
-      console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
-      const auth = this.authHeaders();
-      // eslint-disable-next-line no-console
-      console.log('[AdminApp.vue] loadFieldOrder() Authorization header:', auth);
-      axios.get(`${API_BASE_URL}/admin/field-order`, { headers: auth })
-        .then(res => {
-          // eslint-disable-next-line no-console
-          console.log('[AdminApp.vue] /admin/field-order response:', res);
-          this.fieldOrder = res.data.field_order || {};
-          // Force reactivity for fieldOrderContexts
-          this.fieldOrderContexts = [];
-          this.$nextTick(() => {
-            this.fieldOrderContexts = Object.keys(this.fieldOrder);
-            this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
-            this.loadFieldOrderContext();
-          });
-        })
-        .catch(err => {
-          // eslint-disable-next-line no-console
-          console.error('[AdminApp.vue] /admin/field-order error:', err, err?.response);
-          this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
-          this.fieldOrderStatusError = true;
+export default {
+  // ...existing JS code (data, created, computed, methods, etc.) goes here, wrapped in export default
+  // For example:
+  // data() { return { ... }; },
+  // created() { ... },
+  // computed: { ... },
+  // methods: { ... }
+  // ===== FIELD ORDER TAB METHODS =====
+  loadFieldOrder() {
+    // Debug: log when called, API_BASE_URL, and Authorization header
+    // eslint-disable-next-line no-console
+    console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
+    const auth = this.authHeaders();
+    // eslint-disable-next-line no-console
+    console.log('[AdminApp.vue] loadFieldOrder() Authorization header:', auth);
+    axios.get(`${API_BASE_URL}/admin/field-order`, { headers: auth })
+      .then(res => {
+        // eslint-disable-next-line no-console
+        console.log('[AdminApp.vue] /admin/field-order response:', res);
+        this.fieldOrder = res.data.field_order || {};
+        // Force reactivity for fieldOrderContexts
+        this.fieldOrderContexts = [];
+        this.$nextTick(() => {
+          this.fieldOrderContexts = Object.keys(this.fieldOrder);
+          this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
+          this.loadFieldOrderContext();
         });
-    },
-    loadFieldOrderContext() {
-      this.fieldOrderEdit = (this.fieldOrder[this.fieldOrderContext] || []).slice();
-    },
-    moveField(idx, dir) {
-      const newIdx = idx + dir;
-      if (newIdx < 0 || newIdx >= this.fieldOrderEdit.length) return;
-      const arr = this.fieldOrderEdit;
-      [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-      this.fieldOrderEdit = arr.slice();
-    },
-    saveFieldOrder() {
-      const updated = { ...this.fieldOrder, [this.fieldOrderContext]: this.fieldOrderEdit };
-      axios.post(`${API_BASE_URL}/admin/field-order`, updated, { headers: this.authHeaders() })
-        .then(() => {
-          this.fieldOrderStatus = 'Field order updated.';
-          this.fieldOrderStatusError = false;
-          this.fieldOrder = updated;
-        })
-        .catch(err => {
-          this.fieldOrderStatus = err.response?.data?.error || 'Failed to update field order';
-          this.fieldOrderStatusError = true;
-        });
-    },
-    authHeaders() {
-      return { Authorization: `Bearer ${this.adminToken}` };
-    },
-    showStatus(msg, isError = false) {
-      this.statusMsg = msg;
-      this.statusMsgError = isError;
-      setTimeout(() => { this.statusMsg = ''; }, 4000);
+      })
+      .catch(err => {
+        // eslint-disable-next-line no-console
+        console.error('[AdminApp.vue] /admin/field-order error:', err, err?.response);
+        this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
+        this.fieldOrderStatusError = true;
+      });
+  },
+  loadFieldOrderContext() {
+    this.fieldOrderEdit = (this.fieldOrder[this.fieldOrderContext] || []).slice();
+  },
+  moveField(idx, dir) {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= this.fieldOrderEdit.length) return;
+    const arr = this.fieldOrderEdit;
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+    this.fieldOrderEdit = arr.slice();
+  },
+  saveFieldOrder() {
+    const updated = { ...this.fieldOrder, [this.fieldOrderContext]: this.fieldOrderEdit };
+    axios.post(`${API_BASE_URL}/admin/field-order`, updated, { headers: this.authHeaders() })
+      .then(() => {
+        this.fieldOrderStatus = 'Field order updated.';
+        this.fieldOrderStatusError = false;
+        this.fieldOrder = updated;
+      })
+      .catch(err => {
+        this.fieldOrderStatus = err.response?.data?.error || 'Failed to update field order';
+        this.fieldOrderStatusError = true;
+      });
+  },
+  authHeaders() {
+    return { Authorization: `Bearer ${this.adminToken}` };
+  },
+  showStatus(msg, isError = false) {
+    this.statusMsg = msg;
+    this.statusMsgError = isError;
+    setTimeout(() => { this.statusMsg = ''; }, 4000);
     },
     login() {
       this.loginError = '';
