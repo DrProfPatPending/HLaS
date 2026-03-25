@@ -12,7 +12,7 @@ RUN apt-get update \
 
 COPY backend/requirements.txt /tmp/requirements.txt
 RUN python -m pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r /tmp/requirements.txt gunicorn
+    && pip install --no-cache-dir -r /tmp/requirements.txt gunicorn alembic sqlalchemy
 
 
 # Copy backend code
