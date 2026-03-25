@@ -14,8 +14,14 @@
           </td>
           <td class="logo-spacer"></td>
           <td v-if="loggedIn" class="logout-cell">
-
-        <!-- Duplicate/nested <template> removed. All valid HTML remains in the single top-level <template> block. -->
+            <button type="button" class="logout-button" @click="logout">Log Out</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!-- ...rest of your template code (login, admin-container, tabs, etc.) should go here... -->
+  </div>
+</template>
 
 <script>
 // ...existing JS code (data, created, computed, methods, etc.) goes here...
