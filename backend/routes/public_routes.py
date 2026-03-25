@@ -76,22 +76,34 @@ def create_public_blueprint(deps):
 
     @bp.route('/club_logo/<short_name>', methods=['GET'])
     def club_logo(short_name):
-        # Use SQLAlchemy to fetch the logo from the database
+        import logging
+        logger = logging.getLogger("club_logo")
+        logger.debug(f"Request for club logo: {short_name}")
         db_engine = deps.get('db_engine')
+        logger.debug(f"db_engine from deps: {db_engine}")
         if db_engine is None:
-            # fallback: try current_app if available
             db_engine = getattr(current_app, 'db_engine', None)
+            logger.debug(f"db_engine from current_app: {db_engine}")
         if db_engine is None:
+            logger.error("Database engine not available")
             return jsonify({'error': 'Database engine not available'}), 500
-        with db_engine.connect() as conn:
-            stmt = select([
-                club_logos.c.image_data,
-                club_logos.c.mime_type
-            ]).where(club_logos.c.club_short_name == short_name)
-            result = conn.execute(stmt).first()
-            if not result:
-                return jsonify({'error': 'Logo not found'}), 404
-            image_data, mime_type = result
-            return Response(image_data, mimetype=mime_type)
+        try:
+            with db_engine.connect() as conn:
+                stmt = select([
+                    club_logos.c.image_data,
+                    club_logos.c.mime_type
+                ]).where(club_logos.c.club_short_name == short_name)
+                logger.debug(f"SQL statement: {stmt}")
+                result = conn.execute(stmt).first()
+                logger.debug(f"Query result: {result}")
+                if not result:
+                    logger.warning(f"Logo not found for club: {short_name}")
+                    return jsonify({'error': 'Logo not found'}), 404
+                image_data, mime_type = result
+                logger.debug(f"image_data type: {type(image_data)}, mime_type: {mime_type}")
+                return Response(image_data, mimetype=mime_type)
+        except Exception as e:
+            logger.exception(f"Exception in club_logo endpoint for club {short_name}: {e}")
+            return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
     return bp
