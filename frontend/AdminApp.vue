@@ -51,7 +51,8 @@
 
 <script>
 import axios from 'axios';
-import { backendUrl as API_BASE_URL } from './server.config.json';
+import config from './server.config.json';
+const API_BASE_URL = config.api.backendUrl;
 import AppHeader from './src/components/AppHeader.vue';
 export default {
   components: {
