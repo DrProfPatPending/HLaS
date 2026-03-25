@@ -98,8 +98,13 @@ export default {
   methods: {
     // ...existing methods...
     loadFieldOrder() {
+      // Debug: log when called and what API_BASE_URL is
+      // eslint-disable-next-line no-console
+      console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
       axios.get(`${API_BASE_URL}/admin/field-order`, { headers: this.authHeaders() })
         .then(res => {
+          // eslint-disable-next-line no-console
+          console.log('[AdminApp.vue] /admin/field-order response:', res);
           this.fieldOrder = res.data.field_order || {};
           // Force reactivity for fieldOrderContexts
           this.fieldOrderContexts = [];
@@ -110,6 +115,8 @@ export default {
           });
         })
         .catch(err => {
+          // eslint-disable-next-line no-console
+          console.error('[AdminApp.vue] /admin/field-order error:', err);
           this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
           this.fieldOrderStatusError = true;
         });
@@ -509,7 +516,17 @@ export default {
 <script>
 import axios from 'axios';
 
-const API_BASE_URL = process.env.VUE_APP_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:5050`;
+// Dynamically load API_BASE_URL from server.config.json if available, else fallback to '/api'
+let API_BASE_URL = '/api';
+try {
+  // This will work in dev and in built dist if server.config.json is present
+  // eslint-disable-next-line no-undef
+  if (window && window.__SERVER_CONFIG__ && window.__SERVER_CONFIG__.api && window.__SERVER_CONFIG__.api.backendUrl) {
+    API_BASE_URL = window.__SERVER_CONFIG__.api.backendUrl;
+  }
+} catch (e) {
+  // fallback to '/api'
+}
 
 export default {
   data() {
