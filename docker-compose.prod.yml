@@ -32,6 +32,7 @@ services:
       GAAFFS_SMTP_PASSWORD: ${GAAFFS_SMTP_PASSWORD}
     volumes:
       - hlas_data:/data
+      - ./backend/club_logos:/app/club_logos
     restart: unless-stopped
     ports:
       - "5050:5050"
