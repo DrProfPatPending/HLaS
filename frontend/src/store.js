@@ -21,9 +21,10 @@ export function loadFieldOrderConfig() {
 import { reactive, computed } from 'vue';
 import axios from 'axios';
 
+// Always use HTTP for backend API (Gunicorn does not serve HTTPS)
 export const API_BASE_URL =
   process.env.VUE_APP_BACKEND_URL ||
-  `${window.location.protocol}//${window.location.hostname}:5050`;
+  `http://${window.location.hostname}:5050`;
 
 const MEMBER_SESSION_STORAGE_KEY = 'hlas.memberSession';
 

@@ -64,9 +64,9 @@
           </tr>
         </thead>
         <tbody>
-          <template v-for="club in clubs" :key="club.shortName">
+          <template v-for="club in clubs" :key="club && club.shortName ? club.shortName : Math.random()">
             <!-- Read-only row -->
-            <tr v-if="editingShortName !== club.shortName">
+            <tr v-if="club && club.shortName && editingShortName !== club.shortName">
               <td>{{ club.shortName }}</td>
               <td>{{ club.fullName }}</td>
               <td>
@@ -80,7 +80,7 @@
               <td class="desc-cell">{{ club.description }}</td>
               <td class="actions-cell">
                 <button type="button" @click="startEdit(club)">Edit</button>
-                <button type="button" class="delete-btn" @click="deleteClub(club.shortName)">Delete</button>
+                <button type="button" class="delete-btn" @click="club && club.shortName && deleteClub(club.shortName)">Delete</button>
               </td>
             </tr>
             <!-- Inline edit row -->
@@ -106,7 +106,7 @@
         <label for="smtp-club-select"><strong>Club:</strong></label>
         <select id="smtp-club-select" v-model="smtpSelectedClub" class="field-input short-input" style="width:160px;margin-left:8px;" @change="loadSmtpConfig">
           <option value="">Select club…</option>
-          <option v-for="c in clubs" :key="c.shortName" :value="c.shortName">{{ c.shortName }} – {{ c.fullName }}</option>
+          <option v-for="c in clubs" :key="c && c.shortName ? c.shortName : Math.random()" :value="c && c.shortName ? c.shortName : ''">{{ c && c.shortName ? c.shortName : '' }} – {{ c && c.fullName ? c.fullName : '' }}</option>
         </select>
       </div>
       <div v-if="smtpSelectedClub && smtpForm" class="smtp-form-panel">
@@ -227,7 +227,7 @@
                 <tr v-for="m in uaSearchResults" :key="m.userId">
                   <td>{{ m.username }}</td>
                   <td>{{ m.displayName }}</td>
-                  <td>{{ m.clubs && m.clubs.map(c => c.shortName).join(', ') }}</td>
+                  <td>{{ m.clubs && Array.isArray(m.clubs) ? m.clubs.filter(c => c && c.shortName).map(c => c.shortName).join(', ') : '' }}</td>
                   <td><button type="button" class="save-btn" style="white-space:nowrap;" @click="openGrantModal(m)">Grant Role…</button></td>
                 </tr>
               </tbody>
@@ -256,7 +256,7 @@
                 <tr v-for="u in uaMerge.sourceResults" :key="'src-' + u.userId">
                   <td>{{ u.username }}</td>
                   <td>{{ u.displayName }}</td>
-                  <td>{{ (u.clubs || []).map(c => c.shortName).join(', ') }}</td>
+                  <td>{{ (u.clubs || []).filter(c => c && c.shortName).map(c => c.shortName).join(', ') }}</td>
                   <td><button type="button" @click="selectMergeUser('source', u)">Select</button></td>
                 </tr>
               </tbody>
@@ -280,7 +280,7 @@
                 <tr v-for="u in uaMerge.targetResults" :key="'tgt-' + u.userId">
                   <td>{{ u.username }}</td>
                   <td>{{ u.displayName }}</td>
-                  <td>{{ (u.clubs || []).map(c => c.shortName).join(', ') }}</td>
+                  <td>{{ (u.clubs || []).filter(c => c && c.shortName).map(c => c.shortName).join(', ') }}</td>
                   <td><button type="button" @click="selectMergeUser('target', u)">Select</button></td>
                 </tr>
               </tbody>
@@ -393,7 +393,7 @@
               <label style="width:70px;">Club:</label>
               <select v-model="uaGrant.clubId" class="field-input" style="width:220px;">
                 <option :value="null">Select club…</option>
-                <option v-for="c in uaClubs" :key="c.id" :value="c.id">{{ c.shortName }} – {{ c.fullName }}</option>
+                <option v-for="c in uaClubs" :key="c && c.id ? c.id : Math.random()" :value="c && c.id ? c.id : ''">{{ c && c.shortName ? c.shortName : '' }} – {{ c && c.fullName ? c.fullName : '' }}</option>
               </select>
             </div>
             <div v-if="uaGrant.statusMsg" :class="uaGrant.statusError ? 'error-msg' : 'success-msg'" style="margin:8px 0;">{{ uaGrant.statusMsg }}</div>
