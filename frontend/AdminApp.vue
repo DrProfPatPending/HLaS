@@ -50,7 +50,13 @@
 </template>
 
 <script>
+import axios from 'axios';
+import { backendUrl as API_BASE_URL } from '../server.config.json';
+import AppHeader from './src/components/AppHeader.vue';
 export default {
+  components: {
+    AppHeader,
+  },
   data() {
     return {
       loginUsername: '',
