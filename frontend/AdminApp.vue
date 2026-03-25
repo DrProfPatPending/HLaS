@@ -19,7 +19,33 @@
         </tr>
       </tbody>
     </table>
-    <!-- ...rest of your template code (login, admin-container, tabs, etc.) should go here... -->
+    <!-- Admin login -->
+    <div v-if="!loggedIn" class="login-container">
+      <h2>Admin Login</h2>
+      <form @submit.prevent="login">
+        <div class="form-field">
+          <label for="admin-username">Username:</label>
+          <input id="admin-username" v-model="loginUsername" placeholder="Username" required />
+        </div>
+        <div class="form-field">
+          <label for="admin-password">Password:</label>
+          <input id="admin-password" v-model="loginPassword" type="password" placeholder="Password" required />
+        </div>
+        <button type="submit">Login</button>
+      </form>
+      <div v-if="loginError" class="error-msg">{{ loginError }}</div>
+    </div>
+
+    <!-- Club management & user admin -->
+    <div v-else class="admin-container">
+      <!-- Tab navigation -->
+      <div class="tab-nav">
+        <button :class="['tab-btn', activeTab === 'clubs' ? 'tab-btn-active' : '']" @click="switchTab('clubs')">Clubs Configuration</button>
+        <button :class="['tab-btn', activeTab === 'users' ? 'tab-btn-active' : '']" @click="switchTab('users')">User Administration</button>
+        <button :class="['tab-btn', activeTab === 'fields' ? 'tab-btn-active' : '']" @click="switchTab('fields')">Field Order</button>
+      </div>
+      <!-- ...rest of admin UI tabs and content go here... -->
+    </div>
   </div>
 </template>
 
