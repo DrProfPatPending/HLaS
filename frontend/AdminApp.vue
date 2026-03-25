@@ -51,12 +51,16 @@
 
 <script>
 export default {
-  // ...existing JS code (data, created, computed, methods, etc.) goes here, wrapped in export default
-  // For example:
-  // data() { return { ... }; },
-  // created() { ... },
-  // computed: { ... },
-  // methods: { ... }
+  data() {
+    return {
+      loginUsername: '',
+      loginPassword: '',
+      loginError: '',
+      loggedIn: false,
+      // Add other state as needed for your admin UI
+    };
+  },
+  // ...existing JS code (created, computed, methods, etc.) goes here
   // ===== FIELD ORDER TAB METHODS =====
   loadFieldOrder() {
     // Debug: log when called, API_BASE_URL, and Authorization header
