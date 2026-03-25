@@ -10,7 +10,7 @@
     "keyFile": "../backend/certs/dev-key.pem"
   },
   "api": {
-    "backendUrl": "https://192.168.50.57:5050"
+    "backendUrl": "/api"
   },
   "startup": {
     "delayMs": 3000
