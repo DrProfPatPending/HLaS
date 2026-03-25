@@ -5,15 +5,20 @@ RUN npm install -g npm@11.12.0
 
 WORKDIR /app
 
+
+# Copy package files and install dependencies
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
+# Copy the rest of the frontend source
 COPY frontend ./
 
-ARG VUE_APP_BACKEND_URL=/api
-ENV VUE_APP_BACKEND_URL=${VUE_APP_BACKEND_URL}
+# Set backend URL for Vite build
+ARG VITE_APP_BACKEND_URL=/api
+ENV VITE_APP_BACKEND_URL=${VITE_APP_BACKEND_URL}
 
-RUN node ./node_modules/@vue/cli-service/bin/vue-cli-service.js build
+# Build using Vite
+RUN npm run build
 
 FROM nginx:1.27-alpine
 
