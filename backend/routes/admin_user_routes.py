@@ -462,7 +462,7 @@ def create_admin_user_blueprint(deps):
                   AND role_id  = :role_id
                   AND (
                       (:club_id IS NULL AND club_id IS NULL)
-                      OR club_id = :club_id
+                      OR club_id = CAST(:club_id AS INTEGER)
                   )
                   AND revoked_at IS NULL
             """), {'user_id': user_id, 'role_id': role_id, 'club_id': club_id}).first()
