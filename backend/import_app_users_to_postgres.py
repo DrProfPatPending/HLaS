@@ -24,11 +24,12 @@ def main():
 
     # Connect to Postgres
     engine = create_engine(POSTGRES_URL, future=True)
-    with engine.begin() as conn:
+    with engine.connect() as conn:
         for username, email, display_name in users:
             if not username:
                 continue
             password_hash = generate_password_hash(DEFAULT_PASSWORD)
+            trans = conn.begin()
             try:
                 conn.execute(text('''
                     INSERT INTO app_users (username, email, display_name, password_hash, is_active)
@@ -39,22 +40,30 @@ def main():
                     'display_name': display_name or username,
                     'password_hash': password_hash
                 })
+                trans.commit()
             except Exception as e:
+                trans.rollback()
                 # If duplicate, update instead
                 if 'duplicate key value violates unique constraint' in str(e):
-                    conn.execute(text('''
-                        UPDATE app_users SET
-                            email = :email,
-                            display_name = :display_name,
-                            password_hash = :password_hash,
-                            is_active = true
-                        WHERE username = :username
-                    '''), {
-                        'username': username,
-                        'email': email or username,
-                        'display_name': display_name or username,
-                        'password_hash': password_hash
-                    })
+                    trans2 = conn.begin()
+                    try:
+                        conn.execute(text('''
+                            UPDATE app_users SET
+                                email = :email,
+                                display_name = :display_name,
+                                password_hash = :password_hash,
+                                is_active = true
+                            WHERE username = :username
+                        '''), {
+                            'username': username,
+                            'email': email or username,
+                            'display_name': display_name or username,
+                            'password_hash': password_hash
+                        })
+                        trans2.commit()
+                    except Exception as e2:
+                        trans2.rollback()
+                        print(f"Error updating user {username}: {e2}")
                 else:
                     print(f"Error importing user {username}: {e}")
     print("✓ Imported users into app_users table in PostgreSQL.")
