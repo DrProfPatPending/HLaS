@@ -10,6 +10,7 @@ from werkzeug.security import generate_password_hash
 
 # Setup environment
 os.environ['DATABASE_URL'] = 'postgresql://hlas:hlas@localhost:5432/hlas'
+os.environ['DATABASE_URL'] = 'postgresql://hlas:hlas@localhost:5433/hlas'
 os.environ['HLAS_USE_POSTGRES_READS'] = '1'
 
 # Add backend to path
