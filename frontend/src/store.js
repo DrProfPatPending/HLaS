@@ -104,11 +104,25 @@ export const store = reactive({
 // Computed properties shared across components
 // ---------------------------------------------------------------------------
 export const clubDetails = computed(() => {
+  // For admin/system users, allow no club context
   const activeClubShortName = store.loggedInClub || store.selectedClub;
-  const matchedClub =
-    store.clubs.find(c => c.shortName === activeClubShortName) ||
-    store.clubs.find(c => c.shortName === store.selectedClub) ||
-    {};
+  let matchedClub = store.clubs.find(c => c.shortName === activeClubShortName);
+  if (!matchedClub && store.clubs.length > 0) {
+    // If no match, but clubs exist, use the first club as fallback
+    matchedClub = store.clubs[0];
+  }
+  if (!matchedClub) {
+    // No clubs at all: return generic info
+    return {
+      fullName: 'Application Administration',
+      shortName: '',
+      websiteUrl: '',
+      adminEmail: '',
+      description: '',
+      logoUrl: '',
+      beats: [],
+    };
+  }
   return {
     fullName: matchedClub.fullName || activeClubShortName || 'Club Information',
     shortName: matchedClub.shortName || activeClubShortName || '',
