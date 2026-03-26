@@ -524,7 +524,10 @@ export default {
       },
       loadClubs() {
         axios.get(`${API_BASE_URL}/admin/clubs`, { headers: this.authHeaders() })
-          .then(res => { this.clubs = res.data.clubs || []; })
+          .then(res => {
+            // Defensive: only keep valid clubs with shortName
+            this.clubs = (res.data.clubs || []).filter(c => c && c.shortName);
+          })
           .catch(err => {
             if (err.response?.status === 401) {
               this.logout();
