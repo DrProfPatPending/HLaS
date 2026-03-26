@@ -269,6 +269,7 @@ def ensure_postgres_global_user_tables(engine):
                 SELECT username, email, display_name, password_hash, TRUE
                 FROM members_without_users
                 ORDER BY member_id
+                ON CONFLICT (username) DO NOTHING
                 RETURNING id
             ),
             ranked_new_users AS (
