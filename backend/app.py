@@ -580,6 +580,9 @@ def create_app():
     CORS(app_instance)
 
     # Build dependency injection dictionary for routes
+    from db.postgres_backend import get_postgres_backend
+    postgres_backend = get_postgres_backend()
+    db_engine = postgres_backend['engine']
     route_deps = {
         'APP_DATA_DIR': APP_DATA_DIR,
         'CLUB_LOGOS_DIR': CLUB_LOGOS_DIR,
@@ -621,6 +624,7 @@ def create_app():
         'save_uploaded_logo': save_uploaded_logo,
         'create_empty_club_database': create_empty_club_database,
         'normalize_beats': normalize_beats,
+        'db_engine': db_engine,
     }
 
     # Register infrastructure hooks (teardown, before_request, after_request)
