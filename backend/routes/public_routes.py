@@ -89,10 +89,10 @@ def create_public_blueprint(deps):
             return jsonify({'error': 'Database engine not available'}), 500
         try:
             with db_engine.connect() as conn:
-                stmt = select([
+                stmt = select(
                     club_logos.c.image_data,
                     club_logos.c.mime_type
-                ]).where(club_logos.c.club_short_name == short_name)
+                ).where(club_logos.c.club_short_name == short_name)
                 logger.debug(f"SQL statement: {stmt}")
                 result = conn.execute(stmt).first()
                 logger.debug(f"Query result: {result}")
