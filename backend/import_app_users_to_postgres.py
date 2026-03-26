@@ -28,6 +28,11 @@ def main():
         for username, email, display_name in users:
             if not username:
                 continue
+            # Check if user already exists
+            result = conn.execute(text('SELECT 1 FROM app_users WHERE username = :username'), {'username': username})
+            if result.first():
+                print(f"Skipping existing user: {username}")
+                continue
             password_hash = generate_password_hash(DEFAULT_PASSWORD)
             trans = conn.begin()
             try:
@@ -43,29 +48,7 @@ def main():
                 trans.commit()
             except Exception as e:
                 trans.rollback()
-                # If duplicate, update instead
-                if 'duplicate key value violates unique constraint' in str(e):
-                    trans2 = conn.begin()
-                    try:
-                        conn.execute(text('''
-                            UPDATE app_users SET
-                                email = :email,
-                                display_name = :display_name,
-                                password_hash = :password_hash,
-                                is_active = true
-                            WHERE username = :username
-                        '''), {
-                            'username': username,
-                            'email': email or username,
-                            'display_name': display_name or username,
-                            'password_hash': password_hash
-                        })
-                        trans2.commit()
-                    except Exception as e2:
-                        trans2.rollback()
-                        print(f"Error updating user {username}: {e2}")
-                else:
-                    print(f"Error importing user {username}: {e}")
+                print(f"Error importing user {username}: {e}")
     print("✓ Imported users into app_users table in PostgreSQL.")
 
 if __name__ == '__main__':
