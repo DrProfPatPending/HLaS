@@ -38,7 +38,7 @@ def extract_bearer_token():
     return auth_header[7:].strip()
 
 
-def issue_member_session_token(member_id, club_short_name, username, user_id=None):
+def issue_member_session_token(member_id, club_short_name, username, user_id=None, user_type="member"):
     token_value = secrets.token_urlsafe(32)
     token_hash = _hash_member_token(token_value)
     expires_at = _member_token_expiry()
@@ -56,6 +56,7 @@ def issue_member_session_token(member_id, club_short_name, username, user_id=Non
                     username=str(username or '').strip(),
                     expires_at=expires_at,
                     last_seen_at=_utcnow(),
+                    user_type=user_type,
                 )
             )
             session.commit()
@@ -73,12 +74,13 @@ def issue_member_session_token(member_id, club_short_name, username, user_id=Non
             'expires_at': expires_at,
             'revoked_at': None,
             'last_seen_at': _utcnow(),
+            'user_type': user_type,
         }
 
     return token_value
 
 
-def issue_member_refresh_token(member_id, club_short_name, username, user_id=None):
+def issue_member_refresh_token(member_id, club_short_name, username, user_id=None, user_type="member"):
     token_value = secrets.token_urlsafe(48)
     token_hash = _hash_member_token(token_value)
     expires_at = _member_refresh_token_expiry()
@@ -96,6 +98,7 @@ def issue_member_refresh_token(member_id, club_short_name, username, user_id=Non
                     username=str(username or '').strip(),
                     expires_at=expires_at,
                     last_seen_at=_utcnow(),
+                    user_type=user_type,
                 )
             )
             session.commit()
@@ -113,6 +116,7 @@ def issue_member_refresh_token(member_id, club_short_name, username, user_id=Non
             'expires_at': expires_at,
             'revoked_at': None,
             'last_seen_at': _utcnow(),
+            'user_type': user_type,
         }
 
     return token_value
@@ -191,14 +195,15 @@ def get_member_refresh_session_from_token(token_value):
     }
 
 
-def issue_member_token_pair(member_id, club_short_name, username, user_id=None):
-    access_token = issue_member_session_token(member_id, club_short_name, username, user_id=user_id)
-    refresh_token = issue_member_refresh_token(member_id, club_short_name, username, user_id=user_id)
+def issue_member_token_pair(member_id, club_short_name, username, user_id=None, user_type="member"):
+    access_token = issue_member_session_token(member_id, club_short_name, username, user_id=user_id, user_type=user_type)
+    refresh_token = issue_member_refresh_token(member_id, club_short_name, username, user_id=user_id, user_type=user_type)
     return {
         'token': access_token,
         'refreshToken': refresh_token,
         'expiresInSeconds': MEMBER_TOKEN_TTL_SECONDS,
         'refreshExpiresInSeconds': MEMBER_REFRESH_TOKEN_TTL_SECONDS,
+        'userType': user_type,
     }
 
 

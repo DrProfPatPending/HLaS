@@ -102,7 +102,7 @@ def create_member_blueprint(deps):
 
         user_id = au_row.id
         member_id = link_row.member_id
-        token_payload = issue_member_token_pair(member_id, club, au_row.username, user_id=user_id)
+        token_payload = issue_member_token_pair(member_id, club, au_row.username, user_id=user_id, user_type="member")
         role_payload = load_member_roles(member_id, club, user_id=user_id)
         return jsonify({
             'success': True,
@@ -185,7 +185,7 @@ def create_member_blueprint(deps):
                     user_dict = member_to_dict(user, members_table)
                     member_id = user_dict.get(id_column.name)
                     user_id = resolve_user_id_for_member(member_id)
-                    token_payload = issue_member_token_pair(member_id, club, username, user_id=user_id)
+                    token_payload = issue_member_token_pair(member_id, club, username, user_id=user_id, user_type="member")
                     role_payload = load_member_roles(member_id, club, user_id=user_id)
                     user_dict.pop('password', None)
                     return jsonify({
@@ -207,7 +207,7 @@ def create_member_blueprint(deps):
                     user_dict = member_to_dict(user, members_table)
                     member_id = user_dict.get(id_column.name)
                     user_id = resolve_user_id_for_member(member_id)
-                    token_payload = issue_member_token_pair(member_id, club, username, user_id=user_id)
+                    token_payload = issue_member_token_pair(member_id, club, username, user_id=user_id, user_type="member")
                     role_payload = load_member_roles(member_id, club, user_id=user_id)
                     user_dict.pop('password', None)
                     return jsonify({
@@ -260,6 +260,7 @@ def create_member_blueprint(deps):
             refresh_session.get('club_short_name'),
             refresh_session.get('username'),
             user_id=refresh_session.get('user_id'),
+            user_type="member",
         )
         return jsonify({'success': True, **token_payload})
 

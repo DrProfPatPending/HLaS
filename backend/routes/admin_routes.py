@@ -101,7 +101,7 @@ def create_admin_blueprint(deps):
                 logger.info(f"Loaded roles for {username}: {effective_roles}")
 
                 # Issue token pair (use GAAFFS as the club context for admin token)
-                token_payload = issue_member_token_pair(member_id, 'GAAFFS', username, user_id=user_id)
+                token_payload = issue_member_token_pair(member_id, 'GAAFFS', username, user_id=user_id, user_type="admin")
                 logger.info(f"Issued token for {username}")
                 
                 return jsonify({
