@@ -205,9 +205,6 @@
             </div>
           </div>
         </div>
-
-    </div><!-- end admin-container -->
-
   
 </template>
 
@@ -541,7 +538,6 @@ export default {
         setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
       },
     }
-  }
 </script>
 
 

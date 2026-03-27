@@ -3,7 +3,7 @@
     <tbody>
       <tr>
         <td class="logo-cell">
-          <img src="../../logos/HLaS.png" alt="HLaS logo" class="app-logo" />
+          <img src="/logos/HLaS.png" alt="HLaS logo" class="app-logo" />
         </td>
         <td class="admin-title-cell">
           <span class="admin-title">HLaS Application Administration</span>
