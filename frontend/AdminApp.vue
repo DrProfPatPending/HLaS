@@ -330,20 +330,16 @@ export default {
         this.loginUsername = '';
         this.loginPassword = '';
       },
-      loadClubs() {
-        axios.get(`${API_BASE_URL}/admin/clubs`, { headers: this.authHeaders() })
-          .then(res => {
-            let clubs = (res.data.clubs || []).filter(c => c && c.shortName);
-            if (!clubs.length) {
-              // If no clubs returned, assume admin login and inject ADMIN club
-              clubs = [{
-                id: 'ADMIN',
-                shortName: 'ADMIN',
-                fullName: 'Application Administration',
-                websiteUrl: '',
-                adminEmail: '',
-                description: 'Global admin context',
-                logoUrl: '',
+      addClub() {
+        if (!this.newClub.shortName.trim()) {
+          this.showStatus('Short Name is required.', true);
+          return;
+        }
+        const formData = new FormData();
+        // ...existing code for adding a club...
+        this.uaMerge.statusMsg = '';
+        this.uaMerge.statusError = false;
+      },
                 beats: [],
               }];
             }
