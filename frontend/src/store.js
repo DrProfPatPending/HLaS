@@ -112,13 +112,13 @@ export const clubDetails = computed(() => {
     matchedClub = store.clubs[0];
   }
   if (!matchedClub) {
-    // No clubs at all: return generic info
+    // No clubs at all: return ADMIN dummy club for admin/system users
     return {
       fullName: 'Application Administration',
-      shortName: '',
+      shortName: 'ADMIN',
       websiteUrl: '',
       adminEmail: '',
-      description: '',
+      description: 'Global admin context',
       logoUrl: '',
       beats: [],
     };
