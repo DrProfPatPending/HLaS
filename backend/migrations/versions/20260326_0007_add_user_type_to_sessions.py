@@ -3,6 +3,11 @@ Revision ID: 20260326_0007_add_user_type_to_sessions
 Revises: 20260318_0004_session_user_id_columns
 Create Date: 2026-03-26
 """
+
+revision = '20260326_0007_add_user_type_to_sess'
+down_revision = '20260318_0004'
+branch_labels = None
+depends_on = None
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import text

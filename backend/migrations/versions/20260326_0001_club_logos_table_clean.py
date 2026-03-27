@@ -7,7 +7,7 @@ Create Date: 2026-03-26
 """
 
 revision = '20260326_0001'
-down_revision = '20260318_0007_remove_legacy_columns'
+down_revision = '20260318_0007'
 branch_labels = None
 depends_on = None
 
