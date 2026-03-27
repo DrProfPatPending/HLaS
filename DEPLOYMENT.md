@@ -1,3 +1,78 @@
+# Option 3 Migration: Separation of Admin/System and Member/Club User Flows
+
+## Summary
+This release implements a full separation between admin/system users and member/club users, as per Option 3 of the migration plan. The backend, frontend, and API logic have been refactored to support distinct authentication, session, and UI flows for each user type.
+
+---
+
+## Backend Changes
+
+- **Session Tokens:**
+   - All session and refresh tokens now include a `user_type` field (`admin` or `member`).
+   - Token creation and validation logic updated to propagate and check `user_type`.
+
+- **Principal Context:**
+   - The principal context (used for permission checks) now includes `user_type`.
+   - All permission and authentication checks can distinguish between admin/system and member/club users.
+
+- **API Endpoints:**
+   - Admin/system endpoints (`/admin/*`) do not require a club context and are accessible to users with `app_admin` or `app_owner` roles.
+   - Member/club endpoints require a valid club context, but global admin roles can access any club.
+   - `require_authenticated` and `require_permission` now allow admin/system users to access endpoints without a club context.
+
+- **Database Migration:**
+   - Alembic migration added to include `user_type` in session tables.
+
+---
+
+## Frontend Changes
+
+- **Entry Points:**
+   - `/admin/` loads the admin UI (`AdminApp.vue`) for admin/system users.
+   - `/` loads the member/club UI (`App.vue`) for club users.
+   - Vite and nginx are configured to serve the correct entry point for each route.
+
+- **State Management:**
+   - Defensive logic in `store.js` and components to handle cases where no club context is present (for admin/system users).
+
+- **UI Separation:**
+   - Admin UI and member UI are fully separated at the entrypoint and component level.
+
+---
+
+## Testing
+
+- Both admin/system and member/club login flows are supported and tested at the code level.
+- Admin/system users can access all admin features without specifying a club.
+- Member/club users require a valid club context for protected endpoints.
+
+---
+
+## Deployment Notes
+
+- Ensure the backend can connect to the database (container DNS must resolve the database hostname).
+- Run Alembic migrations to update the session tables.
+- Rebuild the frontend to ensure both admin and member UIs are up to date.
+
+---
+
+## Files Changed
+- `backend/auth/session_tokens.py`
+- `backend/auth/principal.py`
+- `backend/routes/admin_routes.py`, `member_routes.py`, `admin_user_routes.py`, etc.
+- `backend/db/postgres_backend.py`
+- `backend/migrations/versions/20260326_0007_add_user_type_to_sessions.py`
+- `frontend/AdminApp.vue`, `App.vue`, `src/store.js`, etc.
+- `frontend/vite.config.js`, `admin.html`, `index.html`
+
+---
+
+## Authors
+- Migration and refactor by: GitHub Copilot (GPT-4.1) and DrProfPatPending
+
+---
+
+For further details, see code comments and commit history.
 # HLaS Production Deployment (Docker + VPS)
 
 This bundle deploys HLaS with three containers:
