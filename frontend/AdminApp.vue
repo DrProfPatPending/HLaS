@@ -340,16 +340,6 @@ export default {
         this.uaMerge.statusMsg = '';
         this.uaMerge.statusError = false;
       },
-                beats: [],
-              }];
-            }
-            this.clubs = clubs;
-          })
-          .catch(err => {
-            if (err.response?.status === 401) {
-              this.logout();
-            }
-          });
       },
       startEdit(club) {
         this.editingShortName = club.shortName;
