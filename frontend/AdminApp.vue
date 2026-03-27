@@ -206,10 +206,9 @@
           </div>
         </div>
 
-      </div><!-- end users tab -->
     </div><!-- end admin-container -->
 
-  </div>
+  
 </template>
 
 <script>
