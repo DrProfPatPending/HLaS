@@ -406,16 +406,7 @@ export default {
           return;
         }
         const formData = new FormData();
-        <!-- ===== CLUBS TAB ===== -->
-        <div v-show="activeTab === 'clubs'">
-          <ClubsConfig />
-          <SMTPSettings />
-        </div>
-
-        <!-- ===== FIELD ORDER TAB ===== -->
-        <div v-show="activeTab === 'fieldOrder'">
-          <FieldOrder />
-        </div>
+        // ...existing code for adding a club...
         this.uaMerge.statusMsg = '';
         this.uaMerge.statusError = false;
       },
