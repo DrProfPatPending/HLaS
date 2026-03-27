@@ -415,6 +415,8 @@ import axios from 'axios';
 import config from './server.config.json';
 const API_BASE_URL = config.api.backendUrl;
 import AppHeader from './src/components/AppHeader.vue';
+import ClubsConfig from './src/components/admin/ClubsConfig.vue';
+import SMTPSettings from './src/components/admin/SMTPSettings.vue';
 import adminStore from './src/adminStore.js';
 export default {
   components: {
@@ -605,160 +607,11 @@ export default {
           return;
         }
         const formData = new FormData();
-        formData.append('shortName', this.newClub.shortName);
-        formData.append('fullName', this.newClub.fullName);
-        formData.append('websiteUrl', this.newClub.websiteUrl);
-        formData.append('adminEmail', this.newClub.adminEmail);
-        formData.append('description', this.newClub.description);
-        if (this.newClubLogoFile) {
-          formData.append('logoFile', this.newClubLogoFile);
-        }
-
-        axios.post(`${API_BASE_URL}/admin/clubs`, formData, { headers: this.authHeaders() })
-          .then(() => {
-            this.newClub = { shortName: '', fullName: '', websiteUrl: '', adminEmail: '', description: '' };
-            this.newClubLogoFile = null;
-            if (this.$refs.newClubLogoInput) {
-              this.$refs.newClubLogoInput.value = '';
-            }
-            this.loadClubs();
-            this.showStatus('Club added successfully.');
-          })
-          .catch(err => {
-            this.showStatus(err.response?.data?.error || 'Add failed', true);
-          });
-      },
-      loadSmtpConfig() {
-        if (!this.smtpSelectedClub) { this.smtpForm = null; return; }
-        this.smtpStatusMsg = '';
-        axios.get(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp`,
-          { headers: this.authHeaders() })
-          .then(res => {
-            this.smtpForm = { ...res.data.smtp };
-          })
-          .catch(err => {
-            this.smtpStatusMsg = err.response?.data?.error || 'Failed to load SMTP config';
-            this.smtpStatusError = true;
-          });
-      },
-      saveSmtpConfig() {
-        this.smtpStatusMsg = '';
-        axios.put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp`,
-          this.smtpForm,
-          { headers: this.authHeaders() })
-          .then(() => {
-            this.smtpStatusMsg = 'SMTP settings saved.';
-            this.smtpStatusError = false;
-            this.loadSmtpConfig(); // Reload to refresh passwordSet
-          })
-          .catch(err => {
-            this.smtpStatusMsg = err.response?.data?.error || 'Save failed';
-            this.smtpStatusError = true;
-          });
-      },
-      testSmtpConfig() {
-        if (!this.smtpTestEmail.trim()) {
-          this.smtpStatusMsg = 'Please enter a recipient email address for the test.';
-          this.smtpStatusError = true;
-          return;
-        }
-        this.smtpStatusMsg = 'Sending test email…';
-        this.smtpStatusError = false;
-        axios.post(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.smtpSelectedClub)}/smtp/test`,
-          { toEmail: this.smtpTestEmail },
-          { headers: this.authHeaders() })
-          .then(res => {
-            this.smtpStatusMsg = res.data.message || 'Test email sent successfully.';
-            this.smtpStatusError = false;
-          })
-          .catch(err => {
-            this.smtpStatusMsg = err.response?.data?.error || 'Test email failed';
-            this.smtpStatusError = true;
-          });
-      },
-
-      // ── User Administration ──────────────────────────────────────────────────
-      switchTab(tab) {
-        this.activeTab = tab;
-        if (tab === 'users' && !this.uaUsers.length && !this.uaLoading) {
-          this.loadUserAdmin();
-        }
-        if (tab !== 'users') {
-          this.resetMergeState();
-          this.closeGrantModal();
-          this.uaGrant.statusMsg = '';
-          this.uaGrant.statusError = false;
-        }
-      },
-
-      loadUserAdmin() {
-        this.uaLoading = true;
-        this.uaStatusMsg = '';
-        Promise.all([
-          axios.get(`${API_BASE_URL}/admin/users`,       { headers: this.authHeaders() }),
-          axios.get(`${API_BASE_URL}/admin/roles`,       { headers: this.authHeaders() }),
-          axios.get(`${API_BASE_URL}/admin/clubs-list`,  { headers: this.authHeaders() }),
-        ]).then(([usersRes, rolesRes, clubsRes]) => {
-          this.uaUsers          = usersRes.data.users  || [];
-          this.uaAvailableRoles = rolesRes.data.roles  || [];
-          this.uaClubs          = clubsRes.data.clubs  || [];
-        }).catch(err => {
-          if (err.response?.status === 401) { this.logout(); return; }
-          this.uaStatusMsg  = err.response?.data?.error || 'Failed to load user data';
-          this.uaStatusError = true;
-        }).finally(() => {
-          this.uaLoading = false;
-        });
-      },
-
-      uaSearchDebounced() {
-        clearTimeout(this.uaSearchTimer);
-        if (this.uaSearch.length < 2) { this.uaSearchResults = []; return; }
-        this.uaSearchTimer = setTimeout(() => {
-          axios.get(`${API_BASE_URL}/admin/users/search`,
-            { params: { q: this.uaSearch }, headers: this.authHeaders() }
-          ).then(res => {
-            this.uaSearchResults = res.data.members || [];
-          }).catch(() => { this.uaSearchResults = []; });
-        }, 300);
-      },
-
-      uaMergeSearchDebounced(which) {
-        const isSource = which === 'source';
-        const query = (isSource ? this.uaMerge.sourceQuery : this.uaMerge.targetQuery) || '';
-        const timerKey = isSource ? 'sourceTimer' : 'targetTimer';
-        const resultsKey = isSource ? 'sourceResults' : 'targetResults';
-
-        clearTimeout(this.uaMerge[timerKey]);
-        if (query.length < 2) {
-          this.uaMerge[resultsKey] = [];
-          return;
-        }
-
-        this.uaMerge[timerKey] = setTimeout(() => {
-          axios.get(`${API_BASE_URL}/admin/users/search`, {
-            params: { q: query },
-            headers: this.authHeaders(),
-          }).then(res => {
-            const list = res.data.members || [];
-            const oppositeUserId = isSource ? this.uaMerge.targetUser?.userId : this.uaMerge.sourceUser?.userId;
-            this.uaMerge[resultsKey] = list.filter(u => u.userId !== oppositeUserId);
-          }).catch(() => {
-            this.uaMerge[resultsKey] = [];
-          });
-        }, 300);
-      },
-
-      selectMergeUser(which, user) {
-        if (which === 'source') {
-          this.uaMerge.sourceUser = user;
-          this.uaMerge.sourceQuery = user.username || '';
-          this.uaMerge.sourceResults = [];
-        } else {
-          this.uaMerge.targetUser = user;
-          this.uaMerge.targetQuery = user.username || '';
-          this.uaMerge.targetResults = [];
-        }
+        <!-- ===== CLUBS TAB ===== -->
+        <div v-show="activeTab === 'clubs'">
+          <ClubsConfig />
+          <SMTPSettings />
+        </div>
         this.uaMerge.statusMsg = '';
         this.uaMerge.statusError = false;
       },
