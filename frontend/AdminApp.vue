@@ -1,209 +1,8 @@
 <template>
-  <div id="app">
-    <!-- Header bar -->
-    <table class="logo-table">
-      <tbody>
-        <tr>
-          <td class="logo-cell">
-            <a href="/" aria-label="Go to member login">
-              <img src="./logos/HLaS.png" alt="HLaS logo" class="app-logo" />
-            </a>
-          </td>
-          <td class="admin-title-cell">
-            <span class="admin-title">Club Administration</span>
-          </td>
-          <td class="logo-spacer"></td>
-          <td v-if="loggedIn" class="logout-cell">
-            <button type="button" class="logout-button" @click="logout">Log Out</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <!-- Admin login -->
-    <div v-if="!loggedIn" class="login-container">
-      <h2>Admin Login</h2>
-      <form @submit.prevent="login">
-        <div class="form-field">
-          <label for="admin-username">Username:</label>
-          <input id="admin-username" v-model="loginUsername" placeholder="Username" required />
-        </div>
-        <div class="form-field">
-          <label for="admin-password">Password:</label>
-          <input id="admin-password" v-model="loginPassword" type="password" placeholder="Password" required />
-        </div>
-        <button type="submit">Login</button>
-      </form>
-      <div v-if="loginError" class="error-msg">{{ loginError }}</div>
-    </div>
-
-    <!-- Club management & user admin -->
-    <div v-else class="admin-container">
-      <!-- Tab navigation -->
-      <div class="tab-nav">
-        <button :class="['tab-btn', activeTab === 'clubs' ? 'tab-btn-active' : '']" @click="switchTab('clubs')">Clubs Configuration</button>
-        <button :class="['tab-btn', activeTab === 'users' ? 'tab-btn-active' : '']" @click="switchTab('users')">User Administration</button>
-        <button :class="['tab-btn', activeTab === 'fields' ? 'tab-btn-active' : '']" @click="switchTab('fields')">Field Order</button>
-      </div>
-      <!-- ...rest of admin UI tabs and content go here... -->
-      <!-- ===== CLUBS TAB ===== -->
-      <div v-show="activeTab === 'clubs'">
-      <h1>Clubs Configuration</h1>
-
-      <div v-if="statusMsg" :class="statusMsgError ? 'error-msg' : 'success-msg'">{{ statusMsg }}</div>
-
-      <!-- Clubs table -->
-      <table class="clubs-table">
-        <thead>
-          <tr>
-            <th>Short Name</th>
-            <th>Full Name</th>
-            <th>Website URL</th>
-            <th>Admin Email</th>
-            <th>Description</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="club in clubs" :key="club && club.shortName ? club.shortName : Math.random()">
-            <!-- Read-only row -->
-            <tr v-if="club && club.shortName && editingShortName !== club.shortName">
-              <td>{{ club.shortName }}</td>
-              <td>{{ club.fullName }}</td>
-              <td>
-                <a v-if="club.websiteUrl" :href="club.websiteUrl" target="_blank" rel="noopener noreferrer">{{ club.websiteUrl }}</a>
-                <span v-else>-</span>
-              </td>
-              <td>
-                <a v-if="club.adminEmail" :href="`mailto:${club.adminEmail}`">{{ club.adminEmail }}</a>
-                <span v-else>-</span>
-              </td>
-              <td class="desc-cell">{{ club.description }}</td>
-              <td class="actions-cell">
-                <button type="button" @click="startEdit(club)">Edit</button>
-                <button type="button" class="delete-btn" @click="club && club.shortName && deleteClub(club.shortName)">Delete</button>
-              </td>
-            </tr>
-            <!-- Inline edit row -->
-            <tr v-else class="edit-row">
-              <td><input v-model="editForm.shortName" disabled class="field-input short-input" title="Short name cannot be changed" /></td>
-              <td><input v-model="editForm.fullName" class="field-input" /></td>
-              <td><input v-model="editForm.websiteUrl" class="field-input" /></td>
-              <td><input v-model="editForm.adminEmail" class="field-input" /></td>
-              <td><textarea v-model="editForm.description" class="field-input desc-textarea" rows="3"></textarea></td>
-              <td class="actions-cell">
-                <button type="button" class="save-btn" @click="saveEdit">Save</button>
-                <button type="button" @click="cancelEdit">Cancel</button>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-
-      <!-- SMTP / Email Settings per club -->
-      <h2>Email / SMTP Settings</h2>
-      <p style="font-size:9pt;color:#555;">Configure the outgoing mail account for each club's newsletters. Leave Host empty to fall back to server-level environment variables.</p>
-      <div class="smtp-club-selector">
-        <label for="smtp-club-select"><strong>Club:</strong></label>
-        <select id="smtp-club-select" v-model="smtpSelectedClub" class="field-input short-input" style="width:160px;margin-left:8px;" @change="loadSmtpConfig">
-          <option value="">Select club…</option>
-          <option v-for="c in clubs" :key="c && c.shortName ? c.shortName : Math.random()" :value="c && c.shortName ? c.shortName : ''">{{ c && c.shortName ? c.shortName : '' }} – {{ c && c.fullName ? c.fullName : '' }}</option>
-        </select>
-      </div>
-      <div v-if="smtpSelectedClub && smtpForm" class="smtp-form-panel">
-        <div v-if="smtpStatusMsg" :class="smtpStatusError ? 'error-msg' : 'success-msg'">{{ smtpStatusMsg }}</div>
-        <table class="smtp-form-table">
-          <tbody>
-            <tr>
-              <td class="smtp-label">SMTP Host</td>
-              <td><input v-model="smtpForm.host" class="field-input" placeholder="e.g. smtp.gmail.com" /></td>
-              <td class="smtp-hint">Hostname of your outgoing mail server</td>
-            </tr>
-            <tr>
-              <td class="smtp-label">Port</td>
-              <td><input v-model.number="smtpForm.port" type="number" class="field-input" placeholder="587" style="width:90px;" /></td>
-              <td class="smtp-hint">587 (STARTTLS) or 465 (SSL)</td>
-            </tr>
-            <tr>
-              <td class="smtp-label">Username</td>
-              <td><input v-model="smtpForm.username" class="field-input" placeholder="user@example.com" autocomplete="off" /></td>
-              <td class="smtp-hint">Login username for the mail server</td>
-            </tr>
-            <tr>
-              <td class="smtp-label">Password</td>
-              <td><input v-model="smtpForm.password" type="password" class="field-input" placeholder="Leave blank to keep current" autocomplete="new-password" /></td>
-              <td class="smtp-hint"><span v-if="smtpForm.passwordSet" style="color:#1a7a3a;">✓ Password is set</span><span v-else style="color:#888;">No password stored</span> — leave blank to keep existing</td>
-            </tr>
-            <tr>
-              <td class="smtp-label">From Email</td>
-              <td><input v-model="smtpForm.fromEmail" class="field-input" placeholder="e.g. committee@gaaffs.org" /></td>
-              <td class="smtp-hint">The email address newsletters are sent <em>from</em></td>
-            </tr>
-            <tr>
-              <td class="smtp-label">From Name</td>
-              <td><input v-model="smtpForm.fromName" class="field-input" placeholder="e.g. GAAFFS Newsletter" /></td>
-              <td class="smtp-hint">Friendly name shown to recipients</td>
-            </tr>
-            <tr>
-              <td class="smtp-label">Encryption</td>
-              <td>
-                <label style="margin-right:14px;"><input type="checkbox" v-model="smtpForm.useTls" /> STARTTLS (port 587)</label>
-                <label><input type="checkbox" v-model="smtpForm.useSsl" /> SSL/TLS (port 465)</label>
-              </td>
-              <td class="smtp-hint">Enable STARTTLS or direct SSL – enable one, not both</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="smtp-actions">
-          <button type="button" class="save-btn" @click="saveSmtpConfig">Save SMTP Settings</button>
-          <span style="margin:0 10px;">|</span>
-          <label for="smtp-test-to">Test to:</label>
-          <input id="smtp-test-to" v-model="smtpTestEmail" class="field-input" style="width:220px;display:inline-block;margin:0 6px;" placeholder="your@email.com" />
-          <button type="button" @click="testSmtpConfig">Send Test Email</button>
-        </div>
-      </div>
-
-      <!-- Add new club -->
-      <h2>Add New Club</h2>
-      <table class="clubs-table">
-        <thead>
-          <tr>
-            <th>Short Name</th>
-            <th>Full Name</th>
-            <th>Website URL</th>
-            <th>Admin Email</th>
-            <th>Description</th>
-            <th>Logo (PNG)</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><input v-model="newClub.shortName" class="field-input short-input" placeholder="e.g. ABC" /></td>
-            <td><input v-model="newClub.fullName" class="field-input" placeholder="Full club name" /></td>
-            <td><input v-model="newClub.websiteUrl" class="field-input" placeholder="https://..." /></td>
-            <td><input v-model="newClub.adminEmail" class="field-input" placeholder="admin@example.com" /></td>
-            <td><textarea v-model="newClub.description" class="field-input desc-textarea" rows="3" placeholder="Club description"></textarea></td>
-            <td>
-              <input
-                ref="newClubLogoInput"
-                type="file"
-                accept="image/png"
-                class="field-input"
-                @change="onNewClubLogoChange"
-              />
-            </td>
-            <td class="actions-cell">
-              <button type="button" class="save-btn" @click="addClub">Add Club</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      </div><!-- end clubs tab -->
-
       <!-- ===== USER ADMINISTRATION TAB ===== -->
       <div v-show="activeTab === 'users'">
-        <h1>User Administration</h1>
-        <p style="font-size:9pt;color:#555;">Manage role assignments for members across all clubs. Changes take effect immediately.</p>
+        <UserAdmin />
+      </div>
 
         <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
 
@@ -417,6 +216,7 @@ const API_BASE_URL = config.api.backendUrl;
 import AppHeader from './src/components/AppHeader.vue';
 import ClubsConfig from './src/components/admin/ClubsConfig.vue';
 import SMTPSettings from './src/components/admin/SMTPSettings.vue';
+import FieldOrder from './src/components/admin/FieldOrder.vue';
 import adminStore from './src/adminStore.js';
 export default {
   components: {
@@ -611,6 +411,11 @@ export default {
         <div v-show="activeTab === 'clubs'">
           <ClubsConfig />
           <SMTPSettings />
+        </div>
+
+        <!-- ===== FIELD ORDER TAB ===== -->
+        <div v-show="activeTab === 'fieldOrder'">
+          <FieldOrder />
         </div>
         this.uaMerge.statusMsg = '';
         this.uaMerge.statusError = false;
