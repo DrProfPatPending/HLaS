@@ -153,6 +153,7 @@ def get_current_principal(club_short_name=''):
         'username': str(member_session.get('username', '')).strip(),
         'club_short_name': session_club,
         'scope_club_short_name': scope_club,
+        'user_type': member_session.get('user_type', 'member'),
         'global_roles': roles_info['global_roles'],
         'club_roles': roles_info['club_roles'],
         'effective_roles': roles_info['effective_roles'],

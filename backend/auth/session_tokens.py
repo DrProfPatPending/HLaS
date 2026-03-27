@@ -175,6 +175,7 @@ def get_member_refresh_session_from_token(token_value):
                 'member_id': row.member_id,
                 'club_short_name': row.club_short_name,
                 'username': row.username,
+                'user_type': getattr(row, 'user_type', 'member'),
             }
         finally:
             session.close()
@@ -192,6 +193,7 @@ def get_member_refresh_session_from_token(token_value):
         'member_id': row.get('member_id'),
         'club_short_name': row.get('club_short_name', ''),
         'username': row.get('username', ''),
+        'user_type': row.get('user_type', 'member'),
     }
 
 
@@ -260,6 +262,7 @@ def get_member_session_from_token(token_value):
                 'member_id': row.member_id,
                 'club_short_name': row.club_short_name,
                 'username': row.username,
+                'user_type': getattr(row, 'user_type', 'member'),
             }
         finally:
             session.close()
@@ -277,6 +280,7 @@ def get_member_session_from_token(token_value):
         'member_id': row.get('member_id'),
         'club_short_name': row.get('club_short_name', ''),
         'username': row.get('username', ''),
+        'user_type': row.get('user_type', 'member'),
     }
 
 
