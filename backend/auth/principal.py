@@ -206,6 +206,11 @@ def require_authenticated(club_short_name=''):
     expected_club = str(club_short_name or '').strip()
     actual_club = str(principal.get('club_short_name', '')).strip()
     effective_roles = set(principal.get('effective_roles', []))
+    user_type = principal.get('user_type', 'member')
+
+    # Admin/system users can access any club or no club
+    if user_type == 'admin':
+        return None
 
     if expected_club and expected_club != actual_club and not effective_roles.intersection(GLOBAL_ADMIN_ROLES):
         # Allow access if user has a membership link to the requested club
