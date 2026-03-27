@@ -525,8 +525,21 @@ export default {
       loadClubs() {
         axios.get(`${API_BASE_URL}/admin/clubs`, { headers: this.authHeaders() })
           .then(res => {
-            // Defensive: only keep valid clubs with shortName
-            this.clubs = (res.data.clubs || []).filter(c => c && c.shortName);
+            let clubs = (res.data.clubs || []).filter(c => c && c.shortName);
+            if (!clubs.length) {
+              // If no clubs returned, assume admin login and inject ADMIN club
+              clubs = [{
+                id: 'ADMIN',
+                shortName: 'ADMIN',
+                fullName: 'Application Administration',
+                websiteUrl: '',
+                adminEmail: '',
+                description: 'Global admin context',
+                logoUrl: '',
+                beats: [],
+              }];
+            }
+            this.clubs = clubs;
           })
           .catch(err => {
             if (err.response?.status === 401) {

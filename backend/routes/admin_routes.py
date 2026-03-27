@@ -112,6 +112,18 @@ def create_admin_blueprint(deps):
                         'name': member_name,
                     },
                     'roles': effective_roles,
+                    'clubs': [
+                        {
+                            'id': 'ADMIN',
+                            'shortName': 'ADMIN',
+                            'fullName': 'Application Administration',
+                            'websiteUrl': '',
+                            'adminEmail': '',
+                            'description': 'Global admin context',
+                            'logoUrl': '',
+                            'beats': [],
+                        }
+                    ],
                     **token_payload,  # Spread token, refreshToken, expiresInSeconds, refreshExpiresInSeconds
                 })
             
