@@ -1,8 +1,11 @@
 <template>
-      <!-- ===== USER ADMINISTRATION TAB ===== -->
-      <div v-show="activeTab === 'users'">
-        <UserAdmin />
-      </div>
+
+    <AdminHeader :loggedIn="loggedIn" @logout="logout" />
+
+    <!-- ===== USER ADMINISTRATION TAB ===== -->
+    <div v-show="activeTab === 'users'">
+      <UserAdmin />
+    </div>
 
         <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
 
@@ -213,14 +216,14 @@
 import axios from 'axios';
 import config from './server.config.json';
 const API_BASE_URL = config.api.backendUrl;
-import AppHeader from './src/components/AppHeader.vue';
+import AdminHeader from './src/components/admin/AdminHeader.vue';
 import ClubsConfig from './src/components/admin/ClubsConfig.vue';
 import SMTPSettings from './src/components/admin/SMTPSettings.vue';
 import FieldOrder from './src/components/admin/FieldOrder.vue';
 import adminStore from './src/adminStore.js';
 export default {
   components: {
-    AppHeader,
+    AdminHeader,
   },
   data() {
     return {
