@@ -53,9 +53,16 @@ def ensure_postgres_member_sessions_table(engine):
         ON member_sessions (user_id)
         """
     )
+    ensure_user_type_column_sql = text(
+        """
+        ALTER TABLE member_sessions
+        ADD COLUMN IF NOT EXISTS user_type VARCHAR(16) DEFAULT 'member'
+        """
+    )
     with engine.begin() as conn:
         conn.execute(create_table_sql)
         conn.execute(ensure_user_id_column_sql)
+        conn.execute(ensure_user_type_column_sql)
         conn.execute(create_index_sql)
         conn.execute(create_user_index_sql)
 
@@ -94,9 +101,16 @@ def ensure_postgres_member_refresh_sessions_table(engine):
         ON member_refresh_sessions (user_id)
         """
     )
+    ensure_user_type_column_sql = text(
+        """
+        ALTER TABLE member_refresh_sessions
+        ADD COLUMN IF NOT EXISTS user_type VARCHAR(16) DEFAULT 'member'
+        """
+    )
     with engine.begin() as conn:
         conn.execute(create_table_sql)
         conn.execute(ensure_user_id_column_sql)
+        conn.execute(ensure_user_type_column_sql)
         conn.execute(create_index_sql)
         conn.execute(create_user_index_sql)
 
