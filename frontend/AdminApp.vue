@@ -415,12 +415,14 @@ import axios from 'axios';
 import config from './server.config.json';
 const API_BASE_URL = config.api.backendUrl;
 import AppHeader from './src/components/AppHeader.vue';
+import adminStore from './src/adminStore.js';
 export default {
   components: {
     AppHeader,
   },
   data() {
     return {
+      ...adminStore.state,
       loginUsername: '',
       loginPassword: '',
       loginError: '',
@@ -429,6 +431,7 @@ export default {
     };
   },
     methods: {
+      ...adminStore.methods,
       // ===== FIELD ORDER TAB METHODS =====
       loadFieldOrder() {
         // Debug: log when called, API_BASE_URL, and Authorization header
