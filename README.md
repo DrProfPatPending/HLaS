@@ -1,3 +1,15 @@
+# Option 3 Migration: Admin/System vs Member/Club User Flows
+
+This project now fully separates admin/system users from member/club users, both in the backend API and the frontend UI.
+
+## Key Features
+- **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
+- **Member/club users** use the main UI at `/` (App.vue)
+- **Session tokens** and **principal context** now include `user_type` for robust permission checks
+- **API endpoints** allow admin/system users to operate globally, without requiring a club context
+- **Frontend and backend code** refactored for clean separation and maintainability
+
+See DEPLOYMENT.md for full technical details and migration notes.
 # Fishing Club Membership Management Web Application
 
 This project is a simple web application for managing the membership of a fishing club. It consists of:
