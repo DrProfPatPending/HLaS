@@ -23,9 +23,11 @@ def extract_membership_and_name(text):
     if mem_no_match:
         membership_no = mem_no_match.group(1).strip()
 
-    name_match = re.search(r"Name\s*:\s*([\w\s\-'.]+)", text, re.IGNORECASE)
+    name_match = re.search(r"Name\s*:\s*(.+)", text, re.IGNORECASE)
     if name_match:
-        name = name_match.group(1).strip()
+        # Take only up to the first newline or up to the next field
+        name_line = name_match.group(1).strip()
+        name = name_line.split('\n')[0].split('Membership No')[0].strip()
 
     return membership_no, name
 
@@ -58,8 +60,10 @@ def split_pdf_by_member(input_pdf_path, output_folder, start_page=1, num_pages=N
 
         membership_no, name = extract_membership_and_name(text)
         if membership_no and name:
-            safe_name = re.sub(r'[\\/:*?"<>|]', '', name)
-            filename = f"{membership_no} - {safe_name} - 2026.pdf"
+            # Remove forbidden filename characters and strip whitespace/newlines
+            safe_name = re.sub(r'[\\/:*?"<>|\n\r]', '', name).strip()
+            safe_no = re.sub(r'[\\/:*?"<>|\n\r]', '', membership_no).strip()
+            filename = f"{safe_no} - {safe_name} - 2026.pdf"
         else:
             filename = f"page_{i+1}_unknown.pdf"
 
