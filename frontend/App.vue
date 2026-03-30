@@ -4,12 +4,12 @@
     <login-view v-if="!loggedIn" />
     <div v-else>
       <home-view v-if="activeSection === 'home'" />
-    <membership-admin v-else-if="activeSection === 'membership-admin'" />
-    <club-information v-else-if="activeSection === 'club-information'" />
-    <my-club v-else-if="activeSection === 'my-club'" />
-    <newsletters v-else-if="activeSection === 'newsletters'" />
-    <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
-    <member-edit v-else-if="activeSection === 'member-edit'" />
+      <membership-admin v-else-if="activeSection === 'membership-admin'" />
+      <club-information v-else-if="activeSection === 'club-information'" />
+      <my-club v-else-if="activeSection === 'my-club'" />
+      <newsletters v-else-if="activeSection === 'newsletters'" />
+      <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
+      <member-edit v-else-if="activeSection === 'member-edit'" />
     <div v-else class="section-placeholder">
       <h2>{{ sectionDisplayName(activeSection) }}</h2>
       <p>This section is coming soon.</p>

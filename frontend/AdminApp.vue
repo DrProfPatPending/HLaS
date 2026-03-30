@@ -1,5 +1,4 @@
 <template>
-
     <div id="admin-app">
       <AdminHeader :loggedIn="loggedIn" @logout="logout" />
       <div v-if="!loggedIn" class="login-container">
@@ -47,9 +46,10 @@
 </template>
 
 <script>
+const API_BASE_URL = config.api.backendUrl;
 import axios from 'axios';
 import config from './server.config.json';
-const API_BASE_URL = config.api.backendUrl;
+export default {
   components: {
     AdminHeader,
     UserAdmin: () => import('./src/components/admin/UserAdmin.vue'),
@@ -415,6 +415,9 @@ const API_BASE_URL = config.api.backendUrl;
           },
         },
       }
+
+</script>
+<style scoped>
 #app .logo-spacer {
   width: 100%;
 }
