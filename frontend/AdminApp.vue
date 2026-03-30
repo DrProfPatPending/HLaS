@@ -76,19 +76,13 @@ const API_BASE_URL = config.api.backendUrl;
         clubId: null,
         statusMsg: '',
         statusError: false,
-      },
-      uaAvailableRoles: [],
-      uaClubs: [],
-      uaMerge: {
-        sourceQuery: '',
-        targetQuery: '',
-        sourceResults: [],
-        targetResults: [],
-        sourceUser: null,
-        targetUser: null,
-        statusMsg: '',
-        statusError: false,
-        busy: false,
+        components: {
+          AdminHeader,
+          UserAdmin: require('./src/components/admin/UserAdmin.vue').default,
+          ClubsConfig,
+          SMTPSettings,
+          FieldOrder,
+        },
       },
       uaMergeCleanup: {
         statusMsg: '',
@@ -134,316 +128,293 @@ const API_BASE_URL = config.api.backendUrl;
       },
       loadFieldOrderContext() {
         this.fieldOrderEdit = (this.fieldOrder[this.fieldOrderContext] || []).slice();
-      },
-      moveField(idx, dir) {
-        const newIdx = idx + dir;
-        if (newIdx < 0 || newIdx >= this.fieldOrderEdit.length) return;
-        const arr = this.fieldOrderEdit;
-        [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-        this.fieldOrderEdit = arr.slice();
-      },
-      saveFieldOrder() {
-        const updated = { ...this.fieldOrder, [this.fieldOrderContext]: this.fieldOrderEdit };
-        axios.post(`${API_BASE_URL}/admin/field-order`, updated, { headers: this.authHeaders() })
-          .then(() => {
-            this.fieldOrderStatus = 'Field order updated.';
-            this.fieldOrderStatusError = false;
-            this.fieldOrder = updated;
-          })
-          .catch(err => {
-            this.fieldOrderStatus = err.response?.data?.error || 'Failed to update field order';
-            this.fieldOrderStatusError = true;
-          });
-      },
-      authHeaders() {
-        return { Authorization: `Bearer ${this.adminToken}` };
-      },
-      showStatus(msg, isError = false) {
-        this.statusMsg = msg;
-        this.statusMsgError = isError;
-        setTimeout(() => { this.statusMsg = ''; }, 4000);
-      },
-      login() {
-        this.loginError = '';
-        axios.post(`${API_BASE_URL}/admin/login`, {
-          username: this.loginUsername,
-          password: this.loginPassword,
-        })
-          .then(res => {
-            if (res.data.success) {
-              this.adminToken = res.data.token;
-              localStorage.setItem('hlasAdminToken', this.adminToken);
-              this.loggedIn = true;
-              this.loginPassword = '';
-              this.loginError = '';
-              this.activeTab = 'users';
-              this.loadClubs();
-              // Debug: call loadFieldOrder after login
-              // eslint-disable-next-line no-console
-              console.log('[AdminApp.vue] login() success, calling loadFieldOrder()');
-              this.loadFieldOrder();
-            } else {
-              this.loginError = res.data.error || 'Login failed';
+        methods: {
+          ...adminStore.methods,
+          // ===== FIELD ORDER TAB METHODS =====
+          loadFieldOrder() {
+            // Debug: log when called, API_BASE_URL, and Authorization header
+            // eslint-disable-next-line no-console
+            console.log('[AdminApp.vue] loadFieldOrder() called. API_BASE_URL:', API_BASE_URL);
+            const auth = this.authHeaders();
+            // eslint-disable-next-line no-console
+            console.log('[AdminApp.vue] loadFieldOrder() Authorization header:', auth);
+            axios.get(`${API_BASE_URL}/admin/field-order`, { headers: auth })
+              .then(res => {
+                // eslint-disable-next-line no-console
+                console.log('[AdminApp.vue] /admin/field-order response:', res);
+                this.fieldOrder = res.data.field_order || {};
+                // Force reactivity for fieldOrderContexts
+                this.fieldOrderContexts = [];
+                this.$nextTick(() => {
+                  this.fieldOrderContexts = Object.keys(this.fieldOrder);
+                  this.fieldOrderContext = this.fieldOrderContexts[0] || 'default';
+                  this.loadFieldOrderContext();
+                });
+              })
+              .catch(err => {
+                // eslint-disable-next-line no-console
+                console.error('[AdminApp.vue] /admin/field-order error:', err, err?.response);
+                this.fieldOrderStatus = err.response?.data?.error || 'Failed to load field order';
+                this.fieldOrderStatusError = true;
+              });
+          },
+          loadFieldOrderContext() {
+            this.fieldOrderEdit = (this.fieldOrder[this.fieldOrderContext] || []).slice();
+          },
+          moveField(idx, dir) {
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= this.fieldOrderEdit.length) return;
+            const arr = this.fieldOrderEdit;
+            [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+            this.fieldOrderEdit = arr.slice();
+          },
+          saveFieldOrder() {
+            const updated = { ...this.fieldOrder, [this.fieldOrderContext]: this.fieldOrderEdit };
+            axios.post(`${API_BASE_URL}/admin/field-order`, updated, { headers: this.authHeaders() })
+              .then(() => {
+                this.fieldOrderStatus = 'Field order updated.';
+                this.fieldOrderStatusError = false;
+                this.fieldOrder = updated;
+              })
+              .catch(err => {
+                this.fieldOrderStatus = err.response?.data?.error || 'Failed to update field order';
+                this.fieldOrderStatusError = true;
+              });
+          },
+          authHeaders() {
+            return { Authorization: `Bearer ${this.adminToken}` };
+          },
+          showStatus(msg, isError = false) {
+            this.statusMsg = msg;
+            this.statusMsgError = isError;
+            setTimeout(() => { this.statusMsg = ''; }, 4000);
+          },
+          login() {
+            this.loginError = '';
+            axios.post(`${API_BASE_URL}/admin/login`, {
+              username: this.loginUsername,
+              password: this.loginPassword,
+            })
+              .then(res => {
+                if (res.data.success) {
+                  this.adminToken = res.data.token;
+                  localStorage.setItem('hlasAdminToken', this.adminToken);
+                  this.loggedIn = true;
+                  this.loginPassword = '';
+                  this.loginError = '';
+                  this.activeTab = 'users';
+                  this.loadClubs();
+                  // Debug: call loadFieldOrder after login
+                  // eslint-disable-next-line no-console
+                  console.log('[AdminApp.vue] login() success, calling loadFieldOrder()');
+                  this.loadFieldOrder();
+                } else {
+                  this.loginError = res.data.error || 'Login failed';
+                }
+              })
+              .catch(err => {
+                this.loginError = err.response?.data?.error || 'Login failed';
+              });
+          },
+          logout() {
+            axios.post(`${API_BASE_URL}/admin/logout`, {}, { headers: this.authHeaders() }).catch(() => {});
+            this.adminToken = null;
+            localStorage.removeItem('hlasAdminToken');
+            this.loggedIn = false;
+            this.clubs = [];
+            this.loginUsername = '';
+            this.loginPassword = '';
+            this.loginError = '';
+          },
+          addClub() {
+            if (!this.newClub.shortName.trim()) {
+              this.showStatus('Short Name is required.', true);
+              return;
             }
-          })
-          .catch(err => {
-            this.loginError = err.response?.data?.error || 'Login failed';
-          });
-      },
-      logout() {
-        axios.post(`${API_BASE_URL}/admin/logout`, {}, { headers: this.authHeaders() }).catch(() => {});
-        this.adminToken = null;
-        localStorage.removeItem('hlasAdminToken');
-        this.loggedIn = false;
-        this.clubs = [];
-        this.loginUsername = '';
-        this.loginPassword = '';
-        this.loginError = '';
-      },
-      addClub() {
-        if (!this.newClub.shortName.trim()) {
-          this.showStatus('Short Name is required.', true);
-          return;
-        }
-        const formData = new FormData();
-        // ...existing code for adding a club...
-        this.uaMerge.statusMsg = '';
-        this.uaMerge.statusError = false;
-      },
-      },
-      startEdit(club) {
-        this.editingShortName = club.shortName;
-        this.editForm = { ...club };
-      },
-      cancelEdit() {
-        this.editingShortName = null;
-        this.editForm = {};
-      },
-      saveEdit() {
-        axios.put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.editingShortName)}`,
-          this.editForm,
-          { headers: this.authHeaders() })
-          .then(() => {
+            const formData = new FormData();
+            // ...existing code for adding a club...
+            this.uaMerge.statusMsg = '';
+            this.uaMerge.statusError = false;
+          },
+          startEdit(club) {
+            this.editingShortName = club.shortName;
+            this.editForm = { ...club };
+          },
+          cancelEdit() {
             this.editingShortName = null;
             this.editForm = {};
-            this.loadClubs();
-            this.showStatus('Club updated successfully.');
-          })
-          .catch(err => {
-            this.showStatus(err.response?.data?.error || 'Update failed', true);
-          });
-      },
-      deleteClub(shortName) {
-        if (!window.confirm(`Delete club "${shortName}"? This cannot be undone.`)) return;
-        axios.delete(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(shortName)}`,
-          { headers: this.authHeaders() })
-          .then(() => {
-            this.loadClubs();
-            this.showStatus(`Club "${shortName}" deleted.`);
-          })
-          .catch(err => {
-            this.showStatus(err.response?.data?.error || 'Delete failed', true);
-          });
-      },
-      onNewClubLogoChange(event) {
-        const file = event.target.files && event.target.files.length ? event.target.files[0] : null;
-        if (!file) {
-          this.newClubLogoFile = null;
-          return;
-        }
-        const isPngType = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
-        if (!isPngType) {
-          this.newClubLogoFile = null;
-          event.target.value = '';
-          this.showStatus('Logo must be a PNG file.', true);
-          return;
-        }
-        this.newClubLogoFile = file;
-      },
-      addClub() {
-        if (!this.newClub.shortName.trim()) {
-          this.showStatus('Short Name is required.', true);
-          return;
-        }
-        const formData = new FormData();
-        // ...existing code for adding a club...
-        this.uaMerge.statusMsg = '';
-        this.uaMerge.statusError = false;
-      },
-
-      resetMergeState() {
-        this.uaMerge.sourceQuery = '';
-        this.uaMerge.targetQuery = '';
-        this.uaMerge.sourceResults = [];
-        this.uaMerge.targetResults = [];
-        this.uaMerge.sourceUser = null;
-        this.uaMerge.targetUser = null;
-        this.uaMerge.statusMsg = '';
-        this.uaMerge.statusError = false;
-        this.uaMerge.busy = false;
-        this.uaMergeCleanup.statusMsg = '';
-        this.uaMergeCleanup.statusError = false;
-        this.uaMergeCleanup.lastResult = null;
-        this.uaMergeCleanup.busy = false;
-      },
-
-      mergeUsers() {
-        if (!this.uaCanMerge) {
-          this.uaMerge.statusMsg = 'Select different source and target users.';
-          this.uaMerge.statusError = true;
-          return;
-        }
-
-        const source = this.uaMerge.sourceUser;
-        const target = this.uaMerge.targetUser;
-        const confirmed = window.confirm(
-          `Merge source user "${source.username}" (id ${source.userId}) into target user "${target.username}" (id ${target.userId})?`
-        );
-        if (!confirmed) return;
-
-        this.uaMerge.busy = true;
-        this.uaMerge.statusMsg = '';
-        this.uaMerge.statusError = false;
-
-        axios.post(`${API_BASE_URL}/admin/users/merge`, {
-          sourceUserId: source.userId,
-          targetUserId: target.userId,
-        }, {
-          headers: this.authHeaders(),
-        }).then(res => {
-          const summary = res.data.summary || {};
-          this.uaMerge.statusMsg = `Merge complete. Links moved: ${summary.movedLinks || 0}, assignments moved: ${summary.movedAssignments || 0}.`;
-          this.uaMerge.statusError = false;
-          this.loadUserAdmin();
-        }).catch(err => {
-          this.uaMerge.statusMsg = err.response?.data?.error || 'Merge failed';
-          this.uaMerge.statusError = true;
-        }).finally(() => {
-          this.uaMerge.busy = false;
-        });
-      },
-
-      runMergeCleanup(dryRun = true) {
-        if (!dryRun) {
-          const confirmed = window.confirm('Apply merge cleanup now? This will merge eligible duplicate active users.');
-          if (!confirmed) return;
-        }
-
-        this.uaMergeCleanup.busy = true;
-        this.uaMergeCleanup.statusMsg = '';
-        this.uaMergeCleanup.statusError = false;
-
-        axios.post(`${API_BASE_URL}/admin/users/merge/cleanup`, {
-          dryRun,
-        }, {
-          headers: this.authHeaders(),
-        }).then(res => {
-          const payload = res.data || {};
-          this.uaMergeCleanup.lastResult = payload;
-          this.uaMergeCleanup.statusMsg = dryRun
-            ? `Dry run complete. Planned merges: ${payload.mergeCount || 0}.`
-            : `Cleanup applied. Merges completed: ${payload.mergeCount || 0}.`;
-          this.uaMergeCleanup.statusError = false;
-          if (!dryRun) this.loadUserAdmin();
-        }).catch(err => {
-          this.uaMergeCleanup.statusMsg = err.response?.data?.error || 'Cleanup failed';
-          this.uaMergeCleanup.statusError = true;
-        }).finally(() => {
-          this.uaMergeCleanup.busy = false;
-        });
-      },
-
-      openGrantModal(member) {
-        this.uaGrant = { visible: true, member, roleCode: '', clubId: null, statusMsg: '', statusError: false };
-      },
-
-      closeGrantModal() {
-        this.uaGrant.visible = false;
-      },
-
-      grantRole() {
-        if (!this.uaGrant.roleCode) {
-          this.uaGrant.statusMsg   = 'Please select a role.';
-          this.uaGrant.statusError = true;
-          return;
-        }
-        const selectedRole = this.uaAvailableRoles.find(r => r.code === this.uaGrant.roleCode);
-        if (selectedRole?.scopeType === 'club' && !this.uaGrant.clubId) {
-          this.uaGrant.statusMsg   = 'Please select a club for this role.';
-          this.uaGrant.statusError = true;
-          return;
-        }
-        axios.post(
-          `${API_BASE_URL}/admin/users/${this.uaGrant.member.userId}/roles`,
-          { roleCode: this.uaGrant.roleCode, clubId: this.uaGrant.clubId || null },
-          { headers: this.authHeaders() }
-        ).then(() => {
-          this.closeGrantModal();
-          this.uaSearch = '';
-          this.uaSearchResults = [];
-          this.uaShowStatus('Role granted successfully.');
-          this.loadUserAdmin();
-        }).catch(err => {
-          this.uaGrant.statusMsg   = err.response?.data?.error || 'Grant failed';
-          this.uaGrant.statusError = true;
-        });
-      },
-
-      revokeRole(user, assignment) {
-        const scopeLabel = assignment.roleClubShortName
-          ? ` (${assignment.roleClubShortName})`
-          : ' (global)';
-        if (!window.confirm(`Revoke "${assignment.roleName}"${scopeLabel} from ${user.username}?`)) return;
-        axios.delete(
-          `${API_BASE_URL}/admin/users/${user.userId}/roles/${assignment.assignmentId}`,
-          { headers: this.authHeaders() }
-        ).then(() => {
-          this.uaShowStatus('Role revoked successfully.');
-          this.loadUserAdmin();
-        }).catch(err => {
-          this.uaStatusMsg  = err.response?.data?.error || 'Revoke failed';
-          this.uaStatusError = true;
-        });
-      },
-
-      uaShowStatus(msg, isError = false) {
-        this.uaStatusMsg   = msg;
-        this.uaStatusError = isError;
-        setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
-      },
-    }
-</script>
-
-
-<style>
-body {
-  margin: 0;
-  font-family: Helvetica, Arial, sans-serif;
-}
-#app .logo-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #f8f8f8;
-  border-bottom: 1px solid #ddd;
-  padding: 4px 0;
-}
-#app .logo-cell {
-  padding: 4px 10px;
-  vertical-align: middle;
-}
-#app .app-logo {
-  height: 50px;
-  cursor: default;
-}
-#app .admin-title-cell {
-  vertical-align: middle;
-  padding-left: 12px;
-}
-#app .admin-title {
-  font-size: 18pt;
-  font-weight: bold;
-  color: #333;
-}
+          },
+          saveEdit() {
+            axios.put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(this.editingShortName)}`,
+              this.editForm,
+              { headers: this.authHeaders() })
+              .then(() => {
+                this.editingShortName = null;
+                this.editForm = {};
+                this.loadClubs();
+                this.showStatus('Club updated successfully.');
+              })
+              .catch(err => {
+                this.showStatus(err.response?.data?.error || 'Update failed', true);
+              });
+          },
+          deleteClub(shortName) {
+            if (!window.confirm(`Delete club "${shortName}"? This cannot be undone.`)) return;
+            axios.delete(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(shortName)}`,
+              { headers: this.authHeaders() })
+              .then(() => {
+                this.loadClubs();
+                this.showStatus(`Club "${shortName}" deleted.`);
+              })
+              .catch(err => {
+                this.showStatus(err.response?.data?.error || 'Delete failed', true);
+              });
+          },
+          onNewClubLogoChange(event) {
+            const file = event.target.files && event.target.files.length ? event.target.files[0] : null;
+            if (!file) {
+              this.newClubLogoFile = null;
+              return;
+            }
+            const isPngType = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+            if (!isPngType) {
+              this.newClubLogoFile = null;
+              event.target.value = '';
+              this.showStatus('Logo must be a PNG file.', true);
+              return;
+            }
+            this.newClubLogoFile = file;
+          },
+          resetMergeState() {
+            this.uaMerge.sourceQuery = '';
+            this.uaMerge.targetQuery = '';
+            this.uaMerge.sourceResults = [];
+            this.uaMerge.targetResults = [];
+            this.uaMerge.sourceUser = null;
+            this.uaMerge.targetUser = null;
+            this.uaMerge.statusMsg = '';
+            this.uaMerge.statusError = false;
+            this.uaMerge.busy = false;
+            this.uaMergeCleanup.statusMsg = '';
+            this.uaMergeCleanup.statusError = false;
+            this.uaMergeCleanup.lastResult = null;
+            this.uaMergeCleanup.busy = false;
+          },
+          mergeUsers() {
+            if (!this.uaCanMerge) {
+              this.uaMerge.statusMsg = 'Select different source and target users.';
+              this.uaMerge.statusError = true;
+              return;
+            }
+            const source = this.uaMerge.sourceUser;
+            const target = this.uaMerge.targetUser;
+            const confirmed = window.confirm(
+              `Merge source user "${source.username}" (id ${source.userId}) into target user "${target.username}" (id ${target.userId})?`
+            );
+            if (!confirmed) return;
+            this.uaMerge.busy = true;
+            this.uaMerge.statusMsg = '';
+            this.uaMerge.statusError = false;
+            axios.post(`${API_BASE_URL}/admin/users/merge`, {
+              sourceUserId: source.userId,
+              targetUserId: target.userId,
+            }, {
+              headers: this.authHeaders(),
+            }).then(res => {
+              const summary = res.data.summary || {};
+              this.uaMerge.statusMsg = `Merge complete. Links moved: ${summary.movedLinks || 0}, assignments moved: ${summary.movedAssignments || 0}.`;
+              this.uaMerge.statusError = false;
+              this.loadUserAdmin();
+            }).catch(err => {
+              this.uaMerge.statusMsg = err.response?.data?.error || 'Merge failed';
+              this.uaMerge.statusError = true;
+            }).finally(() => {
+              this.uaMerge.busy = false;
+            });
+          },
+          runMergeCleanup(dryRun = true) {
+            if (!dryRun) {
+              const confirmed = window.confirm('Apply merge cleanup now? This will merge eligible duplicate active users.');
+              if (!confirmed) return;
+            }
+            this.uaMergeCleanup.busy = true;
+            this.uaMergeCleanup.statusMsg = '';
+            this.uaMergeCleanup.statusError = false;
+            axios.post(`${API_BASE_URL}/admin/users/merge/cleanup`, {
+              dryRun,
+            }, {
+              headers: this.authHeaders(),
+            }).then(res => {
+              const payload = res.data || {};
+              this.uaMergeCleanup.lastResult = payload;
+              this.uaMergeCleanup.statusMsg = dryRun
+                ? `Dry run complete. Planned merges: ${payload.mergeCount || 0}.`
+                : `Cleanup applied. Merges completed: ${payload.mergeCount || 0}.`;
+              this.uaMergeCleanup.statusError = false;
+              if (!dryRun) this.loadUserAdmin();
+            }).catch(err => {
+              this.uaMergeCleanup.statusMsg = err.response?.data?.error || 'Cleanup failed';
+              this.uaMergeCleanup.statusError = true;
+            }).finally(() => {
+              this.uaMergeCleanup.busy = false;
+            });
+          },
+          openGrantModal(member) {
+            this.uaGrant = { visible: true, member, roleCode: '', clubId: null, statusMsg: '', statusError: false };
+          },
+          closeGrantModal() {
+            this.uaGrant.visible = false;
+          },
+          grantRole() {
+            if (!this.uaGrant.roleCode) {
+              this.uaGrant.statusMsg   = 'Please select a role.';
+              this.uaGrant.statusError = true;
+              return;
+            }
+            const selectedRole = this.uaAvailableRoles.find(r => r.code === this.uaGrant.roleCode);
+            if (selectedRole?.scopeType === 'club' && !this.uaGrant.clubId) {
+              this.uaGrant.statusMsg   = 'Please select a club for this role.';
+              this.uaGrant.statusError = true;
+              return;
+            }
+            axios.post(
+              `${API_BASE_URL}/admin/users/${this.uaGrant.member.userId}/roles`,
+              { roleCode: this.uaGrant.roleCode, clubId: this.uaGrant.clubId || null },
+              { headers: this.authHeaders() }
+            ).then(() => {
+              this.closeGrantModal();
+              this.uaSearch = '';
+              this.uaSearchResults = [];
+              this.uaShowStatus('Role granted successfully.');
+              this.loadUserAdmin();
+            }).catch(err => {
+              this.uaGrant.statusMsg   = err.response?.data?.error || 'Grant failed';
+              this.uaGrant.statusError = true;
+            });
+          },
+          revokeRole(user, assignment) {
+            const scopeLabel = assignment.roleClubShortName
+              ? ` (${assignment.roleClubShortName})`
+              : ' (global)';
+            if (!window.confirm(`Revoke "${assignment.roleName}"${scopeLabel} from ${user.username}?`)) return;
+            axios.delete(
+              `${API_BASE_URL}/admin/users/${user.userId}/roles/${assignment.assignmentId}`,
+              { headers: this.authHeaders() }
+            ).then(() => {
+              this.uaShowStatus('Role revoked successfully.');
+              this.loadUserAdmin();
+            }).catch(err => {
+              this.uaStatusMsg  = err.response?.data?.error || 'Revoke failed';
+              this.uaStatusError = true;
+            });
+          },
+          uaShowStatus(msg, isError = false) {
+            this.uaStatusMsg   = msg;
+            this.uaStatusError = isError;
+            setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
+          },
+        },
+      }
 #app .logo-spacer {
   width: 100%;
 }
