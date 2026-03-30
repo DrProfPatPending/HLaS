@@ -230,6 +230,18 @@ export default {
       loggedIn: false,
       uaSearch: '',
       uaSearchResults: [],
+      uaUsers: [],
+      uaLoading: false,
+      uaGrant: {
+        visible: false,
+        member: null,
+        roleCode: '',
+        clubId: null,
+        statusMsg: '',
+        statusError: false,
+      },
+      uaAvailableRoles: [],
+      uaClubs: [],
       uaMerge: {
         sourceQuery: '',
         targetQuery: '',
@@ -248,6 +260,8 @@ export default {
         busy: false,
       },
       uaMergeCleanupPreview: [],
+      uaStatusMsg: '',
+      uaStatusError: false,
       // Add other state as needed for your admin UI
     };
   },
