@@ -18,13 +18,30 @@
         </form>
       </div>
       <div v-else class="admin-container">
+        <!-- ===== Admin Tab Navigation ===== -->
+        <div class="tab-nav">
+          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'users' }" @click="activeTab = 'users'">Users</button>
+          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'clubs' }" @click="activeTab = 'clubs'">Clubs</button>
+          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'smtp' }" @click="activeTab = 'smtp'">SMTP</button>
+          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'fieldOrder' }" @click="activeTab = 'fieldOrder'">Field Order</button>
+        </div>
         <!-- ===== USER ADMINISTRATION TAB ===== -->
         <div v-show="activeTab === 'users'">
           <UserAdmin />
+          <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
         </div>
-        <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
-        <!-- ...existing admin UI content here... -->
-        <!-- (Paste the rest of the admin UI here if needed) -->
+        <!-- ===== CLUBS TAB ===== -->
+        <div v-show="activeTab === 'clubs'">
+          <ClubsConfig />
+        </div>
+        <!-- ===== SMTP TAB ===== -->
+        <div v-show="activeTab === 'smtp'">
+          <SMTPSettings />
+        </div>
+        <!-- ===== FIELD ORDER TAB ===== -->
+        <div v-show="activeTab === 'fieldOrder'">
+          <FieldOrder />
+        </div>
       </div>
     </div>
 </template>
@@ -33,14 +50,12 @@
 import axios from 'axios';
 import config from './server.config.json';
 const API_BASE_URL = config.api.backendUrl;
-import AdminHeader from './src/components/admin/AdminHeader.vue';
-import ClubsConfig from './src/components/admin/ClubsConfig.vue';
-import SMTPSettings from './src/components/admin/SMTPSettings.vue';
-import FieldOrder from './src/components/admin/FieldOrder.vue';
-import adminStore from './src/adminStore.js';
-export default {
   components: {
     AdminHeader,
+    UserAdmin: () => import('./src/components/admin/UserAdmin.vue'),
+    ClubsConfig,
+    SMTPSettings,
+    FieldOrder,
   },
   data() {
     return {
