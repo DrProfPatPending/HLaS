@@ -228,6 +228,8 @@ export default {
       loginPassword: '',
       loginError: '',
       loggedIn: false,
+      uaSearch: '',
+      uaSearchResults: [],
       // Add other state as needed for your admin UI
     };
   },
