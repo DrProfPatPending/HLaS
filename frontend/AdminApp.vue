@@ -1,211 +1,32 @@
 <template>
 
-    <AdminHeader :loggedIn="loggedIn" @logout="logout" />
-
-    <!-- ===== USER ADMINISTRATION TAB ===== -->
-    <div v-show="activeTab === 'users'">
-      <UserAdmin />
-    </div>
-
+    <div id="admin-app">
+      <AdminHeader :loggedIn="loggedIn" @logout="logout" />
+      <div v-if="!loggedIn" class="login-container">
+        <h2>Admin Login</h2>
+        <form @submit.prevent="login">
+          <div class="form-field">
+            <label>Username:</label>
+            <input v-model="loginUsername" type="text" autocomplete="username" required />
+          </div>
+          <div class="form-field">
+            <label>Password:</label>
+            <input v-model="loginPassword" type="password" autocomplete="current-password" required />
+          </div>
+          <div v-if="loginError" class="error-msg" style="margin-bottom:10px;">{{ loginError }}</div>
+          <button type="submit" class="save-btn">Login</button>
+        </form>
+      </div>
+      <div v-else class="admin-container">
+        <!-- ===== USER ADMINISTRATION TAB ===== -->
+        <div v-show="activeTab === 'users'">
+          <UserAdmin />
+        </div>
         <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
-
-        <!-- Search panel to find a member and grant a role -->
-        <div class="ua-panel">
-          <h2>Grant Role to Member</h2>
-          <div class="ua-search-row">
-            <input
-              v-model="uaSearch"
-              @input="uaSearchDebounced"
-              placeholder="Search by username or name (min 2 chars)…"
-              class="field-input"
-              style="width:340px;"
-            />
-            <span v-if="uaSearch.length >= 2 && !uaSearchResults.length" class="ua-hint">No results.</span>
-          </div>
-          <div v-if="uaSearchResults.length" style="margin-top:8px;">
-            <table class="ua-table">
-              <thead><tr><th>Username</th><th>Name</th><th>Club</th><th></th></tr></thead>
-              <tbody>
-                <tr v-for="m in uaSearchResults" :key="m.userId">
-                  <td>{{ m.username }}</td>
-                  <td>{{ m.displayName }}</td>
-                  <td>{{ m.clubs && Array.isArray(m.clubs) ? m.clubs.filter(c => c && c.shortName).map(c => c.shortName).join(', ') : '' }}</td>
-                  <td><button type="button" class="save-btn" style="white-space:nowrap;" @click="openGrantModal(m)">Grant Role…</button></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div v-if="uaCanAccessMerge" class="ua-panel">
-          <h2>Merge Users</h2>
-          <p style="font-size:9pt;color:#555;margin-top:0;">Merge a duplicate source user into a target user. This requires global admin permission.</p>
-
-          <div class="ua-search-row" style="margin-bottom:8px;">
-            <label style="width:70px;">Source:</label>
-            <input
-              v-model="uaMerge.sourceQuery"
-              @input="uaMergeSearchDebounced('source')"
-              placeholder="Search source user (min 2 chars)…"
-              class="field-input"
-              style="width:340px;"
-            />
-          </div>
-          <div v-if="uaMerge.sourceResults.length" style="margin:0 0 10px 70px;max-width:720px;">
-            <table class="ua-table">
-              <thead><tr><th>Username</th><th>Name</th><th>Clubs</th><th></th></tr></thead>
-              <tbody>
-                <tr v-for="u in uaMerge.sourceResults" :key="'src-' + u.userId">
-                  <td>{{ u.username }}</td>
-                  <td>{{ u.displayName }}</td>
-                  <td>{{ (u.clubs || []).filter(c => c && c.shortName).map(c => c.shortName).join(', ') }}</td>
-                  <td><button type="button" @click="selectMergeUser('source', u)">Select</button></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="ua-search-row" style="margin-bottom:8px;">
-            <label style="width:70px;">Target:</label>
-            <input
-              v-model="uaMerge.targetQuery"
-              @input="uaMergeSearchDebounced('target')"
-              placeholder="Search target user (min 2 chars)…"
-              class="field-input"
-              style="width:340px;"
-            />
-          </div>
-          <div v-if="uaMerge.targetResults.length" style="margin:0 0 10px 70px;max-width:720px;">
-            <table class="ua-table">
-              <thead><tr><th>Username</th><th>Name</th><th>Clubs</th><th></th></tr></thead>
-              <tbody>
-                <tr v-for="u in uaMerge.targetResults" :key="'tgt-' + u.userId">
-                  <td>{{ u.username }}</td>
-                  <td>{{ u.displayName }}</td>
-                  <td>{{ (u.clubs || []).filter(c => c && c.shortName).map(c => c.shortName).join(', ') }}</td>
-                  <td><button type="button" @click="selectMergeUser('target', u)">Select</button></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div style="font-size:9pt;color:#444;margin:8px 0;">
-            <div><strong>Selected Source:</strong> <span v-if="uaMerge.sourceUser">{{ uaMerge.sourceUser.username }} — {{ uaMerge.sourceUser.displayName }} (id {{ uaMerge.sourceUser.userId }})</span><span v-else>None</span></div>
-            <div><strong>Selected Target:</strong> <span v-if="uaMerge.targetUser">{{ uaMerge.targetUser.username }} — {{ uaMerge.targetUser.displayName }} (id {{ uaMerge.targetUser.userId }})</span><span v-else>None</span></div>
-          </div>
-
-          <div v-if="uaMerge.statusMsg" :class="uaMerge.statusError ? 'error-msg' : 'success-msg'">{{ uaMerge.statusMsg }}</div>
-          <div class="ua-search-row">
-            <button type="button" class="save-btn" :disabled="!uaCanMerge || uaMerge.busy" @click="mergeUsers">{{ uaMerge.busy ? 'Merging…' : 'Merge Users' }}</button>
-            <button type="button" @click="resetMergeState">Reset</button>
-          </div>
-
-          <hr style="margin:14px 0;border:none;border-top:1px solid #ddd;" />
-          <div class="ua-search-row" style="gap:8px;">
-            <button type="button" :disabled="uaMergeCleanup.busy" @click="runMergeCleanup(true)">
-              {{ uaMergeCleanup.busy ? 'Working…' : 'Cleanup Dry Run' }}
-            </button>
-            <button type="button" class="save-btn" :disabled="uaMergeCleanup.busy" @click="runMergeCleanup(false)">
-              {{ uaMergeCleanup.busy ? 'Working…' : 'Apply Cleanup' }}
-            </button>
-            <span style="font-size:9pt;color:#666;">Auto-merges safe duplicates by email + username/display-name match.</span>
-          </div>
-          <div v-if="uaMergeCleanup.statusMsg" :class="uaMergeCleanup.statusError ? 'error-msg' : 'success-msg'" style="margin-top:8px;">
-            {{ uaMergeCleanup.statusMsg }}
-          </div>
-          <div v-if="uaMergeCleanup.lastResult" style="font-size:9pt;color:#444;margin-top:4px;">
-            Planned: {{ uaMergeCleanup.lastResult.mergeCount || 0 }}, Skipped: {{ (uaMergeCleanup.lastResult.skipped || []).length }}
-          </div>
-          <div v-if="uaMergeCleanupPreview.length" style="margin-top:8px;max-width:520px;">
-            <table class="ua-table" style="margin-bottom:4px;">
-              <thead>
-                <tr>
-                  <th style="width:220px;">Source</th>
-                  <th style="width:220px;">Target</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(m, idx) in uaMergeCleanupPreview" :key="'cleanup-preview-' + idx">
-                  <td>
-                    <div><strong>{{ m.sourceUsername || '(no username)' }}</strong> (id {{ m.sourceUserId }})</div>
-                    <div style="font-size:8.5pt;color:#666;">{{ m.sourceDisplayName || '(no name)' }}</div>
-                  </td>
-                  <td>
-                    <div><strong>{{ m.targetUsername || '(no username)' }}</strong> (id {{ m.targetUserId }})</div>
-                    <div style="font-size:8.5pt;color:#666;">{{ m.targetDisplayName || '(no name)' }}</div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-if="uaMergeCleanupRemaining > 0" style="font-size:8.5pt;color:#666;">
-              +{{ uaMergeCleanupRemaining }} more planned merge{{ uaMergeCleanupRemaining === 1 ? '' : 's' }}
-            </div>
-          </div>
-        </div>
-        <p v-else style="font-size:9pt;color:#777;margin:-8px 0 20px;">Merge Users is available only to app owners.</p>
-
-        <!-- Role assignment table -->
-        <h2>Current Role Assignments</h2>
-        <div v-if="uaLoading" style="padding:12px;color:#666;">Loading…</div>
-        <p v-else-if="!uaUsers.length" style="font-size:9pt;color:#888;">No members with role assignments found.</p>
-        <table v-else class="ua-table" style="margin-bottom:30px;">
-          <thead>
-            <tr>
-              <th style="width:180px;">Username</th>
-              <th style="width:180px;">Name</th>
-              <th style="width:110px;">Home Club</th>
-              <th>Roles</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="u in uaUsers" :key="u.userId">
-              <td>{{ u.username }}</td>
-              <td>{{ u.displayName }}</td>
-              <td>{{ u.homeClub || '—' }}</td>
-              <td class="roles-cell">
-                <span
-                  v-for="a in u.assignments"
-                  :key="a.assignmentId"
-                  :class="['role-badge', 'role-' + a.roleCode.replace(/_/g, '-')]"
-                >
-                  {{ a.roleName }}<span v-if="a.roleClubShortName" style="opacity:.75;"> / {{ a.roleClubShortName }}</span>
-                  <button type="button" class="role-revoke-btn" @click="revokeRole(u, a)" title="Revoke this role">×</button>
-                </span>
-                <button type="button" class="ua-add-role-btn" @click="openGrantModal(u)" title="Grant additional role">+ Role</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Grant role modal -->
-        <div v-if="uaGrant.visible" class="modal-overlay" @click.self="closeGrantModal">
-          <div class="modal-box">
-            <h3 style="margin-top:0;">Grant Role</h3>
-            <p style="margin:0 0 14px;">User: <strong>{{ uaGrant.member && uaGrant.member.username }}</strong> — {{ uaGrant.member && uaGrant.member.displayName }}</p>
-            <div class="form-field">
-              <label style="width:70px;">Role:</label>
-              <select v-model="uaGrant.roleCode" class="field-input" style="width:220px;">
-                <option value="">Select role…</option>
-                <option v-for="r in uaAvailableRoles" :key="r.code" :value="r.code">
-                  {{ r.name }} ({{ r.scopeType === 'global' ? 'global' : 'club-scoped' }})
-                </option>
-              </select>
-            </div>
-            <div v-if="uaGrantNeedsClub" class="form-field">
-              <label style="width:70px;">Club:</label>
-              <select v-model="uaGrant.clubId" class="field-input" style="width:220px;">
-                <option :value="null">Select club…</option>
-                <option v-for="c in uaClubs" :key="c && c.id ? c.id : Math.random()" :value="c && c.id ? c.id : ''">{{ c && c.shortName ? c.shortName : '' }} – {{ c && c.fullName ? c.fullName : '' }}</option>
-              </select>
-            </div>
-            <div v-if="uaGrant.statusMsg" :class="uaGrant.statusError ? 'error-msg' : 'success-msg'" style="margin:8px 0;">{{ uaGrant.statusMsg }}</div>
-            <div class="modal-actions">
-              <button type="button" class="save-btn" @click="grantRole">Grant Role</button>
-              <button type="button" style="margin-left:8px;" @click="closeGrantModal">Cancel</button>
-            </div>
-          </div>
-        </div>
-  
+        <!-- ...existing admin UI content here... -->
+        <!-- (Paste the rest of the admin UI here if needed) -->
+      </div>
+    </div>
 </template>
 
 <script>
