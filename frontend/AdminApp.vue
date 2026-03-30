@@ -230,6 +230,24 @@ export default {
       loggedIn: false,
       uaSearch: '',
       uaSearchResults: [],
+      uaMerge: {
+        sourceQuery: '',
+        targetQuery: '',
+        sourceResults: [],
+        targetResults: [],
+        sourceUser: null,
+        targetUser: null,
+        statusMsg: '',
+        statusError: false,
+        busy: false,
+      },
+      uaMergeCleanup: {
+        statusMsg: '',
+        statusError: false,
+        lastResult: null,
+        busy: false,
+      },
+      uaMergeCleanupPreview: [],
       // Add other state as needed for your admin UI
     };
   },
