@@ -53,6 +53,7 @@ export default {
       uaSearchResults: [],
       uaUsers: [],
       uaLoading: false,
+      activeTab: 'users',
       uaGrant: {
         visible: false,
         member: null,
@@ -159,6 +160,8 @@ export default {
               localStorage.setItem('hlasAdminToken', this.adminToken);
               this.loggedIn = true;
               this.loginPassword = '';
+              this.loginError = '';
+              this.activeTab = 'users';
               this.loadClubs();
               // Debug: call loadFieldOrder after login
               // eslint-disable-next-line no-console
@@ -180,6 +183,7 @@ export default {
         this.clubs = [];
         this.loginUsername = '';
         this.loginPassword = '';
+        this.loginError = '';
       },
       addClub() {
         if (!this.newClub.shortName.trim()) {
