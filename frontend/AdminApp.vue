@@ -56,22 +56,15 @@
 </template>
 
 <script>
-import axios from 'axios';
-import config from './server.config.json';
-import adminStore from './src/adminStore.js';
-import AdminHeader from './src/components/admin/AdminHeader.vue';
-import ClubsConfig from './src/components/admin/ClubsConfig.vue';
-import SMTPSettings from './src/components/admin/SMTPSettings.vue';
-import FieldOrder from './src/components/admin/FieldOrder.vue';
-import UserAdmin from './src/components/admin/UserAdmin.vue';
 
+import AppUsers from './src/components/admin/AppUsers.vue';
 const API_BASE_URL = config.api.backendUrl;
 
 export default {
   components: {
     AdminHeader,
     UserAdmin,
-    AppUsers: () => import('./src/components/admin/AppUsers.vue'),
+    AppUsers,
     ClubsConfig,
     SMTPSettings,
     FieldOrder,
