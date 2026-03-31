@@ -1,72 +1,77 @@
 # === ADMIN: Get all app users for a club ===
 from sqlalchemy.sql import text as sa_text
 
-@app.route('/admin/app-users', methods=['GET'])
-def admin_get_app_users():
-    auth_error = require_permission('role.assign.club')
-    if auth_error:
-        return auth_error
+# ...existing code...
 
-    club_short_name = request.args.get('club')
-    if not club_short_name:
-        return jsonify({'error': 'Missing club parameter'}), 400
+# Place this route after app = Flask(__name__) or app = create_app()
+def register_admin_app_users_route(app):
+    @app.route('/admin/app-users', methods=['GET'])
+    def admin_get_app_users():
+        auth_error = require_permission('role.assign.club')
+        if auth_error:
+            return auth_error
 
-    backend = get_postgres_backend()
-    session = backend['session_factory']()
-    try:
-        # Get club id from short name
-        club_row = session.execute(sa_text("""
-            SELECT id, short_name, full_name FROM clubs WHERE short_name = :short_name AND is_active = TRUE
-        """), {'short_name': club_short_name}).first()
-        if not club_row:
-            return jsonify({'error': 'Club not found'}), 404
-        club_id = club_row.id
+        club_short_name = request.args.get('club')
+        if not club_short_name:
+            return jsonify({'error': 'Missing club parameter'}), 400
 
-        # Get all users linked to this club
-        user_rows = session.execute(sa_text("""
-            SELECT au.id AS user_id, au.username, au.email, au.display_name
-            FROM app_users au
-            JOIN member_user_links mul ON mul.user_id = au.id
-            WHERE mul.club_id = :club_id
-              AND au.is_active = TRUE
-            ORDER BY au.username
-        """), {'club_id': club_id}).fetchall()
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            # Get club id from short name
+            club_row = session.execute(sa_text("""
+                SELECT id, short_name, full_name FROM clubs WHERE short_name = :short_name AND is_active = TRUE
+            """), {'short_name': club_short_name}).first()
+            if not club_row:
+                return jsonify({'error': 'Club not found'}), 404
+            club_id = club_row.id
 
-        # Get all roles for these users in this club
-        user_ids = [row.user_id for row in user_rows]
-        roles_map = {}
-        if user_ids:
-            role_rows = session.execute(sa_text("""
-                SELECT mra.user_id, r.code AS role_code, r.name AS role_name, mra.club_id
-                FROM member_role_assignments mra
-                JOIN roles r ON r.id = mra.role_id
-                WHERE mra.user_id = ANY(:user_ids)
-                  AND (mra.club_id = :club_id OR mra.club_id IS NULL)
-                  AND mra.revoked_at IS NULL
-            """), {'user_ids': user_ids, 'club_id': club_id}).fetchall()
-            for row in role_rows:
-                roles_map.setdefault(row.user_id, []).append({
-                    'roleCode': row.role_code,
-                    'roleName': row.role_name,
+            # Get all users linked to this club
+            user_rows = session.execute(sa_text("""
+                SELECT au.id AS user_id, au.username, au.email, au.display_name
+                FROM app_users au
+                JOIN member_user_links mul ON mul.user_id = au.id
+                WHERE mul.club_id = :club_id
+                  AND au.is_active = TRUE
+                ORDER BY au.username
+            """), {'club_id': club_id}).fetchall()
+
+            # Get all roles for these users in this club
+            user_ids = [row.user_id for row in user_rows]
+            roles_map = {}
+            if user_ids:
+                role_rows = session.execute(sa_text("""
+                    SELECT mra.user_id, r.code AS role_code, r.name AS role_name, mra.club_id
+                    FROM member_role_assignments mra
+                    JOIN roles r ON r.id = mra.role_id
+                    WHERE mra.user_id = ANY(:user_ids)
+                      AND (mra.club_id = :club_id OR mra.club_id IS NULL)
+                      AND mra.revoked_at IS NULL
+                """), {'user_ids': user_ids, 'club_id': club_id}).fetchall()
+                for row in role_rows:
+                    roles_map.setdefault(row.user_id, []).append({
+                        'roleCode': row.role_code,
+                        'roleName': row.role_name,
+                    })
+
+            users = []
+            for row in user_rows:
+                users.append({
+                    'userId': row.user_id,
+                    'username': row.username,
+                    'email': row.email,
+                    'displayName': row.display_name,
+                    'clubs': [{
+                        'id': club_id,
+                        'name': club_row.full_name,
+                        'shortName': club_row.short_name,
+                    }],
+                    'roles': roles_map.get(row.user_id, []),
                 })
+            return jsonify({'users': users})
+        finally:
+            session.close()
 
-        users = []
-        for row in user_rows:
-            users.append({
-                'userId': row.user_id,
-                'username': row.username,
-                'email': row.email,
-                'displayName': row.display_name,
-                'clubs': [{
-                    'id': club_id,
-                    'name': club_row.full_name,
-                    'shortName': club_row.short_name,
-                }],
-                'roles': roles_map.get(row.user_id, []),
-            })
-        return jsonify({'users': users})
-    finally:
-        session.close()
 from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -712,8 +717,10 @@ def create_app():
     return app_instance
 
 
+
 # Module-level instance for backward compatibility with `from app import app`
 app = create_app()
+register_admin_app_users_route(app)
 
 
 
