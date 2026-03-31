@@ -125,13 +125,14 @@ export default {
   methods: {
     searchUsers() {
       this.uaLoading = true;
-      axios.get(`${API_BASE_URL}/admin/users`, { params: { q: this.uaSearch }, headers: this.authHeaders() })
+      const params = this.uaSearch ? { q: this.uaSearch } : {};
+      axios.get(`${API_BASE_URL}/admin/users`, { params, headers: this.authHeaders() })
         .then(res => {
           this.uaSearchResults = res.data.users || [];
           this.uaStatusMsg = '';
         })
         .catch(err => {
-          this.uaStatusMsg = err.response?.data?.error || 'Failed to search users';
+          this.uaStatusMsg = err.response?.data?.error || 'Failed to load users';
           this.uaStatusError = true;
         })
         .finally(() => {
@@ -140,7 +141,7 @@ export default {
     },
     resetSearch() {
       this.uaSearch = '';
-      this.uaSearchResults = [];
+      this.searchUsers();
       this.uaStatusMsg = '';
     },
     openGrantModal(user) {
@@ -233,6 +234,8 @@ export default {
     },
   },
   mounted() {
+    // Load all users by default
+    this.searchUsers();
     // Load roles and clubs for role assignment
     axios.get(`${API_BASE_URL}/admin/roles`, { headers: this.authHeaders() })
       .then(res => { this.uaAvailableRoles = res.data.roles || []; });
