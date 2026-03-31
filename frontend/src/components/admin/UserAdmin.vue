@@ -1,6 +1,7 @@
 <template>
   <div class="ua-panel">
-    <h1>User Administration</h1>
+    <h1>Manage Admin Users</h1>
+    <div class="ua-normal">This tab allows you to manage the Admin users for the application itself. The actual users of the app are managed separately on the 'App Users' tab.</div>
     <!-- Search Bar -->
     <div class="ua-search-row">
       <input v-model="uaSearch" @keyup.enter="searchUsers" placeholder="Search users..." />
