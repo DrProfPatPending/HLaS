@@ -65,6 +65,7 @@ import SMTPSettings from './src/components/admin/SMTPSettings.vue';
 import FieldOrder from './src/components/admin/FieldOrder.vue';
 import adminStore from './src/adminStore.js';
 import AppUsers from './src/components/admin/AppUsers.vue';
+import axios from 'axios';
 import config from './server.config.json';
 const API_BASE_URL = config.api.backendUrl;
 
