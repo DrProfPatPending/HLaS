@@ -226,7 +226,8 @@ export default {
       setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
     },
     authHeaders() {
-      return { Authorization: `Bearer ${adminStore.state.adminToken}` };
+      const token = localStorage.getItem('hlasAdminToken');
+      return { Authorization: `Bearer ${token}` };
     },
     startMerge(user) {
       // Placeholder for merge logic
