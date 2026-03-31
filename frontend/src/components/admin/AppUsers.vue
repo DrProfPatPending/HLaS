@@ -1,6 +1,14 @@
 <template>
   <div class="ua-panel">
     <h1>App Users</h1>
+    <div class="app-users-header">
+      <label for="club-select">Select Club:</label>
+      <select id="club-select" v-model="selectedClubShortName" @change="fetchUsers">
+        <option v-for="club in clubs" :key="club.shortName" :value="club.shortName">
+          {{ club.fullName }}
+        </option>
+      </select>
+    </div>
     <div v-if="loading">Loading users...</div>
     <table v-if="users.length" class="ua-table">
       <thead>
@@ -19,7 +27,7 @@
             <span v-for="club in user.clubs" :key="club.id">{{ club.name }}<span v-if="!isLastClub(user, club)">, </span></span>
           </td>
           <td>
-            <span v-for="role in user.roles" :key="role">{{ role }}</span>
+            <span v-for="role in user.roles" :key="role.roleCode">{{ role.roleName }}</span>
           </td>
         </tr>
       </tbody>
@@ -29,12 +37,10 @@
 </template>
 
 <script>
+
 import axios from 'axios';
-const API_BASE_URL =
-  window.API_BASE_URL ||
-  (window.location.origin.includes('localhost')
-    ? 'http://localhost:5000/api'
-    : '/api');
+import config from '../../../server.config.json';
+const API_BASE_URL = config.api.backendUrl;
 
 export default {
   name: 'AppUsers',
@@ -42,15 +48,28 @@ export default {
     return {
       users: [],
       loading: false,
+      clubs: [],
+      selectedClubShortName: '',
     };
   },
   methods: {
     isLastClub(user, club) {
       return user.clubs[user.clubs.length - 1] === club;
     },
+    fetchClubs() {
+      axios.get(`${API_BASE_URL}/admin/clubs`, { headers: this.authHeaders() })
+        .then(res => {
+          this.clubs = res.data.clubs || [];
+          if (this.clubs.length && !this.selectedClubShortName) {
+            this.selectedClubShortName = this.clubs[0].shortName;
+            this.fetchUsers();
+          }
+        });
+    },
     fetchUsers() {
+      if (!this.selectedClubShortName) return;
       this.loading = true;
-      axios.get(`${API_BASE_URL}/admin/app-users`, { headers: { Authorization: `Bearer ${localStorage.getItem('hlasAdminToken')}` } })
+      axios.get(`${API_BASE_URL}/admin/app-users?club=${encodeURIComponent(this.selectedClubShortName)}`, { headers: this.authHeaders() })
         .then(res => {
           this.users = res.data.users || [];
         })
@@ -61,9 +80,13 @@ export default {
           this.loading = false;
         });
     },
+    authHeaders() {
+      const token = localStorage.getItem('hlasAdminToken');
+      return { Authorization: `Bearer ${token}` };
+    },
   },
   mounted() {
-    this.fetchUsers();
+    this.fetchClubs();
   },
 };
 </script>
