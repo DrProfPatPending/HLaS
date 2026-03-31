@@ -67,11 +67,15 @@
 </template>
 
 <script>
+
 import axios from 'axios';
 import adminStore from '../../adminStore.js';
-import config from '../../server.config.json';
 
-const API_BASE_URL = config.api.backendUrl;
+const API_BASE_URL =
+  window.API_BASE_URL ||
+  (window.location.origin.includes('localhost')
+    ? 'http://localhost:5000/api'
+    : '/api');
 
 export default {
   name: 'UserAdmin',
