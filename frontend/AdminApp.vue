@@ -63,6 +63,7 @@ import UserAdmin from './src/components/admin/UserAdmin.vue';
 import ClubsConfig from './src/components/admin/ClubsConfig.vue';
 import SMTPSettings from './src/components/admin/SMTPSettings.vue';
 import FieldOrder from './src/components/admin/FieldOrder.vue';
+import adminStore from './src/adminStore.js';
 import AppUsers from './src/components/admin/AppUsers.vue';
 import config from './server.config.json';
 const API_BASE_URL = config.api.backendUrl;
