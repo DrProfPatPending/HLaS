@@ -64,7 +64,52 @@ export default {
 </script>
 
 <style scoped>
+/* Clubs table styling copied from App.vue */
 .clubs-panel { margin: 24px 0; }
-.clubs-table { width: 100%; border-collapse: collapse; }
-.clubs-table th, .clubs-table td { border: 1px solid #ccc; padding: 6px 9px; }
+.clubs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 16px;
+}
+.clubs-table th,
+.clubs-table td {
+  border: 1px solid #ccc;
+  padding: 7px 9px;
+  text-align: left;
+  vertical-align: top;
+}
+.clubs-table th {
+  background: #f0f0f0;
+  font-size: 10pt;
+  white-space: nowrap;
+}
+.clubs-table .desc-cell {
+  max-width: 280px;
+  font-size: 8.5pt;
+  color: #444;
+}
+.clubs-table .actions-cell {
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+.clubs-table .actions-cell button {
+  margin: 2px 3px;
+  padding: 4px 10px;
+  font-size: 8.5pt;
+  font-family: Helvetica, Arial, sans-serif;
+  cursor: pointer;
+}
+.delete-btn {
+  color: #c00;
+}
+.save-btn {
+  background: #2a7;
+  color: white;
+  border: 1px solid #1a6;
+}
+.edit-row {
+  background: #fffbe6;
+}
 </style>
