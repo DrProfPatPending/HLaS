@@ -58,6 +58,7 @@
 <script>
 
 import AppUsers from './src/components/admin/AppUsers.vue';
+import config from './server.config.json';
 const API_BASE_URL = config.api.backendUrl;
 
 export default {
