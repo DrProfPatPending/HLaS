@@ -17,6 +17,11 @@
         </form>
       </div>
       <div v-else class="admin-container">
+        <!-- ===== Admin Welcome/Info Box ===== -->
+        <div class="admin-info-box">
+          <strong>Welcome to the Admin section of 'HookLineAndSinker' (HLaS)</strong><br>
+          This page allows you to manage the application itself, configure the available Clubs, and sort out any issues with user logins, roles, and more. Use the tabs below to access different areas of administration.
+        </div>
         <!-- ===== Admin Tab Navigation ===== -->
         <div class="tab-nav">
           <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'clubs' }" @click="activeTab = 'clubs'">Clubs</button>
@@ -454,6 +459,16 @@ export default {
   max-width: 1200px;
   margin: 24px auto;
   padding: 0 16px;
+}
+#app .admin-info-box {
+  background: #f8f8fc;
+  border: 1px solid #bcd;
+  border-radius: 7px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+  font-size: 11pt;
+  color: #223;
+  box-shadow: 0 2px 8px rgba(180,200,220,0.07);
 }
 #app .admin-container h1 {
   font-size: 16pt;
