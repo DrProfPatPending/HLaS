@@ -19,9 +19,9 @@
       <div v-else class="admin-container">
         <!-- ===== Admin Tab Navigation ===== -->
         <div class="tab-nav">
+          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'clubs' }" @click="activeTab = 'clubs'">Clubs</button>
           <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'adminUsers' }" @click="activeTab = 'adminUsers'">Admin Users</button>
           <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'appUsers' }" @click="activeTab = 'appUsers'">App Users</button>
-          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'clubs' }" @click="activeTab = 'clubs'">Clubs</button>
           <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'smtp' }" @click="activeTab = 'smtp'">SMTP</button>
           <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'fieldOrder' }" @click="activeTab = 'fieldOrder'">Field Order</button>
         </div>
@@ -82,7 +82,7 @@ export default {
       uaSearchResults: [],
       uaUsers: [],
       uaLoading: false,
-      activeTab: 'adminUsers',
+      activeTab: 'clubs',
       uaGrant: {
         visible: false,
         member: null,
