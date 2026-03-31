@@ -231,8 +231,58 @@ export default {
       return { Authorization: `Bearer ${token}` };
     },
     startMerge(user) {
-      // Placeholder for merge logic
-      alert('Merge logic not yet implemented for user: ' + user.username);
+      // Begin merge process: set source user and open merge UI (if implemented)
+      this.uaMerge.sourceUser = user;
+      this.uaMerge.sourceQuery = user.username;
+      // For now, just show an alert (UI for merge selection can be added)
+      alert('Select a target user to merge into. (UI not yet implemented)');
+    },
+    mergeUsers() {
+      if (!this.uaMerge.sourceUser || !this.uaMerge.targetUser || this.uaMerge.sourceUser.userId === this.uaMerge.targetUser.userId) {
+        this.uaMerge.statusMsg = 'Select different source and target users.';
+        this.uaMerge.statusError = true;
+        return;
+      }
+      const source = this.uaMerge.sourceUser;
+      const target = this.uaMerge.targetUser;
+      const confirmed = window.confirm(
+        `Merge source user "${source.username}" (id ${source.userId}) into target user "${target.username}" (id ${target.userId})?`
+      );
+      if (!confirmed) return;
+      this.uaMerge.busy = true;
+      this.uaMerge.statusMsg = '';
+      this.uaMerge.statusError = false;
+      axios.post(`${API_BASE_URL}/admin/users/merge`, {
+        sourceUserId: source.userId,
+        targetUserId: target.userId,
+      }, {
+        headers: this.authHeaders(),
+      }).then(res => {
+        const summary = res.data.summary || {};
+        this.uaMerge.statusMsg = `Merge complete. Links moved: ${summary.movedLinks || 0}, assignments moved: ${summary.movedAssignments || 0}.`;
+        this.uaMerge.statusError = false;
+        this.searchUsers();
+      }).catch(err => {
+        this.uaMerge.statusMsg = err.response?.data?.error || 'Merge failed';
+        this.uaMerge.statusError = true;
+      }).finally(() => {
+        this.uaMerge.busy = false;
+      });
+    },
+    resetMergeState() {
+      this.uaMerge.sourceQuery = '';
+      this.uaMerge.targetQuery = '';
+      this.uaMerge.sourceResults = [];
+      this.uaMerge.targetResults = [];
+      this.uaMerge.sourceUser = null;
+      this.uaMerge.targetUser = null;
+      this.uaMerge.statusMsg = '';
+      this.uaMerge.statusError = false;
+      this.uaMerge.busy = false;
+      this.uaMergeCleanup.statusMsg = '';
+      this.uaMergeCleanup.statusError = false;
+      this.uaMergeCleanup.lastResult = null;
+      this.uaMergeCleanup.busy = false;
     },
   },
   mounted() {
