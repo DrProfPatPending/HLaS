@@ -19,15 +19,20 @@
       <div v-else class="admin-container">
         <!-- ===== Admin Tab Navigation ===== -->
         <div class="tab-nav">
-          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'users' }" @click="activeTab = 'users'">Users</button>
+          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'adminUsers' }" @click="activeTab = 'adminUsers'">Admin Users</button>
+          <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'appUsers' }" @click="activeTab = 'appUsers'">App Users</button>
           <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'clubs' }" @click="activeTab = 'clubs'">Clubs</button>
           <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'smtp' }" @click="activeTab = 'smtp'">SMTP</button>
           <button class="tab-btn" :class="{ 'tab-btn-active': activeTab === 'fieldOrder' }" @click="activeTab = 'fieldOrder'">Field Order</button>
         </div>
-        <!-- ===== USER ADMINISTRATION TAB ===== -->
-        <div v-show="activeTab === 'users'">
+        <!-- ===== ADMIN USER ADMINISTRATION TAB ===== -->
+        <div v-show="activeTab === 'adminUsers'">
           <UserAdmin />
           <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
+        </div>
+        <!-- ===== APP USERS TAB ===== -->
+        <div v-show="activeTab === 'appUsers'">
+          <AppUsers />
         </div>
         <!-- ===== CLUBS TAB ===== -->
         <div v-show="activeTab === 'clubs'">
@@ -61,6 +66,7 @@ export default {
   components: {
     AdminHeader,
     UserAdmin,
+    AppUsers: () => import('./src/components/admin/AppUsers.vue'),
     ClubsConfig,
     SMTPSettings,
     FieldOrder,
@@ -76,7 +82,7 @@ export default {
       uaSearchResults: [],
       uaUsers: [],
       uaLoading: false,
-      activeTab: 'users',
+      activeTab: 'adminUsers',
       uaGrant: {
         visible: false,
         member: null,
