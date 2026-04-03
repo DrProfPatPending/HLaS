@@ -3,6 +3,7 @@
     <app-header />
     <login-view v-if="!loggedIn" />
     <div v-else>
+      <member-top-menu />
       <home-view v-if="activeSection === 'home'" />
       <membership-admin v-else-if="activeSection === 'membership-admin'" />
       <club-information v-else-if="activeSection === 'club-information'" />
@@ -34,6 +35,7 @@ import Newsletters from './src/components/Newsletters.vue';
 import FishingBeats from './src/components/FishingBeats.vue';
 import MemberEdit from './src/components/MemberEdit.vue';
 import MyClub from './src/components/MyClub.vue';
+import MemberTopMenu from './src/components/MemberTopMenu.vue';
 import {
   store,
   restoreMemberSession,
@@ -57,6 +59,7 @@ export default {
     Newsletters,
     FishingBeats,
     MemberEdit,
+    MemberTopMenu,
   },
   computed: {
     loggedIn: () => store.loggedIn,
