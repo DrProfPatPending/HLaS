@@ -1,6 +1,9 @@
 <template>
   <div class="fishing-beats-container">
-    <h2>{{ clubFullName }} - Fishing Beats</h2>
+    <div class="fishing-beats-header">
+      <button type="button" class="fishing-beats-back-button" @click="goHome">Back to Home</button>
+      <h2>{{ clubFullName }} - Fishing Beats</h2>
+    </div>
     <div v-if="clubBeats.length" class="fishing-beats-layout">
       <table class="fishing-beats-table">
         <thead>

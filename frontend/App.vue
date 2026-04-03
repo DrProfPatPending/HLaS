@@ -119,6 +119,17 @@ export default {
   margin: 40px auto;
   font-family: Helvetica, Arial, sans-serif;
 }
+#app .fishing-beats-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#app .fishing-beats-header h2 {
+  margin: 0;
+}
+#app .fishing-beats-back-button {
+  white-space: nowrap;
+}
 #app .newsletter-table {
   width: 100%;
   border-collapse: collapse;
