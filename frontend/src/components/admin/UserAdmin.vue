@@ -1,17 +1,15 @@
 <template>
-  <div class="ua-panel">
-    <h1>Manage Admin Users</h1>
-    <div class="ua-normal">This tab allows you to manage the Admin users for the application itself. The actual users of the app are managed separately on the 'App Users' tab.</div>
-    <!-- Search Bar -->
-    <div class="ua-search-row">
-      <input v-model="uaSearch" @keyup.enter="searchUsers" placeholder="Search users..." />
+  <div class="admin-panel">
+    <h1 class="admin-panel-title">Manage Admin Users</h1>
+    <div class="admin-info-text">This tab allows you to manage the Admin users for the application itself. The actual users of the app are managed separately on the 'App Users' tab.</div>
+    <div class="admin-inline-controls">
+      <input v-model="uaSearch" class="admin-search-input" @keyup.enter="searchUsers" placeholder="Search users..." />
       <button @click="searchUsers">Search</button>
       <button @click="resetSearch">Reset</button>
     </div>
-    <div v-if="uaLoading">Loading...</div>
+    <div v-if="uaLoading" class="admin-loading-text">Loading...</div>
     <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
-    <!-- User Table -->
-    <table class="ua-table" v-if="uaSearchResults.length">
+    <table class="admin-table" v-if="uaSearchResults.length">
       <thead>
         <tr>
           <th>Username</th>
@@ -38,28 +36,27 @@
       </tbody>
     </table>
     <!-- Grant Role Modal -->
-    <div v-if="uaGrant.visible" class="modal-overlay">
-      <div class="modal-box">
+    <div v-if="uaGrant.visible" class="admin-modal-overlay">
+      <div class="admin-modal-card user-admin-modal-card">
         <h3>Grant Role to {{ uaGrant.member.username }}</h3>
-        <select v-model="uaGrant.roleCode">
+        <select v-model="uaGrant.roleCode" class="admin-select user-admin-modal-select">
           <option value="">Select Role</option>
           <option v-for="role in uaAvailableRoles" :key="role.code" :value="role.code">{{ role.name }}</option>
         </select>
         <div v-if="selectedRole && selectedRole.scopeType === 'club'">
-          <select v-model="uaGrant.clubId">
+          <select v-model="uaGrant.clubId" class="admin-select user-admin-modal-select">
             <option value="">Select Club</option>
             <option v-for="club in uaClubs" :key="club.id" :value="club.id">{{ club.name }}</option>
           </select>
         </div>
         <div v-if="uaGrant.statusMsg" :class="uaGrant.statusError ? 'error-msg' : 'success-msg'">{{ uaGrant.statusMsg }}</div>
-        <div class="modal-actions">
+        <div class="admin-modal-actions">
           <button @click="grantRole">Grant</button>
           <button @click="closeGrantModal">Cancel</button>
         </div>
       </div>
     </div>
-    <!-- Merge/Cleanup Controls -->
-    <div class="ua-merge-controls">
+    <div class="ua-merge-controls admin-inline-controls">
       <button @click="runMergeCleanup(true)">Dry Run Merge Cleanup</button>
       <button @click="runMergeCleanup(false)">Apply Merge Cleanup</button>
       <span v-if="uaMergeCleanup.statusMsg" :class="uaMergeCleanup.statusError ? 'error-msg' : 'success-msg'">{{ uaMergeCleanup.statusMsg }}</span>
@@ -68,15 +65,7 @@
 </template>
 
 <script>
-
-import axios from 'axios';
-import adminStore from '../../adminStore.js';
-
-const API_BASE_URL =
-  window.API_BASE_URL ||
-  (window.location.origin.includes('localhost')
-    ? 'http://localhost:5000/api'
-    : '/api');
+import { adminDelete, adminGet, adminPost } from '../../services/adminApi.js';
 
 export default {
   name: 'UserAdmin',
@@ -127,7 +116,7 @@ export default {
     searchUsers() {
       this.uaLoading = true;
       const params = this.uaSearch ? { q: this.uaSearch } : {};
-      axios.get(`${API_BASE_URL}/admin/users`, { params, headers: this.authHeaders() })
+      adminGet('/admin/users', { params })
         .then(res => {
           this.uaSearchResults = res.data.users || [];
           this.uaStatusMsg = '';
@@ -163,10 +152,10 @@ export default {
         this.uaGrant.statusError = true;
         return;
       }
-      axios.post(
-        `${API_BASE_URL}/admin/users/${this.uaGrant.member.userId}/roles`,
+      adminPost(
+        `/admin/users/${this.uaGrant.member.userId}/roles`,
         { roleCode: this.uaGrant.roleCode, clubId: this.uaGrant.clubId || null },
-        { headers: this.authHeaders() }
+        {}
       ).then(() => {
         this.closeGrantModal();
         this.uaSearch = '';
@@ -183,10 +172,7 @@ export default {
         ? ` (${assignment.roleClubShortName})`
         : ' (global)';
       if (!window.confirm(`Revoke "${assignment.roleName}"${scopeLabel} from ${user.username}?`)) return;
-      axios.delete(
-        `${API_BASE_URL}/admin/users/${user.userId}/roles/${assignment.assignmentId}`,
-        { headers: this.authHeaders() }
-      ).then(() => {
+      adminDelete(`/admin/users/${user.userId}/roles/${assignment.assignmentId}`).then(() => {
         this.uaShowStatus('Role revoked successfully.');
         this.searchUsers();
       }).catch(err => {
@@ -202,10 +188,8 @@ export default {
       this.uaMergeCleanup.busy = true;
       this.uaMergeCleanup.statusMsg = '';
       this.uaMergeCleanup.statusError = false;
-      axios.post(`${API_BASE_URL}/admin/users/merge/cleanup`, {
+      adminPost('/admin/users/merge/cleanup', {
         dryRun,
-      }, {
-        headers: this.authHeaders(),
       }).then(res => {
         const payload = res.data || {};
         this.uaMergeCleanup.lastResult = payload;
@@ -225,10 +209,6 @@ export default {
       this.uaStatusMsg = msg;
       this.uaStatusError = isError;
       setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
-    },
-    authHeaders() {
-      const token = localStorage.getItem('hlasAdminToken');
-      return { Authorization: `Bearer ${token}` };
     },
     startMerge(user) {
       // Begin merge process: set source user and open merge UI (if implemented)
@@ -252,11 +232,9 @@ export default {
       this.uaMerge.busy = true;
       this.uaMerge.statusMsg = '';
       this.uaMerge.statusError = false;
-      axios.post(`${API_BASE_URL}/admin/users/merge`, {
+      adminPost('/admin/users/merge', {
         sourceUserId: source.userId,
         targetUserId: target.userId,
-      }, {
-        headers: this.authHeaders(),
       }).then(res => {
         const summary = res.data.summary || {};
         this.uaMerge.statusMsg = `Merge complete. Links moved: ${summary.movedLinks || 0}, assignments moved: ${summary.movedAssignments || 0}.`;
@@ -289,69 +267,15 @@ export default {
     // Load all users by default
     this.searchUsers();
     // Load roles and clubs for role assignment
-    axios.get(`${API_BASE_URL}/admin/roles`, { headers: this.authHeaders() })
+    adminGet('/admin/roles')
       .then(res => { this.uaAvailableRoles = res.data.roles || []; });
-    axios.get(`${API_BASE_URL}/admin/clubs`, { headers: this.authHeaders() })
+    adminGet('/admin/clubs')
       .then(res => { this.uaClubs = res.data.clubs || []; });
   },
 };
 </script>
 
 <style scoped>
-.ua-panel {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 16px 20px;
-  margin: 24px 0 28px;
-  max-width: 900px;
-}
-
-.ua-panel h1 {
-  font-size: 16pt;
-  margin-bottom: 14px;
-}
-
-.ua-normal {
-  margin-bottom: 14px;
-  color: #444;
-}
-
-.ua-search-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.ua-search-row input {
-  min-width: 260px;
-  padding: 6px 8px;
-  font-size: 9pt;
-}
-
-.ua-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 9pt;
-  margin-bottom: 10px;
-}
-
-.ua-table th,
-.ua-table td {
-  border: 1px solid #ccc;
-  padding: 6px 9px;
-  text-align: left;
-  vertical-align: middle;
-}
-
-.ua-table th {
-  background: #f0f0f0;
-  font-size: 9.5pt;
-  white-space: nowrap;
-}
-
 .roles-cell {
   min-width: 240px;
 }
@@ -402,47 +326,12 @@ export default {
   color: #222;
 }
 
-.ua-merge-controls {
-  margin-top: 16px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-box {
-  background: #fff;
-  border-radius: 8px;
-  padding: 28px 32px;
-  min-width: 420px;
-  max-width: 520px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.25);
-}
-
-.modal-box h3 {
+.user-admin-modal-card h3 {
   margin-top: 0;
 }
 
-.modal-box select {
+.user-admin-modal-select {
   width: 100%;
   margin-top: 8px;
-  padding: 7px 8px;
-}
-
-.modal-actions {
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 </style>
