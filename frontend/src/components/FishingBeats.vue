@@ -160,7 +160,7 @@
       </div>
     </div>
     <p v-else>No fishing beats are configured for this club.</p>
-    <button type="button" @click="goHome">Back to Home</button>
+    <button type="button" class="fishing-beats-back-button" @click="goHome">Back to Home</button>
   </div>
 </template>
 
