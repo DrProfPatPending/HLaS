@@ -66,6 +66,34 @@
   flex-wrap: wrap;
 }
 
+.admin-tab-nav {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #ccc;
+  margin-bottom: 20px;
+}
+
+.admin-tab-btn {
+  padding: 7px 20px;
+  font-size: 10pt;
+  font-family: Helvetica, Arial, sans-serif;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  color: #555;
+}
+
+.admin-tab-btn-active {
+  background: #fff;
+  border-color: #ccc;
+  border-bottom: 2px solid #fff;
+  margin-bottom: -2px;
+  color: #111;
+  font-weight: bold;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;

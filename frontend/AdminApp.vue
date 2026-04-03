@@ -1,7 +1,7 @@
 <template>
   <div id="admin-app">
     <AdminHeader :loggedIn="loggedIn" @logout="logout" />
-    <div v-if="!loggedIn" class="login-container">
+    <div v-if="!loggedIn" class="admin-login-container">
       <h2>Admin Login</h2>
       <form @submit.prevent="login">
         <div class="admin-form-row">
@@ -12,7 +12,7 @@
           <label class="admin-form-label">Password:</label>
           <input v-model="loginPassword" class="admin-form-input" type="password" autocomplete="current-password" required />
         </div>
-        <div v-if="loginError" class="error-msg login-error">{{ loginError }}</div>
+        <div v-if="loginError" class="error-msg admin-login-error">{{ loginError }}</div>
         <button type="submit" class="save-btn">Login</button>
       </form>
     </div>
@@ -21,12 +21,12 @@
         <strong>Welcome to the Admin section of 'HookLineAndSinker' (HLaS)</strong><br>
         This page allows you to manage the application itself, configure the available Clubs, and sort out any issues with user logins, roles, and more. Use the tabs below to access different areas of administration.
       </div>
-      <div class="tab-nav">
+      <div class="admin-tab-nav">
         <button
           v-for="tab in tabs"
           :key="tab.key"
-          class="tab-btn"
-          :class="{ 'tab-btn-active': activeTab === tab.key }"
+          class="admin-tab-btn"
+          :class="{ 'admin-tab-btn-active': activeTab === tab.key }"
           @click="activeTab = tab.key"
         >
           {{ tab.label }}
@@ -124,19 +124,20 @@ export default {
 </script>
 
 <style scoped>
-.login-container {
+.admin-login-container {
   max-width: 420px;
   margin: 60px auto;
 }
-.login-container h2 {
+
+.admin-login-container h2 {
   margin-bottom: 20px;
 }
 
-.login-error {
+.admin-login-error {
   margin-bottom: 10px;
 }
 
-.login-container button[type="submit"] {
+.admin-login-container button[type="submit"] {
   margin-top: 10px;
   padding: 7px 20px;
   font-size: 10pt;
@@ -157,31 +158,5 @@ export default {
   font-size: 11pt;
   color: #223;
   box-shadow: 0 2px 8px rgba(180,200,220,0.07);
-}
-/* ── Tab navigation ───────────────────────────────────────────────────────── */
-.tab-nav {
-  display: flex;
-  gap: 4px;
-  border-bottom: 2px solid #ccc;
-  margin-bottom: 20px;
-}
-.tab-btn {
-  padding: 7px 20px;
-  font-size: 10pt;
-  font-family: Helvetica, Arial, sans-serif;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  border-bottom: none;
-  cursor: pointer;
-  border-radius: 4px 4px 0 0;
-  color: #555;
-}
-.tab-btn-active {
-  background: #fff;
-  border-color: #ccc;
-  border-bottom: 2px solid #fff;
-  margin-bottom: -2px;
-  color: #111;
-  font-weight: bold;
 }
 </style>
