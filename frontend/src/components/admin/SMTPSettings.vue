@@ -1,8 +1,12 @@
 <template>
-  <div>
-    <!-- SMTP/Email Settings UI goes here -->
-    <h2>Email / SMTP Settings</h2>
-    <!-- TODO: Move SMTP settings form and logic here -->
+  <div class="admin-panel smtp-settings-panel">
+    <h1 class="admin-panel-title">Email / SMTP Settings</h1>
+    <div class="admin-info-text">
+      SMTP settings management UI will be added here.
+    </div>
+    <div class="admin-empty-state">
+      TODO: Move SMTP settings form and logic here.
+    </div>
   </div>
 </template>
 
@@ -14,5 +18,7 @@ export default {
 </script>
 
 <style scoped>
-/* Add styles if needed */
+.smtp-settings-panel {
+  max-width: 900px;
+}
 </style>

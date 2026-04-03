@@ -1,8 +1,12 @@
 <template>
-  <div>
-    <!-- Field Order Tab UI goes here -->
-    <h1>Field Order</h1>
-    <!-- TODO: Move field order table and logic here -->
+  <div class="admin-panel field-order-panel">
+    <h1 class="admin-panel-title">Field Order</h1>
+    <div class="admin-info-text">
+      Field order management UI will be added here.
+    </div>
+    <div class="admin-empty-state">
+      TODO: Move field order table and logic here.
+    </div>
   </div>
 </template>
 
@@ -14,5 +18,7 @@ export default {
 </script>
 
 <style scoped>
-/* Add styles if needed */
+.field-order-panel {
+  max-width: 900px;
+}
 </style>

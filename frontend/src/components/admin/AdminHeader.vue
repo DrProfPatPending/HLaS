@@ -1,16 +1,16 @@
 <template>
-  <table class="logo-table">
+  <table class="admin-header-table">
     <tbody>
       <tr>
-        <td class="logo-cell">
-          <img src="/logos/HLaS.png" alt="HLaS logo" class="app-logo" />
+        <td class="admin-header-logo-cell">
+          <img src="/logos/HLaS.png" alt="HLaS logo" class="admin-header-logo" />
         </td>
-        <td class="admin-title-cell">
-          <span class="admin-title">HLaS Application Administration</span>
+        <td class="admin-header-title-cell">
+          <span class="admin-header-title">HLaS Application Administration</span>
         </td>
-        <td class="logo-spacer"></td>
-        <td v-if="loggedIn" class="logout-cell">
-          <button type="button" class="logout-button" @click="$emit('logout')">Log Out</button>
+        <td class="admin-header-spacer"></td>
+        <td v-if="loggedIn" class="admin-header-logout-cell">
+          <button type="button" class="admin-header-logout-button" @click="$emit('logout')">Log Out</button>
         </td>
       </tr>
     </tbody>
@@ -27,39 +27,46 @@ export default {
 </script>
 
 <style scoped>
-.logo-table {
+.admin-header-table {
   width: 100%;
   border-collapse: collapse;
   background: #f8f8f8;
   border-bottom: 1px solid #ddd;
   padding: 4px 0;
 }
-.logo-cell {
+
+.admin-header-logo-cell {
   padding: 4px 10px;
   vertical-align: middle;
 }
-.app-logo {
+
+.admin-header-logo {
   height: 50px;
   cursor: default;
 }
-.admin-title-cell {
+
+.admin-header-title-cell {
   vertical-align: middle;
   padding-left: 12px;
 }
-.admin-title {
+
+.admin-header-title {
   font-size: 18pt;
   font-weight: bold;
   color: #333;
 }
-.logo-spacer {
+
+.admin-header-spacer {
   width: 100%;
 }
-.logout-cell {
+
+.admin-header-logout-cell {
   padding: 4px 12px;
   white-space: nowrap;
   vertical-align: middle;
 }
-.logout-button {
+
+.admin-header-logout-button {
   padding: 6px 14px;
   font-family: Helvetica, Arial, sans-serif;
   font-size: 9pt;
