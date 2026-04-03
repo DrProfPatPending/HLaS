@@ -1,5 +1,5 @@
 <template>
-  <div class="ua-panel">
+  <div class="app-users-panel">
     <h1>App Users</h1>
     <div class="app-users-header">
       <label for="club-select">Select Club:</label>
@@ -10,7 +10,7 @@
       </select>
     </div>
     <div v-if="loading">Loading users...</div>
-    <table v-if="users.length" class="ua-table">
+    <table v-if="users.length" class="app-users-table">
       <thead>
         <tr>
           <th>Username</th>
@@ -92,7 +92,48 @@ export default {
 </script>
 
 <style scoped>
-.ua-panel { margin: 24px 0; }
-.ua-table { width: 100%; border-collapse: collapse; }
-.ua-table th, .ua-table td { border: 1px solid #ccc; padding: 6px 9px; }
+.app-users-panel {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin: 24px 0 28px;
+  max-width: 900px;
+}
+
+.app-users-panel h1 {
+  font-size: 16pt;
+  margin-bottom: 14px;
+}
+
+.app-users-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.app-users-header select {
+  min-width: 240px;
+  padding: 6px 8px;
+}
+
+.app-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+}
+
+.app-users-table th,
+.app-users-table td {
+  border: 1px solid #ccc;
+  padding: 6px 9px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.app-users-table th {
+  background: #f0f0f0;
+  white-space: nowrap;
+}
 </style>

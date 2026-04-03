@@ -24,7 +24,7 @@
         <tr v-for="user in uaSearchResults" :key="user.userId">
           <td>{{ user.username }}</td>
           <td>{{ user.email }}</td>
-          <td>
+          <td class="roles-cell">
             <span v-for="assignment in user.assignments" :key="assignment.assignmentId" class="role-badge">
               {{ assignment.roleName }}
               <button class="role-revoke-btn" @click="revokeRole(user, assignment)">&times;</button>
@@ -298,5 +298,151 @@ export default {
 </script>
 
 <style scoped>
-/* Add styles if needed */
+.ua-panel {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin: 24px 0 28px;
+  max-width: 900px;
+}
+
+.ua-panel h1 {
+  font-size: 16pt;
+  margin-bottom: 14px;
+}
+
+.ua-normal {
+  margin-bottom: 14px;
+  color: #444;
+}
+
+.ua-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.ua-search-row input {
+  min-width: 260px;
+  padding: 6px 8px;
+  font-size: 9pt;
+}
+
+.ua-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 10px;
+}
+
+.ua-table th,
+.ua-table td {
+  border: 1px solid #ccc;
+  padding: 6px 9px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.ua-table th {
+  background: #f0f0f0;
+  font-size: 9.5pt;
+  white-space: nowrap;
+}
+
+.roles-cell {
+  min-width: 240px;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 8pt;
+  font-weight: 600;
+  margin: 2px 3px 2px 0;
+  white-space: nowrap;
+  background: #e7eef8;
+  color: #244;
+}
+
+.role-revoke-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 11pt;
+  line-height: 1;
+  padding: 0 0 0 2px;
+}
+
+.role-revoke-btn:hover {
+  opacity: 1;
+}
+
+.ua-add-role-btn {
+  display: inline-block;
+  font-size: 8pt;
+  padding: 2px 7px;
+  border-radius: 12px;
+  border: 1px dashed #999;
+  background: none;
+  color: #555;
+  cursor: pointer;
+  margin-left: 2px;
+}
+
+.ua-add-role-btn:hover {
+  border-color: #444;
+  color: #222;
+}
+
+.ua-merge-controls {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 28px 32px;
+  min-width: 420px;
+  max-width: 520px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+}
+
+.modal-box h3 {
+  margin-top: 0;
+}
+
+.modal-box select {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 8px;
+}
+
+.modal-actions {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 </style>

@@ -202,8 +202,49 @@ export default {
 </script>
 
 <style scoped>
-/* Clubs table styling copied from App.vue */
-.clubs-panel { margin: 24px 0; }
+.clubs-panel {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin: 24px 0 28px;
+}
+
+.clubs-panel h1 {
+  font-size: 16pt;
+  margin-bottom: 14px;
+}
+
+.clubs-panel h2 {
+  font-size: 13pt;
+  margin: 0 0 12px;
+}
+
+.club-form {
+  margin-bottom: 22px;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.form-row label {
+  width: 110px;
+  font-size: 10pt;
+  white-space: nowrap;
+}
+
+.form-row input {
+  flex: 1;
+  max-width: 420px;
+  padding: 6px;
+  font-size: 10pt;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
 .clubs-table {
   width: 100%;
   border-collapse: collapse;
@@ -242,11 +283,7 @@ export default {
 .delete-btn {
   color: #c00;
 }
-.save-btn {
-  background: #2a7;
-  color: white;
-  border: 1px solid #1a6;
-}
+
 .edit-row {
   background: #fffbe6;
 }
