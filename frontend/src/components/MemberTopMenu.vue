@@ -16,6 +16,7 @@
           <button
             type="button"
             :disabled="!canAccessMembershipAdmin"
+            :title="canAccessMembershipAdmin ? '' : 'Requires Membership Admin permission'"
             @click="navigate('membership-admin')"
           >
             Membership Admin
