@@ -51,11 +51,10 @@ export default {
 
 <style scoped>
 .member-top-menu {
-  max-width: 900px;
-  margin: 16px auto 0;
   display: flex;
-  gap: 10px;
+  gap: 2px;
   font-family: Helvetica, Arial, sans-serif;
+  align-items: center;
 }
 
 .member-top-menu-group {
@@ -65,51 +64,70 @@ export default {
 .member-top-menu-group > summary {
   list-style: none;
   cursor: pointer;
-  border: 1px solid #ccc;
-  background: #f7f7f7;
-  padding: 8px 12px;
+  background: #fff;
+  color: #000;
+  padding: 6px 10px;
   border-radius: 4px;
   font-size: 10pt;
+  font-weight: 500;
   user-select: none;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .member-top-menu-group > summary::-webkit-details-marker {
   display: none;
 }
 
+.member-top-menu-group > summary::after {
+  content: '\25BE';
+  font-size: 9pt;
+  color: #444;
+}
+
+.member-top-menu-group[open] > summary::after {
+  content: '\25B4';
+}
+
+.member-top-menu-group > summary:hover {
+  background: #f0f0f0;
+}
+
 .member-top-menu-list {
   position: absolute;
-  z-index: 20;
-  top: calc(100% + 4px);
+  z-index: 100;
+  top: calc(100% + 2px);
   left: 0;
   min-width: 180px;
   margin: 0;
-  padding: 6px;
+  padding: 4px 0;
   list-style: none;
+  background: #fff;
   border: 1px solid #ccc;
   border-radius: 4px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
 }
 
 .member-top-menu-list li + li {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .member-top-menu-list button {
   width: 100%;
   text-align: left;
-  border: 1px solid transparent;
+  border: none;
   background: #fff;
-  padding: 7px 8px;
-  border-radius: 3px;
+  color: #000;
+  padding: 8px 14px;
   font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;
   cursor: pointer;
+  display: block;
 }
 
 .member-top-menu-list button:hover {
-  background: #f3f7ff;
-  border-color: #d0dcf5;
+  background: #f0f0f0;
 }
 </style>
