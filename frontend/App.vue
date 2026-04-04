@@ -318,6 +318,28 @@ export default {
 #app .fishing-beats-table th {
   background: #f0f0f0;
 }
+#app .fishing-beats-sort-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+#app .fishing-beats-sort-controls {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+#app .fishing-beats-sort-button {
+  margin-right: 0;
+  padding: 3px 7px;
+  font-size: 8.5pt;
+  line-height: 1.2;
+}
+#app .fishing-beats-sort-button.is-active {
+  background-color: #0056b3;
+  border-color: #00448f;
+  font-weight: bold;
+}
 #app .club-information-table {
   width: 100%;
   max-width: 680px;

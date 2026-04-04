@@ -9,12 +9,32 @@
         <thead>
           <tr>
             <th v-for="column in orderedTableColumns" :key="`header-${column.key}`">
-              {{ column.label }}
+              <div class="fishing-beats-sort-header">
+                <span>{{ column.label }}</span>
+                <span class="fishing-beats-sort-controls">
+                  <button
+                    type="button"
+                    class="fishing-beats-sort-button"
+                    :class="{ 'is-active': isSortActive(column.key, 'asc') }"
+                    @click="setSort(column.key, 'asc')"
+                  >
+                    Asc. ↑
+                  </button>
+                  <button
+                    type="button"
+                    class="fishing-beats-sort-button"
+                    :class="{ 'is-active': isSortActive(column.key, 'desc') }"
+                    @click="setSort(column.key, 'desc')"
+                  >
+                    Desc. ↓
+                  </button>
+                </span>
+              </div>
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="beat in clubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
+          <tr v-for="beat in sortedClubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
             <td v-for="column in orderedTableColumns" :key="`${beatKey(beat)}-${column.key}`">
               <template v-if="column.key === 'Beat_Name'">
                 <a
@@ -162,6 +182,8 @@ export default {
   data() {
     return {
       fieldOrder: {},
+      sortKey: 'Beat_ID',
+      sortDirection: 'asc',
       selectedFishingBeatKey: '',
       fishingBeatMapInstance: null,
       fishingBeatMapLayers: [],
@@ -254,6 +276,24 @@ export default {
         };
       });
     },
+    sortedClubBeats() {
+      const beats = [...this.clubBeats];
+      const sortKey = this.sortKey;
+      const sortDirection = this.sortDirection === 'desc' ? -1 : 1;
+      return beats.sort((leftBeat, rightBeat) => {
+        const leftValue = this.normalizeSortValue(leftBeat?.[sortKey]);
+        const rightValue = this.normalizeSortValue(rightBeat?.[sortKey]);
+
+        if (leftValue < rightValue) return -1 * sortDirection;
+        if (leftValue > rightValue) return 1 * sortDirection;
+
+        const leftName = this.normalizeSortValue(leftBeat?.Beat_Name);
+        const rightName = this.normalizeSortValue(rightBeat?.Beat_Name);
+        if (leftName < rightName) return -1;
+        if (leftName > rightName) return 1;
+        return 0;
+      });
+    },
     selectedFishingBeat() {
       const beats = this.clubBeats;
       if (!beats.length) return null;
@@ -280,6 +320,21 @@ export default {
   methods: {
     goHome() {
       store.activeSection = 'home';
+    },
+    setSort(columnKey, direction) {
+      this.sortKey = columnKey;
+      this.sortDirection = direction === 'desc' ? 'desc' : 'asc';
+    },
+    isSortActive(columnKey, direction) {
+      return this.sortKey === columnKey && this.sortDirection === direction;
+    },
+    normalizeSortValue(rawValue) {
+      const trimmedValue = String(rawValue ?? '').trim();
+      const numericValue = Number(trimmedValue);
+      if (trimmedValue !== '' && Number.isFinite(numericValue)) {
+        return numericValue;
+      }
+      return trimmedValue.toLowerCase();
     },
     loadFieldOrder() {
       axios
