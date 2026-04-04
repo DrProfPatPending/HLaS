@@ -670,6 +670,18 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
 }
+#app .member-top-menu-list button {
+  color: #000;
+  background-color: #eaf3ff;
+  border: none;
+  margin-right: 0;
+  padding: 8px 14px;
+  border-radius: 0;
+}
+#app .member-top-menu-list button:hover:not(:disabled) {
+  background-color: #cce0f8;
+  border-color: transparent;
+}
 #app a,
 #app a:visited,
 #app .member-link,
