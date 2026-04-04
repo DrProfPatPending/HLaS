@@ -1,7 +1,7 @@
 <template>
   <nav class="member-top-menu" aria-label="Member navigation">
     <details class="member-top-menu-group">
-      <summary>{{ clubShortName }}</summary>
+      <summary @click.stop="openMenu($event)">{{ clubShortName }}</summary>
       <ul class="member-top-menu-list">
         <li>
           <button type="button" @click="navigate('club-information')">Club Information</button>
@@ -16,7 +16,7 @@
     </details>
 
     <details class="member-top-menu-group">
-      <summary>My HLaS</summary>
+      <summary @click.stop="openMenu($event)">My HLaS</summary>
       <ul class="member-top-menu-list">
         <li>
           <button type="button" @click="navigate('my-club')">My Club</button>
@@ -36,10 +36,33 @@ export default {
       return clubDetails.value.shortName || 'Club';
     },
   },
+  mounted() {
+    this._outsideClickHandler = (event) => {
+      if (!this.$el.contains(event.target)) {
+        this.closeMenus();
+      }
+    };
+    document.addEventListener('click', this._outsideClickHandler);
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this._outsideClickHandler);
+  },
   methods: {
     navigate(sectionKey) {
       navigateToSection(sectionKey);
       this.closeMenus();
+    },
+    openMenu(event) {
+      const clickedDetails = event.currentTarget.closest('details');
+      const allDetails = this.$el.querySelectorAll('details');
+      allDetails.forEach(d => {
+        if (d !== clickedDetails) d.removeAttribute('open');
+      });
+      if (clickedDetails.hasAttribute('open')) {
+        clickedDetails.removeAttribute('open');
+      } else {
+        clickedDetails.setAttribute('open', '');
+      }
     },
     closeMenus() {
       const openMenus = this.$el.querySelectorAll('details[open]');
@@ -104,8 +127,8 @@ export default {
   margin: 0;
   padding: 4px 0;
   list-style: none;
-  background: #fff;
-  border: 1px solid #ccc;
+  background: #eaf3ff;
+  border: 1px solid #b8d4f0;
   border-radius: 4px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
 }
@@ -118,7 +141,7 @@ export default {
   width: 100%;
   text-align: left;
   border: none;
-  background: #fff;
+  background: #eaf3ff;
   color: #000;
   padding: 8px 14px;
   font-family: Helvetica, Arial, sans-serif;
@@ -128,6 +151,6 @@ export default {
 }
 
 .member-top-menu-list button:hover {
-  background: #f0f0f0;
+  background: #cce0f8;
 }
 </style>
