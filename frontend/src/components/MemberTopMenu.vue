@@ -53,6 +53,7 @@ export default {
       this.closeMenus();
     },
     openMenu(event) {
+      event.preventDefault();
       const clickedDetails = event.currentTarget.closest('details');
       const allDetails = this.$el.querySelectorAll('details');
       allDetails.forEach(d => {
