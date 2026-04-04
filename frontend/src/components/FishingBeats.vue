@@ -8,53 +8,50 @@
       <table class="fishing-beats-table">
         <thead>
           <tr>
-            <th>Beat Name</th>
-            <th>Beat ID</th>
-            <th>River</th>
-            <th>Position</th>
-            <th>Beat Upstream</th>
-            <th>Beat Downstream</th>
-            <th>Beat Description</th>
+            <th v-for="column in orderedTableColumns" :key="`header-${column.key}`">
+              {{ column.label }}
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="beat in clubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
-            <td>
-              <a
-                href="#"
-                class="beat-name-link"
-                :class="{ 'active': selectedFishingBeat && beatKey(selectedFishingBeat) === beatKey(beat) }"
-                @click.prevent="selectFishingBeat(beat)"
-              >
-                {{ beat.Beat_Name }}
-              </a>
+            <td v-for="column in orderedTableColumns" :key="`${beatKey(beat)}-${column.key}`">
+              <template v-if="column.key === 'Beat_Name'">
+                <a
+                  href="#"
+                  class="beat-name-link"
+                  :class="{ 'active': selectedFishingBeat && beatKey(selectedFishingBeat) === beatKey(beat) }"
+                  @click.prevent="selectFishingBeat(beat)"
+                >
+                  {{ beat.Beat_Name }}
+                </a>
+              </template>
+              <template v-else-if="column.key === 'Beat_Upstream'">
+                <a
+                  v-if="beat.Beat_Upstream_W3W"
+                  :href="beat.Beat_Upstream_W3W.url"
+                  rel="noopener noreferrer"
+                  @click.prevent="openReusableMapWindow(beat.Beat_Upstream_W3W.url)"
+                >
+                  {{ beat.Beat_Upstream_W3W.display }}
+                </a>
+                <span v-else>{{ beat.Beat_Upstream }}</span>
+              </template>
+              <template v-else-if="column.key === 'Beat_Downstream'">
+                <a
+                  v-if="beat.Beat_Downstream_W3W"
+                  :href="beat.Beat_Downstream_W3W.url"
+                  rel="noopener noreferrer"
+                  @click.prevent="openReusableMapWindow(beat.Beat_Downstream_W3W.url)"
+                >
+                  {{ beat.Beat_Downstream_W3W.display }}
+                </a>
+                <span v-else>{{ beat.Beat_Downstream }}</span>
+              </template>
+              <template v-else>
+                {{ beat[column.key] }}
+              </template>
             </td>
-            <td>{{ beat.Beat_ID }}</td>
-            <td>{{ beat.River }}</td>
-            <td>{{ beat.Position }}</td>
-            <td>
-              <a
-                v-if="beat.Beat_Upstream_W3W"
-                :href="beat.Beat_Upstream_W3W.url"
-                rel="noopener noreferrer"
-                @click.prevent="openReusableMapWindow(beat.Beat_Upstream_W3W.url)"
-              >
-                {{ beat.Beat_Upstream_W3W.display }}
-              </a>
-              <span v-else>{{ beat.Beat_Upstream }}</span>
-            </td>
-            <td>
-              <a
-                v-if="beat.Beat_Downstream_W3W"
-                :href="beat.Beat_Downstream_W3W.url"
-                rel="noopener noreferrer"
-                @click.prevent="openReusableMapWindow(beat.Beat_Downstream_W3W.url)"
-              >
-                {{ beat.Beat_Downstream_W3W.display }}
-              </a>
-              <span v-else>{{ beat.Beat_Downstream }}</span>
-            </td>
-            <td>{{ beat.Beat_Description }}</td>
           </tr>
         </tbody>
       </table>
@@ -62,91 +59,81 @@
         <h3>{{ selectedFishingBeat.Beat_Name }}</h3>
         <table class="fishing-beat-detail-table">
           <tbody>
-            <tr><th>Beat Name</th><td>{{ selectedFishingBeat.Beat_Name }}</td></tr>
-            <tr><th>Beat ID</th><td>{{ selectedFishingBeat.Beat_ID }}</td></tr>
-            <tr><th>River</th><td>{{ selectedFishingBeat.River }}</td></tr>
-            <tr><th>Position</th><td>{{ selectedFishingBeat.Position }}</td></tr>
-            <tr>
-              <th>Beat Upstream</th>
+            <tr v-for="column in orderedDetailColumns" :key="`detail-${column.key}`">
+              <th>{{ column.label }}</th>
               <td>
-                <a
-                  v-if="selectedFishingBeat.Beat_Upstream_W3W"
-                  :href="selectedFishingBeat.Beat_Upstream_W3W.url"
-                  rel="noopener noreferrer"
-                  @click.prevent="openReusableMapWindow(selectedFishingBeat.Beat_Upstream_W3W.url)"
-                >
-                  {{ selectedFishingBeat.Beat_Upstream_W3W.display }}
-                </a>
-                <span v-else>{{ selectedFishingBeat.Beat_Upstream }}</span>
-              </td>
-            </tr>
-            <tr>
-              <th>Beat Downstream</th>
-              <td>
-                <a
-                  v-if="selectedFishingBeat.Beat_Downstream_W3W"
-                  :href="selectedFishingBeat.Beat_Downstream_W3W.url"
-                  rel="noopener noreferrer"
-                  @click.prevent="openReusableMapWindow(selectedFishingBeat.Beat_Downstream_W3W.url)"
-                >
-                  {{ selectedFishingBeat.Beat_Downstream_W3W.display }}
-                </a>
-                <span v-else>{{ selectedFishingBeat.Beat_Downstream }}</span>
-              </td>
-            </tr>
-            <tr><th>Beat Description</th><td>{{ selectedFishingBeat.Beat_Description }}</td></tr>
-            <tr><th>Detailed Description</th><td>{{ selectedFishingBeat.Detailed_Description || '-' }}</td></tr>
-            <tr>
-              <th>Upstream Co-ords</th>
-              <td>
-                <span
-                  v-if="selectedFishingBeat.Beat_Upstream_Latitude && selectedFishingBeat.Beat_Upstream_Longitude"
-                >
-                  {{ selectedFishingBeat.Beat_Upstream_Latitude }}, {{ selectedFishingBeat.Beat_Upstream_Longitude }}
-                </span>
-                <span v-else>-</span>
-              </td>
-            </tr>
-            <tr>
-              <th>Downstream Co-ords</th>
-              <td>
-                <span
-                  v-if="selectedFishingBeat.Beat_Downstream_Latitude && selectedFishingBeat.Beat_Downstream_Longitude"
-                >
-                  {{ selectedFishingBeat.Beat_Downstream_Latitude }}, {{ selectedFishingBeat.Beat_Downstream_Longitude }}
-                </span>
-                <span v-else>-</span>
-              </td>
-            </tr>
-            <tr>
-              <th>Parking</th>
-              <td>
-                <ul
-                  v-if="selectedFishingBeat.Parking_Locations.length"
-                  class="fishing-beat-parking-list"
-                >
-                  <li
-                    v-for="(parking, parkingIndex) in selectedFishingBeat.Parking_Locations"
-                    :key="`parking-${parkingIndex}`"
+                <template v-if="column.key === 'Beat_Upstream'">
+                  <a
+                    v-if="selectedFishingBeat.Beat_Upstream_W3W"
+                    :href="selectedFishingBeat.Beat_Upstream_W3W.url"
+                    rel="noopener noreferrer"
+                    @click.prevent="openReusableMapWindow(selectedFishingBeat.Beat_Upstream_W3W.url)"
                   >
-                    <strong>{{ parking.Name || `Parking ${parkingIndex + 1}` }}</strong>
-                    <span v-if="parking.Latitude && parking.Longitude">
-                      ({{ parking.Latitude }}, {{ parking.Longitude }})
-                    </span>
-                    <span v-if="parking.Location_W3W">
-                      &mdash;
-                      <a
-                        href="#"
-                        class="w3w-link"
-                        @click.prevent="openReusableMapWindow(parking.Location_W3W.url)"
-                      >
-                        {{ parking.Location_W3W.display }}
-                      </a>
-                    </span>
-                    <span v-if="parking.Description"> - {{ parking.Description }}</span>
-                  </li>
-                </ul>
-                <span v-else>-</span>
+                    {{ selectedFishingBeat.Beat_Upstream_W3W.display }}
+                  </a>
+                  <span v-else>{{ selectedFishingBeat.Beat_Upstream || '-' }}</span>
+                </template>
+                <template v-else-if="column.key === 'Beat_Downstream'">
+                  <a
+                    v-if="selectedFishingBeat.Beat_Downstream_W3W"
+                    :href="selectedFishingBeat.Beat_Downstream_W3W.url"
+                    rel="noopener noreferrer"
+                    @click.prevent="openReusableMapWindow(selectedFishingBeat.Beat_Downstream_W3W.url)"
+                  >
+                    {{ selectedFishingBeat.Beat_Downstream_W3W.display }}
+                  </a>
+                  <span v-else>{{ selectedFishingBeat.Beat_Downstream || '-' }}</span>
+                </template>
+                <template v-else-if="column.key === 'Detailed_Description'">
+                  {{ selectedFishingBeat.Detailed_Description || '-' }}
+                </template>
+                <template v-else-if="column.key === 'Beat_Upstream_Coords'">
+                  <span
+                    v-if="selectedFishingBeat.Beat_Upstream_Latitude && selectedFishingBeat.Beat_Upstream_Longitude"
+                  >
+                    {{ selectedFishingBeat.Beat_Upstream_Latitude }}, {{ selectedFishingBeat.Beat_Upstream_Longitude }}
+                  </span>
+                  <span v-else>-</span>
+                </template>
+                <template v-else-if="column.key === 'Beat_Downstream_Coords'">
+                  <span
+                    v-if="selectedFishingBeat.Beat_Downstream_Latitude && selectedFishingBeat.Beat_Downstream_Longitude"
+                  >
+                    {{ selectedFishingBeat.Beat_Downstream_Latitude }}, {{ selectedFishingBeat.Beat_Downstream_Longitude }}
+                  </span>
+                  <span v-else>-</span>
+                </template>
+                <template v-else-if="column.key === 'Parking_Locations'">
+                  <ul
+                    v-if="selectedFishingBeat.Parking_Locations.length"
+                    class="fishing-beat-parking-list"
+                  >
+                    <li
+                      v-for="(parking, parkingIndex) in selectedFishingBeat.Parking_Locations"
+                      :key="`parking-${parkingIndex}`"
+                    >
+                      <strong>{{ parking.Name || `Parking ${parkingIndex + 1}` }}</strong>
+                      <span v-if="parking.Latitude && parking.Longitude">
+                        ({{ parking.Latitude }}, {{ parking.Longitude }})
+                      </span>
+                      <span v-if="parking.Location_W3W">
+                        &mdash;
+                        <a
+                          href="#"
+                          class="w3w-link"
+                          @click.prevent="openReusableMapWindow(parking.Location_W3W.url)"
+                        >
+                          {{ parking.Location_W3W.display }}
+                        </a>
+                      </span>
+                      <span v-if="parking.Description"> - {{ parking.Description }}</span>
+                    </li>
+                  </ul>
+                  <span v-else>-</span>
+                </template>
+                <template v-else>
+                  {{ selectedFishingBeat[column.key] || '-' }}
+                </template>
               </td>
             </tr>
           </tbody>
@@ -174,6 +161,7 @@ export default {
   name: 'FishingBeats',
   data() {
     return {
+      fieldOrder: {},
       selectedFishingBeatKey: '',
       fishingBeatMapInstance: null,
       fishingBeatMapLayers: [],
@@ -183,6 +171,55 @@ export default {
   },
   computed: {
     clubFullName: () => clubDetails.value.fullName,
+    orderedTableColumns() {
+      const columnMap = {
+        Beat_ID: { key: 'Beat_ID', label: 'Beat ID' },
+        Beat_Name: { key: 'Beat_Name', label: 'Beat Name' },
+        River: { key: 'River', label: 'River' },
+        Beat_Upstream: { key: 'Beat_Upstream', label: 'Beat Upstream' },
+        Beat_Downstream: { key: 'Beat_Downstream', label: 'Beat Downstream' },
+        Beat_Description: { key: 'Beat_Description', label: 'Beat Description' },
+        Position: { key: 'Position', label: 'Position' },
+      };
+      const fallbackOrder = [
+        'Beat_ID',
+        'Beat_Name',
+        'River',
+        'Beat_Upstream',
+        'Beat_Downstream',
+        'Beat_Description',
+        'Position',
+      ];
+      const configuredOrder = Array.isArray(this.fieldOrder.fishing_beats)
+        ? this.fieldOrder.fishing_beats
+        : fallbackOrder;
+      return configuredOrder
+        .filter(key => columnMap[key])
+        .map(key => columnMap[key]);
+    },
+    orderedDetailColumns() {
+      const detailColumnMap = {
+        Beat_ID: { key: 'Beat_ID', label: 'Beat ID' },
+        Beat_Name: { key: 'Beat_Name', label: 'Beat Name' },
+        River: { key: 'River', label: 'River' },
+        Beat_Upstream: { key: 'Beat_Upstream', label: 'Beat Upstream' },
+        Beat_Downstream: { key: 'Beat_Downstream', label: 'Beat Downstream' },
+        Beat_Description: { key: 'Beat_Description', label: 'Beat Description' },
+        Position: { key: 'Position', label: 'Position' },
+        Detailed_Description: { key: 'Detailed_Description', label: 'Detailed Description' },
+        Beat_Upstream_Coords: { key: 'Beat_Upstream_Coords', label: 'Upstream Co-ords' },
+        Beat_Downstream_Coords: { key: 'Beat_Downstream_Coords', label: 'Downstream Co-ords' },
+        Parking_Locations: { key: 'Parking_Locations', label: 'Parking' },
+      };
+      const orderedKeys = [
+        ...this.orderedTableColumns.map(column => column.key),
+        'Detailed_Description',
+        'Beat_Upstream_Coords',
+        'Beat_Downstream_Coords',
+        'Parking_Locations',
+      ];
+      return orderedKeys.map(key => detailColumnMap[key]).filter(Boolean);
+    },
     clubBeats() {
       const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
       return beats.map(beat => {
@@ -229,6 +266,7 @@ export default {
     },
   },
   created() {
+    this.loadFieldOrder();
     if (this.clubBeats.length) {
       this.selectedFishingBeatKey = this.beatKey(this.clubBeats[0]);
     }
@@ -242,6 +280,19 @@ export default {
   methods: {
     goHome() {
       store.activeSection = 'home';
+    },
+    loadFieldOrder() {
+      axios
+        .get(`${API_BASE_URL}/field-order`)
+        .then(res => {
+          const loadedFieldOrder = res.data?.field_order;
+          this.fieldOrder = loadedFieldOrder && typeof loadedFieldOrder === 'object'
+            ? loadedFieldOrder
+            : {};
+        })
+        .catch(() => {
+          this.fieldOrder = {};
+        });
     },
     beatKey(beat) {
       const beatId = beat && beat.Beat_ID ? beat.Beat_ID : '';

@@ -5,6 +5,7 @@ from urllib.parse import quote
 from urllib.request import urlopen
 
 from flask import Blueprint, jsonify, request, send_from_directory
+from routes.field_order_routes import load_field_order_config
 
 
 def create_public_blueprint(deps):
@@ -20,6 +21,13 @@ def create_public_blueprint(deps):
     @bp.route('/clubs', methods=['GET'])
     def get_clubs():
         return jsonify({'clubs': load_clubs_config()})
+
+    @bp.route('/field-order', methods=['GET'])
+    def get_field_order():
+        try:
+            return jsonify({'field_order': load_field_order_config(deps)})
+        except Exception as exc:
+            return jsonify({'error': str(exc)}), 500
 
     @bp.route('/w3w/coordinates', methods=['GET'])
     def w3w_coordinates():

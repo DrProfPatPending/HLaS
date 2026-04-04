@@ -1,11 +1,89 @@
 import os
 import json
-from flask import Blueprint, jsonify, request, current_app
-from functools import wraps
+from flask import Blueprint, jsonify, request
+from sqlalchemy import and_, select
 
-def create_field_order_blueprint():
+FIELD_ORDER_PATH = os.path.join(os.path.dirname(__file__), '../field_order.json')
+
+
+def _load_field_order_from_json():
+    with open(FIELD_ORDER_PATH, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def _save_field_order_to_json(data):
+    with open(FIELD_ORDER_PATH, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2)
+        f.write('\n')
+
+
+def load_field_order_config(deps=None):
+    deps = deps or {}
+    is_postgres_reads_enabled = deps.get('is_postgres_reads_enabled')
+    get_postgres_backend = deps.get('get_postgres_backend')
+
+    if callable(is_postgres_reads_enabled) and callable(get_postgres_backend) and is_postgres_reads_enabled():
+        try:
+            backend = get_postgres_backend()
+            session = backend['session_factory']()
+            app_settings_table = backend['app_settings_table']
+            try:
+                row = session.execute(
+                    select(app_settings_table.c.value).where(
+                        and_(app_settings_table.c.scope == 'global', app_settings_table.c.key == 'field_order')
+                    )
+                ).first()
+            finally:
+                session.close()
+
+            loaded = row[0] if row else None
+            if isinstance(loaded, dict) and loaded:
+                return loaded
+        except Exception:
+            pass
+
+    return _load_field_order_from_json()
+
+
+def save_field_order_config(data, deps=None):
+    deps = deps or {}
+    _save_field_order_to_json(data)
+
+    is_postgres_writes_enabled = deps.get('is_postgres_writes_enabled')
+    get_postgres_backend = deps.get('get_postgres_backend')
+
+    if callable(is_postgres_writes_enabled) and callable(get_postgres_backend) and is_postgres_writes_enabled():
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        app_settings_table = backend['app_settings_table']
+        try:
+            existing = session.execute(
+                select(app_settings_table.c.id).where(
+                    and_(app_settings_table.c.scope == 'global', app_settings_table.c.key == 'field_order')
+                )
+            ).first()
+
+            if existing:
+                session.execute(
+                    app_settings_table.update()
+                    .where(app_settings_table.c.id == existing[0])
+                    .values(value=data)
+                )
+            else:
+                session.execute(
+                    app_settings_table.insert().values(scope='global', key='field_order', value=data)
+                )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+
+def create_field_order_blueprint(deps=None):
+    deps = deps or {}
     bp = Blueprint('field_order', __name__)
-    FIELD_ORDER_PATH = os.path.join(os.path.dirname(__file__), '../field_order.json')
 
     def require_admin():
         # Placeholder: Replace with actual admin check logic
@@ -22,8 +100,7 @@ def create_field_order_blueprint():
         if auth_error:
             return auth_error
         try:
-            with open(FIELD_ORDER_PATH, 'r') as f:
-                data = json.load(f)
+            data = load_field_order_config(deps)
             return jsonify({'field_order': data})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -37,8 +114,7 @@ def create_field_order_blueprint():
             data = request.json
             if not data:
                 return jsonify({'error': 'No data provided'}), 400
-            with open(FIELD_ORDER_PATH, 'w') as f:
-                json.dump(data, f, indent=2)
+            save_field_order_config(data, deps)
             return jsonify({'success': True})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
