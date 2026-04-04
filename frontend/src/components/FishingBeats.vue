@@ -224,6 +224,7 @@ export default {
         ? this.fieldOrder.fishing_beats
         : fallbackOrder;
       return configuredOrder
+        .filter(key => this.isColumnVisible('fishing_beats', key))
         .filter(key => columnMap[key])
         .map(key => columnMap[key]);
     },
@@ -336,6 +337,10 @@ export default {
     setSort(columnKey, direction) {
       this.sortKey = columnKey;
       this.sortDirection = direction === 'desc' ? 'desc' : 'asc';
+    },
+    isColumnVisible(contextKey, columnKey) {
+      const configured = this.fieldOrder?.show_columns?.[contextKey]?.[columnKey];
+      return configured !== false;
     },
     isSortActive(columnKey, direction) {
       return this.sortKey === columnKey && this.sortDirection === direction;

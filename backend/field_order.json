@@ -21,5 +21,16 @@
       "Beat_Description": 50,
       "Position": 50
     }
+  },
+  "show_columns": {
+    "fishing_beats": {
+      "Beat_ID": true,
+      "Beat_Name": true,
+      "River": true,
+      "Beat_Upstream": true,
+      "Beat_Downstream": true,
+      "Beat_Description": true,
+      "Position": false
+    }
   }
 }

@@ -38,6 +38,7 @@
           <tr>
             <th>#</th>
             <th>Field</th>
+            <th>Show Column</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -45,6 +46,16 @@
           <tr v-for="(fieldName, index) in selectedFields" :key="`${selectedContext}-${fieldName}-${index}`">
             <td class="field-order-position">{{ index + 1 }}</td>
             <td>{{ fieldName }}</td>
+            <td class="field-order-show-cell">
+              <label class="field-order-show-toggle">
+                <input
+                  type="checkbox"
+                  :checked="isFieldVisible(fieldName)"
+                  @change="setFieldVisible(fieldName, $event.target.checked)"
+                />
+                Show
+              </label>
+            </td>
             <td class="admin-actions-cell">
               <button type="button" :disabled="index === 0" @click="moveToTop(index)">Top</button>
               <button type="button" :disabled="index === 0" @click="moveUp(index)">↑</button>
@@ -94,6 +105,10 @@ export default {
       const fields = this.fieldOrder?.[this.selectedContext];
       return Array.isArray(fields) ? fields : [];
     },
+    selectedShowColumns() {
+      const showColumns = this.fieldOrder?.show_columns?.[this.selectedContext];
+      return showColumns && typeof showColumns === 'object' ? showColumns : {};
+    },
   },
   mounted() {
     this.fetchFieldOrder();
@@ -126,6 +141,24 @@ export default {
       this.fieldOrder = {
         ...this.fieldOrder,
         [this.selectedContext]: nextFields,
+      };
+    },
+    isFieldVisible(fieldName) {
+      const configured = this.selectedShowColumns?.[fieldName];
+      return configured !== false;
+    },
+    setFieldVisible(fieldName, isVisible) {
+      if (!this.selectedContext || !fieldName) return;
+      const nextShowColumns = {
+        ...(this.fieldOrder?.show_columns || {}),
+        [this.selectedContext]: {
+          ...(this.fieldOrder?.show_columns?.[this.selectedContext] || {}),
+          [fieldName]: !!isVisible,
+        },
+      };
+      this.fieldOrder = {
+        ...this.fieldOrder,
+        show_columns: nextShowColumns,
       };
     },
     moveUp(index) {
@@ -188,5 +221,15 @@ export default {
 
 .field-order-actions {
   margin-top: 10px;
+}
+
+.field-order-show-cell {
+  white-space: nowrap;
+}
+
+.field-order-show-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 </style>
