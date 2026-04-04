@@ -7,16 +7,46 @@
     <table v-if="orderedMemberFields.length && members.length" class="member-table">
       <thead>
         <tr>
-          <th v-for="field in orderedMemberFields" :key="field">{{ field }}</th>
+          <th v-for="field in orderedMemberFields" :key="field">
+            <div>
+              <span>{{ field }}</span>
+              <span
+                class="sort-arrow"
+                :class="{ active: sortKey === field && sortOrder === 'asc' }"
+                @click="setSort(field, 'asc')"
+              >
+                ▲
+              </span>
+              <span
+                class="sort-arrow"
+                :class="{ active: sortKey === field && sortOrder === 'desc' }"
+                @click="setSort(field, 'desc')"
+              >
+                ▼
+              </span>
+            </div>
+            <input
+              v-model="columnFilters[field]"
+              class="column-filter"
+              type="text"
+              :placeholder="`Filter ${field}`"
+              @input="onFilterChange"
+            />
+          </th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="member in members" :key="member.id || member.ID || member.Number">
           <td v-for="field in orderedMemberFields" :key="field">
+            <span v-if="field === 'Members_Name' && member[field] && member.Number">
+              <a href="#" class="member-link" @click.prevent="lookupMemberByNumber(member.Number)">
+                {{ member[field] }}
+              </a>
+            </span>
             <span v-if="field === 'E_Mail' && member[field]">
               <a :href="`mailto:${member[field]}`">{{ member[field] }}</a>
             </span>
-            <span v-else>{{ member[field] }}</span>
+            <span v-else :style="getMemberFieldStyle(field, member[field])">{{ member[field] }}</span>
           </td>
         </tr>
       </tbody>
@@ -90,6 +120,7 @@ import {
   fieldOrderConfig,
   loadFieldOrderConfig,
   onPageSizeChange,
+  goToPage,
   lookupMember,
   lookupMemberByNumber,
   hideLookupDetails,
@@ -116,6 +147,8 @@ export default {
     totalPages: () => totalPages.value,
     visiblePages: () => visiblePages.value,
     columnFilters: () => store.columnFilters,
+    sortKey: () => store.sortKey,
+    sortOrder: () => store.sortOrder,
     showMembershipDetails: () => store.showMembershipDetails,
     lookupNumber: {
       get: () => store.lookupNumber,
@@ -143,15 +176,19 @@ export default {
     prevPage,
     firstPage,
     lastPage,
-    goToPage(pageNum) {
-      store.currentPage = pageNum;
-    },
+    goToPage,
     onPageSizeChange,
     lookupMember,
     lookupMemberByNumber,
     hideLookupDetails,
     openMemberEdit(member) {
       selectMemberForEdit(member);
+    },
+    getMemberFieldStyle(field, value) {
+      if (field === 'Licence_Exp' || field === 'Licence_Expiry') {
+        return getExpiryDateStyle(value);
+      }
+      return {};
     },
     getExpiryDateStyle,
   },

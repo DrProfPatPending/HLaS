@@ -549,6 +549,11 @@ export default {
   cursor: pointer;
   font-size: 1em;
   margin-left: 2px;
+  color: #666;
+}
+#app .sort-arrow.active {
+  color: #0056b3;
+  font-weight: bold;
 }
 #app .login-container {
   max-width: 400px;
