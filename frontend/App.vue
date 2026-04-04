@@ -119,6 +119,11 @@ export default {
   margin: 40px auto;
   font-family: Helvetica, Arial, sans-serif;
 }
+#app .fishing-beats-container {
+  max-width: none;
+  width: 100%;
+  margin: 40px 0;
+}
 #app .fishing-beats-header {
   display: flex;
   align-items: center;
@@ -231,13 +236,14 @@ export default {
   margin: 12px 0;
 }
 #app .fishing-beats-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 75% 25%;
+  align-items: start;
+  gap: 12px;
 }
 #app .fishing-beat-detail-panel {
-  width: 320px;
-  min-width: 280px;
+  width: 100%;
+  min-width: 0;
   border: 1px solid #ccc;
   background: #fafafa;
   padding: 10px;
