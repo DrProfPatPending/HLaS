@@ -8,7 +8,11 @@
       <table class="fishing-beats-table">
         <thead>
           <tr>
-            <th v-for="column in orderedTableColumns" :key="`header-${column.key}`">
+            <th
+              v-for="column in orderedTableColumns"
+              :key="`header-${column.key}`"
+              :style="columnMinWidthStyle(column.key)"
+            >
               <div class="fishing-beats-sort-header">
                 <span>{{ column.label }}</span>
                 <span class="fishing-beats-sort-controls">
@@ -35,7 +39,11 @@
         </thead>
         <tbody>
           <tr v-for="beat in sortedClubBeats" :key="`${beat.Beat_ID}-${beat.Beat_Name}`">
-            <td v-for="column in orderedTableColumns" :key="`${beatKey(beat)}-${column.key}`">
+            <td
+              v-for="column in orderedTableColumns"
+              :key="`${beatKey(beat)}-${column.key}`"
+              :style="columnMinWidthStyle(column.key)"
+            >
               <template v-if="column.key === 'Beat_Name'">
                 <a
                   href="#"
@@ -219,6 +227,10 @@ export default {
         .filter(key => columnMap[key])
         .map(key => columnMap[key]);
     },
+    fishingBeatsMinWidths() {
+      const configured = this.fieldOrder?.minimum_widths?.fishing_beats;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
     orderedDetailColumns() {
       const detailColumnMap = {
         Beat_ID: { key: 'Beat_ID', label: 'Beat ID' },
@@ -335,6 +347,28 @@ export default {
         return numericValue;
       }
       return trimmedValue.toLowerCase();
+    },
+    normalizeColumnMinWidth(rawWidth) {
+      if (typeof rawWidth === 'number' && Number.isFinite(rawWidth) && rawWidth > 0) {
+        return `${rawWidth}px`;
+      }
+      if (typeof rawWidth === 'string') {
+        const trimmed = rawWidth.trim().toLowerCase();
+        if (/^\d+px$/.test(trimmed)) {
+          return trimmed;
+        }
+        const numericWidth = Number(trimmed);
+        if (Number.isFinite(numericWidth) && numericWidth > 0) {
+          return `${numericWidth}px`;
+        }
+      }
+      return '50px';
+    },
+    columnMinWidthStyle(columnKey) {
+      const configuredWidth = this.fishingBeatsMinWidths?.[columnKey];
+      return {
+        minWidth: this.normalizeColumnMinWidth(configuredWidth),
+      };
     },
     loadFieldOrder() {
       axios

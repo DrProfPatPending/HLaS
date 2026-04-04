@@ -10,5 +10,16 @@
   ],
   "fishing_beats": [
     "Beat_ID", "Beat_Name", "River", "Beat_Upstream", "Beat_Downstream", "Beat_Description", "Position"
-  ]
+  ],
+  "minimum_widths": {
+    "fishing_beats": {
+      "Beat_ID": 50,
+      "Beat_Name": 50,
+      "River": 50,
+      "Beat_Upstream": 50,
+      "Beat_Downstream": 50,
+      "Beat_Description": 50,
+      "Position": 50
+    }
+  }
 }

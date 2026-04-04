@@ -86,7 +86,9 @@ export default {
   },
   computed: {
     contextNames() {
-      return Object.keys(this.fieldOrder || {});
+      return Object.entries(this.fieldOrder || {})
+        .filter(([, contextValue]) => Array.isArray(contextValue))
+        .map(([contextName]) => contextName);
     },
     selectedFields() {
       const fields = this.fieldOrder?.[this.selectedContext];
