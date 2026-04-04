@@ -12,6 +12,15 @@
         <li>
           <button type="button" @click="navigate('club-store')">Club Store</button>
         </li>
+        <li>
+          <button
+            type="button"
+            :disabled="!canAccessMembershipAdmin"
+            @click="navigate('membership-admin')"
+          >
+            Membership Admin
+          </button>
+        </li>
       </ul>
     </details>
 
@@ -27,13 +36,16 @@
 </template>
 
 <script>
-import { clubDetails, navigateToSection } from '../store.js';
+import { clubDetails, canAccessMembershipAdmin, navigateToSection } from '../store.js';
 
 export default {
   name: 'MemberTopMenu',
   computed: {
     clubShortName() {
       return clubDetails.value.shortName || 'Club';
+    },
+    canAccessMembershipAdmin() {
+      return canAccessMembershipAdmin.value;
     },
   },
   mounted() {
@@ -153,5 +165,16 @@ export default {
 
 .member-top-menu-list button:hover {
   background: #cce0f8;
+}
+
+.member-top-menu-list button:disabled {
+  color: #777;
+  background: #eaf3ff;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.member-top-menu-list button:disabled:hover {
+  background: #eaf3ff;
 }
 </style>
