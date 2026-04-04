@@ -4,7 +4,7 @@
       <button type="button" @click="goHome">Back to Home</button>
       <h1>{{ loggedInClub }} Members</h1>
     </div>
-    <table v-if="orderedMemberFields.length && members.length" class="member-table">
+    <table v-if="orderedMemberFields.length" class="member-table">
       <thead>
         <tr>
           <th v-for="field in orderedMemberFields" :key="field">
@@ -43,15 +43,20 @@
                 {{ member[field] }}
               </a>
             </span>
-            <span v-if="field === 'E_Mail' && member[field]">
+            <span v-else-if="field === 'E_Mail' && member[field]">
               <a :href="`mailto:${member[field]}`">{{ member[field] }}</a>
             </span>
             <span v-else :style="getMemberFieldStyle(field, member[field])">{{ member[field] }}</span>
           </td>
         </tr>
+        <tr v-if="!members.length">
+          <td :colspan="orderedMemberFields.length" style="text-align: center; color: #888;">
+            No members found.
+          </td>
+        </tr>
       </tbody>
     </table>
-    <div v-else style="margin: 24px 0; color: #888;">No members found.</div>
+    <div v-else style="margin: 24px 0; color: #888;">No member columns configured.</div>
     <div class="pagination-controls">
       <button :disabled="currentPage === 1" @click="firstPage">First Page</button>
       <button :disabled="currentPage === 1" @click="prevPage">Previous Page</button>
@@ -157,13 +162,20 @@ export default {
     lookupResult: () => store.lookupResult,
     lookupError: () => store.lookupError,
     orderedMemberFields() {
-      if (!this.members || !this.members.length) return [];
-      if (fieldOrderConfig.loaded && fieldOrderConfig.order['membership_admin']) {
-        const sample = this.members[0] || {};
-        return fieldOrderConfig.order['membership_admin'].filter(f => f in sample);
+      const configured = fieldOrderConfig.order['membership_admin'];
+      if (fieldOrderConfig.loaded && Array.isArray(configured) && configured.length) {
+        if (this.members && this.members.length) {
+          const sample = this.members[0] || {};
+          const filtered = configured.filter(f => f in sample);
+          if (filtered.length) return filtered;
+        }
+        return configured;
       }
-      const sample = this.members[0] || {};
-      return Object.keys(sample);
+      if (this.members && this.members.length) {
+        const sample = this.members[0] || {};
+        return Object.keys(sample);
+      }
+      return Object.keys(this.columnFilters || {});
     },
   },
   methods: {

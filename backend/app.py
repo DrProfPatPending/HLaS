@@ -518,7 +518,19 @@ def save_clubs_config(clubs):
 
 def get_column(column_name, members_table):
     """Get column from members table."""
-    return members_table.c.get(column_name)
+    if not column_name:
+        return None
+
+    direct_match = members_table.c.get(column_name)
+    if direct_match is not None:
+        return direct_match
+
+    target = str(column_name).lower()
+    for existing_name in members_table.c.keys():
+        if str(existing_name).lower() == target:
+            return members_table.c.get(existing_name)
+
+    return None
 
 
 def build_member_filters(members_table, normalized_filters):
