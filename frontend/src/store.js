@@ -233,6 +233,9 @@ export function formatDateWithPattern(dateIso, pattern = store.appDateFormat) {
   const normalized = normalizeDateInputValue(dateIso);
   if (!normalized) return String(dateIso || '');
   const [year, month, day] = normalized.split('-');
+  if (!year || !month || !day) {
+    return String(dateIso || '');
+  }
   const monthNumber = Number(month);
   const monthLabel = SHORT_MONTH_NAMES[monthNumber - 1] || month;
   const yy = year.slice(-2);
@@ -297,16 +300,58 @@ export function normalizeDateInputValue(value) {
   if (!raw) {
     return '';
   }
+
+  const normalizeTwoDigitYear = yy => {
+    const yearNumber = Number(yy);
+    if (!Number.isFinite(yearNumber)) return '';
+    return yearNumber >= 50 ? `19${String(yy).padStart(2, '0')}` : `20${String(yy).padStart(2, '0')}`;
+  };
+
   if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
     return raw.slice(0, 10);
+  }
+  if (/^\d{4}-\d{2}$/.test(raw)) {
+    return `${raw}-01`;
+  }
+  if (/^\d{4}\/\d{2}$/.test(raw)) {
+    const [year, month] = raw.split('/');
+    return `${year}-${month}-01`;
+  }
+  if (/^\d{2}\/\d{4}$/.test(raw)) {
+    const [month, year] = raw.split('/');
+    return `${year}-${month}-01`;
+  }
+  if (/^\d{2}-\d{4}$/.test(raw)) {
+    const [month, year] = raw.split('-');
+    return `${year}-${month}-01`;
+  }
+  if (/^\d{2}\/\d{2}$/.test(raw)) {
+    const [month, yy] = raw.split('/');
+    const year = normalizeTwoDigitYear(yy);
+    return year ? `${year}-${month}-01` : '';
+  }
+  if (/^\d{2}-\d{2}$/.test(raw)) {
+    const [month, yy] = raw.split('-');
+    const year = normalizeTwoDigitYear(yy);
+    return year ? `${year}-${month}-01` : '';
   }
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
     const [day, month, year] = raw.split('/');
     return `${year}-${month}-${day}`;
   }
+  if (/^\d{2}\/\d{2}\/\d{2}$/.test(raw)) {
+    const [day, month, yy] = raw.split('/');
+    const year = normalizeTwoDigitYear(yy);
+    return year ? `${year}-${month}-${day}` : '';
+  }
   if (/^\d{2}-\d{2}-\d{4}$/.test(raw)) {
     const [day, month, year] = raw.split('-');
     return `${year}-${month}-${day}`;
+  }
+  if (/^\d{2}-\d{2}-\d{2}$/.test(raw)) {
+    const [day, month, yy] = raw.split('-');
+    const year = normalizeTwoDigitYear(yy);
+    return year ? `${year}-${month}-${day}` : '';
   }
   const parsed = new Date(raw);
   if (!Number.isNaN(parsed.getTime())) {
