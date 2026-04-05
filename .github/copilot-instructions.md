@@ -8,22 +8,16 @@
 - [x] Create and Run Task
 - [x] Launch the Project
 - [x] Ensure Documentation is Complete
-	 -->
 
 - [ ] Launch the Project
-	<!--
 	Verify that all previous steps have been completed.
 	Prompt user for debug mode, launch only if confirmed.
-	 -->
 
 - [ ] Ensure Documentation is Complete
-	<!--
 	Verify that all previous steps have been completed.
-	Verify that README.md and the copilot-instructions.md file in the .github directory exists and contains current project information.
-	Clean up the copilot-instructions.md file in the .github directory by removing all HTML comments.
-	 -->
+	Verify that `README.md` and this file contain current project information.
+	Keep this file free of stale comment blocks.
 
-<!--
 ## Execution Guidelines
 PROGRESS TRACKING:
 - If any tools are available to manage the above todo list, use it to track progress through this checklist.
@@ -65,12 +59,11 @@ PROJECT CONTENT RULES:
 TASK COMPLETION RULES:
 - Your task is complete when:
   - Project is successfully scaffolded and compiled without errors
-  - copilot-instructions.md file in the .github directory exists in the project
-  - README.md file exists and is up to date
+  - `copilot-instructions.md` file in the `.github` directory exists in the project
+  - `README.md` file exists and is up to date
   - User is provided with clear instructions to debug/launch the project
 
 Before starting a new task in the above plan, update progress in the plan.
--->
 - Work through each checklist item systematically.
 - Keep communication concise and focused.
 - Follow development best practices.

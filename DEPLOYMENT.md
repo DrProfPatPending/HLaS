@@ -4,6 +4,7 @@
 This release implements a full separation between admin/system users and member/club users, as per Option 3 of the migration plan. The backend, frontend, and API logic have been refactored to support distinct authentication, session, and UI flows for each user type.
 
 This guide also reflects later operational changes, including PostgreSQL-backed member photo storage, restored Membership Admin behavior, and reusable SQL verification packs.
+It also now covers the Beat Details member page, dedicated field-order config for that view, and the redesigned member home dashboard.
 
 ---
 
@@ -45,6 +46,14 @@ This guide also reflects later operational changes, including PostgreSQL-backed 
    - `Members_Name` opens Edit Member Details
    - `Number` opens member lookup/details
    - Previous/Next navigation in edit view now operates on the full filtered result set rather than one page
+- **Beat Details:**
+   - dedicated member page added for beat-focused viewing
+   - dropdown labels show `<Beat ID> <Beat Name>`
+   - detail page reuses Fishing Beats map behavior for upstream/downstream markers and parking locations
+   - field order and visibility are stored under the `beat_details` context
+- **Home dashboard:**
+   - post-login member home page now uses a left-side vertical action stack
+   - central placeholder `News and Updates` table is present until backend news/message endpoints are implemented
 - **Member photo display:**
    - Edit Member Details displays the member photo again
    - photo routes support DB-first retrieval in PostgreSQL mode
@@ -66,6 +75,7 @@ This guide also reflects later operational changes, including PostgreSQL-backed 
 - Rebuild the frontend to ensure both admin and member UIs are up to date.
 - Live Docker PostgreSQL is published on host port `5433` (`5433 -> 5432`).
 - In member-facing deployments behind Caddy, frontend should call backend via `/api`.
+- If Beat Details columns are changed in admin field-order tooling, ensure the `beat_details` context is included in the persisted `field_order` payload.
 
 ### Member photo deployment steps
 
@@ -247,3 +257,12 @@ Notes:
 - Paused-field verification packs:
    - `Utilities/member_paused_verification_pack.sql`
    - `Utilities/member_paused_verification_pack_psql.sql`
+
+### Field-order persistence note
+
+Current runtime-configured field-order contexts include both:
+
+- `fishing_beats`
+- `beat_details`
+
+If `app_settings(scope='global', key='field_order')` exists, it is treated as the runtime source of truth. Keep it aligned with `backend/field_order.json` when deploying manual config updates.

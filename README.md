@@ -8,6 +8,8 @@ HLaS is a fishing club membership management application with separate member an
 - Member ID photos can now be stored and served from PostgreSQL via the `member_photos` table.
 - Membership Admin includes sorting, filtering, linked member lookup, and linked member edit navigation.
 - Fishing Beats field order, visibility, and minimum width settings are configurable.
+- Beat Details now has its own dedicated field-order and visibility configuration context.
+- The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
 - Restored the member login club dropdown loading from `/clubs`.
@@ -16,6 +18,9 @@ HLaS is a fishing club membership management application with separate member an
 - Edit Member navigation now uses the full matching result set instead of just the visible page.
 - Member ID photos are imported into PostgreSQL and served DB-first with file fallback.
 - Added reusable SQL verification packs in `Utilities/`.
+- Added a new Beat Details member page with dedicated field-order configuration.
+- Beat Details now reuses the Fishing Beats detail map logic, including upstream/downstream markers and parking locations.
+- The post-login member home page now presents navigation actions vertically on the left with a placeholder `<Club> News and Updates` table in the center.
 
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
@@ -23,6 +28,33 @@ HLaS is a fishing club membership management application with separate member an
 - **Session tokens** and **principal context** now include `user_type` for robust permission checks
 - **API endpoints** allow admin/system users to operate globally, without requiring a club context
 - **Frontend and backend code** refactored for clean separation and maintainability
+
+## Member UI updates
+
+### Home dashboard
+
+After member login, the main page now shows:
+
+- a vertical action menu on the left for member workflows such as Membership Admin, Beat Details, Club Information, My Club, Fishing Beats, Club Store, and Newsletters
+- a central `News and Updates` panel titled with the active club name
+- placeholder rows for alerts and messages until the backend-backed news feed is implemented
+
+### Beat Details page
+
+The new Beat Details page provides a dedicated beat-centric detail view separate from the Fishing Beats listing.
+
+Current behavior:
+
+- beat selector labels display `<Beat ID> <Beat Name>`
+- detail fields use the `beat_details` field-order context from `field_order.json` / `app_settings`
+- map display reuses the Fishing Beats detail map implementation
+- map shows upstream and downstream limits plus any configured parking markers
+- what3words locations are resolved through `/w3w/coordinates` when direct coordinates are unavailable
+
+Configuration sources:
+
+- file fallback: `backend/field_order.json`
+- PostgreSQL runtime source of truth: `app_settings(scope='global', key='field_order')`
 
 See DEPLOYMENT.md for full technical details and migration notes.
 # Fishing Club Membership Management Web Application
@@ -100,6 +132,15 @@ The `psql` version can be run like this:
 ```bash
 psql "postgresql://hlas:hlas@hlastest:5433/hlas" -v club='GAAFFS' -f Utilities/member_paused_verification_pack_psql.sql
 ```
+
+### Field-order configuration contexts
+
+Field ordering and column visibility are now stored per context. Current member-facing contexts include:
+
+- `fishing_beats`
+- `beat_details`
+
+When PostgreSQL runtime mode is enabled, updates are persisted in `app_settings`. The JSON file in `backend/field_order.json` remains the fallback source.
 
 ### Frontend
 1. Install Node.js dependencies:
