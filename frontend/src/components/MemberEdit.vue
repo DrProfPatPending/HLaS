@@ -148,7 +148,7 @@ export default {
       if (!this.photoVisible || !this.memberPhotoName || !this.editMemberId) {
         return '';
       }
-      return `${this.apiBaseUrl}/member_photo_for_member/${this.loggedInClub}/${encodeURIComponent(this.editMemberId)}`;
+      return `${this.apiBaseUrl}/member_photo/${this.loggedInClub}/${encodeURIComponent(this.memberPhotoName)}`;
     },
     memberPhotoAlt() {
       return this.editMemberData.Members_Name || this.editMemberData.username || 'Member photo';
