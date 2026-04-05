@@ -1,67 +1,98 @@
 <template>
   <div class="my-club-container">
-    <h2>My Club</h2>
+    <h2>Edit Member Details</h2>
 
     <div v-if="loading" class="my-club-status">Loading your member information…</div>
     <div v-else-if="error" class="error-msg">{{ error }}</div>
 
     <div v-else>
-      <div class="my-club-actions">
-        <button v-if="!isEditing" type="button" @click="startEdit">Edit</button>
-        <template v-else>
-          <button type="button" class="save-btn" @click="saveEdit">Save</button>
-          <button type="button" @click="cancelEdit">Cancel</button>
-        </template>
-        <button type="button" @click="goHome">Back to Home</button>
+      <div class="member-edit-top-row">
+        <div class="member-edit-actions member-edit-actions-top">
+          <button v-if="!isEditing" type="button" @click="startEdit">Edit Member Details</button>
+          <template v-else>
+            <button type="button" class="save-btn" @click="saveEdit">Update Member</button>
+            <button type="button" @click="cancelEdit">Cancel</button>
+          </template>
+          <button type="button" @click="goHome">Back to Home</button>
+          <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
+        </div>
+
+        <div v-if="memberPhotoSrc" class="member-edit-photo-panel">
+          <img
+            :src="memberPhotoSrc"
+            :alt="memberPhotoAlt"
+            class="member-edit-photo"
+            @error="hideMemberPhoto"
+          />
+          <div v-if="memberPhotoName" class="member-edit-photo-name">{{ memberPhotoName }}</div>
+        </div>
       </div>
 
       <div v-if="status" class="success-msg">{{ status }}</div>
 
-      <div v-if="memberPhotoSrc" class="my-club-photo-row">
-        <img
-          :src="memberPhotoSrc"
-          :alt="memberPhotoAlt"
-          class="my-club-photo"
-          @error="hideMemberPhoto"
-        />
-        <div v-if="memberPhotoName" class="my-club-photo-name">{{ memberPhotoName }}</div>
-      </div>
-
-      <table class="my-club-table">
+      <table class="member-detail-table">
         <thead>
           <tr>
-            <th>Field</th>
-            <th>Value</th>
             <th>Field</th>
             <th>Value</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in fieldRows" :key="row[0]">
-            <td v-if="row[0]">{{ formatFieldName(row[0]) }}</td>
-            <td v-if="row[0]">
-              <span v-if="!isEditing">{{ formatValue(memberData[row[0]]) }}</span>
+          <tr v-if="editData.username !== undefined">
+            <td>{{ formatFieldName('username') }}</td>
+            <td>
+              <span v-if="!isEditing">{{ formatValue(memberData.username) }}</span>
               <input
                 v-else
-                v-model="editData[row[0]]"
-                class="my-club-input"
-                :disabled="isReadOnlyField(row[0])"
-              />
-            </td>
-            <td v-if="row[1]">{{ formatFieldName(row[1]) }}</td>
-            <td v-if="row[1]">
-              <span v-if="!isEditing">{{ formatValue(memberData[row[1]]) }}</span>
-              <input
-                v-else
-                v-model="editData[row[1]]"
-                class="my-club-input"
-                :disabled="isReadOnlyField(row[1])"
+                v-model="editData.username"
+                class="member-detail-input"
               />
             </td>
           </tr>
+
+          <tr>
+            <td>New Password</td>
+            <td>
+              <input
+                v-model="newPassword"
+                type="password"
+                class="member-detail-input"
+                :disabled="!isEditing"
+                placeholder="Leave blank to keep current password"
+              />
+            </td>
+          </tr>
+
+          <tr>
+            <td>Confirm New Password</td>
+            <td>
+              <input
+                v-model="confirmPassword"
+                type="password"
+                class="member-detail-input"
+                :disabled="!isEditing"
+              />
+            </td>
+          </tr>
+
+          <tr v-for="key in orderedFields" :key="key">
+            <td>{{ formatFieldName(key) }}</td>
+            <td>
+              <span v-if="!isEditing">{{ formatValue(memberData[key]) }}</span>
+              <input
+                v-else
+                v-model="editData[key]"
+                class="member-detail-input"
+                :disabled="isReadOnlyField(key)"
+              />
+            </td>
+          </tr>
+
+          <tr v-if="passwordError">
+            <td colspan="2" style="color: red; text-align: center;">{{ passwordError }}</td>
+          </tr>
         </tbody>
       </table>
-      
     </div>
   </div>
 </template>
@@ -77,22 +108,16 @@ export default {
       loading: true,
       error: '',
       status: '',
+      passwordError: '',
       isEditing: false,
       photoVisible: true,
       memberData: {},
       editData: {},
+      newPassword: '',
+      confirmPassword: '',
     };
   },
   computed: {
-    fieldRows() {
-      // Group fields into pairs for 4-column table
-      const fields = this.orderedFields;
-      const rows = [];
-      for (let i = 0; i < fields.length; i += 2) {
-        rows.push([fields[i], fields[i + 1] || null]);
-      }
-      return rows;
-    },
     loggedInClub() {
       return store.loggedInClub;
     },
@@ -103,12 +128,12 @@ export default {
       // Use backend field order if loaded, else fallback to previous logic
       if (fieldOrderConfig.loaded && fieldOrderConfig.order['my_club']) {
         // Only include fields present in memberData
-        return fieldOrderConfig.order['my_club'].filter(f => f in this.memberData);
+        return fieldOrderConfig.order['my_club'].filter(f => f in this.memberData && f !== 'username' && f !== 'password');
       }
       const keys = Object.keys(this.memberData || {});
-      const preferredTop = ['ID', 'id', 'Number', 'Members_Name', 'username', 'E_Mail'];
+      const preferredTop = ['ID', 'id', 'Number', 'Members_Name', 'E_Mail'];
       const topKeys = preferredTop.filter(key => keys.includes(key));
-      const remaining = keys.filter(key => !preferredTop.includes(key));
+      const remaining = keys.filter(key => !preferredTop.includes(key) && key !== 'username' && key !== 'password');
       return [...topKeys, ...remaining];
     },
     memberId() {
@@ -200,33 +225,56 @@ export default {
     startEdit() {
       this.status = '';
       this.error = '';
+      this.passwordError = '';
       this.editData = { ...this.memberData };
+      this.newPassword = '';
+      this.confirmPassword = '';
       this.isEditing = true;
     },
     cancelEdit() {
       this.status = '';
       this.error = '';
+      this.passwordError = '';
       this.editData = { ...this.memberData };
+      this.newPassword = '';
+      this.confirmPassword = '';
       this.isEditing = false;
     },
     saveEdit() {
       this.status = '';
       this.error = '';
+      this.passwordError = '';
 
       if (!this.memberId) {
         this.error = 'Unable to determine your member ID for update.';
         return;
       }
 
+      if (this.newPassword || this.confirmPassword) {
+        if (this.newPassword !== this.confirmPassword) {
+          this.passwordError = 'Passwords do not match';
+          return;
+        }
+        if (!this.newPassword.length) {
+          this.passwordError = 'Password cannot be empty';
+          return;
+        }
+      }
+
       const payload = { ...this.editData, club: this.loggedInClub };
       delete payload.ID;
       delete payload.id;
+      if (this.newPassword) {
+        payload.password = this.newPassword;
+      }
 
       axios
         .put(`${this.apiBaseUrl}/members/${this.memberId}`, payload)
         .then(() => {
           this.memberData = this.sanitizeMemberPayload(this.editData);
           this.editData = { ...this.memberData };
+          this.newPassword = '';
+          this.confirmPassword = '';
           this.isEditing = false;
           this.status = 'Member information updated successfully.';
         })
@@ -261,44 +309,7 @@ export default {
   margin-bottom: 10px;
 }
 
-.my-club-photo-row {
-  margin-bottom: 16px;
-  text-align: center;
-}
-
-.my-club-photo {
-  max-width: 220px;
-  max-height: 220px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  object-fit: cover;
-}
-
-.my-club-photo-name {
-  margin-top: 6px;
-  font-size: 0.9rem;
-  color: #555;
-}
-
-.my-club-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.my-club-table th,
-.my-club-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-  vertical-align: top;
-}
-
-.my-club-table th {
-  width: 30%;
-}
-
-.my-club-input {
-  width: 100%;
-  box-sizing: border-box;
+.success-msg {
+  margin: 10px 0;
 }
 </style>
