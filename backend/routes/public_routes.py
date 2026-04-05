@@ -15,6 +15,8 @@ def create_public_blueprint(deps):
     normalize_what3words_words = deps['normalize_what3words_words']
     get_valid_club_short_names = deps['get_valid_club_short_names']
     APP_DATA_DIR = deps['APP_DATA_DIR']
+    get_read_db_for_club = deps['get_read_db_for_club']
+    get_column = deps['get_column']
     get_club_logo_path = deps['get_club_logo_path']
     CLUB_LOGOS_DIR = deps['CLUB_LOGOS_DIR']
 
@@ -76,6 +78,50 @@ def create_public_blueprint(deps):
         if not os.path.isdir(photo_dir):
             return jsonify({'error': 'Photo directory not found'}), 404
         return send_from_directory(photo_dir, filename)
+
+    @bp.route('/member_photo_for_member/<club>/<member_id>', methods=['GET'])
+    def member_photo_for_member(club, member_id):
+        valid_clubs = get_valid_club_short_names()
+        if club not in valid_clubs:
+            return jsonify({'error': 'Invalid club'}), 404
+
+        db_info = get_read_db_for_club(club)
+        session = db_info['session']
+        members_table = db_info['members_table']
+        Member = db_info['Member']
+
+        id_column = get_column('ID', members_table) or get_column('id', members_table)
+        number_column = get_column('Number', members_table)
+        photo_column = get_column('Photo_Path', members_table) or get_column('photo_path', members_table)
+        if photo_column is None or (id_column is None and number_column is None):
+            try:
+                session.close()
+            except Exception:
+                pass
+            return jsonify({'error': 'Photo columns not available'}), 404
+
+        member = None
+        try:
+            from sqlalchemy import select
+
+            if id_column is not None:
+                member = session.scalars(select(Member).where(id_column == str(member_id))).first()
+            if member is None and number_column is not None:
+                member = session.scalars(select(Member).where(number_column == str(member_id))).first()
+        finally:
+            session.close()
+
+        if member is None:
+            return jsonify({'error': 'Member not found'}), 404
+
+        photo_name = str(getattr(member, photo_column.name, '') or '').strip()
+        if not photo_name:
+            return jsonify({'error': 'No member photo'}), 404
+
+        photo_dir = os.path.join(APP_DATA_DIR, 'ID_photos', club)
+        if not os.path.isdir(photo_dir):
+            return jsonify({'error': 'Photo directory not found'}), 404
+        return send_from_directory(photo_dir, photo_name)
 
 
     from sqlalchemy import select

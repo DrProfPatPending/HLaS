@@ -378,6 +378,21 @@ export default {
   margin: 20px auto;
   font-family: Helvetica, Arial, sans-serif;
 }
+#app .member-edit-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+#app .member-edit-actions-top {
+  flex: 1;
+}
+#app .member-edit-photo-panel {
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 #app .member-edit-photo-row {
   display: flex;
   align-items: flex-start;

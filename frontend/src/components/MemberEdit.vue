@@ -2,29 +2,30 @@
   <div class="member-edit-container">
     <h2>Edit Member Details</h2>
     <div v-if="editMemberPositionLabel" class="member-edit-position">{{ editMemberPositionLabel }}</div>
-    <div class="member-edit-photo-row">
-      <img
-        v-if="editMemberData.Photo_Path"
-        :key="editMemberId"
-        :src="`${apiBaseUrl}/member_photo/${loggedInClub}/${encodeURIComponent(editMemberData.Photo_Path)}`"
-        :alt="editMemberData.Members_Name || 'Member photo'"
-        class="member-edit-photo"
-        @error="$event.target.style.display='none'"
-      />
-      <div v-if="editMemberData.Photo_Path" class="member-edit-photo-name">
-        {{ editMemberData.Photo_Path }}
+    <div class="member-edit-top-row">
+      <div class="member-edit-actions member-edit-actions-top">
+        <button type="button" @click="updateMember">Update Member</button>
+        <button type="button" :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">
+          Previous
+        </button>
+        <button type="button" :disabled="!hasNextEditMember" @click="navigateEditMember(1)">
+          Next
+        </button>
+        <button type="button" @click="cancelEdit">Cancel</button>
+        <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
       </div>
-    </div>
-    <div class="member-edit-actions">
-      <button type="button" @click="updateMember">Update Member</button>
-      <button type="button" :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">
-        Previous
-      </button>
-      <button type="button" :disabled="!hasNextEditMember" @click="navigateEditMember(1)">
-        Next
-      </button>
-      <button type="button" @click="cancelEdit">Cancel</button>
-      <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
+      <div v-if="memberPhotoSrc" class="member-edit-photo-panel">
+        <img
+          :key="`${editMemberId}:${memberPhotoName}`"
+          :src="memberPhotoSrc"
+          :alt="memberPhotoAlt"
+          class="member-edit-photo"
+          @error="hideMemberPhoto"
+        />
+        <div v-if="memberPhotoName" class="member-edit-photo-name">
+          {{ memberPhotoName }}
+        </div>
+      </div>
     </div>
     <br />
     <table class="member-detail-table">
@@ -102,8 +103,18 @@ import {
 
 export default {
   name: 'MemberEdit',
+  data() {
+    return {
+      photoVisible: true,
+    };
+  },
   created() {
     loadFieldOrderConfig();
+  },
+  watch: {
+    editMemberId() {
+      this.photoVisible = true;
+    },
   },
   computed: {
     apiBaseUrl: () => store.apiBaseUrl,
@@ -130,12 +141,27 @@ export default {
       const keys = Object.keys(this.editMemberData || {});
       return keys.filter(k => k !== 'username' && k !== 'password');
     },
+    memberPhotoName() {
+      return this.editMemberData.Photo_Path || '';
+    },
+    memberPhotoSrc() {
+      if (!this.photoVisible || !this.memberPhotoName || !this.editMemberId) {
+        return '';
+      }
+      return `${this.apiBaseUrl}/member_photo_for_member/${this.loggedInClub}/${encodeURIComponent(this.editMemberId)}`;
+    },
+    memberPhotoAlt() {
+      return this.editMemberData.Members_Name || this.editMemberData.username || 'Member photo';
+    },
   },
   methods: {
     navigateEditMember,
     updateMember,
     cancelEdit,
     formatFieldName,
+    hideMemberPhoto() {
+      this.photoVisible = false;
+    },
   },
 };
 </script>
