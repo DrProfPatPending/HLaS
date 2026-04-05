@@ -10,6 +10,9 @@
           <button type="button" @click="navigate('fishing-beats')">Fishing Beats</button>
         </li>
         <li>
+          <button type="button" @click="navigate('beat-details')">Beat Details</button>
+        </li>
+        <li>
           <button type="button" @click="navigate('club-store')">Club Store</button>
         </li>
         <li>

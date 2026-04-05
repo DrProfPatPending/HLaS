@@ -237,6 +237,7 @@ export function sectionDisplayName(sectionKey) {
     'club-store': 'Club Store',
     newsletters: 'Newsletters',
     'fishing-beats': 'Fishing Beats',
+    'beat-details': 'Beat Details',
     'member-edit': 'Edit Member',
   };
   return names[sectionKey] || 'Home';

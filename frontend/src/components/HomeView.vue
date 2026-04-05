@@ -19,6 +19,15 @@
             <button
               type="button"
               class="home-nav-button"
+              @click="navigateToSection('beat-details')"
+            >
+              Beat Details
+            </button>
+          </td>
+          <td>
+            <button
+              type="button"
+              class="home-nav-button"
               @click="navigateToSection('club-information')"
             >
               Club Information
@@ -55,6 +64,7 @@
               Club Store
             </button>
           </td>
+          <td></td>
         </tr>
       </tbody>
     </table>

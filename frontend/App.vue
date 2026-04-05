@@ -9,6 +9,7 @@
       <my-club v-else-if="activeSection === 'my-club'" />
       <newsletters v-else-if="activeSection === 'newsletters'" />
       <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
+      <beat-details v-else-if="activeSection === 'beat-details'" />
       <member-edit v-else-if="activeSection === 'member-edit'" />
     <div v-else class="section-placeholder">
       <h2>{{ sectionDisplayName(activeSection) }}</h2>
@@ -32,6 +33,7 @@ import MembershipAdmin from './src/components/MembershipAdmin.vue';
 import ClubInformation from './src/components/ClubInformation.vue';
 import Newsletters from './src/components/Newsletters.vue';
 import FishingBeats from './src/components/FishingBeats.vue';
+import BeatDetails from './src/components/BeatDetails.vue';
 import MemberEdit from './src/components/MemberEdit.vue';
 import MyClub from './src/components/MyClub.vue';
 import {
@@ -56,6 +58,7 @@ export default {
     MyClub,
     Newsletters,
     FishingBeats,
+    BeatDetails,
     MemberEdit,
   },
   computed: {
