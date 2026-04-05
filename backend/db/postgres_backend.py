@@ -306,6 +306,40 @@ def ensure_postgres_global_user_tables(engine):
             conn.execute(stmt)
 
 
+def ensure_postgres_member_photos_table(engine):
+    statements = [
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS member_photos (
+                id         BIGSERIAL PRIMARY KEY,
+                club_id    BIGINT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                member_id  BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                filename   VARCHAR(512) NOT NULL DEFAULT '',
+                mime_type  VARCHAR(64) NOT NULL DEFAULT 'image/jpeg',
+                image_data BYTEA NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT uq_member_photos_member_id UNIQUE (member_id)
+            )
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_member_photos_club_id
+            ON member_photos (club_id)
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_member_photos_club_filename
+            ON member_photos (club_id, filename)
+            """
+        ),
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(stmt)
+
+
 def ensure_postgres_role_assignment_user_id(engine):
     """Idempotently add user_id FK to member_role_assignments and backfill.
 
@@ -411,6 +445,7 @@ def get_postgres_backend():
         ensure_postgres_rbac_tables(engine)
         ensure_postgres_global_user_tables(engine)
         ensure_postgres_role_assignment_user_id(engine)
+        ensure_postgres_member_photos_table(engine)
         metadata = MetaData()
         metadata.reflect(
             bind=engine,
@@ -425,6 +460,7 @@ def get_postgres_backend():
                 'member_refresh_sessions',
                 'app_users',
                 'member_user_links',
+                'member_photos',
                 'roles',
                 'member_role_assignments',
                 'security_audit_log',
@@ -445,6 +481,7 @@ def get_postgres_backend():
             'member_refresh_sessions_table': metadata.tables['member_refresh_sessions'],
             'app_users_table': metadata.tables['app_users'],
             'member_user_links_table': metadata.tables['member_user_links'],
+            'member_photos_table': metadata.tables['member_photos'],
             'roles_table': metadata.tables['roles'],
             'member_role_assignments_table': metadata.tables['member_role_assignments'],
             'security_audit_log_table': metadata.tables['security_audit_log'],

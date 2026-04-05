@@ -1,10 +1,14 @@
 import json
+import mimetypes
 import os
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import urlopen
 
-from flask import Blueprint, jsonify, request, send_from_directory
+from flask import Blueprint, Response, current_app, jsonify, request, send_from_directory
+from sqlalchemy import and_, select
+
+from db_models import club_logos
 from routes.field_order_routes import load_field_order_config
 
 
@@ -17,8 +21,41 @@ def create_public_blueprint(deps):
     APP_DATA_DIR = deps['APP_DATA_DIR']
     get_read_db_for_club = deps['get_read_db_for_club']
     get_column = deps['get_column']
+    get_postgres_backend = deps['get_postgres_backend']
+    is_postgres_reads_enabled = deps['is_postgres_reads_enabled']
     get_club_logo_path = deps['get_club_logo_path']
     CLUB_LOGOS_DIR = deps['CLUB_LOGOS_DIR']
+
+    def _send_member_photo_from_file(club, filename):
+        photo_dir = os.path.join(APP_DATA_DIR, 'ID_photos', club)
+        if not os.path.isdir(photo_dir):
+            return jsonify({'error': 'Photo directory not found'}), 404
+        return send_from_directory(photo_dir, filename)
+
+    def _get_member_photo_table():
+        if not is_postgres_reads_enabled():
+            return None
+        backend = get_postgres_backend()
+        return backend.get('member_photos_table')
+
+    def _lookup_club_id(short_name):
+        if not is_postgres_reads_enabled():
+            return None
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            clubs_table = backend['clubs_table']
+            return session.execute(
+                select(clubs_table.c.id).where(
+                    and_(clubs_table.c.short_name == short_name, clubs_table.c.is_active.is_(True))
+                )
+            ).scalar_one_or_none()
+        finally:
+            session.close()
+
+    def _guess_mime_type(filename, fallback='image/jpeg'):
+        mime_type, _ = mimetypes.guess_type(filename)
+        return mime_type or fallback
 
     @bp.route('/clubs', methods=['GET'])
     def get_clubs():
@@ -74,10 +111,31 @@ def create_public_blueprint(deps):
         valid_clubs = get_valid_club_short_names()
         if club not in valid_clubs:
             return jsonify({'error': 'Invalid club'}), 404
-        photo_dir = os.path.join(APP_DATA_DIR, 'ID_photos', club)
-        if not os.path.isdir(photo_dir):
-            return jsonify({'error': 'Photo directory not found'}), 404
-        return send_from_directory(photo_dir, filename)
+        member_photos_table = _get_member_photo_table()
+        club_id = _lookup_club_id(club)
+        if member_photos_table is not None and club_id is not None:
+            backend = get_postgres_backend()
+            session = backend['session_factory']()
+            try:
+                row = session.execute(
+                    select(
+                        member_photos_table.c.image_data,
+                        member_photos_table.c.mime_type,
+                        member_photos_table.c.filename,
+                    ).where(
+                        and_(
+                            member_photos_table.c.club_id == club_id,
+                            member_photos_table.c.filename == filename,
+                        )
+                    )
+                ).first()
+            finally:
+                session.close()
+
+            if row is not None:
+                return Response(row.image_data, mimetype=row.mime_type or _guess_mime_type(row.filename))
+
+        return _send_member_photo_from_file(club, filename)
 
     @bp.route('/member_photo_for_member/<club>/<member_id>', methods=['GET'])
     def member_photo_for_member(club, member_id):
@@ -85,14 +143,44 @@ def create_public_blueprint(deps):
         if club not in valid_clubs:
             return jsonify({'error': 'Invalid club'}), 404
 
+        member_photos_table = _get_member_photo_table()
+        club_id = _lookup_club_id(club)
+        if member_photos_table is not None and club_id is not None:
+            backend = get_postgres_backend()
+            session = backend['session_factory']()
+            try:
+                row = session.execute(
+                    select(
+                        member_photos_table.c.image_data,
+                        member_photos_table.c.mime_type,
+                        member_photos_table.c.filename,
+                    ).where(
+                        and_(
+                            member_photos_table.c.club_id == club_id,
+                            member_photos_table.c.member_id == int(member_id),
+                        )
+                    )
+                ).first()
+            except Exception:
+                row = None
+            finally:
+                session.close()
+
+            if row is not None:
+                return Response(row.image_data, mimetype=row.mime_type or _guess_mime_type(row.filename))
+
         db_info = get_read_db_for_club(club)
         session = db_info['session']
         members_table = db_info['members_table']
         Member = db_info['Member']
 
-        id_column = get_column('ID', members_table) or get_column('id', members_table)
+        id_column = get_column('ID', members_table)
+        if id_column is None:
+            id_column = get_column('id', members_table)
         number_column = get_column('Number', members_table)
-        photo_column = get_column('Photo_Path', members_table) or get_column('photo_path', members_table)
+        photo_column = get_column('Photo_Path', members_table)
+        if photo_column is None:
+            photo_column = get_column('photo_path', members_table)
         if photo_column is None or (id_column is None and number_column is None):
             try:
                 session.close()
@@ -102,12 +190,14 @@ def create_public_blueprint(deps):
 
         member = None
         try:
-            from sqlalchemy import select
+            target_member_id = int(member_id)
 
             if id_column is not None:
-                member = session.scalars(select(Member).where(id_column == str(member_id))).first()
+                member = session.scalars(select(Member).where(id_column == target_member_id)).first()
             if member is None and number_column is not None:
                 member = session.scalars(select(Member).where(number_column == str(member_id))).first()
+        except (TypeError, ValueError):
+            member = None
         finally:
             session.close()
 
@@ -118,15 +208,7 @@ def create_public_blueprint(deps):
         if not photo_name:
             return jsonify({'error': 'No member photo'}), 404
 
-        photo_dir = os.path.join(APP_DATA_DIR, 'ID_photos', club)
-        if not os.path.isdir(photo_dir):
-            return jsonify({'error': 'Photo directory not found'}), 404
-        return send_from_directory(photo_dir, photo_name)
-
-
-    from sqlalchemy import select
-    from db_models import club_logos
-    from flask import Response, current_app
+        return _send_member_photo_from_file(club, photo_name)
 
     @bp.route('/club_logo/<short_name>', methods=['GET'])
     def club_logo(short_name):

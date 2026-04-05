@@ -159,6 +159,19 @@ member_user_links = Table(
     UniqueConstraint("user_id", "member_id", name="uq_member_user_links_user_member"),
 )
 
+member_photos = Table(
+    "member_photos",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False),
+    Column("member_id", BigInteger, ForeignKey("members.id", ondelete="CASCADE"), nullable=False),
+    Column("filename", String(512), nullable=False, server_default=""),
+    Column("mime_type", String(64), nullable=False, server_default="image/jpeg"),
+    Column("image_data", LargeBinary, nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("member_id", name="uq_member_photos_member_id"),
+)
+
 newsletter_templates = Table(
     "newsletter_templates",
     metadata,
