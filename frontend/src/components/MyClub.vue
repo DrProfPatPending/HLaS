@@ -79,6 +79,14 @@
             <td>
               <span v-if="!isEditing">{{ formatValue(memberData[key]) }}</span>
               <input
+                v-else-if="isDateOfBirthField(key)"
+                type="date"
+                :value="dateInputValue(editData[key])"
+                class="member-detail-input"
+                :disabled="isReadOnlyField(key)"
+                @input="editData[key] = $event.target.value"
+              />
+              <input
                 v-else
                 v-model="editData[key]"
                 class="member-detail-input"
@@ -158,6 +166,41 @@ export default {
   },
   methods: {
     formatFieldName,
+    isDateOfBirthField(field) {
+      const normalized = String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return normalized === 'dob' || normalized.includes('dateofbirth');
+    },
+    dateInputValue(value) {
+      const raw = String(value || '').trim();
+      if (!raw) {
+        return '';
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+        return raw.slice(0, 10);
+      }
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+        const [day, month, year] = raw.split('/');
+        return `${year}-${month}-${day}`;
+      }
+      if (/^\d{2}-\d{2}-\d{4}$/.test(raw)) {
+        const [day, month, year] = raw.split('-');
+        return `${year}-${month}-${day}`;
+      }
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toISOString().slice(0, 10);
+      }
+      return '';
+    },
+    normalizeEditableData(payload) {
+      const normalized = { ...(payload || {}) };
+      Object.keys(normalized).forEach(key => {
+        if (this.isDateOfBirthField(key)) {
+          normalized[key] = this.dateInputValue(normalized[key]);
+        }
+      });
+      return normalized;
+    },
     loadFromSessionUser() {
       const fallbackPayload = this.sanitizeMemberPayload(store.loggedInUser || {});
       if (!Object.keys(fallbackPayload).length) {
@@ -165,7 +208,7 @@ export default {
       }
       this.photoVisible = true;
       this.memberData = fallbackPayload;
-      this.editData = { ...this.memberData };
+      this.editData = this.normalizeEditableData(this.memberData);
       return true;
     },
     hideMemberPhoto() {
@@ -204,7 +247,7 @@ export default {
           }
           this.photoVisible = true;
           this.memberData = sanitized;
-          this.editData = { ...this.memberData };
+          this.editData = this.normalizeEditableData(this.memberData);
         })
         .catch(err => {
           const loadedFromSession = this.loadFromSessionUser();
@@ -225,7 +268,7 @@ export default {
       this.status = '';
       this.error = '';
       this.passwordError = '';
-      this.editData = { ...this.memberData };
+      this.editData = this.normalizeEditableData(this.memberData);
       this.newPassword = '';
       this.confirmPassword = '';
       this.isEditing = true;
@@ -234,7 +277,7 @@ export default {
       this.status = '';
       this.error = '';
       this.passwordError = '';
-      this.editData = { ...this.memberData };
+      this.editData = this.normalizeEditableData(this.memberData);
       this.newPassword = '';
       this.confirmPassword = '';
       this.isEditing = false;
@@ -271,7 +314,7 @@ export default {
         .put(`${this.apiBaseUrl}/members/${this.memberId}`, payload)
         .then(() => {
           this.memberData = this.sanitizeMemberPayload(this.editData);
-          this.editData = { ...this.memberData };
+          this.editData = this.normalizeEditableData(this.memberData);
           this.newPassword = '';
           this.confirmPassword = '';
           this.isEditing = false;
