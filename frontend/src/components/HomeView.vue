@@ -11,12 +11,11 @@
           <h4>Actions</h4>
           <div class="home-nav-stack">
             <button
-              v-if="canAccessMembershipAdmin"
               type="button"
               class="home-nav-button"
-              @click="navigateToSection('membership-admin')"
+              @click="navigateToSection('my-club')"
             >
-              Membership Admin
+              My Club
             </button>
             <button
               type="button"
@@ -28,23 +27,16 @@
             <button
               type="button"
               class="home-nav-button"
-              @click="navigateToSection('club-information')"
-            >
-              Club Information
-            </button>
-            <button
-              type="button"
-              class="home-nav-button"
-              @click="navigateToSection('my-club')"
-            >
-              My Club
-            </button>
-            <button
-              type="button"
-              class="home-nav-button"
               @click="navigateToSection('fishing-beats')"
             >
               Fishing Beats
+            </button>
+            <button
+              type="button"
+              class="home-nav-button"
+              @click="navigateToSection('club-information')"
+            >
+              Club Information
             </button>
             <button
               type="button"
@@ -60,6 +52,14 @@
               @click="navigateToSection('newsletters')"
             >
               Newsletters
+            </button>
+            <button
+              v-if="canAccessMembershipAdmin"
+              type="button"
+              class="home-nav-button"
+              @click="navigateToSection('membership-admin')"
+            >
+              Membership Admin
             </button>
           </div>
         </div>
