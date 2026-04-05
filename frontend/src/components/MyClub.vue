@@ -112,6 +112,7 @@ import {
   fieldOrderConfig,
   loadFieldOrderConfig,
   isDateOfBirthField,
+  formatConfiguredDate,
   normalizeDateInputValue,
 } from '../store.js';
 
@@ -205,9 +206,12 @@ export default {
       return String(value);
     },
     formatMemberFieldValue(field, value) {
+      const formatted = formatConfiguredDate(value, field);
+      if (formatted !== value) {
+        return formatted || '-';
+      }
       if (this.isDateOfBirthField(field)) {
-        const normalized = this.dateInputValue(value);
-        return normalized || '-';
+        return formatted || '-';
       }
       return this.formatValue(value);
     },

@@ -9,6 +9,7 @@ from flask import Blueprint, Response, current_app, jsonify, request, send_from_
 from sqlalchemy import and_, select
 
 from db_models import club_logos
+from routes.app_settings_routes import load_app_settings_config
 from routes.field_order_routes import load_field_order_config
 
 
@@ -65,6 +66,13 @@ def create_public_blueprint(deps):
     def get_field_order():
         try:
             return jsonify({'field_order': load_field_order_config(deps)})
+        except Exception as exc:
+            return jsonify({'error': str(exc)}), 500
+
+    @bp.route('/app-settings', methods=['GET'])
+    def get_app_settings():
+        try:
+            return jsonify({'settings': load_app_settings_config(deps)})
         except Exception as exc:
             return jsonify({'error': str(exc)}), 500
 

@@ -19,7 +19,7 @@
           </thead>
           <tbody>
             <tr v-for="item in newsItems" :key="item.id">
-              <td>{{ item.date }}</td>
+              <td>{{ formatNewsDate(item.date) }}</td>
               <td>{{ item.category }}</td>
               <td>{{ item.message }}</td>
               <td>
@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import { store, clubDetails } from '../store.js';
+import { store, clubDetails, formatConfiguredDate } from '../store.js';
 
 export default {
   name: 'HomeView',
@@ -74,6 +74,12 @@ export default {
           status: 'Queued',
         },
       ];
+    },
+  },
+  methods: {
+    formatNewsDate(value) {
+      const formatted = formatConfiguredDate(value, 'Date');
+      return formatted || value;
     },
   },
 };

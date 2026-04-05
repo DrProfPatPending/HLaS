@@ -58,6 +58,14 @@ Persistence behavior:
 - PostgreSQL mode: stored in `app_settings` with `scope='global'` and `key='app_settings'`
 - Fallback: `backend/app_settings.json`
 
+How to use Date Format:
+
+1. Sign in at `/admin/` with an admin account.
+2. Open the **App Settings** tab.
+3. In **Date Format**, select the required format pattern.
+4. Click **Save App Settings**.
+5. Refresh member/admin pages that display dates to confirm the selected format is in effect.
+
 ## Member UI updates
 
 ### Home dashboard

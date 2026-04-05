@@ -146,7 +146,7 @@
             </thead>
             <tbody>
               <tr v-for="row in recentReturns" :key="row.id">
-                <td>{{ row.session_date }}</td>
+                <td>{{ formatDateValue(row.session_date) }}</td>
                 <td>{{ row.beat_id }}</td>
                 <td>{{ row.small_trout }}</td>
                 <td>{{ row.medium_trout }}</td>
@@ -167,7 +167,7 @@
 
 <script>
 import axios from 'axios';
-import { clubDetails, store, API_BASE_URL } from '../store.js';
+import { clubDetails, store, API_BASE_URL, formatConfiguredDate } from '../store.js';
 
 const COUNT_FIELDS = [
   { key: 'smallTrout', label: 'Small Trout' },
@@ -354,6 +354,10 @@ export default {
       return [row.flies_used, row.weather_conditions, row.predator_damage]
         .filter(Boolean)
         .join(' | ');
+    },
+    formatDateValue(value) {
+      const formatted = formatConfiguredDate(value, 'Date');
+      return formatted || value || '';
     },
     formatMonth(ym) {
       if (!ym) return ym;

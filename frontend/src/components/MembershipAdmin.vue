@@ -136,6 +136,7 @@ import {
   lookupMemberByNumber,
   hideLookupDetails,
   openMemberForEdit,
+  formatConfiguredDate,
   getExpiryDateStyle,
   isDateOfBirthField,
   normalizeDateInputValue,
@@ -209,6 +210,10 @@ export default {
     formatMemberFieldValue(field, value) {
       if (value === null || value === undefined || value === '') {
         return value;
+      }
+      const formatted = formatConfiguredDate(value, field);
+      if (formatted !== value) {
+        return formatted;
       }
       if (this.isDateOfBirthField(field)) {
         return this.dateInputValue(value) || value;

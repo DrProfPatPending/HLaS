@@ -33,6 +33,7 @@ const MEMBER_SESSION_STORAGE_KEY = 'hlas.memberSession';
 // ---------------------------------------------------------------------------
 export const store = reactive({
   apiBaseUrl: API_BASE_URL,
+  appDateFormat: 'DD/MM/YY',
 
   // Auth
   loggedIn: false,
@@ -216,6 +217,76 @@ export function formatFieldName(fieldName) {
   return fieldName.replace(/__/g, '::').replace(/_/g, ' ');
 }
 
+const SHORT_MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function isLicenceExpiryField(field) {
+  const normalized = String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return normalized === 'licenceexp' || normalized === 'licenceexpiry' || normalized === 'licenseexp' || normalized === 'licenseexpiry';
+}
+
+export function isDateFieldName(field) {
+  const normalized = String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return normalized === 'date' || normalized === 'sessiondate' || normalized.endsWith('date');
+}
+
+export function formatDateWithPattern(dateIso, pattern = store.appDateFormat) {
+  const normalized = normalizeDateInputValue(dateIso);
+  if (!normalized) return String(dateIso || '');
+  const [year, month, day] = normalized.split('-');
+  const monthNumber = Number(month);
+  const monthLabel = SHORT_MONTH_NAMES[monthNumber - 1] || month;
+  const yy = year.slice(-2);
+
+  switch (pattern) {
+    case 'DD/MM/YY':
+      return `${day}/${month}/${yy}`;
+    case 'DD/MM/YYYY':
+      return `${day}/${month}/${year}`;
+    case 'DD-MMM-YYYY':
+      return `${day}-${monthLabel}-${year}`;
+    case 'YYYY-MM-DD':
+      return `${year}-${month}-${day}`;
+    case 'MMM DD, YYYY':
+      return `${monthLabel} ${day}, ${year}`;
+    case 'DD MMM YYYY':
+      return `${day} ${monthLabel} ${year}`;
+    case 'MM/DD/YYYY':
+      return `${month}/${day}/${year}`;
+    default:
+      return normalized;
+  }
+}
+
+export function formatConfiguredDate(value, fieldName = '') {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  if (!isDateOfBirthField(fieldName) && !isLicenceExpiryField(fieldName) && !isDateFieldName(fieldName)) {
+    return value;
+  }
+
+  const normalized = normalizeDateInputValue(value);
+  if (!normalized) {
+    return value;
+  }
+  return formatDateWithPattern(normalized);
+}
+
+export function loadAppSettings() {
+  return axios.get(`${API_BASE_URL}/app-settings`)
+    .then(res => {
+      const settings = res?.data?.settings || {};
+      const dateFormat = String(settings.dateFormat || '').trim();
+      if (dateFormat) {
+        store.appDateFormat = dateFormat;
+      }
+    })
+    .catch(() => {
+      store.appDateFormat = store.appDateFormat || 'DD/MM/YY';
+    });
+}
+
 export function isDateOfBirthField(field) {
   const normalized = String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   return normalized === 'dob' || normalized.includes('dateofbirth');
@@ -248,7 +319,8 @@ export function getExpiryDateStyle(dateString) {
   if (!dateString) return {};
   if (dateString.toLowerCase() === 'n/a') return { color: 'green' };
   try {
-    const expiryDate = new Date(dateString);
+    const normalized = normalizeDateInputValue(dateString) || dateString;
+    const expiryDate = new Date(normalized);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     expiryDate.setHours(0, 0, 0, 0);

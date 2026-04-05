@@ -123,6 +123,7 @@ import {
   canAccessMembershipAdmin,
   canAccessNewsletters,
   clubDetails,
+  loadAppSettings,
   navigateToSection,
   sectionDisplayName,
 } from './src/store.js';
@@ -149,6 +150,7 @@ export default {
     clubShortName: () => clubDetails.value.shortName || store.loggedInClub || 'Club',
   },
   created() {
+    loadAppSettings();
     restoreMemberSession();
     applyMemberAuthHeader();
     initializeAuthInterceptor();
