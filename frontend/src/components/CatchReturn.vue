@@ -61,6 +61,66 @@
     <p v-if="status" class="catch-return-status">{{ status }}</p>
     <p v-if="error" class="catch-return-error">{{ error }}</p>
 
+    <section v-if="recentReturns.length" class="catch-return-analytics">
+      <h3>My Catch Summary</h3>
+      <div class="catch-return-analytics-grid">
+        <div>
+          <h4>By Beat</h4>
+          <div class="catch-return-table-wrap">
+            <table class="catch-return-table">
+              <thead>
+                <tr>
+                  <th>Beat</th>
+                  <th>Sessions</th>
+                  <th>Trout</th>
+                  <th>Grayling</th>
+                  <th>Other</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in totalsByBeat" :key="row.beat">
+                  <td>{{ row.beat }}</td>
+                  <td>{{ row.sessions }}</td>
+                  <td>{{ row.trout }}</td>
+                  <td>{{ row.grayling }}</td>
+                  <td>{{ row.other }}</td>
+                  <td class="analytics-total-cell">{{ row.total }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h4>By Month</h4>
+          <div class="catch-return-table-wrap">
+            <table class="catch-return-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Sessions</th>
+                  <th>Trout</th>
+                  <th>Grayling</th>
+                  <th>Other</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in totalsByMonth" :key="row.month">
+                  <td>{{ formatMonth(row.month) }}</td>
+                  <td>{{ row.sessions }}</td>
+                  <td>{{ row.trout }}</td>
+                  <td>{{ row.grayling }}</td>
+                  <td>{{ row.other }}</td>
+                  <td class="analytics-total-cell">{{ row.total }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="catch-return-history">
       <h3>My Recent Returns</h3>
       <p v-if="loadingReturns" class="catch-return-loading">Loading…</p>
@@ -154,6 +214,39 @@ export default {
         r => r.flies_used || r.weather_conditions || r.predator_damage,
       );
     },
+    totalsByBeat() {
+      const map = {};
+      for (const row of this.recentReturns) {
+        const beat = row.beat_id || '(unknown)';
+        if (!map[beat]) map[beat] = { beat, trout: 0, grayling: 0, other: 0, total: 0, sessions: 0 };
+        const trout = (row.small_trout || 0) + (row.medium_trout || 0) + (row.large_trout || 0);
+        const grayling = (row.small_grayling || 0) + (row.medium_grayling || 0) + (row.large_grayling || 0);
+        const other = row.other_fish || 0;
+        map[beat].trout += trout;
+        map[beat].grayling += grayling;
+        map[beat].other += other;
+        map[beat].total += trout + grayling + other;
+        map[beat].sessions += 1;
+      }
+      return Object.values(map).sort((a, b) => b.total - a.total);
+    },
+    totalsByMonth() {
+      const map = {};
+      for (const row of this.recentReturns) {
+        const month = String(row.session_date || '').slice(0, 7);
+        if (!month) continue;
+        if (!map[month]) map[month] = { month, trout: 0, grayling: 0, other: 0, total: 0, sessions: 0 };
+        const trout = (row.small_trout || 0) + (row.medium_trout || 0) + (row.large_trout || 0);
+        const grayling = (row.small_grayling || 0) + (row.medium_grayling || 0) + (row.large_grayling || 0);
+        const other = row.other_fish || 0;
+        map[month].trout += trout;
+        map[month].grayling += grayling;
+        map[month].other += other;
+        map[month].total += trout + grayling + other;
+        map[month].sessions += 1;
+      }
+      return Object.values(map).sort((a, b) => b.month.localeCompare(a.month));
+    },
     beatOptions() {
       const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
       return beats
@@ -238,7 +331,7 @@ export default {
       this.returnsError = '';
       axios
         .get(`${API_BASE_URL}/catch-returns/mine`, {
-          params: { club: this.loggedInClub, limit: 50 },
+          params: { club: this.loggedInClub, limit: 200 },
         })
         .then(resp => {
           this.recentReturns = Array.isArray(resp.data) ? resp.data : [];
@@ -254,6 +347,12 @@ export default {
       return [row.flies_used, row.weather_conditions, row.predator_damage]
         .filter(Boolean)
         .join(' | ');
+    },
+    formatMonth(ym) {
+      if (!ym) return ym;
+      const [year, month] = ym.split('-');
+      return new Date(Number(year), Number(month) - 1, 1)
+        .toLocaleString('default', { month: 'long', year: 'numeric' });
     },
   },
 };
@@ -379,6 +478,42 @@ export default {
 .catch-return-empty {
   font-size: 10pt;
   color: #64748b;
+}
+
+.catch-return-analytics {
+  margin-top: 28px;
+}
+
+.catch-return-analytics h3 {
+  margin: 0 0 10px;
+  font-size: 12pt;
+  font-weight: 700;
+  color: #17324d;
+}
+
+.catch-return-analytics h4 {
+  margin: 0 0 8px;
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #334155;
+}
+
+.catch-return-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.analytics-total-cell {
+  font-weight: 700;
+  color: #17324d;
+}
+
+@media (max-width: 720px) {
+  .catch-return-analytics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
