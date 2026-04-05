@@ -3,6 +3,8 @@
 ## Summary
 This release implements a full separation between admin/system users and member/club users, as per Option 3 of the migration plan. The backend, frontend, and API logic have been refactored to support distinct authentication, session, and UI flows for each user type.
 
+This guide also reflects later operational changes, including PostgreSQL-backed member photo storage, restored Membership Admin behavior, and reusable SQL verification packs.
+
 ---
 
 ## Backend Changes
@@ -22,6 +24,7 @@ This release implements a full separation between admin/system users and member/
 
 - **Database Migration:**
    - Alembic migration added to include `user_type` in session tables.
+   - Member photos now have a PostgreSQL table (`member_photos`) for binary image storage.
 
 ---
 
@@ -37,6 +40,14 @@ This release implements a full separation between admin/system users and member/
 
 - **UI Separation:**
    - Admin UI and member UI are fully separated at the entrypoint and component level.
+- **Membership Admin:**
+   - sorting and filtering restored
+   - `Members_Name` opens Edit Member Details
+   - `Number` opens member lookup/details
+   - Previous/Next navigation in edit view now operates on the full filtered result set rather than one page
+- **Member photo display:**
+   - Edit Member Details displays the member photo again
+   - photo routes support DB-first retrieval in PostgreSQL mode
 
 ---
 
@@ -53,6 +64,36 @@ This release implements a full separation between admin/system users and member/
 - Ensure the backend can connect to the database (container DNS must resolve the database hostname).
 - Run Alembic migrations to update the session tables.
 - Rebuild the frontend to ensure both admin and member UIs are up to date.
+- Live Docker PostgreSQL is published on host port `5433` (`5433 -> 5432`).
+- In member-facing deployments behind Caddy, frontend should call backend via `/api`.
+
+### Member photo deployment steps
+
+After deploying backend code that includes `member_photos` support:
+
+1. Ensure PostgreSQL runtime mode is enabled:
+   - `DATABASE_URL` set
+   - `HLAS_USE_POSTGRES_READS=true`
+2. Create or refresh the `member_photos` table.
+   - Normal path: run Alembic migrations.
+   - Fallback path: the app runtime will create the table idempotently when PostgreSQL mode starts.
+3. Import photos:
+
+   ```bash
+   cd /opt/hlas/backend
+   POSTGRES_URL='postgresql+psycopg://hlas:hlas@localhost:5433/hlas' python import_member_photos_to_postgres.py
+   ```
+
+4. Restart backend containers/processes so the new routes are active.
+
+### Alembic caveat on older live databases
+
+Some live databases may contain an `alembic_version` value that does not exist in this repository's current migration chain.
+
+If Alembic reports an unknown revision:
+- do not force an arbitrary revision change without reviewing migration history
+- use the app's idempotent runtime bootstrap as a short-term safe path for additive objects such as `member_photos`
+- reconcile `alembic_version` separately before relying on future schema migrations in production
 
 ---
 
@@ -68,7 +109,7 @@ This release implements a full separation between admin/system users and member/
 ---
 
 ## Authors
-- Migration and refactor by: GitHub Copilot (GPT-4.1) and DrProfPatPending
+- Migration and refactor by: GitHub Copilot and DrProfPatPending
 
 ---
 
@@ -161,6 +202,10 @@ This includes:
 - `club_logos/`
 - `ID_photos/`
 
+Notes:
+- `ID_photos/` may still be present even after photo import, because file fallback remains available.
+- PostgreSQL can now serve member photos directly from the `member_photos` table.
+
 ## 8) Routing and TLS
 
 - Public HTTPS endpoint is served by Caddy
@@ -176,6 +221,7 @@ This includes:
    cd /opt/hlas
    ./deploy/vps/deploy.sh
    ```
+3. If member photo storage changes were included, run the import script once after deployment.
 
 ## 10) Troubleshooting
 
@@ -189,3 +235,15 @@ This includes:
   ```
 - Verify DNS: `DOMAIN` must resolve to VPS public IP
 - Ensure firewall allows ports `80` and `443`
+- Docker Postgres host port is `5433`, not `5432`
+- If the login club dropdown is empty, test `/api/clubs`
+- If member photos do not show, verify:
+   - `member_photos` contains rows
+   - backend is running updated code
+   - `/api/member_photo/...` returns image bytes
+
+### Useful operational SQL/scripts
+
+- Paused-field verification packs:
+   - `Utilities/member_paused_verification_pack.sql`
+   - `Utilities/member_paused_verification_pack_psql.sql`

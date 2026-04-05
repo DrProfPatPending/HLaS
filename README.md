@@ -1,6 +1,21 @@
-# Option 3 Migration: Admin/System vs Member/Club User Flows
+# HLaS
 
-This project now fully separates admin/system users from member/club users, both in the backend API and the frontend UI.
+HLaS is a fishing club membership management application with separate member and admin user experiences, PostgreSQL-backed runtime data, and Vue/Flask frontends for day-to-day club operations.
+
+## Current Application Highlights
+- Distinct member UI and admin UI entry points.
+- PostgreSQL-backed reads and writes for clubs, members, roles, newsletters, field order, and member photos.
+- Member ID photos can now be stored and served from PostgreSQL via the `member_photos` table.
+- Membership Admin includes sorting, filtering, linked member lookup, and linked member edit navigation.
+- Fishing Beats field order, visibility, and minimum width settings are configurable.
+
+## Recent Changes
+- Restored the member login club dropdown loading from `/clubs`.
+- Restored and improved Membership Admin sorting and filtering behavior.
+- `Members_Name` opens Edit Member Details; `Number` opens member lookup/details.
+- Edit Member navigation now uses the full matching result set instead of just the visible page.
+- Member ID photos are imported into PostgreSQL and served DB-first with file fallback.
+- Added reusable SQL verification packs in `Utilities/`.
 
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
@@ -12,15 +27,16 @@ This project now fully separates admin/system users from member/club users, both
 See DEPLOYMENT.md for full technical details and migration notes.
 # Fishing Club Membership Management Web Application
 
-This project is a simple web application for managing the membership of a fishing club. It consists of:
+This project is a web application for managing the membership of a fishing club. It consists of:
 
-- **Backend:** Python Flask REST API with SQLite database
+- **Backend:** Python Flask REST API with PostgreSQL runtime support and legacy SQLite source/fallback support
 - **Frontend:** Vue.js application for member management
 - **Excel Import:** Script to import member data from Excel into the database
 
 ## Project Structure
 - `backend/` - Flask API and database
 - `frontend/` - Vue.js app
+- `Utilities/` - reusable SQL and operational helper assets
 - `.github/copilot-instructions.md` - Workspace instructions
 
 ## Setup Instructions
@@ -33,7 +49,7 @@ This project is a simple web application for managing the membership of a fishin
    source venv/bin/activate
    pip install -r requirements.txt
    ```
-2. (Optional) Set a database URL. If not set, the app uses local SQLite at `backend/members.db`.
+2. (Optional) Set a database URL. If not set, the app uses local SQLite databases in `backend/`.
    - PostgreSQL driver support is provided via `psycopg[binary]` in `backend/requirements.txt`.
    - PowerShell:
    ```powershell
@@ -43,10 +59,47 @@ This project is a simple web application for managing the membership of a fishin
    ```powershell
    $env:DATABASE_URL = "postgresql+psycopg://username:password@localhost:5432/hlas"
    ```
-3. Run the Flask server:
+3. Enable PostgreSQL-backed runtime mode if using Postgres:
+   ```bash
+   export DATABASE_URL="postgresql+psycopg://hlas:hlas@localhost:5433/hlas"
+   export HLAS_USE_POSTGRES_READS=true
+   ```
+4. Run the Flask server:
    ```bash
    flask run
    ```
+
+### Member photos in PostgreSQL
+
+Member photos are now supported in PostgreSQL via the `member_photos` table.
+
+- Files are imported from `ID_photos/<CLUB>/`
+- Live routes read photo bytes from PostgreSQL first
+- Existing file-based fallback is retained for rollout safety
+
+Import existing photos:
+
+```bash
+cd backend
+POSTGRES_URL='postgresql+psycopg://hlas:hlas@localhost:5433/hlas' python import_member_photos_to_postgres.py
+```
+
+Runtime photo routes:
+- `/member_photo/<club>/<filename>`
+- `/member_photo_for_member/<club>/<member_id>`
+
+### SQL utilities
+
+Reusable SQL verification packs are stored in `Utilities/`:
+
+- `Utilities/member_paused_verification_pack.sql`
+- `Utilities/member_paused_verification_pack_psql.sql`
+
+The `psql` version can be run like this:
+
+```bash
+psql "postgresql://hlas:hlas@hlastest:5433/hlas" -v club='GAAFFS' -f Utilities/member_paused_verification_pack_psql.sql
+```
 
 ### Frontend
 1. Install Node.js dependencies:
@@ -274,6 +327,7 @@ Notes:
 - `shortName` is used as the login `club` value (must match your backend DB naming, e.g. `GAAFFS.db`, `CTC.db`).
 - `logoUrl` is optional; when present, frontend uses this backend URL for the club logo.
 - The frontend fetches clubs from backend endpoint `/clubs` at startup.
+- If the member login club dropdown appears empty, verify that `/clubs` is returning data and that the frontend `loadClubs()` function is calling `/clubs`.
 
 ### New club database template
 
