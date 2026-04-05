@@ -368,7 +368,9 @@ def create_member_blueprint(deps):
         members_table = db_info['members_table']
         Member = db_info['Member']
 
-        id_column = get_column('id', members_table) or get_column('ID', members_table)
+        id_column = get_column('id', members_table)
+        if id_column is None:
+            id_column = get_column('ID', members_table)
         if id_column is None:
             return jsonify({'error': 'No ID column available for lookup'}), 500
 
@@ -462,7 +464,9 @@ def create_member_blueprint(deps):
             members_table = db_info['members_table']
             Member = db_info['Member']
 
-            id_column = get_column('id', members_table) or get_column('ID', members_table)
+            id_column = get_column('id', members_table)
+            if id_column is None:
+                id_column = get_column('ID', members_table)
             if id_column is None:
                 return jsonify({'error': 'No ID column available for update'}), 400
 
@@ -517,7 +521,9 @@ def create_member_blueprint(deps):
             members_table = db_info['members_table']
             Member = db_info['Member']
 
-            id_column = get_column('id', members_table) or get_column('ID', members_table)
+            id_column = get_column('id', members_table)
+            if id_column is None:
+                id_column = get_column('ID', members_table)
             if id_column is None:
                 return jsonify({'error': 'No ID column available for delete'}), 400
 
