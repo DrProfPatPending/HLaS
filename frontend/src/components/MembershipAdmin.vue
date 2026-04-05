@@ -1,7 +1,6 @@
 <template>
-  <div>
+  <div class="membership-admin-container">
     <div class="membership-admin-header">
-      <button type="button" @click="goHome">Back to Home</button>
       <h1>{{ loggedInClub }} Members</h1>
     </div>
     <table v-if="orderedMemberFields.length" class="member-table">

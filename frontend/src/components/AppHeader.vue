@@ -22,9 +22,6 @@
             @error="onClubLogoError"
           />
         </td>
-        <td v-if="loggedIn" class="header-menu-cell">
-          <member-top-menu />
-        </td>
         <td class="logo-spacer"></td>
         <td v-if="loggedIn" class="login-info-cell">
           Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})
@@ -39,11 +36,9 @@
 
 <script>
 import { store, clubDetails, clubLogoSrc, logout } from '../store.js';
-import MemberTopMenu from './MemberTopMenu.vue';
 
 export default {
   name: 'AppHeader',
-  components: { MemberTopMenu },
   computed: {
     loggedIn: () => store.loggedIn,
     loggedInUsername: () => store.loggedInUsername,

@@ -1,7 +1,6 @@
 <template>
   <div class="beat-details-container">
     <div class="beat-details-header">
-      <button type="button" class="beat-details-back-button" @click="goHome">Back to Home</button>
       <h2>{{ clubFullName }} - Beat Details</h2>
     </div>
 

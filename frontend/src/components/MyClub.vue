@@ -13,7 +13,6 @@
             <button type="button" class="save-btn" @click="saveEdit">Update Member</button>
             <button type="button" @click="cancelEdit">Cancel</button>
           </template>
-          <button type="button" @click="goHome">Back to Home</button>
           <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
         </div>
 

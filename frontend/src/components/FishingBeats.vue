@@ -1,7 +1,6 @@
 <template>
   <div class="fishing-beats-container">
     <div class="fishing-beats-header">
-      <button type="button" class="fishing-beats-back-button" @click="goHome">Back to Home</button>
       <h2>{{ clubFullName }} - Fishing Beats</h2>
     </div>
     <div v-if="clubBeats.length" class="fishing-beats-layout">
@@ -175,7 +174,6 @@
       </div>
     </div>
     <p v-else>No fishing beats are configured for this club.</p>
-    <button type="button" class="fishing-beats-back-button" @click="goHome">Back to Home</button>
   </div>
 </template>
 

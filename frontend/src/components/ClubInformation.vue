@@ -38,9 +38,6 @@
       readonly
       rows="6"
     ></textarea>
-    <div>
-      <button type="button" @click="goHome">Back to Home</button>
-    </div>
   </div>
 </template>
 

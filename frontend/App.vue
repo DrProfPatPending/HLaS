@@ -2,20 +2,86 @@
   <div id="app">
     <app-header />
     <login-view v-if="!loggedIn" />
-    <div v-else>
-      <home-view v-if="activeSection === 'home'" />
-      <membership-admin v-else-if="activeSection === 'membership-admin'" />
-      <club-information v-else-if="activeSection === 'club-information'" />
-      <my-club v-else-if="activeSection === 'my-club'" />
-      <newsletters v-else-if="activeSection === 'newsletters'" />
-      <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
-      <beat-details v-else-if="activeSection === 'beat-details'" />
-      <member-edit v-else-if="activeSection === 'member-edit'" />
-    <div v-else class="section-placeholder">
-      <h2>{{ sectionDisplayName(activeSection) }}</h2>
-      <p>This section is coming soon.</p>
-      <button type="button" @click="goHome">Back to Home</button>
-    </div>
+    <div v-else class="app-member-shell">
+      <aside class="app-member-sidebar" aria-label="Primary navigation">
+        <div class="app-member-sidebar-card">
+          <div class="app-member-sidebar-title">Navigation</div>
+          <div class="app-member-sidebar-club">{{ clubShortName }}</div>
+          <button
+            type="button"
+            class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'my-club' }"
+            @click="navigate('my-club')"
+          >
+            My Club
+          </button>
+          <button
+            type="button"
+            class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'beat-details' }"
+            @click="navigate('beat-details')"
+          >
+            Beat Details
+          </button>
+          <button
+            type="button"
+            class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'fishing-beats' }"
+            @click="navigate('fishing-beats')"
+          >
+            Fishing Beats
+          </button>
+          <button
+            type="button"
+            class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'club-information' }"
+            @click="navigate('club-information')"
+          >
+            Club Information
+          </button>
+          <button
+            type="button"
+            class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'club-store' }"
+            @click="navigate('club-store')"
+          >
+            Club Store
+          </button>
+          <button
+            v-if="canAccessNewsletters"
+            type="button"
+            class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'newsletters' }"
+            @click="navigate('newsletters')"
+          >
+            Newsletters
+          </button>
+          <button
+            v-if="canAccessMembershipAdmin"
+            type="button"
+            class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'membership-admin' || activeSection === 'member-edit' }"
+            @click="navigate('membership-admin')"
+          >
+            Membership Admin
+          </button>
+        </div>
+      </aside>
+
+      <main class="app-member-content">
+        <home-view v-if="activeSection === 'home'" />
+        <membership-admin v-else-if="activeSection === 'membership-admin'" />
+        <club-information v-else-if="activeSection === 'club-information'" />
+        <my-club v-else-if="activeSection === 'my-club'" />
+        <newsletters v-else-if="activeSection === 'newsletters'" />
+        <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
+        <beat-details v-else-if="activeSection === 'beat-details'" />
+        <member-edit v-else-if="activeSection === 'member-edit'" />
+        <div v-else class="section-placeholder">
+          <h2>{{ sectionDisplayName(activeSection) }}</h2>
+          <p>This section is coming soon.</p>
+        </div>
+      </main>
     </div>
     <footer class="app-footer">
       <span>(c) 2026 - ScoffySoft</span>
@@ -45,6 +111,9 @@ import {
   loadClubs,
   fetchMembers,
   canAccessMembershipAdmin,
+  canAccessNewsletters,
+  clubDetails,
+  navigateToSection,
   sectionDisplayName,
 } from './src/store.js';
 
@@ -64,6 +133,9 @@ export default {
   computed: {
     loggedIn: () => store.loggedIn,
     activeSection: () => store.activeSection,
+    canAccessMembershipAdmin: () => canAccessMembershipAdmin.value,
+    canAccessNewsletters: () => canAccessNewsletters.value,
+    clubShortName: () => clubDetails.value.shortName || store.loggedInClub || 'Club',
   },
   created() {
     restoreMemberSession();
@@ -79,6 +151,9 @@ export default {
   },
   methods: {
     sectionDisplayName,
+    navigate(sectionKey) {
+      navigateToSection(sectionKey);
+    },
     goHome() {
       store.activeSection = 'home';
     },
@@ -88,44 +163,103 @@ export default {
 </script>
 
 <style>
-#app .home-container {
-  max-width: 900px;
-  margin: 40px auto;
+#app .app-member-shell {
+  display: grid;
+  grid-template-columns: max(180px, 10%) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 18px 20px 26px;
+}
+#app .app-member-sidebar {
+  min-width: 0;
+}
+#app .app-member-sidebar-card {
+  position: sticky;
+  top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 12px;
+  border: 1px solid #d7dce2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
   font-family: Helvetica, Arial, sans-serif;
 }
-#app .home-nav-table {
-  margin-top: 20px;
-  border-collapse: separate;
-  border-spacing: 12px;
+#app .app-member-sidebar-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #17324d;
 }
-#app .home-nav-button {
-  width: 220px;
-  padding: 12px 10px;
+#app .app-member-sidebar-club {
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #56748f;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+#app .app-member-nav-button {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #2d5f8b;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #4b86b4 0%, #2d5f8b 100%);
+  color: #fff;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+#app .app-member-nav-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(45, 95, 139, 0.24);
+  background: linear-gradient(180deg, #5a97c7 0%, #2f6c9c 100%);
+}
+#app .app-member-nav-button.is-active {
+  border-color: #17324d;
+  background: linear-gradient(180deg, #2f6c9c 0%, #17324d 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+#app .app-member-content {
+  min-width: 0;
+}
+#app .home-container,
+#app .section-placeholder,
+#app .club-information-container,
+#app .newsletters-container,
+#app .member-edit-container,
+#app .beat-details-container,
+#app .membership-admin-container {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  font-family: Helvetica, Arial, sans-serif;
 }
 #app .access-error {
   margin-top: 16px;
   color: #b00020;
 }
 #app .section-placeholder {
-  max-width: 900px;
-  margin: 40px auto;
-  font-family: Helvetica, Arial, sans-serif;
-}
-#app .club-information-container {
-  max-width: 900px;
-  margin: 40px auto;
-  font-family: Helvetica, Arial, sans-serif;
+  padding: 24px;
+  border: 1px solid #d7dce2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
 }
 #app .newsletters-container,
 #app .fishing-beats-container {
-  max-width: 900px;
-  margin: 40px auto;
+  margin: 0;
   font-family: Helvetica, Arial, sans-serif;
 }
 #app .fishing-beats-container {
   max-width: none;
   width: 100%;
-  margin: 40px 0;
+  margin: 0;
 }
 #app .fishing-beats-header {
   display: flex;
@@ -377,8 +511,7 @@ export default {
   resize: vertical;
 }
 #app .member-edit-container {
-  max-width: 900px;
-  margin: 20px auto;
+  margin: 0;
   font-family: Helvetica, Arial, sans-serif;
 }
 #app .member-edit-top-row {
@@ -480,7 +613,7 @@ export default {
   cursor: not-allowed;
 }
 #app .member-table {
-  width: 90%;
+  width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
   font-family: Helvetica, Arial, sans-serif;
@@ -925,5 +1058,15 @@ export default {
   border: 1px solid #f5c6cb;
   border-radius: 4px;
   font-size: 13px;
+}
+
+@media (max-width: 1000px) {
+  #app .app-member-shell {
+    grid-template-columns: 1fr;
+  }
+
+  #app .app-member-sidebar-card {
+    position: static;
+  }
 }
 </style>

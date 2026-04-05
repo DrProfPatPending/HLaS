@@ -241,7 +241,6 @@
 
     <div v-if="newsletterPrepareMessage" class="newsletter-status">{{ newsletterPrepareMessage }}</div>
     <div v-if="newsletterPrepareError" class="newsletter-error">{{ newsletterPrepareError }}</div>
-    <button type="button" @click="goHome">Back to Home</button>
   </div>
 </template>
 
