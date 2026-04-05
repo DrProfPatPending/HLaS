@@ -107,12 +107,21 @@
       </tbody>
     </table>
 
+    <div v-if="selectedBeat" class="beat-details-map-wrap">
+      <div ref="beatDetailsMap" class="beat-details-map"></div>
+      <div v-if="beatDetailsMapStatus" class="beat-details-map-status">
+        {{ beatDetailsMapStatus }}
+      </div>
+    </div>
+
     <p v-else-if="!clubBeats.length">No fishing beats are configured for this club.</p>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { store, clubDetails, API_BASE_URL } from '../store.js';
 
 export default {
@@ -121,6 +130,10 @@ export default {
     return {
       selectedBeatKey: '',
       fieldOrder: {},
+      beatDetailsMapInstance: null,
+      beatDetailsMapLayers: [],
+      beatDetailsMapStatus: '',
+      beatDetailsMapRequestId: 0,
     };
   },
   computed: {
@@ -199,11 +212,22 @@ export default {
       return this.clubBeats.find(b => this.beatKey(b) === this.selectedBeatKey) || this.clubBeats[0];
     },
   },
+  watch: {
+    selectedBeat() {
+      this.refreshBeatDetailsMap();
+    },
+  },
   created() {
     this.loadFieldOrder();
     if (this.clubBeats.length) {
       this.selectedBeatKey = this.beatKey(this.clubBeats[0]);
     }
+  },
+  mounted() {
+    this.refreshBeatDetailsMap();
+  },
+  beforeUnmount() {
+    this.destroyBeatDetailsMap();
   },
   methods: {
     goHome() {
@@ -255,6 +279,164 @@ export default {
       if (popupWindow) {
         popupWindow.focus();
       }
+    },
+    parseCoordinateValue(rawValue) {
+      const numericValue = Number.parseFloat(String(rawValue || '').trim());
+      return Number.isFinite(numericValue) ? numericValue : null;
+    },
+    async resolveBeatPointCoordinates(wordsValue, latitudeValue, longitudeValue) {
+      const lat = this.parseCoordinateValue(latitudeValue);
+      const lng = this.parseCoordinateValue(longitudeValue);
+      if (lat !== null && lng !== null) return { lat, lng, source: 'coordinates' };
+
+      const parsedW3W = this.parseWhat3Words(wordsValue);
+      if (!parsedW3W) return null;
+
+      try {
+        const res = await axios.get(`${API_BASE_URL}/w3w/coordinates`, {
+          params: { words: parsedW3W.display },
+        });
+        const data = res && res.data ? res.data : {};
+        const resolvedLat = this.parseCoordinateValue(data.lat);
+        const resolvedLng = this.parseCoordinateValue(data.lng);
+        if (resolvedLat !== null && resolvedLng !== null) {
+          return { lat: resolvedLat, lng: resolvedLng, source: 'w3w' };
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    },
+    clearBeatDetailsMapLayers() {
+      if (!this.beatDetailsMapInstance || !Array.isArray(this.beatDetailsMapLayers)) return;
+      this.beatDetailsMapLayers.forEach(layer => {
+        if (layer && this.beatDetailsMapInstance.hasLayer(layer)) {
+          this.beatDetailsMapInstance.removeLayer(layer);
+        }
+      });
+      this.beatDetailsMapLayers = [];
+    },
+    ensureBeatDetailsMap() {
+      if (this.beatDetailsMapInstance) return;
+      const mapElement = this.$refs.beatDetailsMap;
+      if (!mapElement) return;
+      this.beatDetailsMapInstance = L.map(mapElement, {
+        zoomControl: true,
+        attributionControl: true,
+      }).setView([54.5, -2.5], 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(this.beatDetailsMapInstance);
+    },
+    async refreshBeatDetailsMap() {
+      const selectedBeat = this.selectedBeat;
+      if (!selectedBeat) {
+        this.beatDetailsMapStatus = 'No beat selected.';
+        this.clearBeatDetailsMapLayers();
+        return;
+      }
+
+      const requestId = ++this.beatDetailsMapRequestId;
+      this.beatDetailsMapStatus = 'Loading map...';
+
+      await this.$nextTick();
+      this.ensureBeatDetailsMap();
+
+      if (!this.beatDetailsMapInstance) {
+        this.beatDetailsMapStatus = 'Map is unavailable.';
+        return;
+      }
+
+      const upstreamCoords = await this.resolveBeatPointCoordinates(
+        selectedBeat.Beat_Upstream,
+        selectedBeat.Beat_Upstream_Latitude,
+        selectedBeat.Beat_Upstream_Longitude
+      );
+      const downstreamCoords = await this.resolveBeatPointCoordinates(
+        selectedBeat.Beat_Downstream,
+        selectedBeat.Beat_Downstream_Latitude,
+        selectedBeat.Beat_Downstream_Longitude
+      );
+
+      if (requestId !== this.beatDetailsMapRequestId) return;
+      this.clearBeatDetailsMapLayers();
+
+      if (!upstreamCoords || !downstreamCoords) {
+        this.beatDetailsMapStatus =
+          'Map requires valid W3W lookup support or fallback coordinates for both upstream and downstream limits.';
+        return;
+      }
+
+      const upstreamLatLng = L.latLng(upstreamCoords.lat, upstreamCoords.lng);
+      const downstreamLatLng = L.latLng(downstreamCoords.lat, downstreamCoords.lng);
+      const allBoundsPoints = [upstreamLatLng, downstreamLatLng];
+
+      const upstreamMarker = L.circleMarker(upstreamLatLng, {
+        radius: 7, color: '#1f77b4', fillColor: '#1f77b4', fillOpacity: 0.8,
+      }).bindPopup('Upstream limit');
+
+      const downstreamMarker = L.circleMarker(downstreamLatLng, {
+        radius: 7, color: '#d62728', fillColor: '#d62728', fillOpacity: 0.8,
+      }).bindPopup('Downstream limit');
+
+      const boundaryLine = L.polyline([upstreamLatLng, downstreamLatLng], {
+        color: '#2f2f2f', weight: 3,
+      });
+
+      const parkingLayers = [];
+      const parkingLocations = Array.isArray(selectedBeat.Parking_Locations)
+        ? selectedBeat.Parking_Locations
+        : [];
+      parkingLocations.forEach((parking, parkingIndex) => {
+        const parkingLat = this.parseCoordinateValue(parking && parking.Latitude ? parking.Latitude : '');
+        const parkingLng = this.parseCoordinateValue(parking && parking.Longitude ? parking.Longitude : '');
+        if (parkingLat === null || parkingLng === null) return;
+
+        const parkingLatLng = L.latLng(parkingLat, parkingLng);
+        allBoundsPoints.push(parkingLatLng);
+
+        const label = parking && parking.Name ? parking.Name : `Parking ${parkingIndex + 1}`;
+        const description = parking && parking.Description ? parking.Description : '';
+        const locationW3W = parking && parking.Location_W3W ? parking.Location_W3W : null;
+        let parkingPopup = label;
+        if (locationW3W) {
+          parkingPopup += `<br><a href="${locationW3W.url}" target="what3words-map-window">${locationW3W.display}</a>`;
+        }
+        if (description) parkingPopup += `<br>${description}`;
+
+        const parkingMarker = L.marker(parkingLatLng, {
+          icon: L.divIcon({
+            className: 'parking-pin-marker',
+            html: '<div class="parking-pin-dot">P</div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          }),
+        }).bindPopup(parkingPopup);
+
+        parkingMarker.addTo(this.beatDetailsMapInstance);
+        parkingLayers.push(parkingMarker);
+      });
+
+      upstreamMarker.addTo(this.beatDetailsMapInstance);
+      downstreamMarker.addTo(this.beatDetailsMapInstance);
+      boundaryLine.addTo(this.beatDetailsMapInstance);
+      this.beatDetailsMapLayers = [upstreamMarker, downstreamMarker, boundaryLine, ...parkingLayers];
+
+      this.beatDetailsMapInstance.invalidateSize();
+      const bounds = L.latLngBounds(allBoundsPoints);
+      this.beatDetailsMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
+      this.beatDetailsMapStatus = parkingLayers.length
+        ? `Showing upstream/downstream limits and ${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}.`
+        : 'Showing upstream and downstream limits.';
+    },
+    destroyBeatDetailsMap() {
+      this.clearBeatDetailsMapLayers();
+      if (this.beatDetailsMapInstance) {
+        this.beatDetailsMapInstance.remove();
+        this.beatDetailsMapInstance = null;
+      }
+      this.beatDetailsMapStatus = '';
     },
   },
 };
@@ -316,5 +498,40 @@ export default {
 .beat-details-parking-list {
   margin: 0;
   padding-left: 18px;
+}
+
+.beat-details-map-wrap {
+  margin-top: 16px;
+}
+
+.beat-details-map {
+  width: 100%;
+  height: 360px;
+  border: 1px solid #ccc;
+}
+
+.beat-details-map-status {
+  margin-top: 8px;
+  font-size: 10pt;
+  color: #333;
+}
+
+:deep(.parking-pin-marker) {
+  background: transparent;
+  border: none;
+}
+
+:deep(.parking-pin-dot) {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2ca02c;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 </style>
