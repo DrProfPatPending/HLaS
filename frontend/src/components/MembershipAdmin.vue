@@ -134,7 +134,7 @@ import {
   lookupMember,
   lookupMemberByNumber,
   hideLookupDetails,
-  selectMemberForEdit,
+  openMemberForEdit,
   getExpiryDateStyle,
 } from '../store.js';
 
@@ -199,7 +199,7 @@ export default {
     lookupMemberByNumber,
     hideLookupDetails,
     openMemberEdit(member) {
-      selectMemberForEdit(member);
+      openMemberForEdit(member);
     },
     getMemberFieldStyle(field, value) {
       if (field === 'Licence_Exp' || field === 'Licence_Expiry') {

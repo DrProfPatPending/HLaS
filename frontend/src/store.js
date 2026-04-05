@@ -95,6 +95,7 @@ export const store = reactive({
   // Member edit (shared between MembershipAdmin opener and MemberEdit form)
   editMemberData: {},
   editMemberId: null,
+  editNavigationMembers: [],
   newPassword: '',
   confirmPassword: '',
   passwordError: '',
@@ -183,19 +184,19 @@ export const canAccessNewsletters = computed(() =>
 );
 
 export const editMemberIndex = computed(() => {
-  if (!store.members.length || store.editMemberId == null) return -1;
-  return store.members.findIndex(m => memberIdentity(m) === store.editMemberId);
+  if (!store.editNavigationMembers.length || store.editMemberId == null) return -1;
+  return store.editNavigationMembers.findIndex(m => memberIdentity(m) === store.editMemberId);
 });
 
 export const hasPreviousEditMember = computed(() => editMemberIndex.value > 0);
 
 export const hasNextEditMember = computed(() =>
-  editMemberIndex.value >= 0 && editMemberIndex.value < store.members.length - 1
+  editMemberIndex.value >= 0 && editMemberIndex.value < store.editNavigationMembers.length - 1
 );
 
 export const editMemberPositionLabel = computed(() => {
-  if (editMemberIndex.value < 0 || !store.members.length) return '';
-  return `Member ${editMemberIndex.value + 1} of ${store.members.length}`;
+  if (editMemberIndex.value < 0 || !store.editNavigationMembers.length) return '';
+  return `Member ${editMemberIndex.value + 1} of ${store.editNavigationMembers.length}`;
 });
 
 export const remainingEditMemberKeys = computed(() => {
@@ -407,37 +408,60 @@ export function teardownAuthInterceptor() {
 // Club loading
 // ---------------------------------------------------------------------------
 export function loadClubs() {
-  axios
-    .get(`${API_BASE_URL}/clubs`)
-    .then(res => {
-      const clubs = res.data && Array.isArray(res.data.clubs) ? res.data.clubs : [];
-      const seenShortNames = new Set();
-      const uniqueClubs = clubs.filter(club => {
-        const shortName = club && typeof club.shortName === 'string' ? club.shortName.trim() : '';
-        if (!shortName || seenShortNames.has(shortName)) return false;
-        seenShortNames.add(shortName);
-        return true;
-      });
-      if (!uniqueClubs.length) throw new Error('No clubs in config');
-      store.clubs = uniqueClubs;
-      store.clubLogoLoadFailed = false;
-      const hasSelected = uniqueClubs.some(c => c.shortName === store.selectedClub);
-      if (!hasSelected) {
-        store.selectedClub = uniqueClubs[0].shortName;
-        store.loggedInClub = uniqueClubs[0].shortName;
-      }
-    })
-    .catch(() => {
-      store.clubs = [
-        { fullName: 'GAAFFS', shortName: 'GAAFFS', description: 'GAAFFS fishing club members', websiteUrl: '', adminEmail: '', logoUrl: '', beats: [] },
-        { fullName: 'CTC', shortName: 'CTC', description: 'CTC fishing club members', websiteUrl: '', adminEmail: '', logoUrl: '', beats: [] },
-      ];
-    });
+  const offset = (store.currentPage - 1) * store.pageSize;
+  const params = buildMemberQueryParams({ limit: store.pageSize, offset });
+
+  axios.get(`${API_BASE_URL}/members`, { params }).then(res => {
+    store.members = res.data.members;
+    store.totalMembers = res.data.total;
+  }).catch(err => {
+    if (err.response?.status === 403) {
+      store.members = [];
+      store.totalMembers = 0;
+      store.accessError = 'You do not have permission to view club members.';
+      store.activeSection = 'home';
+    }
+  });
 }
 
-// ---------------------------------------------------------------------------
-// Auth actions
-// ---------------------------------------------------------------------------
+function buildActiveMemberFilters() {
+  return Object.fromEntries(
+    Object.entries(store.columnFilters)
+      .filter(([, v]) => v && v.trim() !== '')
+      .map(([key, v]) => {
+        const trimmed = v.trim();
+        if (trimmed === '[BLANK]') return [key, '[BLANK]'];
+        const hasWildcard = trimmed.includes('*') || trimmed.includes('?');
+        return [key, hasWildcard ? trimmed : `*${trimmed}*`];
+      })
+  );
+}
+
+function buildMemberQueryParams({ limit, offset }) {
+  const activeFilters = buildActiveMemberFilters();
+  const params = { club: store.loggedInClub, limit, offset, ...activeFilters };
+  if (store.sortKey) {
+    params.sort_by = store.sortKey;
+    params.sort_order = store.sortOrder;
+  }
+  return params;
+}
+
+function loadEditNavigationMembers() {
+  const limit = Math.max(store.totalMembers || 0, store.pageSize || 0, 1);
+  const params = buildMemberQueryParams({ limit, offset: 0 });
+
+  return axios.get(`${API_BASE_URL}/members`, { params })
+    .then(res => {
+      const members = Array.isArray(res.data?.members) ? res.data.members : [];
+      store.editNavigationMembers = members;
+      return members;
+    })
+    .catch(() => {
+      store.editNavigationMembers = [...store.members];
+      return store.editNavigationMembers;
+    });
+}
 export function login() {
   store.loginError = '';
   axios
@@ -603,6 +627,7 @@ export function hideLookupDetails() {
 // Member edit actions
 // ---------------------------------------------------------------------------
 export function selectMemberForEdit(member) {
+  store.editNavigationMembers = [...store.members];
   store.editMemberData = { ...member };
   store.editMemberId = memberIdentity(member);
   store.newPassword = '';
@@ -611,10 +636,28 @@ export function selectMemberForEdit(member) {
   store.activeSection = 'member-edit';
 }
 
+export function openMemberForEdit(member) {
+  return loadEditNavigationMembers().finally(() => {
+    const identity = memberIdentity(member);
+    const selected = store.editNavigationMembers.find(m => memberIdentity(m) === identity) || member;
+    store.editMemberData = { ...selected };
+    store.editMemberId = memberIdentity(selected);
+    store.newPassword = '';
+    store.confirmPassword = '';
+    store.passwordError = '';
+    store.activeSection = 'member-edit';
+  });
+}
+
 export function navigateEditMember(direction) {
   const targetIndex = editMemberIndex.value + direction;
-  if (targetIndex < 0 || targetIndex >= store.members.length) return;
-  selectMemberForEdit(store.members[targetIndex]);
+  if (targetIndex < 0 || targetIndex >= store.editNavigationMembers.length) return;
+  const targetMember = store.editNavigationMembers[targetIndex];
+  store.editMemberData = { ...targetMember };
+  store.editMemberId = memberIdentity(targetMember);
+  store.newPassword = '';
+  store.confirmPassword = '';
+  store.passwordError = '';
 }
 
 export function updateMember() {
@@ -653,6 +696,7 @@ export function cancelEdit() {
   store.activeSection = 'membership-admin';
   store.editMemberData = {};
   store.editMemberId = null;
+  store.editNavigationMembers = [];
   store.newPassword = '';
   store.confirmPassword = '';
   store.passwordError = '';
