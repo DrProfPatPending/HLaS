@@ -17,7 +17,7 @@
           :key="`option-${beatKey(beat)}`"
           :value="beatKey(beat)"
         >
-          {{ beat.Beat_Name || beat.Beat_ID || 'Unnamed Beat' }}
+          {{ formatBeatOptionLabel(beat) }}
         </option>
       </select>
     </div>
@@ -254,6 +254,12 @@ export default {
       const beatId = beat && beat.Beat_ID ? beat.Beat_ID : '';
       const beatName = beat && beat.Beat_Name ? beat.Beat_Name : '';
       return `${beatId}-${beatName}`;
+    },
+    formatBeatOptionLabel(beat) {
+      const beatId = beat && beat.Beat_ID ? String(beat.Beat_ID).trim() : '';
+      const beatName = beat && beat.Beat_Name ? String(beat.Beat_Name).trim() : '';
+      const combinedLabel = `${beatId} ${beatName}`.trim();
+      return combinedLabel || 'Unnamed Beat';
     },
     parseWhat3Words(rawValue) {
       if (typeof rawValue !== 'string') return null;
