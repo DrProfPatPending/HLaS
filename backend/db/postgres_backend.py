@@ -340,6 +340,50 @@ def ensure_postgres_member_photos_table(engine):
             conn.execute(stmt)
 
 
+def ensure_postgres_catch_returns_table(engine):
+    statements = [
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS catch_returns (
+                id                BIGSERIAL PRIMARY KEY,
+                club_id           BIGINT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                member_id         BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                session_date      DATE NOT NULL,
+                beat_id           VARCHAR(64) NOT NULL DEFAULT '',
+                small_trout       INTEGER NOT NULL DEFAULT 0,
+                medium_trout      INTEGER NOT NULL DEFAULT 0,
+                large_trout       INTEGER NOT NULL DEFAULT 0,
+                small_grayling    INTEGER NOT NULL DEFAULT 0,
+                medium_grayling   INTEGER NOT NULL DEFAULT 0,
+                large_grayling    INTEGER NOT NULL DEFAULT 0,
+                other_fish        INTEGER NOT NULL DEFAULT 0,
+                flies_used        TEXT NOT NULL DEFAULT '',
+                weather_conditions TEXT NOT NULL DEFAULT '',
+                predator_damage   TEXT NOT NULL DEFAULT '',
+                created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT ck_catch_returns_small_trout_nonneg CHECK (small_trout >= 0),
+                CONSTRAINT ck_catch_returns_medium_trout_nonneg CHECK (medium_trout >= 0),
+                CONSTRAINT ck_catch_returns_large_trout_nonneg CHECK (large_trout >= 0),
+                CONSTRAINT ck_catch_returns_small_grayling_nonneg CHECK (small_grayling >= 0),
+                CONSTRAINT ck_catch_returns_medium_grayling_nonneg CHECK (medium_grayling >= 0),
+                CONSTRAINT ck_catch_returns_large_grayling_nonneg CHECK (large_grayling >= 0),
+                CONSTRAINT ck_catch_returns_other_fish_nonneg CHECK (other_fish >= 0)
+            )
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_catch_returns_club_member_date
+            ON catch_returns (club_id, member_id, session_date DESC)
+            """
+        ),
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(stmt)
+
+
 def ensure_postgres_role_assignment_user_id(engine):
     """Idempotently add user_id FK to member_role_assignments and backfill.
 
@@ -446,6 +490,7 @@ def get_postgres_backend():
         ensure_postgres_global_user_tables(engine)
         ensure_postgres_role_assignment_user_id(engine)
         ensure_postgres_member_photos_table(engine)
+        ensure_postgres_catch_returns_table(engine)
         metadata = MetaData()
         metadata.reflect(
             bind=engine,
@@ -461,6 +506,7 @@ def get_postgres_backend():
                 'app_users',
                 'member_user_links',
                 'member_photos',
+                'catch_returns',
                 'roles',
                 'member_role_assignments',
                 'security_audit_log',
@@ -482,6 +528,7 @@ def get_postgres_backend():
             'app_users_table': metadata.tables['app_users'],
             'member_user_links_table': metadata.tables['member_user_links'],
             'member_photos_table': metadata.tables['member_photos'],
+            'catch_returns_table': metadata.tables['catch_returns'],
             'roles_table': metadata.tables['roles'],
             'member_role_assignments_table': metadata.tables['member_role_assignments'],
             'security_audit_log_table': metadata.tables['security_audit_log'],

@@ -34,6 +34,14 @@
           <button
             type="button"
             class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'catch-return' }"
+            @click="navigate('catch-return')"
+          >
+            Catch Return
+          </button>
+          <button
+            type="button"
+            class="app-member-nav-button"
             :class="{ 'is-active': activeSection === 'club-information' }"
             @click="navigate('club-information')"
           >
@@ -76,6 +84,7 @@
         <newsletters v-else-if="activeSection === 'newsletters'" />
         <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
         <beat-details v-else-if="activeSection === 'beat-details'" />
+        <catch-return v-else-if="activeSection === 'catch-return'" />
         <member-edit v-else-if="activeSection === 'member-edit'" />
         <div v-else class="section-placeholder">
           <h2>{{ sectionDisplayName(activeSection) }}</h2>
@@ -100,6 +109,7 @@ import ClubInformation from './src/components/ClubInformation.vue';
 import Newsletters from './src/components/Newsletters.vue';
 import FishingBeats from './src/components/FishingBeats.vue';
 import BeatDetails from './src/components/BeatDetails.vue';
+import CatchReturn from './src/components/CatchReturn.vue';
 import MemberEdit from './src/components/MemberEdit.vue';
 import MyClub from './src/components/MyClub.vue';
 import {
@@ -128,6 +138,7 @@ export default {
     Newsletters,
     FishingBeats,
     BeatDetails,
+    CatchReturn,
     MemberEdit,
   },
   computed: {
@@ -234,6 +245,7 @@ export default {
 #app .newsletters-container,
 #app .member-edit-container,
 #app .beat-details-container,
+#app .catch-return-container,
 #app .membership-admin-container {
   width: 100%;
   max-width: none;

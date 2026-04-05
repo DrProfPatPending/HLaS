@@ -238,6 +238,7 @@ export function sectionDisplayName(sectionKey) {
     newsletters: 'Newsletters',
     'fishing-beats': 'Fishing Beats',
     'beat-details': 'Beat Details',
+    'catch-return': 'Catch Return',
     'member-edit': 'Edit Member',
   };
   return names[sectionKey] || 'Home';

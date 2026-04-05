@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from flask import Blueprint, current_app, jsonify, request
-from sqlalchemy import Date, Integer, String, and_, case, cast, func, or_, select
+from sqlalchemy import Date, Integer, String, and_, case, cast, func, or_, select, text
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -140,6 +142,76 @@ def create_member_blueprint(deps):
             ).scalar_one_or_none()
         finally:
             session.close()
+
+    CATCH_COUNT_FIELDS = (
+        'small_trout',
+        'medium_trout',
+        'large_trout',
+        'small_grayling',
+        'medium_grayling',
+        'large_grayling',
+        'other_fish',
+    )
+
+    def _parse_non_negative_int(raw_value):
+        if raw_value is None or str(raw_value).strip() == '':
+            return 0
+        try:
+            parsed = int(raw_value)
+        except (TypeError, ValueError):
+            return None
+        return parsed if parsed >= 0 else None
+
+    def _parse_iso_date(raw_value):
+        value = str(raw_value or '').strip()
+        if not value:
+            return None
+        try:
+            return datetime.strptime(value, '%Y-%m-%d').date()
+        except ValueError:
+            return None
+
+    def _serialize_catch_return_row(row):
+        return {
+            'id': row.id,
+            'session_date': row.session_date.isoformat() if row.session_date else '',
+            'beat_id': row.beat_id or '',
+            'small_trout': int(row.small_trout or 0),
+            'medium_trout': int(row.medium_trout or 0),
+            'large_trout': int(row.large_trout or 0),
+            'small_grayling': int(row.small_grayling or 0),
+            'medium_grayling': int(row.medium_grayling or 0),
+            'large_grayling': int(row.large_grayling or 0),
+            'other_fish': int(row.other_fish or 0),
+            'flies_used': row.flies_used or '',
+            'weather_conditions': row.weather_conditions or '',
+            'predator_damage': row.predator_damage or '',
+            'created_at': row.created_at.isoformat() if row.created_at else None,
+        }
+
+    def _ensure_sqlite_catch_returns_table(session):
+        session.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS catch_returns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                member_id INTEGER NOT NULL,
+                session_date TEXT NOT NULL,
+                beat_id TEXT NOT NULL DEFAULT '',
+                small_trout INTEGER NOT NULL DEFAULT 0,
+                medium_trout INTEGER NOT NULL DEFAULT 0,
+                large_trout INTEGER NOT NULL DEFAULT 0,
+                small_grayling INTEGER NOT NULL DEFAULT 0,
+                medium_grayling INTEGER NOT NULL DEFAULT 0,
+                large_grayling INTEGER NOT NULL DEFAULT 0,
+                other_fish INTEGER NOT NULL DEFAULT 0,
+                flies_used TEXT NOT NULL DEFAULT '',
+                weather_conditions TEXT NOT NULL DEFAULT '',
+                predator_damage TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        ))
 
     @bp.route('/login', methods=['POST'])
     def login():
@@ -381,6 +453,241 @@ def create_member_blueprint(deps):
         member_payload = member_to_dict(member, members_table)
         member_payload.pop('password', None)
         return jsonify({'member': member_payload, 'club': club})
+
+    @bp.route('/catch-returns', methods=['POST'])
+    def create_catch_return():
+        data = request.json or {}
+        requested_club = str(data.get('club', '')).strip()
+        auth_error = require_authenticated(requested_club)
+        if auth_error:
+            return auth_error
+
+        principal = get_current_principal(requested_club)
+        if principal is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        member_id = principal.get('member_id')
+        club = str(principal.get('scope_club_short_name') or principal.get('club_short_name') or '').strip()
+        if not member_id or not club:
+            return jsonify({'error': 'Member session is missing identity details'}), 400
+
+        session_date = _parse_iso_date(data.get('date') or data.get('session_date'))
+        if session_date is None:
+            return jsonify({'error': 'Date is required and must be YYYY-MM-DD'}), 400
+
+        beat_id = str(data.get('beat_id', '')).strip()
+        if not beat_id:
+            return jsonify({'error': 'Beat ID is required'}), 400
+
+        counts = {}
+        for field_name in CATCH_COUNT_FIELDS:
+            parsed_value = _parse_non_negative_int(data.get(field_name, 0))
+            if parsed_value is None:
+                return jsonify({'error': f'{field_name} must be a non-negative whole number'}), 400
+            counts[field_name] = parsed_value
+
+        flies_used = str(data.get('flies_used', '')).strip()
+        weather_conditions = str(data.get('weather_conditions', '')).strip()
+        predator_damage = str(data.get('predator_damage', '')).strip()
+
+        if is_postgres_writes_enabled():
+            backend = get_postgres_backend()
+            catch_returns_table = backend.get('catch_returns_table')
+            if catch_returns_table is None:
+                return jsonify({'error': 'Catch return table is unavailable'}), 500
+
+            session = backend['session_factory']()
+            try:
+                club_id = _resolve_postgres_club_id(session, club)
+                if club_id is None:
+                    return jsonify({'error': 'Invalid club selection'}), 400
+
+                insert_result = session.execute(
+                    catch_returns_table.insert().values(
+                        club_id=club_id,
+                        member_id=int(member_id),
+                        session_date=session_date,
+                        beat_id=beat_id,
+                        flies_used=flies_used,
+                        weather_conditions=weather_conditions,
+                        predator_damage=predator_damage,
+                        **counts,
+                    ).returning(catch_returns_table.c.id)
+                )
+                new_id = insert_result.scalar_one()
+                session.commit()
+                return jsonify({'status': 'success', 'id': int(new_id), 'club': club}), 201
+            except Exception as exc:
+                session.rollback()
+                return jsonify({'error': str(exc)}), 500
+            finally:
+                session.close()
+
+        db_info = get_db_for_club(club)
+        session = db_info['session']
+        try:
+            _ensure_sqlite_catch_returns_table(session)
+            session.execute(
+                text(
+                    """
+                    INSERT INTO catch_returns (
+                        member_id,
+                        session_date,
+                        beat_id,
+                        small_trout,
+                        medium_trout,
+                        large_trout,
+                        small_grayling,
+                        medium_grayling,
+                        large_grayling,
+                        other_fish,
+                        flies_used,
+                        weather_conditions,
+                        predator_damage,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :member_id,
+                        :session_date,
+                        :beat_id,
+                        :small_trout,
+                        :medium_trout,
+                        :large_trout,
+                        :small_grayling,
+                        :medium_grayling,
+                        :large_grayling,
+                        :other_fish,
+                        :flies_used,
+                        :weather_conditions,
+                        :predator_damage,
+                        CURRENT_TIMESTAMP,
+                        CURRENT_TIMESTAMP
+                    )
+                    """
+                ),
+                {
+                    'member_id': int(member_id),
+                    'session_date': session_date.isoformat(),
+                    'beat_id': beat_id,
+                    'small_trout': counts['small_trout'],
+                    'medium_trout': counts['medium_trout'],
+                    'large_trout': counts['large_trout'],
+                    'small_grayling': counts['small_grayling'],
+                    'medium_grayling': counts['medium_grayling'],
+                    'large_grayling': counts['large_grayling'],
+                    'other_fish': counts['other_fish'],
+                    'flies_used': flies_used,
+                    'weather_conditions': weather_conditions,
+                    'predator_damage': predator_damage,
+                }
+            )
+            session.commit()
+            return jsonify({'status': 'success', 'club': club}), 201
+        except Exception as exc:
+            session.rollback()
+            return jsonify({'error': str(exc)}), 500
+
+    @bp.route('/catch-returns/mine', methods=['GET'])
+    def list_my_catch_returns():
+        requested_club = str(request.args.get('club', '')).strip()
+        auth_error = require_authenticated(requested_club)
+        if auth_error:
+            return auth_error
+
+        principal = get_current_principal(requested_club)
+        if principal is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        member_id = principal.get('member_id')
+        club = str(principal.get('scope_club_short_name') or principal.get('club_short_name') or '').strip()
+        if not member_id or not club:
+            return jsonify({'error': 'Member session is missing identity details'}), 400
+
+        limit = request.args.get('limit', default=50, type=int)
+        if not limit or limit < 1:
+            limit = 50
+        limit = min(limit, 200)
+
+        if is_postgres_reads_enabled():
+            backend = get_postgres_backend()
+            catch_returns_table = backend.get('catch_returns_table')
+            if catch_returns_table is None:
+                return jsonify({'returns': [], 'club': club})
+
+            session = backend['session_factory']()
+            try:
+                club_id = _resolve_postgres_club_id(session, club)
+                if club_id is None:
+                    return jsonify({'returns': [], 'club': club})
+
+                rows = session.execute(
+                    select(catch_returns_table)
+                    .where(
+                        and_(
+                            catch_returns_table.c.club_id == club_id,
+                            catch_returns_table.c.member_id == int(member_id),
+                        )
+                    )
+                    .order_by(catch_returns_table.c.session_date.desc(), catch_returns_table.c.created_at.desc())
+                    .limit(limit)
+                ).fetchall()
+                payload = [_serialize_catch_return_row(row) for row in rows]
+                return jsonify({'returns': payload, 'club': club})
+            finally:
+                session.close()
+
+        db_info = get_read_db_for_club(club)
+        session = db_info['session']
+        try:
+            _ensure_sqlite_catch_returns_table(session)
+            rows = session.execute(
+                text(
+                    """
+                    SELECT
+                        id,
+                        session_date,
+                        beat_id,
+                        small_trout,
+                        medium_trout,
+                        large_trout,
+                        small_grayling,
+                        medium_grayling,
+                        large_grayling,
+                        other_fish,
+                        flies_used,
+                        weather_conditions,
+                        predator_damage,
+                        created_at
+                    FROM catch_returns
+                    WHERE member_id = :member_id
+                    ORDER BY session_date DESC, created_at DESC
+                    LIMIT :limit
+                    """
+                ),
+                {'member_id': int(member_id), 'limit': limit}
+            ).fetchall()
+            payload = [
+                {
+                    'id': int(row.id),
+                    'session_date': str(row.session_date or ''),
+                    'beat_id': str(row.beat_id or ''),
+                    'small_trout': int(row.small_trout or 0),
+                    'medium_trout': int(row.medium_trout or 0),
+                    'large_trout': int(row.large_trout or 0),
+                    'small_grayling': int(row.small_grayling or 0),
+                    'medium_grayling': int(row.medium_grayling or 0),
+                    'large_grayling': int(row.large_grayling or 0),
+                    'other_fish': int(row.other_fish or 0),
+                    'flies_used': str(row.flies_used or ''),
+                    'weather_conditions': str(row.weather_conditions or ''),
+                    'predator_damage': str(row.predator_damage or ''),
+                    'created_at': str(row.created_at or ''),
+                }
+                for row in rows
+            ]
+            return jsonify({'returns': payload, 'club': club})
+        finally:
+            session.close()
 
     @bp.route('/members', methods=['POST'])
     def add_member():

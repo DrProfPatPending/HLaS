@@ -172,6 +172,28 @@ member_photos = Table(
     UniqueConstraint("member_id", name="uq_member_photos_member_id"),
 )
 
+catch_returns = Table(
+    "catch_returns",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False),
+    Column("member_id", BigInteger, ForeignKey("members.id", ondelete="CASCADE"), nullable=False),
+    Column("session_date", Date, nullable=False),
+    Column("beat_id", String(64), nullable=False, server_default=""),
+    Column("small_trout", Integer, nullable=False, server_default="0"),
+    Column("medium_trout", Integer, nullable=False, server_default="0"),
+    Column("large_trout", Integer, nullable=False, server_default="0"),
+    Column("small_grayling", Integer, nullable=False, server_default="0"),
+    Column("medium_grayling", Integer, nullable=False, server_default="0"),
+    Column("large_grayling", Integer, nullable=False, server_default="0"),
+    Column("other_fish", Integer, nullable=False, server_default="0"),
+    Column("flies_used", Text, nullable=False, server_default=""),
+    Column("weather_conditions", Text, nullable=False, server_default=""),
+    Column("predator_damage", Text, nullable=False, server_default=""),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
 newsletter_templates = Table(
     "newsletter_templates",
     metadata,
