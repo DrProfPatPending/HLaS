@@ -125,39 +125,42 @@
       <h3>My Recent Returns</h3>
       <p v-if="loadingReturns" class="catch-return-loading">Loading…</p>
       <p v-else-if="returnsError" class="catch-return-error">{{ returnsError }}</p>
-      <p v-else-if="!recentReturns.length" class="catch-return-empty">No returns recorded yet.</p>
-      <div v-else class="catch-return-table-wrap">
-        <table class="catch-return-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Beat</th>
-              <th>S.Trout</th>
-              <th>M.Trout</th>
-              <th>L.Trout</th>
-              <th>S.Grayling</th>
-              <th>M.Grayling</th>
-              <th>L.Grayling</th>
-              <th>Other</th>
-              <th v-if="hasNotesColumn">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in recentReturns" :key="row.id">
-              <td>{{ row.session_date }}</td>
-              <td>{{ row.beat_id }}</td>
-              <td>{{ row.small_trout }}</td>
-              <td>{{ row.medium_trout }}</td>
-              <td>{{ row.large_trout }}</td>
-              <td>{{ row.small_grayling }}</td>
-              <td>{{ row.medium_grayling }}</td>
-              <td>{{ row.large_grayling }}</td>
-              <td>{{ row.other_fish }}</td>
-              <td v-if="hasNotesColumn">{{ notesFor(row) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <template v-else>
+        <p class="catch-return-debug">Debug: loaded {{ recentReturns.length }} return(s).</p>
+        <p v-if="!recentReturns.length" class="catch-return-empty">No returns recorded yet.</p>
+        <div v-else class="catch-return-table-wrap">
+          <table class="catch-return-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Beat</th>
+                <th>S.Trout</th>
+                <th>M.Trout</th>
+                <th>L.Trout</th>
+                <th>S.Grayling</th>
+                <th>M.Grayling</th>
+                <th>L.Grayling</th>
+                <th>Other</th>
+                <th v-if="hasNotesColumn">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in recentReturns" :key="row.id">
+                <td>{{ row.session_date }}</td>
+                <td>{{ row.beat_id }}</td>
+                <td>{{ row.small_trout }}</td>
+                <td>{{ row.medium_trout }}</td>
+                <td>{{ row.large_trout }}</td>
+                <td>{{ row.small_grayling }}</td>
+                <td>{{ row.medium_grayling }}</td>
+                <td>{{ row.large_grayling }}</td>
+                <td>{{ row.other_fish }}</td>
+                <td v-if="hasNotesColumn">{{ notesFor(row) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </section>
   </div>
 </template>
@@ -334,7 +337,11 @@ export default {
           params: { club: this.loggedInClub, limit: 200 },
         })
         .then(resp => {
-          this.recentReturns = Array.isArray(resp.data) ? resp.data : [];
+          if (Array.isArray(resp?.data?.returns)) {
+            this.recentReturns = resp.data.returns;
+            return;
+          }
+          this.recentReturns = Array.isArray(resp?.data) ? resp.data : [];
         })
         .catch(err => {
           this.returnsError = err?.response?.data?.error || 'Failed to load recent returns.';
@@ -477,6 +484,12 @@ export default {
 .catch-return-loading,
 .catch-return-empty {
   font-size: 10pt;
+  color: #64748b;
+}
+
+.catch-return-debug {
+  margin: 4px 0 8px;
+  font-size: 8.5pt;
   color: #64748b;
 }
 
