@@ -77,7 +77,7 @@
           <tr v-for="key in orderedFields" :key="key">
             <td>{{ formatFieldName(key) }}</td>
             <td>
-              <span v-if="!isEditing">{{ formatValue(memberData[key]) }}</span>
+              <span v-if="!isEditing">{{ formatMemberFieldValue(key, memberData[key]) }}</span>
               <input
                 v-else-if="isDateOfBirthField(key)"
                 type="date"
@@ -220,6 +220,13 @@ export default {
     formatValue(value) {
       if (value === null || value === undefined || value === '') return '-';
       return String(value);
+    },
+    formatMemberFieldValue(field, value) {
+      if (this.isDateOfBirthField(field)) {
+        const normalized = this.dateInputValue(value);
+        return normalized || '-';
+      }
+      return this.formatValue(value);
     },
     sanitizeMemberPayload(rawMember) {
       const sanitized = {};

@@ -50,7 +50,9 @@
             <span v-else-if="field === 'E_Mail' && member[field]">
               <a :href="`mailto:${member[field]}`">{{ member[field] }}</a>
             </span>
-            <span v-else :style="getMemberFieldStyle(field, member[field])">{{ member[field] }}</span>
+            <span v-else :style="getMemberFieldStyle(field, member[field])">
+              {{ formatMemberFieldValue(field, member[field]) }}
+            </span>
           </td>
         </tr>
         <tr v-if="!members.length">
@@ -107,7 +109,7 @@
         <tbody>
           <tr v-for="(value, key) in lookupResult" :key="key">
             <td>{{ key }}</td>
-            <td>{{ value }}</td>
+            <td>{{ formatMemberFieldValue(key, value) }}</td>
           </tr>
         </tbody>
       </table>
@@ -199,6 +201,41 @@ export default {
     hideLookupDetails,
     openMemberEdit(member) {
       openMemberForEdit(member);
+    },
+    isDateOfBirthField(field) {
+      const normalized = String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return normalized === 'dob' || normalized.includes('dateofbirth');
+    },
+    dateInputValue(value) {
+      const raw = String(value || '').trim();
+      if (!raw) {
+        return '';
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+        return raw.slice(0, 10);
+      }
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+        const [day, month, year] = raw.split('/');
+        return `${year}-${month}-${day}`;
+      }
+      if (/^\d{2}-\d{2}-\d{4}$/.test(raw)) {
+        const [day, month, year] = raw.split('-');
+        return `${year}-${month}-${day}`;
+      }
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toISOString().slice(0, 10);
+      }
+      return '';
+    },
+    formatMemberFieldValue(field, value) {
+      if (value === null || value === undefined || value === '') {
+        return value;
+      }
+      if (this.isDateOfBirthField(field)) {
+        return this.dateInputValue(value) || value;
+      }
+      return value;
     },
     getMemberFieldStyle(field, value) {
       if (field === 'Licence_Exp' || field === 'Licence_Expiry') {
