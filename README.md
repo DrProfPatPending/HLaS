@@ -12,6 +12,9 @@ HLaS is a fishing club membership management application with separate member an
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
+- Added a new Admin tab: **App Settings**.
+- Added global **Date Format** configuration in App Settings with selectable format patterns.
+- Added backend `/admin/app-settings` API to load/save global app settings.
 - Restored the member login club dropdown loading from `/clubs`.
 - Restored and improved Membership Admin sorting and filtering behavior.
 - `Members_Name` opens Edit Member Details; `Number` opens member lookup/details.
@@ -25,9 +28,35 @@ HLaS is a fishing club membership management application with separate member an
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
 - **Member/club users** use the main UI at `/` (App.vue)
+- **Admin App Settings tab** for global application settings (starting with Date Format)
 - **Session tokens** and **principal context** now include `user_type` for robust permission checks
 - **API endpoints** allow admin/system users to operate globally, without requiring a club context
 - **Frontend and backend code** refactored for clean separation and maintainability
+
+## Admin App Settings
+
+The Admin UI now includes an **App Settings** tab.
+
+Current setting:
+
+- **Date Format** (global): choose from supported patterns such as:
+   - `DD/MM/YY`
+   - `DD/MM/YYYY`
+   - `DD-MMM-YYYY`
+   - `YYYY-MM-DD`
+   - `MMM DD, YYYY`
+   - `DD MMM YYYY`
+   - `MM/DD/YYYY`
+
+Backend endpoints:
+
+- `GET /admin/app-settings`
+- `PUT /admin/app-settings`
+
+Persistence behavior:
+
+- PostgreSQL mode: stored in `app_settings` with `scope='global'` and `key='app_settings'`
+- Fallback: `backend/app_settings.json`
 
 ## Member UI updates
 

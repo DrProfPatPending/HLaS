@@ -41,6 +41,10 @@ It also now covers the Beat Details member page, dedicated field-order config fo
 
 - **UI Separation:**
    - Admin UI and member UI are fully separated at the entrypoint and component level.
+- **App Settings (Admin):**
+   - new admin tab for global application settings
+   - first setting is a global **Date Format** picker
+   - settings are managed via `/admin/app-settings`
 - **Membership Admin:**
    - sorting and filtering restored
    - `Members_Name` opens Edit Member Details
@@ -76,6 +80,9 @@ It also now covers the Beat Details member page, dedicated field-order config fo
 - Live Docker PostgreSQL is published on host port `5433` (`5433 -> 5432`).
 - In member-facing deployments behind Caddy, frontend should call backend via `/api`.
 - If Beat Details columns are changed in admin field-order tooling, ensure the `beat_details` context is included in the persisted `field_order` payload.
+- App Settings persistence:
+   - PostgreSQL mode: `app_settings(scope='global', key='app_settings')`
+   - JSON fallback: `backend/app_settings.json`
 
 ### Member photo deployment steps
 
