@@ -60,6 +60,45 @@
 
     <p v-if="status" class="catch-return-status">{{ status }}</p>
     <p v-if="error" class="catch-return-error">{{ error }}</p>
+
+    <section class="catch-return-history">
+      <h3>My Recent Returns</h3>
+      <p v-if="loadingReturns" class="catch-return-loading">Loading…</p>
+      <p v-else-if="returnsError" class="catch-return-error">{{ returnsError }}</p>
+      <p v-else-if="!recentReturns.length" class="catch-return-empty">No returns recorded yet.</p>
+      <div v-else class="catch-return-table-wrap">
+        <table class="catch-return-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Beat</th>
+              <th>S.Trout</th>
+              <th>M.Trout</th>
+              <th>L.Trout</th>
+              <th>S.Grayling</th>
+              <th>M.Grayling</th>
+              <th>L.Grayling</th>
+              <th>Other</th>
+              <th v-if="hasNotesColumn">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in recentReturns" :key="row.id">
+              <td>{{ row.session_date }}</td>
+              <td>{{ row.beat_id }}</td>
+              <td>{{ row.small_trout }}</td>
+              <td>{{ row.medium_trout }}</td>
+              <td>{{ row.large_trout }}</td>
+              <td>{{ row.small_grayling }}</td>
+              <td>{{ row.medium_grayling }}</td>
+              <td>{{ row.large_grayling }}</td>
+              <td>{{ row.other_fish }}</td>
+              <td v-if="hasNotesColumn">{{ notesFor(row) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -88,6 +127,9 @@ export default {
       submitting: false,
       status: '',
       error: '',
+      recentReturns: [],
+      loadingReturns: false,
+      returnsError: '',
       form: {
         sessionDate: todayIsoDate(),
         beatId: '',
@@ -107,6 +149,11 @@ export default {
   computed: {
     countFields: () => COUNT_FIELDS,
     loggedInClub: () => store.loggedInClub,
+    hasNotesColumn() {
+      return this.recentReturns.some(
+        r => r.flies_used || r.weather_conditions || r.predator_damage,
+      );
+    },
     beatOptions() {
       const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
       return beats
@@ -126,6 +173,7 @@ export default {
     if (!this.form.beatId && this.beatOptions.length) {
       this.form.beatId = this.beatOptions[0].value;
     }
+    this.loadRecentReturns();
   },
   methods: {
     normalizeCount(rawValue) {
@@ -176,6 +224,7 @@ export default {
           this.form.fliesUsed = '';
           this.form.weatherConditions = '';
           this.form.predatorDamage = '';
+          this.loadRecentReturns();
         })
         .catch(err => {
           this.error = err?.response?.data?.error || 'Failed to save catch return.';
@@ -183,6 +232,28 @@ export default {
         .finally(() => {
           this.submitting = false;
         });
+    },
+    loadRecentReturns() {
+      this.loadingReturns = true;
+      this.returnsError = '';
+      axios
+        .get(`${API_BASE_URL}/catch-returns/mine`, {
+          params: { club: this.loggedInClub, limit: 50 },
+        })
+        .then(resp => {
+          this.recentReturns = Array.isArray(resp.data) ? resp.data : [];
+        })
+        .catch(err => {
+          this.returnsError = err?.response?.data?.error || 'Failed to load recent returns.';
+        })
+        .finally(() => {
+          this.loadingReturns = false;
+        });
+    },
+    notesFor(row) {
+      return [row.flies_used, row.weather_conditions, row.predator_damage]
+        .filter(Boolean)
+        .join(' | ');
     },
   },
 };
@@ -262,6 +333,52 @@ export default {
   color: #b91c1c;
   font-size: 10pt;
   font-weight: 600;
+}
+
+.catch-return-history {
+  margin-top: 28px;
+}
+
+.catch-return-history h3 {
+  margin: 0 0 10px;
+  font-size: 12pt;
+  font-weight: 700;
+  color: #17324d;
+}
+
+.catch-return-table-wrap {
+  overflow-x: auto;
+}
+
+.catch-return-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.catch-return-table th,
+.catch-return-table td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.catch-return-table th {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #334155;
+}
+
+.catch-return-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.catch-return-loading,
+.catch-return-empty {
+  font-size: 10pt;
+  color: #64748b;
 }
 
 @media (max-width: 720px) {
