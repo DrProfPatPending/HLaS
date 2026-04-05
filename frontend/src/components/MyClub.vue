@@ -1,6 +1,6 @@
 <template>
   <div class="my-club-container">
-    <h2>Edit Member Details</h2>
+    <h2>My Club</h2>
 
     <div v-if="loading" class="my-club-status">Loading your member information…</div>
     <div v-else-if="error" class="error-msg">{{ error }}</div>
