@@ -106,7 +106,14 @@
 
 <script>
 import axios from 'axios';
-import { store, formatFieldName, fieldOrderConfig, loadFieldOrderConfig } from '../store.js';
+import {
+  store,
+  formatFieldName,
+  fieldOrderConfig,
+  loadFieldOrderConfig,
+  isDateOfBirthField,
+  normalizeDateInputValue,
+} from '../store.js';
 
 export default {
   name: 'MyClub',
@@ -166,32 +173,8 @@ export default {
   },
   methods: {
     formatFieldName,
-    isDateOfBirthField(field) {
-      const normalized = String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      return normalized === 'dob' || normalized.includes('dateofbirth');
-    },
-    dateInputValue(value) {
-      const raw = String(value || '').trim();
-      if (!raw) {
-        return '';
-      }
-      if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
-        return raw.slice(0, 10);
-      }
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
-        const [day, month, year] = raw.split('/');
-        return `${year}-${month}-${day}`;
-      }
-      if (/^\d{2}-\d{2}-\d{4}$/.test(raw)) {
-        const [day, month, year] = raw.split('-');
-        return `${year}-${month}-${day}`;
-      }
-      const parsed = new Date(raw);
-      if (!Number.isNaN(parsed.getTime())) {
-        return parsed.toISOString().slice(0, 10);
-      }
-      return '';
-    },
+    isDateOfBirthField,
+    dateInputValue: normalizeDateInputValue,
     normalizeEditableData(payload) {
       const normalized = { ...(payload || {}) };
       Object.keys(normalized).forEach(key => {
