@@ -77,7 +77,13 @@ def create_public_blueprint(deps):
 
         api_key = os.getenv('WHAT3WORDS_API_KEY', '').strip()
         if not api_key:
-            return jsonify({'error': 'WHAT3WORDS_API_KEY is not configured'}), 503
+            return jsonify({
+                'words': words,
+                'lat': None,
+                'lng': None,
+                'available': False,
+                'reason': 'WHAT3WORDS_API_KEY is not configured',
+            })
 
         lookup_url = (
             'https://api.what3words.com/v3/convert-to-coordinates'
