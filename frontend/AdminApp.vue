@@ -35,6 +35,9 @@
       <div v-show="activeTab === 'adminUsers'">
         <UserAdmin />
       </div>
+      <div v-show="activeTab === 'appSettings'">
+        <AppSettings />
+      </div>
       <div v-show="activeTab === 'appUsers'">
         <AppUsers />
       </div>
@@ -59,9 +62,11 @@ import ClubsConfig from './src/components/admin/ClubsConfig.vue';
 import SMTPSettings from './src/components/admin/SMTPSettings.vue';
 import FieldOrder from './src/components/admin/FieldOrder.vue';
 import AppUsers from './src/components/admin/AppUsers.vue';
+import AppSettings from './src/components/admin/AppSettings.vue';
 import { adminUrl, authHeaders, clearAdminToken, getAdminToken, setAdminToken } from './src/services/adminApi.js';
 
 const tabs = [
+  { key: 'appSettings', label: 'App Settings' },
   { key: 'clubs', label: 'Clubs' },
   { key: 'adminUsers', label: 'Admin Users' },
   { key: 'appUsers', label: 'App Users' },
@@ -77,6 +82,7 @@ export default {
     ClubsConfig,
     SMTPSettings,
     FieldOrder,
+    AppSettings,
   },
   data() {
     return {
@@ -84,7 +90,7 @@ export default {
       loginPassword: '',
       loginError: '',
       loggedIn: !!getAdminToken(),
-      activeTab: 'clubs',
+      activeTab: 'appSettings',
       tabs,
     };
   },
@@ -101,7 +107,7 @@ export default {
             this.loggedIn = true;
             this.loginPassword = '';
             this.loginError = '';
-            this.activeTab = 'clubs';
+            this.activeTab = 'appSettings';
           } else {
             this.loginError = res.data.error || 'Login failed';
           }
@@ -117,7 +123,7 @@ export default {
       this.loginUsername = '';
       this.loginPassword = '';
       this.loginError = '';
-      this.activeTab = 'clubs';
+      this.activeTab = 'appSettings';
     },
   },
 };
