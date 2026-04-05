@@ -408,19 +408,16 @@ export function teardownAuthInterceptor() {
 // Club loading
 // ---------------------------------------------------------------------------
 export function loadClubs() {
-  const offset = (store.currentPage - 1) * store.pageSize;
-  const params = buildMemberQueryParams({ limit: store.pageSize, offset });
+  return axios.get(`${API_BASE_URL}/clubs`).then(res => {
+    const clubs = Array.isArray(res.data?.clubs) ? res.data.clubs : [];
+    store.clubs = clubs;
 
-  axios.get(`${API_BASE_URL}/members`, { params }).then(res => {
-    store.members = res.data.members;
-    store.totalMembers = res.data.total;
-  }).catch(err => {
-    if (err.response?.status === 403) {
-      store.members = [];
-      store.totalMembers = 0;
-      store.accessError = 'You do not have permission to view club members.';
-      store.activeSection = 'home';
+    const selectedExists = clubs.some(club => club.shortName === store.selectedClub);
+    if (!selectedExists && clubs.length) {
+      store.selectedClub = clubs[0].shortName;
     }
+  }).catch(() => {
+    store.clubs = [];
   });
 }
 
