@@ -1,5 +1,5 @@
 from flask import Blueprint, current_app, jsonify, request
-from sqlalchemy import Date, Integer, String, and_, cast, func, or_, select
+from sqlalchemy import Date, Integer, String, and_, case, cast, func, or_, select
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -309,16 +309,35 @@ def create_member_blueprint(deps):
             sort_column = get_column(sort_by, members_table)
             if sort_column is not None:
                 if sort_by in ('Number', 'ID'):
-                    sort_expression = cast(sort_column, Integer)
+                    if is_postgres_reads_enabled():
+                        normalized_number = func.nullif(func.trim(cast(sort_column, String)), '')
+                        numeric_sort_expression = case(
+                            (normalized_number.op('~')(r'^[0-9]+$'), cast(normalized_number, Integer)),
+                            else_=None,
+                        )
+                        if sort_order == 'desc':
+                            members_query = members_query.order_by(
+                                numeric_sort_expression.desc().nullslast(),
+                                normalized_number.desc().nullslast(),
+                            )
+                        else:
+                            members_query = members_query.order_by(
+                                numeric_sort_expression.asc().nullslast(),
+                                normalized_number.asc().nullslast(),
+                            )
+                        sort_expression = None
+                    else:
+                        sort_expression = cast(sort_column, Integer)
                 elif sort_by == 'Licence_Exp':
                     sort_expression = cast(sort_column, Date)
                 else:
                     sort_expression = sort_column
 
-                if sort_order == 'desc':
-                    members_query = members_query.order_by(sort_expression.desc())
-                else:
-                    members_query = members_query.order_by(sort_expression.asc())
+                if sort_expression is not None:
+                    if sort_order == 'desc':
+                        members_query = members_query.order_by(sort_expression.desc())
+                    else:
+                        members_query = members_query.order_by(sort_expression.asc())
 
         members_query = members_query.limit(limit).offset(offset)
         members = session.scalars(members_query).all()
