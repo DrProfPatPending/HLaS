@@ -38,7 +38,12 @@
       <tbody>
         <tr v-for="member in members" :key="member.id || member.ID || member.Number">
           <td v-for="field in orderedMemberFields" :key="field">
-            <span v-if="field === 'Number' && member[field]">
+            <span v-if="field === 'Members_Name' && member[field]">
+              <a href="#" class="member-link" @click.prevent="openMemberEdit(member)">
+                {{ member[field] }}
+              </a>
+            </span>
+            <span v-else-if="field === 'Number' && member[field]">
               <a href="#" class="member-link" @click.prevent="lookupMemberByNumber(member[field])">
                 {{ member[field] }}
               </a>
