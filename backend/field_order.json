@@ -11,6 +11,9 @@
   "fishing_beats": [
     "Beat_ID", "Beat_Name", "River", "Beat_Upstream", "Beat_Downstream", "Beat_Description", "Position"
   ],
+  "beat_details": [
+    "Beat_ID", "Beat_Name", "River", "Position", "Beat_Upstream", "Beat_Downstream", "Beat_Description", "Detailed_Description", "Beat_Upstream_Coords", "Beat_Downstream_Coords", "Parking_Locations"
+  ],
   "minimum_widths": {
     "fishing_beats": {
       "Beat_ID": 50,
@@ -31,6 +34,19 @@
       "Beat_Downstream": true,
       "Beat_Description": true,
       "Position": false
+    },
+    "beat_details": {
+      "Beat_ID": true,
+      "Beat_Name": true,
+      "River": true,
+      "Position": true,
+      "Beat_Upstream": true,
+      "Beat_Downstream": true,
+      "Beat_Description": true,
+      "Detailed_Description": true,
+      "Beat_Upstream_Coords": true,
+      "Beat_Downstream_Coords": true,
+      "Parking_Locations": true
     }
   }
 }

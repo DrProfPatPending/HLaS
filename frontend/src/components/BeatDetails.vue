@@ -112,31 +112,53 @@
 </template>
 
 <script>
-import { store, clubDetails } from '../store.js';
+import axios from 'axios';
+import { store, clubDetails, API_BASE_URL } from '../store.js';
 
 export default {
   name: 'BeatDetails',
   data() {
     return {
       selectedBeatKey: '',
+      fieldOrder: {},
     };
   },
   computed: {
     clubFullName: () => clubDetails.value.fullName,
     orderedDetailColumns() {
-      return [
-        { key: 'Beat_ID', label: 'Beat ID' },
-        { key: 'Beat_Name', label: 'Beat Name' },
-        { key: 'River', label: 'River' },
-        { key: 'Position', label: 'Position' },
-        { key: 'Beat_Upstream', label: 'Beat Upstream' },
-        { key: 'Beat_Downstream', label: 'Beat Downstream' },
-        { key: 'Beat_Description', label: 'Beat Description' },
-        { key: 'Detailed_Description', label: 'Detailed Description' },
-        { key: 'Beat_Upstream_Coords', label: 'Upstream Co-ords' },
-        { key: 'Beat_Downstream_Coords', label: 'Downstream Co-ords' },
-        { key: 'Parking_Locations', label: 'Parking' },
+      const detailColumnMap = {
+        Beat_ID: { key: 'Beat_ID', label: 'Beat ID' },
+        Beat_Name: { key: 'Beat_Name', label: 'Beat Name' },
+        River: { key: 'River', label: 'River' },
+        Position: { key: 'Position', label: 'Position' },
+        Beat_Upstream: { key: 'Beat_Upstream', label: 'Beat Upstream' },
+        Beat_Downstream: { key: 'Beat_Downstream', label: 'Beat Downstream' },
+        Beat_Description: { key: 'Beat_Description', label: 'Beat Description' },
+        Detailed_Description: { key: 'Detailed_Description', label: 'Detailed Description' },
+        Beat_Upstream_Coords: { key: 'Beat_Upstream_Coords', label: 'Upstream Co-ords' },
+        Beat_Downstream_Coords: { key: 'Beat_Downstream_Coords', label: 'Downstream Co-ords' },
+        Parking_Locations: { key: 'Parking_Locations', label: 'Parking' },
+      };
+      const fallbackOrder = [
+        'Beat_ID',
+        'Beat_Name',
+        'River',
+        'Position',
+        'Beat_Upstream',
+        'Beat_Downstream',
+        'Beat_Description',
+        'Detailed_Description',
+        'Beat_Upstream_Coords',
+        'Beat_Downstream_Coords',
+        'Parking_Locations',
       ];
+      const configuredOrder = Array.isArray(this.fieldOrder.beat_details)
+        ? this.fieldOrder.beat_details
+        : fallbackOrder;
+      return configuredOrder
+        .filter(key => this.isColumnVisible('beat_details', key))
+        .map(key => detailColumnMap[key])
+        .filter(Boolean);
     },
     clubBeats() {
       const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
@@ -178,6 +200,7 @@ export default {
     },
   },
   created() {
+    this.loadFieldOrder();
     if (this.clubBeats.length) {
       this.selectedBeatKey = this.beatKey(this.clubBeats[0]);
     }
@@ -185,6 +208,23 @@ export default {
   methods: {
     goHome() {
       store.activeSection = 'home';
+    },
+    isColumnVisible(contextKey, columnKey) {
+      const configured = this.fieldOrder?.show_columns?.[contextKey]?.[columnKey];
+      return configured !== false;
+    },
+    loadFieldOrder() {
+      axios
+        .get(`${API_BASE_URL}/field-order`)
+        .then(res => {
+          const loadedFieldOrder = res.data?.field_order;
+          this.fieldOrder = loadedFieldOrder && typeof loadedFieldOrder === 'object'
+            ? loadedFieldOrder
+            : {};
+        })
+        .catch(() => {
+          this.fieldOrder = {};
+        });
     },
     beatKey(beat) {
       const beatId = beat && beat.Beat_ID ? beat.Beat_ID : '';
