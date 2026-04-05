@@ -174,7 +174,7 @@ export default {
     },
     clubBeats() {
       const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
-      return beats.map(beat => {
+      const mappedBeats = beats.map(beat => {
         const beatUpstream = beat && beat.Beat_Upstream ? beat.Beat_Upstream : '';
         const beatDownstream = beat && beat.Beat_Downstream ? beat.Beat_Downstream : '';
         return {
@@ -204,6 +204,13 @@ export default {
           Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
           Detailed_Description: beat && beat.Detailed_Description ? beat.Detailed_Description : '',
         };
+      });
+      return mappedBeats.sort((leftBeat, rightBeat) => {
+        const leftLabel = this.formatBeatOptionLabel(leftBeat).toLowerCase();
+        const rightLabel = this.formatBeatOptionLabel(rightBeat).toLowerCase();
+        if (leftLabel < rightLabel) return -1;
+        if (leftLabel > rightLabel) return 1;
+        return 0;
       });
     },
     selectedBeat() {
@@ -257,8 +264,8 @@ export default {
     formatBeatOptionLabel(beat) {
       const beatId = beat && beat.Beat_ID ? String(beat.Beat_ID).trim() : '';
       const beatName = beat && beat.Beat_Name ? String(beat.Beat_Name).trim() : '';
-      const combinedLabel = `${beatId} ${beatName}`.trim();
-      return combinedLabel || 'Unnamed Beat';
+      if (beatId && beatName) return `${beatId} - ${beatName}`;
+      return beatId || beatName || 'Unnamed Beat';
     },
     parseWhat3Words(rawValue) {
       if (typeof rawValue !== 'string') return null;
