@@ -26,7 +26,7 @@
         <td v-if="loggedIn" class="login-info-cell">
           Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})
           <br v-if="hasAdminRole" />
-          <span v-if="hasAdminRole">Admin</span>
+          <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
         </td>
         <td v-if="loggedIn" class="logout-cell">
           <button type="button" class="logout-button" @click="logout">Log Out</button>
@@ -64,3 +64,10 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.login-info-admin {
+  color: #2f7a45;
+  font-weight: 700;
+}
+</style>
