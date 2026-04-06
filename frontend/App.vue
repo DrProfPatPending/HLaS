@@ -2,6 +2,13 @@
   <div id="app">
     <app-header />
     <login-view v-if="!loggedIn" />
+    <div
+      v-if="loggedIn && activeSection === 'home'"
+      class="mobile-home-greeting"
+    >
+      <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
+      <h3>Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</h3>
+    </div>
     <div v-else class="app-member-shell">
       <aside class="app-member-sidebar" aria-label="Primary navigation">
         <div class="app-member-sidebar-card">
@@ -144,6 +151,8 @@ export default {
   },
   computed: {
     loggedIn: () => store.loggedIn,
+    loggedInUsername: () => store.loggedInUsername,
+    loggedInClub: () => store.loggedInClub,
     activeSection: () => store.activeSection,
     canAccessMembershipAdmin: () => canAccessMembershipAdmin.value,
     canAccessNewsletters: () => canAccessNewsletters.value,
@@ -839,6 +848,10 @@ export default {
   margin: 0 8px;
   color: #888;
 }
+
+#app .mobile-home-greeting {
+  display: none;
+}
 #app h2 {
   font-size: 14pt;
   font-family: Helvetica, Arial, sans-serif;
@@ -1075,6 +1088,23 @@ export default {
 }
 
 @media (max-width: 1000px) {
+  #app .mobile-home-greeting {
+    display: block;
+    margin: 0 12px 14px;
+    font-family: Helvetica, Arial, sans-serif;
+  }
+
+  #app .mobile-home-greeting h2,
+  #app .mobile-home-greeting h3 {
+    margin: 0;
+  }
+
+  #app .mobile-home-greeting h3 {
+    margin-top: 8px;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
   #app .app-member-shell {
     grid-template-columns: 1fr;
   }

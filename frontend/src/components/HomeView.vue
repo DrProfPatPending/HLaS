@@ -179,6 +179,12 @@ export default {
   font-size: 9.5pt;
 }
 
+
+@media (max-width: 1000px) {
+  .home-page-header {
+    display: none;
+  }
+}
 .access-error {
   margin-top: 18px;
   color: #b42318;
