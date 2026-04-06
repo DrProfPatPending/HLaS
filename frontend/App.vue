@@ -13,16 +13,14 @@
       <aside class="app-member-sidebar" aria-label="Primary navigation">
         <div class="app-member-sidebar-card">
           <div class="app-member-sidebar-title">Navigation</div>
-          <div
-            class="app-member-sidebar-club"
-            role="button"
-            tabindex="0"
+          <button
+            type="button"
+            class="app-member-nav-button app-member-home-button"
+            :class="{ 'is-active': activeSection === 'home' }"
             @click="navigate('home')"
-            @keydown.enter="navigate('home')"
-            @keydown.space.prevent="navigate('home')"
           >
             {{ clubShortName }}
-          </div>
+          </button>
           <button
             type="button"
             class="app-member-nav-button"
@@ -255,6 +253,21 @@ export default {
   border-color: #17324d;
   background: linear-gradient(180deg, #2f6c9c 0%, #17324d 100%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+#app .app-member-home-button {
+  color: #3f4852;
+  border-color: #b8c0c8;
+  background: linear-gradient(180deg, #f1f3f5 0%, #dce1e6 100%);
+}
+#app .app-member-home-button:hover {
+  background: linear-gradient(180deg, #f7f8fa 0%, #e4e8ec 100%);
+  box-shadow: 0 5px 14px rgba(88, 96, 105, 0.18);
+}
+#app .app-member-home-button.is-active {
+  color: #2d3338;
+  border-color: #9ba5ae;
+  background: linear-gradient(180deg, #dce1e6 0%, #c0c8d0 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 #app .app-member-nav-button.is-admin {
   border-color: #2f7a45;
