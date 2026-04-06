@@ -853,14 +853,14 @@ export default {
   display: block;
   margin: 0;
   cursor: pointer;
-  max-height: 50px;
-  max-width: 50px;
+  max-height: 64px;
+  max-width: 64px;
 }
 #app .club-logo {
   display: block;
   margin: 0;
-  max-height: 100px;
-  max-width: 100px;
+  max-height: 64px;
+  max-width: 64px;
 }
 #app {
   max-width: none;
