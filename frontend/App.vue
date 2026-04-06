@@ -66,7 +66,7 @@
             v-if="canAccessNewsletters"
             type="button"
             class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'newsletters' }"
+            :class="{ 'is-active': activeSection === 'newsletters', 'is-admin': true }"
             @click="navigate('newsletters')"
           >
             Newsletters
@@ -75,7 +75,7 @@
             v-if="canAccessMembershipAdmin"
             type="button"
             class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'membership-admin' || activeSection === 'member-edit' }"
+            :class="{ 'is-active': activeSection === 'membership-admin' || activeSection === 'member-edit', 'is-admin': true }"
             @click="navigate('membership-admin')"
           >
             Membership Admin
@@ -246,6 +246,18 @@ export default {
   border-color: #17324d;
   background: linear-gradient(180deg, #2f6c9c 0%, #17324d 100%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+#app .app-member-nav-button.is-admin {
+  border-color: #2f7a45;
+  background: linear-gradient(180deg, #49a065 0%, #2f7a45 100%);
+}
+#app .app-member-nav-button.is-admin:hover {
+  background: linear-gradient(180deg, #5ab57a 0%, #368c4f 100%);
+  box-shadow: 0 5px 14px rgba(47, 122, 69, 0.24);
+}
+#app .app-member-nav-button.is-admin.is-active {
+  border-color: #215835;
+  background: linear-gradient(180deg, #368c4f 0%, #215835 100%);
 }
 #app .app-member-content {
   min-width: 0;

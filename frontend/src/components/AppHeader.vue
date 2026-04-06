@@ -25,6 +25,8 @@
         <td class="logo-spacer"></td>
         <td v-if="loggedIn" class="login-info-cell">
           Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})
+          <br v-if="hasAdminRole" />
+          <span v-if="hasAdminRole">Admin</span>
         </td>
         <td v-if="loggedIn" class="logout-cell">
           <button type="button" class="logout-button" @click="logout">Log Out</button>
@@ -43,6 +45,11 @@ export default {
     loggedIn: () => store.loggedIn,
     loggedInUsername: () => store.loggedInUsername,
     loggedInClub: () => store.loggedInClub,
+    hasAdminRole: () => {
+      const normalizedRoles = (Array.isArray(store.memberRoles) ? store.memberRoles : [])
+        .map(role => String(role || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+      return normalizedRoles.includes('clubadmin') || normalizedRoles.includes('appadmin');
+    },
     websiteUrl: () => clubDetails.value.websiteUrl,
     logoSrc: () => clubLogoSrc.value,
   },
