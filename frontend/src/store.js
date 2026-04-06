@@ -301,11 +301,32 @@ export function normalizeDateInputValue(value) {
     return '';
   }
 
+  const normalizeExcelSerialDate = serialText => {
+    if (!/^\d{5}(?:\.0+)?$/.test(serialText)) {
+      return '';
+    }
+    const serial = Number.parseInt(serialText, 10);
+    if (!Number.isFinite(serial) || serial < 1 || serial > 80000) {
+      return '';
+    }
+    const excelEpochUtc = Date.UTC(1899, 11, 30);
+    const normalizedDate = new Date(excelEpochUtc + serial * 24 * 60 * 60 * 1000);
+    if (Number.isNaN(normalizedDate.getTime())) {
+      return '';
+    }
+    return normalizedDate.toISOString().slice(0, 10);
+  };
+
   const normalizeTwoDigitYear = yy => {
     const yearNumber = Number(yy);
     if (!Number.isFinite(yearNumber)) return '';
     return yearNumber >= 50 ? `19${String(yy).padStart(2, '0')}` : `20${String(yy).padStart(2, '0')}`;
   };
+
+  const excelSerialDate = normalizeExcelSerialDate(raw);
+  if (excelSerialDate) {
+    return excelSerialDate;
+  }
 
   if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
     return raw.slice(0, 10);

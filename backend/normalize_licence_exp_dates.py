@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import re
+from datetime import date, timedelta
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
@@ -38,6 +39,7 @@ from sqlalchemy import create_engine, text
 
 
 TWO_DIGIT_YEAR_PIVOT = 50
+EXCEL_SERIAL_EPOCH = date(1899, 12, 30)
 
 
 @dataclass
@@ -71,6 +73,19 @@ def _valid_ymd(year: str, month: str, day: str) -> bool:
     return True
 
 
+def _normalize_excel_serial_date(raw: str) -> Optional[str]:
+    if not re.fullmatch(r"\d{5}(?:\.0+)?", raw):
+        return None
+    try:
+        serial = int(float(raw))
+    except ValueError:
+        return None
+    if serial < 1 or serial > 80000:
+        return None
+    normalized = EXCEL_SERIAL_EPOCH + timedelta(days=serial)
+    return normalized.isoformat()
+
+
 def normalize_licence_exp(raw_value: str) -> NormalizeResult:
     raw = str(raw_value or "").strip()
     if not raw:
@@ -79,6 +94,10 @@ def normalize_licence_exp(raw_value: str) -> NormalizeResult:
     lowered = raw.lower()
     if lowered in {"n/a", "na", "none", "unknown", "-"}:
         return NormalizeResult(None, "non-date token")
+
+    excel_serial = _normalize_excel_serial_date(raw)
+    if excel_serial:
+        return NormalizeResult(excel_serial, "excel serial date")
 
     # YYYY-MM-DD
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
