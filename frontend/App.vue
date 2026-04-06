@@ -1113,4 +1113,21 @@ export default {
     position: static;
   }
 }
+
+@media (max-width: 400px) {
+  #app .mobile-home-greeting {
+    margin: 0 8px 10px;
+  }
+
+  #app .mobile-home-greeting h2 {
+    font-size: 12.5pt;
+    line-height: 1.2;
+  }
+
+  #app .mobile-home-greeting h3 {
+    margin-top: 6px;
+    font-size: 10pt;
+    line-height: 1.3;
+  }
+}
 </style>
