@@ -170,6 +170,32 @@ The `psql` version can be run like this:
 psql "postgresql://hlas:hlas@hlastest:5433/hlas" -v club='GAAFFS' -f Utilities/member_paused_verification_pack_psql.sql
 ```
 
+### Licence expiry date normalization utility
+
+To normalize legacy `Licence_Exp` values into canonical `YYYY-MM-DD`, use:
+
+`backend/normalize_licence_exp_dates.py`
+
+Default mode is dry-run (no writes). Use `--apply` to persist updates.
+
+Examples:
+
+```bash
+cd backend
+
+# PostgreSQL dry-run (uses DATABASE_URL)
+python normalize_licence_exp_dates.py
+
+# PostgreSQL apply for one club only
+python normalize_licence_exp_dates.py --club GAAFFS --apply
+
+# SQLite dry-run across all backend .db files
+python normalize_licence_exp_dates.py --sqlite-all
+
+# SQLite apply for a single DB
+python normalize_licence_exp_dates.py --sqlite-db ./GAAFFS.db --apply
+```
+
 ### Field-order configuration contexts
 
 Field ordering and column visibility are now stored per context. Current member-facing contexts include:
