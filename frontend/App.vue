@@ -13,7 +13,16 @@
       <aside class="app-member-sidebar" aria-label="Primary navigation">
         <div class="app-member-sidebar-card">
           <div class="app-member-sidebar-title">Navigation</div>
-          <div class="app-member-sidebar-club">{{ clubShortName }}</div>
+          <div
+            class="app-member-sidebar-club"
+            role="button"
+            tabindex="0"
+            @click="navigate('home')"
+            @keydown.enter="navigate('home')"
+            @keydown.space.prevent="navigate('home')"
+          >
+            {{ clubShortName }}
+          </div>
           <button
             type="button"
             class="app-member-nav-button"
