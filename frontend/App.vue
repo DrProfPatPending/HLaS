@@ -2,14 +2,14 @@
   <div id="app">
     <app-header />
     <login-view v-if="!loggedIn" />
-    <div
-      v-if="loggedIn && activeSection === 'home'"
-      class="mobile-home-greeting"
-    >
-      <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
-      <h3>Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</h3>
-    </div>
     <div v-else class="app-member-shell">
+      <div
+        v-if="activeSection === 'home'"
+        class="mobile-home-greeting"
+      >
+        <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
+        <h3>Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</h3>
+      </div>
       <aside class="app-member-sidebar" aria-label="Primary navigation">
         <div class="app-member-sidebar-card">
           <div class="app-member-sidebar-title">Navigation</div>
