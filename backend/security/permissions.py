@@ -29,6 +29,7 @@ PERMISSIONS = {
     'club.delete': {'app_admin', 'app_owner'},
     'smtp.club.manage': {'club_manager', 'app_admin', 'app_owner'},
     'newsletter.send': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
+    'document.club.manage': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'role.assign.club': {'app_admin', 'app_owner'},
     'role.assign.global': {'app_owner'},
     'system.settings': {'app_owner'},

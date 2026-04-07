@@ -194,6 +194,22 @@ catch_returns = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
 
+club_documents = Table(
+    "club_documents",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False),
+    Column("title", String(255), nullable=False, server_default=""),
+    Column("file_name", String(512), nullable=False, server_default=""),
+    Column("file_ext", String(16), nullable=False, server_default=""),
+    Column("mime_type", String(128), nullable=False, server_default="application/octet-stream"),
+    Column("file_size", BigInteger, nullable=False, server_default="0"),
+    Column("file_data", LargeBinary, nullable=False),
+    Column("uploaded_by_user_id", BigInteger, ForeignKey("app_users.id", ondelete="SET NULL"), nullable=True),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
 newsletter_templates = Table(
     "newsletter_templates",
     metadata,

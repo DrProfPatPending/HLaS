@@ -384,6 +384,43 @@ def ensure_postgres_catch_returns_table(engine):
             conn.execute(stmt)
 
 
+def ensure_postgres_club_documents_table(engine):
+    statements = [
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS club_documents (
+                id                  BIGSERIAL PRIMARY KEY,
+                club_id             BIGINT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                title               VARCHAR(255) NOT NULL DEFAULT '',
+                file_name           VARCHAR(512) NOT NULL DEFAULT '',
+                file_ext            VARCHAR(16) NOT NULL DEFAULT '',
+                mime_type           VARCHAR(128) NOT NULL DEFAULT 'application/octet-stream',
+                file_size           BIGINT NOT NULL DEFAULT 0,
+                file_data           BYTEA NOT NULL,
+                uploaded_by_user_id BIGINT REFERENCES app_users(id) ON DELETE SET NULL,
+                created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_club_documents_club_created
+            ON club_documents (club_id, created_at DESC)
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_club_documents_uploaded_by
+            ON club_documents (uploaded_by_user_id)
+            """
+        ),
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(stmt)
+
+
 def ensure_postgres_role_assignment_user_id(engine):
     """Idempotently add user_id FK to member_role_assignments and backfill.
 
@@ -491,6 +528,7 @@ def get_postgres_backend():
         ensure_postgres_role_assignment_user_id(engine)
         ensure_postgres_member_photos_table(engine)
         ensure_postgres_catch_returns_table(engine)
+        ensure_postgres_club_documents_table(engine)
         metadata = MetaData()
         metadata.reflect(
             bind=engine,
@@ -507,6 +545,7 @@ def get_postgres_backend():
                 'member_user_links',
                 'member_photos',
                 'catch_returns',
+                'club_documents',
                 'roles',
                 'member_role_assignments',
                 'security_audit_log',
@@ -529,6 +568,7 @@ def get_postgres_backend():
             'member_user_links_table': metadata.tables['member_user_links'],
             'member_photos_table': metadata.tables['member_photos'],
             'catch_returns_table': metadata.tables['catch_returns'],
+            'club_documents_table': metadata.tables['club_documents'],
             'roles_table': metadata.tables['roles'],
             'member_role_assignments_table': metadata.tables['member_role_assignments'],
             'security_audit_log_table': metadata.tables['security_audit_log'],
