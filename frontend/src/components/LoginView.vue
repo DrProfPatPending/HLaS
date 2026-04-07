@@ -9,7 +9,7 @@
       />
     </div>
     <form @submit.prevent="login">
-      <div class="form-field">
+      <div v-if="!isClubSpecificUrl" class="form-field">
         <label for="club-select">Select Club:</label>
         <select id="club-select" v-model="selectedClub" class="club-select">
           <option
@@ -21,6 +21,10 @@
             {{ club.shortName }}
           </option>
         </select>
+      </div>
+      <div v-else class="form-field club-locked-info">
+        <label>Club:</label>
+        <div class="club-name-display">{{ selectedClubLabel }}</div>
       </div>
       <div class="form-field">
         <label for="login-username">Username:</label>
@@ -40,10 +44,15 @@
 </template>
 
 <script>
-import { API_BASE_URL, store, login } from '../store.js';
+import { store, login } from '../store.js';
 
 export default {
   name: 'LoginView',
+  data() {
+    return {
+      isClubSpecificUrl: false,
+    };
+  },
   computed: {
     clubs: () => store.clubs,
     loginError: () => store.loginError,
@@ -80,7 +89,20 @@ export default {
       return `${API_BASE_URL}${logoUrl.startsWith('/') ? '' : '/'}${logoUrl}`;
     },
   },
-  methods: { login },
+  mounted() {
+    this.checkIfClubSpecificUrl();
+  },
+  methods: {
+    login,
+    checkIfClubSpecificUrl() {
+      try {
+        const match = String(window.location.pathname || '').match(/^\/club\/([^/]+)/i);
+        this.isClubSpecificUrl = !!match && !!match[1];
+      } catch {
+        this.isClubSpecificUrl = false;
+      }
+    },
+  },
 };
 </script>
 
@@ -93,5 +115,19 @@ export default {
 .login-club-logo {
   max-height: 72px;
   width: auto;
+}
+
+.club-locked-info {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.club-name-display {
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #333;
 }
 </style>
