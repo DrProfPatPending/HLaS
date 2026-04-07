@@ -283,7 +283,7 @@ def ensure_postgres_global_user_tables(engine):
                 SELECT username, email, display_name, password_hash, TRUE
                 FROM members_without_users
                 ORDER BY member_id
-                ON CONFLICT (username) DO NOTHING
+                ON CONFLICT DO NOTHING
                 RETURNING id
             ),
             ranked_new_users AS (
@@ -297,7 +297,7 @@ def ensure_postgres_global_user_tables(engine):
             SELECT rnu.id, rm.member_id, rm.club_id, TRUE
             FROM ranked_new_users rnu
             JOIN ranked_members rm ON rm.rn = rnu.rn
-            ON CONFLICT (member_id) DO NOTHING
+            ON CONFLICT DO NOTHING
             """
         ),
     ]
