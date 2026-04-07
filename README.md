@@ -6,6 +6,7 @@ HLaS is a fishing club membership management application with separate member an
 - Distinct member UI and admin UI entry points.
 - PostgreSQL-backed reads and writes for clubs, members, roles, newsletters, field order, and member photos.
 - Member ID photos can now be stored and served from PostgreSQL via the `member_photos` table.
+- Club documents can be stored in PostgreSQL (binary) and surfaced on the member Home page.
 - Membership Admin includes sorting, filtering, linked member lookup, and linked member edit navigation.
 - Fishing Beats field order, visibility, and minimum width settings are configurable.
 - Beat Details now has its own dedicated field-order and visibility configuration context.
@@ -24,6 +25,10 @@ HLaS is a fishing club membership management application with separate member an
 - Added a new Beat Details member page with dedicated field-order configuration.
 - Beat Details now reuses the Fishing Beats detail map logic, including upstream/downstream markers and parking locations.
 - The post-login member home page now presents navigation actions vertically on the left with a placeholder `<Club> News and Updates` table in the center.
+- Added database-backed club document management:
+   - Club Admin and higher can upload/delete documents.
+   - Members can view and download documents for their club.
+   - Home page now shows a `<Club> Documents` table alongside `<Club> News and Updates`.
 
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
@@ -74,7 +79,32 @@ After member login, the main page now shows:
 
 - a vertical action menu on the left for member workflows such as Membership Admin, Beat Details, Club Information, My Club, Fishing Beats, Club Store, and Newsletters
 - a central `News and Updates` panel titled with the active club name
+- a `Documents` panel beside the news panel, showing club documents from backend storage
 - placeholder rows for alerts and messages until the backend-backed news feed is implemented
+
+### Club documents
+
+Club documents are now stored in PostgreSQL and shown on the Home dashboard.
+
+Current behavior:
+
+- Supported upload file types: `.pdf`, `.xls`, `.xlsx`, `.doc`, `.docx`
+- Upload/delete actions are permission-protected via `document.club.manage`
+- Club Admin, Club Manager, App Admin, and App Owner can upload/delete
+- Authenticated members can list and download documents for their club
+- Uploads are limited to 20 MB per file
+
+Storage:
+
+- PostgreSQL table: `club_documents`
+- File bytes are stored in `file_data` (`BYTEA`) with metadata (title, filename, MIME type, size, timestamps)
+
+Backend routes:
+
+- `GET /documents?club=<SHORT_NAME>`
+- `GET /documents/<document_id>/download?club=<SHORT_NAME>`
+- `POST /documents` (multipart form: `club`, `file`, optional `title`)
+- `DELETE /documents/<document_id>?club=<SHORT_NAME>`
 
 ### Beat Details page
 
@@ -156,6 +186,19 @@ POSTGRES_URL='postgresql+psycopg://hlas:hlas@localhost:5433/hlas' python import_
 Runtime photo routes:
 - `/member_photo/<club>/<filename>`
 - `/member_photo_for_member/<club>/<member_id>`
+
+### Club documents in PostgreSQL
+
+The `club_documents` table stores uploaded club files directly in PostgreSQL.
+
+If deploying to an existing environment, run migrations to create the table:
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+Then restart backend/frontend services so the Home documents panel and upload APIs are active.
 
 ### SQL utilities
 

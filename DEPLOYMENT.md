@@ -5,6 +5,7 @@ This release implements a full separation between admin/system users and member/
 
 This guide also reflects later operational changes, including PostgreSQL-backed member photo storage, restored Membership Admin behavior, and reusable SQL verification packs.
 It also now covers the Beat Details member page, dedicated field-order config for that view, and the redesigned member home dashboard.
+It now also covers PostgreSQL-backed club document storage and Home dashboard document visibility.
 
 ---
 
@@ -26,6 +27,13 @@ It also now covers the Beat Details member page, dedicated field-order config fo
 - **Database Migration:**
    - Alembic migration added to include `user_type` in session tables.
    - Member photos now have a PostgreSQL table (`member_photos`) for binary image storage.
+   - Club documents now have a PostgreSQL table (`club_documents`) for binary file storage.
+
+- **Document API Endpoints:**
+   - `GET /documents?club=<SHORT_NAME>` for authenticated listing
+   - `GET /documents/<id>/download?club=<SHORT_NAME>` for authenticated downloads
+   - `POST /documents` for uploads (Club Admin+ via `document.club.manage`)
+   - `DELETE /documents/<id>?club=<SHORT_NAME>` for deletes (Club Admin+)
 
 ---
 
@@ -58,9 +66,13 @@ It also now covers the Beat Details member page, dedicated field-order config fo
 - **Home dashboard:**
    - post-login member home page now uses a left-side vertical action stack
    - central placeholder `News and Updates` table is present until backend news/message endpoints are implemented
+   - `Documents` table is shown alongside news and backed by live document APIs
 - **Member photo display:**
    - Edit Member Details displays the member photo again
    - photo routes support DB-first retrieval in PostgreSQL mode
+- **Document management UX:**
+   - Club Admin+ users can upload/delete supported files (`.pdf`, `.xls`, `.xlsx`, `.doc`, `.docx`)
+   - all authenticated members can download club documents
 
 ---
 
@@ -76,6 +88,7 @@ It also now covers the Beat Details member page, dedicated field-order config fo
 
 - Ensure the backend can connect to the database (container DNS must resolve the database hostname).
 - Run Alembic migrations to update the session tables.
+- Run Alembic migrations to create/update additive tables including `member_photos`, `catch_returns`, and `club_documents`.
 - Rebuild the frontend to ensure both admin and member UIs are up to date.
 - Live Docker PostgreSQL is published on host port `5433` (`5433 -> 5432`).
 - In member-facing deployments behind Caddy, frontend should call backend via `/api`.
@@ -102,6 +115,26 @@ After deploying backend code that includes `member_photos` support:
    ```
 
 4. Restart backend containers/processes so the new routes are active.
+
+### Club documents deployment steps
+
+After deploying backend/frontend code that includes `club_documents` support:
+
+1. Ensure PostgreSQL runtime mode is enabled:
+   - `DATABASE_URL` set
+   - `HLAS_USE_POSTGRES_READS=true`
+2. Run Alembic migrations:
+
+   ```bash
+   cd /opt/hlas/backend
+   alembic upgrade head
+   ```
+
+3. Restart backend and frontend containers/processes.
+4. Validate endpoints and UI:
+   - `GET /api/documents?club=<SHORT_NAME>` returns JSON
+   - Home page shows `<Club> Documents` beside `<Club> News and Updates`
+   - Club Admin+ can upload/delete; members can download
 
 ### Alembic caveat on older live databases
 
