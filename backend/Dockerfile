@@ -26,4 +26,4 @@ RUN mkdir -p /data /data/club_logos /data/ID_photos \
 
 EXPOSE 5050
 
-CMD ["gunicorn", "-w", "2", "--threads", "4", "-b", "0.0.0.0:5050", "--log-level", "debug", "app:app"]
+CMD ["sh", "-c", "alembic upgrade head && gunicorn -w 2 --threads 4 -b 0.0.0.0:5050 --log-level debug app:app"]
