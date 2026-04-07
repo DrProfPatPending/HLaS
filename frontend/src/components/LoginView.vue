@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import { store, login } from '../store.js';
+import { store, login, API_BASE_URL } from '../store.js';
 
 export default {
   name: 'LoginView',
