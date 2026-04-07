@@ -28,6 +28,23 @@ export const API_BASE_URL =
 
 const MEMBER_SESSION_STORAGE_KEY = 'hlas.memberSession';
 
+function extractPreferredClubFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    const clubFromQuery = (params.get('club') || '').trim();
+    if (clubFromQuery) return clubFromQuery;
+
+    const match = String(window.location.pathname || '').match(/^\/club\/([^/]+)/i);
+    if (!match || !match[1]) return '';
+    return decodeURIComponent(match[1]).trim();
+  } catch {
+    return '';
+  }
+}
+
+const URL_PREFERRED_CLUB = extractPreferredClubFromUrl();
+const DEFAULT_LOGIN_CLUB = URL_PREFERRED_CLUB || 'GAAFFS';
+
 // ---------------------------------------------------------------------------
 // Reactive shared state
 // ---------------------------------------------------------------------------
@@ -47,11 +64,11 @@ export const store = reactive({
 
   // Session identity
   loggedInUsername: '',
-  loggedInClub: 'GAAFFS',
+  loggedInClub: DEFAULT_LOGIN_CLUB,
   clubLogoLoadFailed: false,
 
   // Login form
-  selectedClub: 'GAAFFS',
+  selectedClub: DEFAULT_LOGIN_CLUB,
   loginUsername: '',
   loginPassword: '',
   loginError: '',
@@ -579,6 +596,17 @@ export function loadClubs() {
   return axios.get(`${API_BASE_URL}/clubs`).then(res => {
     const clubs = Array.isArray(res.data?.clubs) ? res.data.clubs : [];
     store.clubs = clubs;
+
+    const preferredClub = (URL_PREFERRED_CLUB || '').toLowerCase();
+    if (preferredClub) {
+      const matchedPreferredClub = clubs.find(
+        club => String(club.shortName || '').toLowerCase() === preferredClub
+      );
+      if (matchedPreferredClub) {
+        store.selectedClub = matchedPreferredClub.shortName;
+        return;
+      }
+    }
 
     const selectedExists = clubs.some(club => club.shortName === store.selectedClub);
     if (!selectedExists && clubs.length) {
