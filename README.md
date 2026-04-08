@@ -29,6 +29,10 @@ HLaS is a fishing club membership management application with separate member an
    - Club Admin and higher can upload/delete documents.
    - Members can view and download documents for their club.
    - Home page now shows a `<Club> Documents` table alongside `<Club> News and Updates`.
+- Added Club Information inline editing for `club_admin` users in the member UI:
+   - `Edit` / `Save` controls are shown only when the logged-in user has the Club Admin role.
+   - Club profile fields (website, admin email, description, display name) can be updated from the Club Information section.
+   - Club deletion remains App Admin/App Owner-only via AdminApp and admin routes.
 
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
@@ -81,6 +85,17 @@ After member login, the main page now shows:
 - a central `News and Updates` panel titled with the active club name
 - a `Documents` panel beside the news panel, showing club documents from backend storage
 - placeholder rows for alerts and messages until the backend-backed news feed is implemented
+
+### Club Information page
+
+Club Information remains visible to members, with role-gated editing support.
+
+Current behavior:
+
+- Users with `club_admin` role see `Edit` / `Save` controls in the member-facing Club Information section.
+- Users without `club_admin` role see the page in read-only mode.
+- Editing updates the active club profile through backend `club.update` permission checks.
+- Club deletion is not available in member UI and remains restricted to AdminApp (`app_admin` / `app_owner`).
 
 ### Club documents
 

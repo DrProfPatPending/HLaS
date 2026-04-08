@@ -23,6 +23,8 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - Admin/system endpoints (`/admin/*`) do not require a club context and are accessible to users with `app_admin` or `app_owner` roles.
    - Member/club endpoints require a valid club context, but global admin roles can access any club.
    - `require_authenticated` and `require_permission` now allow admin/system users to access endpoints without a club context.
+   - `club.update` now permits `club_admin` (in addition to club manager/app admins) so Club Information edits can be performed from the member UI.
+   - `club.delete` remains restricted to `app_admin` / `app_owner` and is only exposed via AdminApp/admin routes.
 
 - **Database Migration:**
    - Alembic migration added to include `user_type` in session tables.
@@ -67,6 +69,10 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - post-login member home page now uses a left-side vertical action stack
    - central placeholder `News and Updates` table is present until backend news/message endpoints are implemented
    - `Documents` table is shown alongside news and backed by live document APIs
+- **Club Information editing:**
+   - member-facing Club Information page now supports inline Edit/Save for users with `club_admin` role
+   - users without `club_admin` remain read-only
+   - no delete action is exposed in member UI
 - **Frontend build environment:**
    - frontend package metadata now targets npm `11.12.1`
    - local startup scripts invoke `npx --yes npm@11.12.1` for the Vite dev server

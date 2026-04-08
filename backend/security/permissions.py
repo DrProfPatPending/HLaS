@@ -24,7 +24,7 @@ PERMISSIONS = {
     'member.club.update': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'member.club.delete': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'club.read': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
-    'club.update': {'club_manager', 'app_admin', 'app_owner'},
+    'club.update': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'club.create': {'app_admin', 'app_owner'},
     'club.delete': {'app_admin', 'app_owner'},
     'smtp.club.manage': {'club_manager', 'app_admin', 'app_owner'},
