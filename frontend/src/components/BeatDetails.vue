@@ -83,14 +83,50 @@
           <td><textarea v-model="editForm.Detailed_Description" class="beat-details-textarea" rows="4"></textarea></td>
         </tr>
         <tr>
-          <th>Parking Locations (JSON)</th>
+          <th>Parking Locations</th>
           <td>
-            <textarea
-              v-model="editForm.Parking_Locations_Json"
-              class="beat-details-textarea"
-              rows="8"
-              placeholder='[{"Name":"Car Park","Location":"///word.word.word","Description":"","Latitude":"","Longitude":""}]'
-            ></textarea>
+            <div class="beat-details-parking-editor">
+              <div
+                v-for="(parking, parkingIndex) in editForm.Parking_Locations"
+                :key="`parking-edit-${parkingIndex}`"
+                class="beat-details-parking-editor-row"
+              >
+                <input
+                  v-model="parking.Name"
+                  class="beat-details-input"
+                  placeholder="Name"
+                />
+                <input
+                  v-model="parking.Location"
+                  class="beat-details-input"
+                  placeholder="What3Words (///word.word.word)"
+                />
+                <input
+                  v-model="parking.Latitude"
+                  class="beat-details-input"
+                  placeholder="Latitude"
+                />
+                <input
+                  v-model="parking.Longitude"
+                  class="beat-details-input"
+                  placeholder="Longitude"
+                />
+                <input
+                  v-model="parking.Description"
+                  class="beat-details-input"
+                  placeholder="Description"
+                />
+                <button
+                  type="button"
+                  class="beat-details-parking-remove"
+                  @click="removeParkingLocationRow(parkingIndex)"
+                >
+                  Remove
+                </button>
+              </div>
+
+              <button type="button" @click="addParkingLocationRow">Add Parking Location</button>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -228,7 +264,7 @@ export default {
         Beat_Downstream_Longitude: '',
         Beat_Description: '',
         Detailed_Description: '',
-        Parking_Locations_Json: '[]',
+        Parking_Locations: [],
       },
     };
   },
@@ -399,9 +435,38 @@ export default {
         Beat_Downstream_Longitude: source.Beat_Downstream_Longitude,
         Beat_Description: source.Beat_Description,
         Detailed_Description: source.Detailed_Description,
-        Parking_Locations_Json: JSON.stringify(source.Parking_Locations || [], null, 2),
+        Parking_Locations: this.cloneParkingLocations(source.Parking_Locations),
       };
       this.isEditing = true;
+    },
+    cloneParkingLocations(parkingLocations) {
+      if (!Array.isArray(parkingLocations)) return [];
+      return parkingLocations
+        .filter(loc => loc && typeof loc === 'object')
+        .map(loc => ({
+          Name: String(loc?.Name || '').trim(),
+          Location: String(loc?.Location || '').trim(),
+          Description: String(loc?.Description || '').trim(),
+          Latitude: String(loc?.Latitude || '').trim(),
+          Longitude: String(loc?.Longitude || '').trim(),
+        }));
+    },
+    addParkingLocationRow() {
+      if (!this.isEditing) return;
+      this.editForm.Parking_Locations = [
+        ...this.editForm.Parking_Locations,
+        {
+          Name: '',
+          Location: '',
+          Description: '',
+          Latitude: '',
+          Longitude: '',
+        },
+      ];
+    },
+    removeParkingLocationRow(index) {
+      if (!this.isEditing) return;
+      this.editForm.Parking_Locations = this.editForm.Parking_Locations.filter((_, i) => i !== index);
     },
     startEditBeat() {
       this.beatEditError = '';
@@ -445,13 +510,11 @@ export default {
       this.editOriginalBeatKey = '';
       this.beatEditError = '';
     },
-    parseParkingLocationsJson(rawJson) {
-      const trimmed = String(rawJson || '').trim();
-      if (!trimmed) return [];
-      const parsed = JSON.parse(trimmed);
-      if (!Array.isArray(parsed)) {
-        throw new Error('Parking Locations JSON must be an array.');
-      }
+    parseParkingLocationsInput(rawParkingLocations) {
+      const parsed = Array.isArray(rawParkingLocations)
+        ? rawParkingLocations
+        : [];
+
       return parsed
         .filter(loc => loc && typeof loc === 'object')
         .map(loc => ({
@@ -476,7 +539,7 @@ export default {
         Beat_Downstream_Longitude: this.editForm.Beat_Downstream_Longitude,
         Beat_Description: this.editForm.Beat_Description,
         Detailed_Description: this.editForm.Detailed_Description,
-        Parking_Locations: this.parseParkingLocationsJson(this.editForm.Parking_Locations_Json),
+        Parking_Locations: this.parseParkingLocationsInput(this.editForm.Parking_Locations),
       });
     },
     persistBeats(updatedBeats, successMessage, selectedKeyAfterSave = '') {
@@ -848,6 +911,23 @@ export default {
 .beat-details-parking-list {
   margin: 0;
   padding-left: 18px;
+}
+
+.beat-details-parking-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beat-details-parking-editor-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 120px 120px 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.beat-details-parking-remove {
+  white-space: nowrap;
 }
 
 .beat-details-map-wrap {
