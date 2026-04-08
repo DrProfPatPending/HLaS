@@ -81,6 +81,8 @@ services:
 
 volumes:
   postgres_data:
+    external: true
+    name: hlas_postgres_data
   hlas_data:
   caddy_data:
   caddy_config:
