@@ -24,7 +24,7 @@
     <div v-if="canManageBeats" class="beat-details-actions-row">
       <button type="button" @click="addNewBeat" :disabled="isSaving">Add</button>
       <button type="button" @click="startEditBeat" :disabled="isSaving || !selectedBeat || isEditing">Edit</button>
-      <button type="button" @click="saveBeatEdits" :disabled="isSaving || !isEditing">{{ isSaving ? 'Saving...' : 'Save' }}</button>
+      <button type="button" @click="saveBeatEdits" :disabled="isSaving || !isEditing || hasParkingValidationErrors">{{ isSaving ? 'Saving...' : 'Save' }}</button>
       <button type="button" @click="cancelEditBeat" :disabled="isSaving || !isEditing">Cancel</button>
       <button type="button" @click="deleteSelectedBeat" :disabled="isSaving || !selectedBeat">Delete</button>
     </div>
@@ -89,40 +89,48 @@
               <div
                 v-for="(parking, parkingIndex) in editForm.Parking_Locations"
                 :key="`parking-edit-${parkingIndex}`"
-                class="beat-details-parking-editor-row"
+                class="beat-details-parking-editor-row-wrap"
               >
-                <input
-                  v-model="parking.Name"
-                  class="beat-details-input"
-                  placeholder="Name"
-                />
-                <input
-                  v-model="parking.Location"
-                  class="beat-details-input"
-                  placeholder="What3Words (///word.word.word)"
-                />
-                <input
-                  v-model="parking.Latitude"
-                  class="beat-details-input"
-                  placeholder="Latitude"
-                />
-                <input
-                  v-model="parking.Longitude"
-                  class="beat-details-input"
-                  placeholder="Longitude"
-                />
-                <input
-                  v-model="parking.Description"
-                  class="beat-details-input"
-                  placeholder="Description"
-                />
-                <button
-                  type="button"
-                  class="beat-details-parking-remove"
-                  @click="removeParkingLocationRow(parkingIndex)"
+                <div class="beat-details-parking-editor-row">
+                  <input
+                    v-model="parking.Name"
+                    class="beat-details-input"
+                    placeholder="Name"
+                  />
+                  <input
+                    v-model="parking.Location"
+                    class="beat-details-input"
+                    placeholder="What3Words (///word.word.word)"
+                  />
+                  <input
+                    v-model="parking.Latitude"
+                    class="beat-details-input"
+                    placeholder="Latitude"
+                  />
+                  <input
+                    v-model="parking.Longitude"
+                    class="beat-details-input"
+                    placeholder="Longitude"
+                  />
+                  <input
+                    v-model="parking.Description"
+                    class="beat-details-input"
+                    placeholder="Description"
+                  />
+                  <button
+                    type="button"
+                    class="beat-details-parking-remove"
+                    @click="removeParkingLocationRow(parkingIndex)"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <p
+                  v-if="parkingValidationErrors[parkingIndex]"
+                  class="beat-details-parking-validation"
                 >
-                  Remove
-                </button>
+                  {{ parkingValidationErrors[parkingIndex] }}
+                </p>
               </div>
 
               <button type="button" @click="addParkingLocationRow">Add Parking Location</button>
@@ -271,6 +279,15 @@ export default {
   computed: {
     clubFullName: () => clubDetails.value.fullName,
     canManageBeats: () => store.memberRoles.includes('club_admin'),
+    parkingValidationErrors() {
+      if (!this.isEditing || !Array.isArray(this.editForm.Parking_Locations)) {
+        return [];
+      }
+      return this.editForm.Parking_Locations.map(location => this.getParkingValidationError(location));
+    },
+    hasParkingValidationErrors() {
+      return this.parkingValidationErrors.some(Boolean);
+    },
     orderedDetailColumns() {
       const detailColumnMap = {
         Beat_ID: { key: 'Beat_ID', label: 'Beat ID' },
@@ -468,6 +485,49 @@ export default {
       if (!this.isEditing) return;
       this.editForm.Parking_Locations = this.editForm.Parking_Locations.filter((_, i) => i !== index);
     },
+    getParkingValidationError(location) {
+      const w3wValue = String(location?.Location || '').trim();
+      const latitudeValue = String(location?.Latitude || '').trim();
+      const longitudeValue = String(location?.Longitude || '').trim();
+
+      const errors = [];
+
+      if (w3wValue && !this.isValidWhat3WordsValue(w3wValue)) {
+        errors.push('What3Words must be in format ///word.word.word');
+      }
+
+      if (latitudeValue && !this.isValidLatitudeValue(latitudeValue)) {
+        errors.push('Latitude must be a number between -90 and 90');
+      }
+
+      if (longitudeValue && !this.isValidLongitudeValue(longitudeValue)) {
+        errors.push('Longitude must be a number between -180 and 180');
+      }
+
+      if ((latitudeValue && !longitudeValue) || (!latitudeValue && longitudeValue)) {
+        errors.push('Latitude and Longitude must both be provided together');
+      }
+
+      return errors.join(' · ');
+    },
+    isValidWhat3WordsValue(rawValue) {
+      const trimmed = String(rawValue || '').trim();
+      if (!trimmed) return true;
+      const withoutSlashes = trimmed.replace(/^\/+/, '');
+      const words = withoutSlashes
+        .split('.')
+        .map(word => word.trim())
+        .filter(Boolean);
+      return words.length === 3 && words.every(word => /^[A-Za-z]+$/.test(word));
+    },
+    isValidLatitudeValue(rawValue) {
+      const value = Number.parseFloat(String(rawValue || '').trim());
+      return Number.isFinite(value) && value >= -90 && value <= 90;
+    },
+    isValidLongitudeValue(rawValue) {
+      const value = Number.parseFloat(String(rawValue || '').trim());
+      return Number.isFinite(value) && value >= -180 && value <= 180;
+    },
     startEditBeat() {
       this.beatEditError = '';
       this.beatEditSuccess = '';
@@ -580,6 +640,11 @@ export default {
     },
     saveBeatEdits() {
       if (!this.isEditing) return;
+
+      if (this.hasParkingValidationErrors) {
+        this.beatEditError = 'Fix parking validation errors before saving.';
+        return;
+      }
 
       let updatedBeat;
       try {
@@ -919,6 +984,12 @@ export default {
   gap: 8px;
 }
 
+.beat-details-parking-editor-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .beat-details-parking-editor-row {
   display: grid;
   grid-template-columns: 1fr 1fr 120px 120px 1fr auto;
@@ -928,6 +999,11 @@ export default {
 
 .beat-details-parking-remove {
   white-space: nowrap;
+}
+
+.beat-details-parking-validation {
+  margin: 0;
+  font-size: 9pt;
 }
 
 .beat-details-map-wrap {
