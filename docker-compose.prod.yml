@@ -28,6 +28,8 @@ services:
         condition: service_healthy
     environment:
       HLAS_DATA_DIR: /data
+      HLAS_MEMBER_TOKEN_TTL_SECONDS: "300"
+      HLAS_MEMBER_REFRESH_TOKEN_TTL_SECONDS: "600"
     volumes:
       - hlas_data:/data
       - ./backend/club_logos:/app/club_logos
