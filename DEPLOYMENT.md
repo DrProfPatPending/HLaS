@@ -218,6 +218,9 @@ This bundle deploys HLaS with three containers:
 Frontend image builds now standardize on npm `11.12.1` inside [frontend/Dockerfile](frontend/Dockerfile), so local and container builds use the same npm major/minor version.
 
 1. Copy `.env.prod.example` to `.env.prod` and set values.
+   - Token TTL defaults now included in the template:
+     - `HLAS_MEMBER_TOKEN_TTL_SECONDS=300`
+     - `HLAS_MEMBER_REFRESH_TOKEN_TTL_SECONDS=600`
 2. Login to your registry (example GHCR):
    ```powershell
    echo <YOUR_GITHUB_TOKEN> | docker login ghcr.io -u <YOUR_GITHUB_USERNAME> --password-stdin
