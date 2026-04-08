@@ -183,9 +183,9 @@ if (-not $pythonExe) {
     $pythonExe = 'python'
 }
 
-$npmCmd = 'npm.cmd'
-if (-not (Get-Command $npmCmd -ErrorAction SilentlyContinue)) {
-    $npmCmd = 'npm'
+$npxCmd = 'npx.cmd'
+if (-not (Get-Command $npxCmd -ErrorAction SilentlyContinue)) {
+    $npxCmd = 'npx'
 }
 
 if (-not $BackendUrl) {
@@ -281,7 +281,7 @@ $env:VUE_APP_BACKEND_URL = $configuredBackendUrl
 $env:VUE_APP_TLS_ENABLED = if ($frontendTlsEnabledForUrls) { 'true' } else { 'false' }
 $env:VUE_APP_TLS_CERT_FILE = $frontendTlsCertFileForRun
 $env:VUE_APP_TLS_KEY_FILE = $frontendTlsKeyFileForRun
-$frontendProcess = Start-Process -FilePath $npmCmd -ArgumentList @('run', 'serve', '--', '--host', "$BindIp", '--port', "$FrontendPort") -WorkingDirectory $frontendDir -PassThru
+$frontendProcess = Start-Process -FilePath $npxCmd -ArgumentList @('--yes', 'npm@11.12.1', 'run', 'dev', '--', '--host', "$BindIp", '--port', "$FrontendPort") -WorkingDirectory $frontendDir -PassThru
 $frontendProcess.Id | Set-Content -Path $frontendPidFile
 Start-Sleep -Milliseconds $DelayMs
 

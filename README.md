@@ -249,14 +249,14 @@ Field ordering and column visibility are now stored per context. Current member-
 When PostgreSQL runtime mode is enabled, updates are persisted in `app_settings`. The JSON file in `backend/field_order.json` remains the fallback source.
 
 ### Frontend
-1. Install Node.js dependencies:
+1. Install Node.js dependencies using npm `11.12.1`:
    ```bash
    cd frontend
-   npm install
+   npx --yes npm@11.12.1 install
    ```
 2. Start the Vue.js development server:
    ```bash
-   npm run serve
+   npx --yes npm@11.12.1 run dev
    ```
 
 ### Browser tab icon (favicon)

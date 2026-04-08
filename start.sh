@@ -267,7 +267,7 @@ fi
     export VUE_APP_TLS_ENABLED="$FRONTEND_TLS_ENABLED"
     export VUE_APP_TLS_CERT_FILE="$FRONTEND_TLS_CERT_FILE"
     export VUE_APP_TLS_KEY_FILE="$FRONTEND_TLS_KEY_FILE"
-    nohup npm run serve -- --host "$BIND_IP" --port "$FRONTEND_PORT" >/dev/null 2>&1 &
+    nohup npx --yes npm@11.12.1 run dev -- --host "$BIND_IP" --port "$FRONTEND_PORT" >/dev/null 2>&1 &
     echo $! > "$SCRIPT_DIR/.frontend.pid"
 )
 
