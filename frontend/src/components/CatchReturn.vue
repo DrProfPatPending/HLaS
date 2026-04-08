@@ -6,50 +6,52 @@
     </p>
 
     <form class="catch-return-form" @submit.prevent="submitCatchReturn">
-      <div class="catch-return-top-fields">
-        <label v-if="isFieldVisible('sessionDate')" class="catch-return-field">
-          <span>Date *</span>
-          <input v-model="form.sessionDate" type="date" required />
-        </label>
+      <div class="catch-return-form-layout">
+        <div class="catch-return-left-column">
+          <label v-if="isFieldVisible('sessionDate')" class="catch-return-field">
+            <span>Date *</span>
+            <input v-model="form.sessionDate" type="date" required />
+          </label>
 
-        <label v-if="isFieldVisible('beatId')" class="catch-return-field">
-          <span>Beat ID *</span>
-          <select v-model="form.beatId" required>
-            <option value="">Select Beat</option>
-            <option v-for="option in beatOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
+          <label v-if="isFieldVisible('beatId')" class="catch-return-field">
+            <span>Beat ID *</span>
+            <select v-model="form.beatId" required>
+              <option value="">Select Beat</option>
+              <option v-for="option in beatOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+
+          <label v-if="isFieldVisible('weatherConditions')" class="catch-return-field">
+            <span>Weather Conditions</span>
+            <textarea v-model="form.weatherConditions" rows="2" placeholder="Optional"></textarea>
+          </label>
+
+          <label v-if="isFieldVisible('fliesUsed')" class="catch-return-field">
+            <span>Flies Used</span>
+            <textarea v-model="form.fliesUsed" rows="2" placeholder="Optional"></textarea>
+          </label>
+
+          <label v-if="isFieldVisible('predatorDamage')" class="catch-return-field">
+            <span>Predator Damage</span>
+            <textarea v-model="form.predatorDamage" rows="2" placeholder="Optional"></textarea>
+          </label>
+        </div>
+
+        <div v-if="filteredCountFields.length" class="catch-return-right-column">
+          <label v-for="field in filteredCountFields" :key="field.key" class="catch-return-field">
+            <span>{{ field.label }}</span>
+            <input
+              v-model.number="form[field.key]"
+              type="number"
+              min="0"
+              step="1"
+              inputmode="numeric"
+            />
+          </label>
+        </div>
       </div>
-
-      <div v-if="filteredCountFields.length" class="catch-return-count-grid">
-        <label v-for="field in filteredCountFields" :key="field.key" class="catch-return-field">
-          <span>{{ field.label }}</span>
-          <input
-            v-model.number="form[field.key]"
-            type="number"
-            min="0"
-            step="1"
-            inputmode="numeric"
-          />
-        </label>
-      </div>
-
-      <label v-if="isFieldVisible('fliesUsed')" class="catch-return-field">
-        <span>Flies Used</span>
-        <textarea v-model="form.fliesUsed" rows="2" placeholder="Optional"></textarea>
-      </label>
-
-      <label v-if="isFieldVisible('weatherConditions')" class="catch-return-field">
-        <span>Weather Conditions</span>
-        <textarea v-model="form.weatherConditions" rows="2" placeholder="Optional"></textarea>
-      </label>
-
-      <label v-if="isFieldVisible('predatorDamage')" class="catch-return-field">
-        <span>Predator Damage</span>
-        <textarea v-model="form.predatorDamage" rows="2" placeholder="Optional"></textarea>
-      </label>
 
       <div class="catch-return-actions">
         <button type="submit" :disabled="submitting">
@@ -447,15 +449,16 @@ export default {
   gap: 12px;
 }
 
-.catch-return-top-fields {
+.catch-return-form-layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 14px;
 }
 
-.catch-return-count-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.catch-return-left-column,
+.catch-return-right-column {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
@@ -595,8 +598,7 @@ export default {
 }
 
 @media (max-width: 720px) {
-  .catch-return-top-fields,
-  .catch-return-count-grid {
+  .catch-return-form-layout {
     grid-template-columns: 1fr;
   }
 
