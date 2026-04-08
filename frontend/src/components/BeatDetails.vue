@@ -99,17 +99,17 @@
                   />
                   <input
                     v-model="parking.Location"
-                    class="beat-details-input"
+                    :class="['beat-details-input', { 'beat-details-input-invalid': isParkingFieldInvalid(parkingIndex, 'Location') }]"
                     placeholder="What3Words (///word.word.word)"
                   />
                   <input
                     v-model="parking.Latitude"
-                    class="beat-details-input"
+                    :class="['beat-details-input', { 'beat-details-input-invalid': isParkingFieldInvalid(parkingIndex, 'Latitude') }]"
                     placeholder="Latitude"
                   />
                   <input
                     v-model="parking.Longitude"
-                    class="beat-details-input"
+                    :class="['beat-details-input', { 'beat-details-input-invalid': isParkingFieldInvalid(parkingIndex, 'Longitude') }]"
                     placeholder="Longitude"
                   />
                   <input
@@ -509,6 +509,30 @@ export default {
       }
 
       return errors.join(' · ');
+    },
+    isParkingFieldInvalid(parkingIndex, fieldName) {
+      const location = this.editForm?.Parking_Locations?.[parkingIndex] || {};
+      const w3wValue = String(location?.Location || '').trim();
+      const latitudeValue = String(location?.Latitude || '').trim();
+      const longitudeValue = String(location?.Longitude || '').trim();
+
+      if (fieldName === 'Location') {
+        return Boolean(w3wValue) && !this.isValidWhat3WordsValue(w3wValue);
+      }
+
+      const hasCoordinatePairMismatch =
+        (Boolean(latitudeValue) && !Boolean(longitudeValue)) ||
+        (!Boolean(latitudeValue) && Boolean(longitudeValue));
+
+      if (fieldName === 'Latitude') {
+        return (Boolean(latitudeValue) && !this.isValidLatitudeValue(latitudeValue)) || hasCoordinatePairMismatch;
+      }
+
+      if (fieldName === 'Longitude') {
+        return (Boolean(longitudeValue) && !this.isValidLongitudeValue(longitudeValue)) || hasCoordinatePairMismatch;
+      }
+
+      return false;
     },
     isValidWhat3WordsValue(rawValue) {
       const trimmed = String(rawValue || '').trim();
@@ -971,6 +995,10 @@ export default {
 .beat-details-textarea {
   width: 100%;
   box-sizing: border-box;
+}
+
+.beat-details-input-invalid {
+  border-color: #b42318;
 }
 
 .beat-details-parking-list {
