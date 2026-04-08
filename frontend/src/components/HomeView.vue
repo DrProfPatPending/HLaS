@@ -96,7 +96,11 @@
               <td></td>
             </tr>
             <tr v-else v-for="doc in documents" :key="doc.id">
-              <td class="documents-title-cell">{{ doc.title || doc.fileName }}</td>
+              <td class="documents-title-cell">
+                <button type="button" class="documents-title-link" @click="openDocumentPreview(doc)">
+                  {{ doc.title || doc.fileName }}
+                </button>
+              </td>
               <td class="documents-file-cell">{{ doc.fileName }}</td>
               <td>{{ formatNewsDate(doc.createdAt) }}</td>
               <td>{{ formatFileSize(doc.fileSize) }}</td>
@@ -232,39 +236,19 @@ export default {
       if (bytes < (1024 * 1024)) return `${(bytes / 1024).toFixed(1)} KB`;
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     },
-    loadFieldOrder() {
-      return axios.get(`${API_BASE_URL}/field-order`)
-        .then((res) => {
-          const loaded = res.data?.field_order;
-          this.fieldOrder = loaded && typeof loaded === 'object' ? loaded : {};
-        })
-        .catch(() => {
-          this.fieldOrder = {};
-        });
-    },
-    isColumnVisible(contextKey, columnKey) {
-      const configured = this.fieldOrder?.show_columns?.[contextKey]?.[columnKey];
-      return configured !== false;
-    },
-    getVisibleColumns(contextKey, fallbackColumns) {
-      const fallbackMap = new Map(fallbackColumns.map(column => [column.key, column]));
-      const configuredOrder = Array.isArray(this.fieldOrder?.[contextKey])
-        ? this.fieldOrder[contextKey]
-        : fallbackColumns.map(column => column.key);
-
-      const ordered = configuredOrder
-        .map(key => fallbackMap.get(key))
-        .filter(Boolean)
-        .filter(column => this.isColumnVisible(contextKey, column.key));
-
-      if (ordered.length) return ordered;
-      return fallbackColumns.filter(column => this.isColumnVisible(contextKey, column.key));
-    },
-    getColumnStyle(contextKey, columnKey) {
-      const rawMinWidth = this.fieldOrder?.minimum_widths?.[contextKey]?.[columnKey];
-      const minWidth = Number(rawMinWidth);
-      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
-      return { minWidth: `${minWidth}px` };
+    inferDocumentMimeType(fileName, fallbackType) {
+      const extension = String(fileName || '').toLowerCase().split('.').pop();
+      const mimeByExtension = {
+        pdf: 'application/pdf',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        gif: 'image/gif',
+        webp: 'image/webp',
+        bmp: 'image/bmp',
+        svg: 'image/svg+xml',
+      };
+      return mimeByExtension[extension] || fallbackType || 'application/octet-stream';
     },
     fetchDocuments() {
       this.documentsLoading = true;
@@ -311,6 +295,32 @@ export default {
         .finally(() => {
           this.uploadBusy = false;
         });
+    },
+    openDocumentPreview(doc) {
+      this.documentsError = '';
+      return axios.get(`${API_BASE_URL}/documents/${doc.id}/download`, {
+        params: { club: this.loggedInClub },
+        responseType: 'blob',
+      }).then((res) => {
+        const inferredMimeType = this.inferDocumentMimeType(doc.fileName, res?.data?.type);
+        const previewBlob = new Blob([res.data], { type: inferredMimeType });
+        const blobUrl = window.URL.createObjectURL(previewBlob);
+        const openedWindow = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        if (!openedWindow) {
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
+        window.setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 60000);
+      }).catch((err) => {
+        this.documentsError = err?.response?.data?.error || 'Unable to open document preview';
+      });
     },
     downloadDocument(doc) {
       return axios.get(`${API_BASE_URL}/documents/${doc.id}/download`, {
@@ -538,6 +548,18 @@ export default {
   font-size: 9pt;
   line-height: 1.15;
   padding: 4px 8px;
+}
+
+.documents-title-link {
+  border: none;
+  background: transparent;
+  color: #0f4c81;
+  text-decoration: underline;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  max-width: 100%;
 }
 
 .documents-empty-title-cell {
