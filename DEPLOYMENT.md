@@ -192,6 +192,7 @@ This bundle deploys HLaS with three containers:
 - `deploy/nginx/frontend.conf`
 - `deploy/local/publish.ps1`
 - `deploy/vps/deploy.sh`
+- `deploy/vps/verify-and-deploy.sh`
 - `deploy/vps/bootstrap-ubuntu.sh`
 - `.env.prod.example`
 
@@ -246,6 +247,35 @@ This script:
 - runs `docker compose up -d --remove-orphans`
 - prunes dangling images
 - prints service status
+
+### Optional safer production preflight + rollout script
+
+Use the reusable verification/deploy helper to catch common production rollout mistakes such as stale shell environment overrides, wrong image tags, wrong database driver URL, or incorrect PostgreSQL volume binding.
+
+Verify only:
+
+```bash
+cd /opt/hlas
+chmod +x deploy/vps/verify-and-deploy.sh
+./deploy/vps/verify-and-deploy.sh verify
+```
+
+Verify and deploy:
+
+```bash
+cd /opt/hlas
+chmod +x deploy/vps/verify-and-deploy.sh
+./deploy/vps/verify-and-deploy.sh deploy
+```
+
+The script will:
+
+- clear known stale shell environment overrides before running Compose
+- verify `main` is checked out
+- verify backend/frontend image tags resolve to `:latest`
+- verify `DATABASE_URL` resolves to `postgresql+psycopg://...`
+- verify PostgreSQL uses the expected external volume `hlas_postgres_data`
+- in `deploy` mode, pull `main`, rebuild backend/frontend, restart services in order, and verify backend `/clubs`
 
 ## 7) Data persistence
 
