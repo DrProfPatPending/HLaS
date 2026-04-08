@@ -249,6 +249,13 @@ Field ordering and column visibility are now stored per context. Current member-
 When PostgreSQL runtime mode is enabled, updates are persisted in `app_settings`. The JSON file in `backend/field_order.json` remains the fallback source.
 
 ### Frontend
+Frontend tooling now targets:
+
+- Node.js 20+
+- npm `11.12.1`
+
+The frontend package metadata declares `packageManager: npm@11.12.1`, and the startup scripts use that npm version explicitly.
+
 1. Install Node.js dependencies using npm `11.12.1`:
    ```bash
    cd frontend
@@ -257,6 +264,10 @@ When PostgreSQL runtime mode is enabled, updates are persisted in `app_settings`
 2. Start the Vue.js development server:
    ```bash
    npx --yes npm@11.12.1 run dev
+   ```
+3. Build the production frontend bundle:
+   ```bash
+   npx --yes npm@11.12.1 run build
    ```
 
 ### Browser tab icon (favicon)
@@ -310,7 +321,7 @@ Example using cert files:
 Behavior:
 - Starts backend, waits `DelayMs`, checks backend URL, prints `Backend Running` on success.
 - Prints `Server Not Running` and aborts if backend health check fails.
-- Starts frontend, waits the same delay, checks frontend URL, prints `Server Running` on success.
+- Starts frontend with `npx --yes npm@11.12.1 run dev`, waits the same delay, checks frontend URL, prints `Server Running` on success.
 - Prints `Server Not Running` if frontend health check fails.
 
 Optional URL overrides:

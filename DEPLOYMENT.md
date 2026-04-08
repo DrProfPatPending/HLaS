@@ -67,6 +67,10 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - post-login member home page now uses a left-side vertical action stack
    - central placeholder `News and Updates` table is present until backend news/message endpoints are implemented
    - `Documents` table is shown alongside news and backed by live document APIs
+- **Frontend build environment:**
+   - frontend package metadata now targets npm `11.12.1`
+   - local startup scripts invoke `npx --yes npm@11.12.1` for the Vite dev server
+   - Docker frontend builds install npm `11.12.1` before `npm ci` / `npm run build`
 - **Member photo display:**
    - Edit Member Details displays the member photo again
    - photo routes support DB-first retrieval in PostgreSQL mode
@@ -192,6 +196,8 @@ This bundle deploys HLaS with three containers:
 - `.env.prod.example`
 
 ## 3) Build and push images (local machine)
+
+Frontend image builds now standardize on npm `11.12.1` inside [frontend/Dockerfile](frontend/Dockerfile), so local and container builds use the same npm major/minor version.
 
 1. Copy `.env.prod.example` to `.env.prod` and set values.
 2. Login to your registry (example GHCR):
