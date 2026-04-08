@@ -1,8 +1,8 @@
 <template>
   <div class="home-container">
     <div class="home-page-header">
-      <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
-      <h3>Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</h3>
+      <h2>Hello {{ greetingFirstName }},</h2>
+      <h3>Welcome to the website for {{ welcomeClubShortName }}</h3>
     </div>
 
     <section class="home-panels-grid">
@@ -124,8 +124,28 @@ export default {
   computed: {
     loggedInUsername: () => store.loggedInUsername,
     loggedInClub: () => store.loggedInClub,
+    loggedInUser: () => store.loggedInUser,
     accessError: () => store.accessError,
     canManageDocuments: () => store.memberPermissions.includes('document.club.manage'),
+    greetingFirstName() {
+      const user = this.loggedInUser || {};
+      const candidates = [
+        user.First_Name,
+        user.first_name,
+        user.Preferred_Name,
+        user.preferred_name,
+        user.display_name,
+        user.Members_Name,
+        user.members_name,
+        this.loggedInUsername,
+      ];
+
+      const rawName = candidates.find(value => typeof value === 'string' && value.trim()) || 'Member';
+      return String(rawName).trim().split(/\s+/)[0] || 'Member';
+    },
+    welcomeClubShortName() {
+      return clubDetails.value.shortName || this.loggedInClub || 'your club';
+    },
     clubNewsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} News and Updates`,
     clubDocumentsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} Documents`,
     newsItems() {
