@@ -21,7 +21,82 @@
       </select>
     </div>
 
-    <table v-if="selectedBeat" class="beat-details-table">
+    <div v-if="canManageBeats" class="beat-details-actions-row">
+      <button type="button" @click="addNewBeat" :disabled="isSaving">Add</button>
+      <button type="button" @click="startEditBeat" :disabled="isSaving || !selectedBeat || isEditing">Edit</button>
+      <button type="button" @click="saveBeatEdits" :disabled="isSaving || !isEditing">{{ isSaving ? 'Saving...' : 'Save' }}</button>
+      <button type="button" @click="cancelEditBeat" :disabled="isSaving || !isEditing">Cancel</button>
+      <button type="button" @click="deleteSelectedBeat" :disabled="isSaving || !selectedBeat">Delete</button>
+    </div>
+
+    <p v-if="beatEditError" class="beat-details-error">{{ beatEditError }}</p>
+    <p v-if="beatEditSuccess" class="beat-details-success">{{ beatEditSuccess }}</p>
+
+    <table v-if="selectedBeat && isEditing" class="beat-details-table">
+      <tbody>
+        <tr>
+          <th>Beat ID</th>
+          <td><input v-model="editForm.Beat_ID" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Beat Name</th>
+          <td><input v-model="editForm.Beat_Name" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>River</th>
+          <td><input v-model="editForm.River" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Position</th>
+          <td><input v-model="editForm.Position" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Beat Upstream</th>
+          <td><input v-model="editForm.Beat_Upstream" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Beat Downstream</th>
+          <td><input v-model="editForm.Beat_Downstream" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Upstream Latitude</th>
+          <td><input v-model="editForm.Beat_Upstream_Latitude" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Upstream Longitude</th>
+          <td><input v-model="editForm.Beat_Upstream_Longitude" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Downstream Latitude</th>
+          <td><input v-model="editForm.Beat_Downstream_Latitude" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Downstream Longitude</th>
+          <td><input v-model="editForm.Beat_Downstream_Longitude" class="beat-details-input" /></td>
+        </tr>
+        <tr>
+          <th>Beat Description</th>
+          <td><textarea v-model="editForm.Beat_Description" class="beat-details-textarea" rows="3"></textarea></td>
+        </tr>
+        <tr>
+          <th>Detailed Description</th>
+          <td><textarea v-model="editForm.Detailed_Description" class="beat-details-textarea" rows="4"></textarea></td>
+        </tr>
+        <tr>
+          <th>Parking Locations (JSON)</th>
+          <td>
+            <textarea
+              v-model="editForm.Parking_Locations_Json"
+              class="beat-details-textarea"
+              rows="8"
+              placeholder='[{"Name":"Car Park","Location":"///word.word.word","Description":"","Latitude":"","Longitude":""}]'
+            ></textarea>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table v-else-if="selectedBeat" class="beat-details-table">
       <tbody>
         <tr v-for="column in orderedDetailColumns" :key="`detail-${column.key}`">
           <th>{{ column.label }}</th>
@@ -121,22 +196,45 @@
 import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { store, clubDetails, API_BASE_URL } from '../store.js';
+import { store, clubDetails, API_BASE_URL, loadClubs } from '../store.js';
 
 export default {
   name: 'BeatDetails',
   data() {
     return {
+      localBeats: [],
       selectedBeatKey: '',
       fieldOrder: {},
       beatDetailsMapInstance: null,
       beatDetailsMapLayers: [],
       beatDetailsMapStatus: '',
       beatDetailsMapRequestId: 0,
+      isEditing: false,
+      isAddingNewBeat: false,
+      isSaving: false,
+      beatEditError: '',
+      beatEditSuccess: '',
+      editOriginalBeatKey: '',
+      editForm: {
+        Beat_ID: '',
+        Beat_Name: '',
+        River: '',
+        Position: '',
+        Beat_Upstream: '',
+        Beat_Downstream: '',
+        Beat_Upstream_Latitude: '',
+        Beat_Upstream_Longitude: '',
+        Beat_Downstream_Latitude: '',
+        Beat_Downstream_Longitude: '',
+        Beat_Description: '',
+        Detailed_Description: '',
+        Parking_Locations_Json: '[]',
+      },
     };
   },
   computed: {
     clubFullName: () => clubDetails.value.fullName,
+    canManageBeats: () => store.memberRoles.includes('club_admin'),
     orderedDetailColumns() {
       const detailColumnMap = {
         Beat_ID: { key: 'Beat_ID', label: 'Beat ID' },
@@ -173,7 +271,7 @@ export default {
         .filter(Boolean);
     },
     clubBeats() {
-      const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
+      const beats = Array.isArray(this.localBeats) ? this.localBeats : [];
       const mappedBeats = beats.map(beat => {
         const beatUpstream = beat && beat.Beat_Upstream ? beat.Beat_Upstream : '';
         const beatDownstream = beat && beat.Beat_Downstream ? beat.Beat_Downstream : '';
@@ -222,8 +320,17 @@ export default {
     selectedBeat() {
       this.refreshBeatDetailsMap();
     },
+    clubDetails: {
+      deep: true,
+      handler() {
+        if (!this.isEditing) {
+          this.syncLocalBeats();
+        }
+      },
+    },
   },
   created() {
+    this.syncLocalBeats();
     this.loadFieldOrder();
     if (this.clubBeats.length) {
       this.selectedBeatKey = this.beatKey(this.clubBeats[0]);
@@ -236,6 +343,213 @@ export default {
     this.destroyBeatDetailsMap();
   },
   methods: {
+    syncLocalBeats() {
+      const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
+      this.localBeats = beats.map(beat => this.normalizeBeatRecord(beat));
+      if (!this.localBeats.length) {
+        this.selectedBeatKey = '';
+        return;
+      }
+      const selectedExists = this.localBeats.some(beat => this.beatKey(beat) === this.selectedBeatKey);
+      if (!selectedExists) {
+        this.selectedBeatKey = this.beatKey(this.localBeats[0]);
+      }
+    },
+    normalizeBeatRecord(beat) {
+      return {
+        Beat_Name: String(beat?.Beat_Name || '').trim(),
+        Beat_ID: String(beat?.Beat_ID || '').trim(),
+        River: String(beat?.River || '').trim(),
+        Position: String(beat?.Position || '').trim(),
+        Beat_Upstream: String(beat?.Beat_Upstream || '').trim(),
+        Beat_Downstream: String(beat?.Beat_Downstream || '').trim(),
+        Beat_Upstream_Latitude: String(beat?.Beat_Upstream_Latitude || '').trim(),
+        Beat_Upstream_Longitude: String(beat?.Beat_Upstream_Longitude || '').trim(),
+        Beat_Downstream_Latitude: String(beat?.Beat_Downstream_Latitude || '').trim(),
+        Beat_Downstream_Longitude: String(beat?.Beat_Downstream_Longitude || '').trim(),
+        Beat_Description: String(beat?.Beat_Description || '').trim(),
+        Detailed_Description: String(beat?.Detailed_Description || '').trim(),
+        Parking_Locations: Array.isArray(beat?.Parking_Locations)
+          ? beat.Parking_Locations
+              .filter(loc => loc && typeof loc === 'object')
+              .map(loc => ({
+                Name: String(loc?.Name || '').trim(),
+                Location: String(loc?.Location || '').trim(),
+                Description: String(loc?.Description || '').trim(),
+                Latitude: String(loc?.Latitude || '').trim(),
+                Longitude: String(loc?.Longitude || '').trim(),
+              }))
+          : [],
+      };
+    },
+    beginEditForBeat(beat, isAdding = false) {
+      const source = this.normalizeBeatRecord(beat);
+      this.isAddingNewBeat = isAdding;
+      this.editOriginalBeatKey = this.beatKey(source);
+      this.editForm = {
+        Beat_ID: source.Beat_ID,
+        Beat_Name: source.Beat_Name,
+        River: source.River,
+        Position: source.Position,
+        Beat_Upstream: source.Beat_Upstream,
+        Beat_Downstream: source.Beat_Downstream,
+        Beat_Upstream_Latitude: source.Beat_Upstream_Latitude,
+        Beat_Upstream_Longitude: source.Beat_Upstream_Longitude,
+        Beat_Downstream_Latitude: source.Beat_Downstream_Latitude,
+        Beat_Downstream_Longitude: source.Beat_Downstream_Longitude,
+        Beat_Description: source.Beat_Description,
+        Detailed_Description: source.Detailed_Description,
+        Parking_Locations_Json: JSON.stringify(source.Parking_Locations || [], null, 2),
+      };
+      this.isEditing = true;
+    },
+    startEditBeat() {
+      this.beatEditError = '';
+      this.beatEditSuccess = '';
+      if (!this.selectedBeat) return;
+      this.beginEditForBeat(this.selectedBeat, false);
+    },
+    addNewBeat() {
+      this.beatEditError = '';
+      this.beatEditSuccess = '';
+      if (this.isEditing) {
+        this.beatEditError = 'Save or cancel current edit first.';
+        return;
+      }
+      const newBeat = this.normalizeBeatRecord({
+        Beat_ID: `NEW-${Date.now()}`,
+        Beat_Name: 'New Beat',
+        River: '',
+        Position: '',
+        Beat_Upstream: '',
+        Beat_Downstream: '',
+        Beat_Upstream_Latitude: '',
+        Beat_Upstream_Longitude: '',
+        Beat_Downstream_Latitude: '',
+        Beat_Downstream_Longitude: '',
+        Beat_Description: '',
+        Detailed_Description: '',
+        Parking_Locations: [],
+      });
+      this.localBeats = [...this.localBeats, newBeat];
+      this.selectedBeatKey = this.beatKey(newBeat);
+      this.beginEditForBeat(newBeat, true);
+    },
+    cancelEditBeat() {
+      if (this.isAddingNewBeat) {
+        this.localBeats = this.localBeats.filter(beat => this.beatKey(beat) !== this.editOriginalBeatKey);
+        this.selectedBeatKey = this.localBeats.length ? this.beatKey(this.localBeats[0]) : '';
+      }
+      this.isEditing = false;
+      this.isAddingNewBeat = false;
+      this.editOriginalBeatKey = '';
+      this.beatEditError = '';
+    },
+    parseParkingLocationsJson(rawJson) {
+      const trimmed = String(rawJson || '').trim();
+      if (!trimmed) return [];
+      const parsed = JSON.parse(trimmed);
+      if (!Array.isArray(parsed)) {
+        throw new Error('Parking Locations JSON must be an array.');
+      }
+      return parsed
+        .filter(loc => loc && typeof loc === 'object')
+        .map(loc => ({
+          Name: String(loc?.Name || '').trim(),
+          Location: String(loc?.Location || '').trim(),
+          Description: String(loc?.Description || '').trim(),
+          Latitude: String(loc?.Latitude || '').trim(),
+          Longitude: String(loc?.Longitude || '').trim(),
+        }));
+    },
+    buildBeatFromEditForm() {
+      return this.normalizeBeatRecord({
+        Beat_ID: this.editForm.Beat_ID,
+        Beat_Name: this.editForm.Beat_Name,
+        River: this.editForm.River,
+        Position: this.editForm.Position,
+        Beat_Upstream: this.editForm.Beat_Upstream,
+        Beat_Downstream: this.editForm.Beat_Downstream,
+        Beat_Upstream_Latitude: this.editForm.Beat_Upstream_Latitude,
+        Beat_Upstream_Longitude: this.editForm.Beat_Upstream_Longitude,
+        Beat_Downstream_Latitude: this.editForm.Beat_Downstream_Latitude,
+        Beat_Downstream_Longitude: this.editForm.Beat_Downstream_Longitude,
+        Beat_Description: this.editForm.Beat_Description,
+        Detailed_Description: this.editForm.Detailed_Description,
+        Parking_Locations: this.parseParkingLocationsJson(this.editForm.Parking_Locations_Json),
+      });
+    },
+    persistBeats(updatedBeats, successMessage, selectedKeyAfterSave = '') {
+      this.isSaving = true;
+      this.beatEditError = '';
+      this.beatEditSuccess = '';
+
+      const payload = {
+        fullName: clubDetails.value.fullName || '',
+        description: clubDetails.value.description || '',
+        websiteUrl: clubDetails.value.websiteUrl || '',
+        adminEmail: clubDetails.value.adminEmail || '',
+        logoUrl: clubDetails.value.logoUrl || '',
+        beats: updatedBeats,
+      };
+
+      return axios
+        .put(`${API_BASE_URL}/admin/clubs/${encodeURIComponent(clubDetails.value.shortName)}`, payload)
+        .then(() => loadClubs())
+        .then(() => {
+          this.syncLocalBeats();
+          if (selectedKeyAfterSave && this.localBeats.some(beat => this.beatKey(beat) === selectedKeyAfterSave)) {
+            this.selectedBeatKey = selectedKeyAfterSave;
+          } else if (!this.selectedBeatKey && this.localBeats.length) {
+            this.selectedBeatKey = this.beatKey(this.localBeats[0]);
+          }
+          this.isEditing = false;
+          this.isAddingNewBeat = false;
+          this.editOriginalBeatKey = '';
+          this.beatEditSuccess = successMessage;
+        })
+        .catch(error => {
+          this.beatEditError = error?.response?.data?.error || 'Failed to update beats.';
+        })
+        .finally(() => {
+          this.isSaving = false;
+        });
+    },
+    saveBeatEdits() {
+      if (!this.isEditing) return;
+
+      let updatedBeat;
+      try {
+        updatedBeat = this.buildBeatFromEditForm();
+      } catch (error) {
+        this.beatEditError = error?.message || 'Invalid beat data.';
+        return;
+      }
+
+      const updatedBeats = [...this.localBeats];
+      const targetIndex = updatedBeats.findIndex(beat => this.beatKey(beat) === this.editOriginalBeatKey);
+      if (targetIndex < 0) {
+        this.beatEditError = 'Could not find the selected beat to save.';
+        return;
+      }
+      updatedBeats[targetIndex] = updatedBeat;
+      const nextKey = this.beatKey(updatedBeat);
+
+      this.persistBeats(updatedBeats, 'Beat details updated.', nextKey);
+    },
+    deleteSelectedBeat() {
+      this.beatEditError = '';
+      this.beatEditSuccess = '';
+      if (!this.selectedBeat) return;
+      if (!window.confirm(`Delete beat "${this.formatBeatOptionLabel(this.selectedBeat)}"?`)) {
+        return;
+      }
+
+      const currentKey = this.beatKey(this.selectedBeat);
+      const updatedBeats = this.localBeats.filter(beat => this.beatKey(beat) !== currentKey);
+      const nextKey = updatedBeats.length ? this.beatKey(updatedBeats[0]) : '';
+      this.persistBeats(updatedBeats, 'Beat deleted.', nextKey);
+    },
     goHome() {
       store.activeSection = 'home';
     },
@@ -478,6 +792,24 @@ export default {
   gap: 8px;
 }
 
+.beat-details-actions-row {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.beat-details-error {
+  color: #b42318;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.beat-details-success {
+  color: #21633a;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
 .beat-details-select {
   min-width: 260px;
   padding: 6px;
@@ -505,6 +837,12 @@ export default {
 .beat-details-table th {
   width: 180px;
   background: #f0f0f0;
+}
+
+.beat-details-input,
+.beat-details-textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .beat-details-parking-list {
