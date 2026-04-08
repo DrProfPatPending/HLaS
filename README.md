@@ -33,6 +33,11 @@ HLaS is a fishing club membership management application with separate member an
    - `Edit` / `Save` controls are shown only when the logged-in user has the Club Admin role.
    - Club profile fields (website, admin email, description, display name) can be updated from the Club Information section.
    - Club deletion remains App Admin/App Owner-only via AdminApp and admin routes.
+- Added Beat Details management controls for `club_admin` users in the member UI:
+   - `Edit` / `Save` controls for updating all selected beat details.
+   - `Add` to create a new beat entry.
+   - `Delete` to remove the currently selected beat.
+   - These controls are role-gated and hidden for users without `club_admin`.
 
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
@@ -132,6 +137,9 @@ Current behavior:
 - map display reuses the Fishing Beats detail map implementation
 - map shows upstream and downstream limits plus any configured parking markers
 - what3words locations are resolved through `/w3w/coordinates` when direct coordinates are unavailable
+- users with `club_admin` role can edit/save beat details for the selected beat
+- users with `club_admin` role can add new beats and delete the selected beat
+- users without `club_admin` role continue to see read-only beat details
 
 Configuration sources:
 

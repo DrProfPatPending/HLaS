@@ -65,6 +65,9 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - dropdown labels show `<Beat ID> <Beat Name>`
    - detail page reuses Fishing Beats map behavior for upstream/downstream markers and parking locations
    - field order and visibility are stored under the `beat_details` context
+   - users with `club_admin` role can Edit/Save the selected beat details
+   - users with `club_admin` role can Add a new beat and Delete the currently selected beat
+   - users without `club_admin` role remain read-only in Beat Details
 - **Home dashboard:**
    - post-login member home page now uses a left-side vertical action stack
    - central placeholder `News and Updates` table is present until backend news/message endpoints are implemented
