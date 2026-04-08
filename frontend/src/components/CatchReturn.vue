@@ -7,12 +7,12 @@
 
     <form class="catch-return-form" @submit.prevent="submitCatchReturn">
       <div class="catch-return-top-fields">
-        <label class="catch-return-field">
+        <label v-if="isFieldVisible('sessionDate')" class="catch-return-field">
           <span>Date *</span>
           <input v-model="form.sessionDate" type="date" required />
         </label>
 
-        <label class="catch-return-field">
+        <label v-if="isFieldVisible('beatId')" class="catch-return-field">
           <span>Beat ID *</span>
           <select v-model="form.beatId" required>
             <option value="">Select Beat</option>
@@ -23,8 +23,8 @@
         </label>
       </div>
 
-      <div class="catch-return-count-grid">
-        <label v-for="field in countFields" :key="field.key" class="catch-return-field">
+      <div v-if="filteredCountFields.length" class="catch-return-count-grid">
+        <label v-for="field in filteredCountFields" :key="field.key" class="catch-return-field">
           <span>{{ field.label }}</span>
           <input
             v-model.number="form[field.key]"
@@ -36,17 +36,17 @@
         </label>
       </div>
 
-      <label class="catch-return-field">
+      <label v-if="isFieldVisible('fliesUsed')" class="catch-return-field">
         <span>Flies Used</span>
         <textarea v-model="form.fliesUsed" rows="2" placeholder="Optional"></textarea>
       </label>
 
-      <label class="catch-return-field">
+      <label v-if="isFieldVisible('weatherConditions')" class="catch-return-field">
         <span>Weather Conditions</span>
         <textarea v-model="form.weatherConditions" rows="2" placeholder="Optional"></textarea>
       </label>
 
-      <label class="catch-return-field">
+      <label v-if="isFieldVisible('predatorDamage')" class="catch-return-field">
         <span>Predator Damage</span>
         <textarea v-model="form.predatorDamage" rows="2" placeholder="Optional"></textarea>
       </label>
@@ -132,29 +132,29 @@
           <table class="catch-return-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Beat</th>
-                <th>S.Trout</th>
-                <th>M.Trout</th>
-                <th>L.Trout</th>
-                <th>S.Grayling</th>
-                <th>M.Grayling</th>
-                <th>L.Grayling</th>
-                <th>Other</th>
+                <th v-if="isFieldVisible('sessionDate')">Date</th>
+                <th v-if="isFieldVisible('beatId')">Beat</th>
+                <th v-if="isFieldVisible('smallTrout')">S.Trout</th>
+                <th v-if="isFieldVisible('mediumTrout')">M.Trout</th>
+                <th v-if="isFieldVisible('largeTrout')">L.Trout</th>
+                <th v-if="isFieldVisible('smallGrayling')">S.Grayling</th>
+                <th v-if="isFieldVisible('mediumGrayling')">M.Grayling</th>
+                <th v-if="isFieldVisible('largeGrayling')">L.Grayling</th>
+                <th v-if="isFieldVisible('otherFish')">Other</th>
                 <th v-if="hasNotesColumn">Notes</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="row in recentReturns" :key="row.id">
-                <td>{{ formatDateValue(row.session_date) }}</td>
-                <td>{{ row.beat_id }}</td>
-                <td>{{ row.small_trout }}</td>
-                <td>{{ row.medium_trout }}</td>
-                <td>{{ row.large_trout }}</td>
-                <td>{{ row.small_grayling }}</td>
-                <td>{{ row.medium_grayling }}</td>
-                <td>{{ row.large_grayling }}</td>
-                <td>{{ row.other_fish }}</td>
+                <td v-if="isFieldVisible('sessionDate')">{{ formatDateValue(row.session_date) }}</td>
+                <td v-if="isFieldVisible('beatId')">{{ row.beat_id }}</td>
+                <td v-if="isFieldVisible('smallTrout')">{{ row.small_trout }}</td>
+                <td v-if="isFieldVisible('mediumTrout')">{{ row.medium_trout }}</td>
+                <td v-if="isFieldVisible('largeTrout')">{{ row.large_trout }}</td>
+                <td v-if="isFieldVisible('smallGrayling')">{{ row.small_grayling }}</td>
+                <td v-if="isFieldVisible('mediumGrayling')">{{ row.medium_grayling }}</td>
+                <td v-if="isFieldVisible('largeGrayling')">{{ row.large_grayling }}</td>
+                <td v-if="isFieldVisible('otherFish')">{{ row.other_fish }}</td>
                 <td v-if="hasNotesColumn">{{ notesFor(row) }}</td>
               </tr>
             </tbody>
@@ -179,6 +179,25 @@ const COUNT_FIELDS = [
   { key: 'otherFish', label: 'Other Fish' },
 ];
 
+const DEFAULT_FIELD_VISIBILITY = {
+  sessionDate: true,
+  beatId: true,
+  smallTrout: true,
+  mediumTrout: true,
+  largeTrout: true,
+  smallGrayling: true,
+  mediumGrayling: true,
+  largeGrayling: true,
+  otherFish: true,
+  fliesUsed: true,
+  weatherConditions: true,
+  predatorDamage: true,
+};
+
+function defaultFieldVisibility() {
+  return { ...DEFAULT_FIELD_VISIBILITY };
+}
+
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -193,6 +212,7 @@ export default {
       recentReturns: [],
       loadingReturns: false,
       returnsError: '',
+      fieldVisibility: defaultFieldVisibility(),
       form: {
         sessionDate: todayIsoDate(),
         beatId: '',
@@ -210,11 +230,21 @@ export default {
     };
   },
   computed: {
-    countFields: () => COUNT_FIELDS,
+    filteredCountFields() {
+      return COUNT_FIELDS.filter(field => this.isFieldVisible(field.key));
+    },
     loggedInClub: () => store.loggedInClub,
     hasNotesColumn() {
+      const notesFields = [
+        this.isFieldVisible('fliesUsed') ? 'flies_used' : '',
+        this.isFieldVisible('weatherConditions') ? 'weather_conditions' : '',
+        this.isFieldVisible('predatorDamage') ? 'predator_damage' : '',
+      ].filter(Boolean);
+      if (!notesFields.length) {
+        return false;
+      }
       return this.recentReturns.some(
-        r => r.flies_used || r.weather_conditions || r.predator_damage,
+        (row) => notesFields.some(fieldName => row[fieldName]),
       );
     },
     totalsByBeat() {
@@ -269,9 +299,36 @@ export default {
     if (!this.form.beatId && this.beatOptions.length) {
       this.form.beatId = this.beatOptions[0].value;
     }
+    this.loadCatchReturnFieldVisibility();
     this.loadRecentReturns();
   },
   methods: {
+    normalizeFieldVisibility(rawVisibility) {
+      const source = rawVisibility && typeof rawVisibility === 'object' ? rawVisibility : {};
+      const normalized = defaultFieldVisibility();
+      for (const key of Object.keys(DEFAULT_FIELD_VISIBILITY)) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          normalized[key] = Boolean(source[key]);
+        }
+      }
+      return normalized;
+    },
+    isFieldVisible(fieldKey) {
+      return Boolean(this.fieldVisibility[fieldKey]);
+    },
+    loadCatchReturnFieldVisibility() {
+      return axios
+        .get(`${API_BASE_URL}/club-settings`, {
+          params: { club: this.loggedInClub },
+        })
+        .then((res) => {
+          const visibility = res?.data?.settings?.catchReturnFieldVisibility;
+          this.fieldVisibility = this.normalizeFieldVisibility(visibility);
+        })
+        .catch(() => {
+          this.fieldVisibility = defaultFieldVisibility();
+        });
+    },
     normalizeCount(rawValue) {
       const parsed = Number.parseInt(rawValue, 10);
       return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
@@ -351,7 +408,11 @@ export default {
         });
     },
     notesFor(row) {
-      return [row.flies_used, row.weather_conditions, row.predator_damage]
+      return [
+        this.isFieldVisible('fliesUsed') ? row.flies_used : '',
+        this.isFieldVisible('weatherConditions') ? row.weather_conditions : '',
+        this.isFieldVisible('predatorDamage') ? row.predator_damage : '',
+      ]
         .filter(Boolean)
         .join(' | ');
     },

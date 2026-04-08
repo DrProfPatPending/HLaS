@@ -87,6 +87,15 @@
           >
             Membership Admin
           </button>
+          <button
+            v-if="canAccessMembershipAdmin"
+            type="button"
+            class="app-member-nav-button"
+            :class="{ 'is-active': activeSection === 'club-settings', 'is-admin': true }"
+            @click="navigate('club-settings')"
+          >
+            Club Settings
+          </button>
         </div>
       </aside>
 
@@ -99,6 +108,7 @@
         <fishing-beats v-else-if="activeSection === 'fishing-beats'" />
         <beat-details v-else-if="activeSection === 'beat-details'" />
         <catch-return v-else-if="activeSection === 'catch-return'" />
+        <club-settings v-else-if="activeSection === 'club-settings'" />
         <member-edit v-else-if="activeSection === 'member-edit'" />
         <div v-else class="section-placeholder">
           <h2>{{ sectionDisplayName(activeSection) }}</h2>
@@ -126,6 +136,7 @@ import BeatDetails from './src/components/BeatDetails.vue';
 import CatchReturn from './src/components/CatchReturn.vue';
 import MemberEdit from './src/components/MemberEdit.vue';
 import MyClub from './src/components/MyClub.vue';
+import ClubSettings from './src/components/ClubSettings.vue';
 import {
   store,
   restoreMemberSession,
@@ -155,6 +166,7 @@ export default {
     BeatDetails,
     CatchReturn,
     MemberEdit,
+    ClubSettings,
   },
   computed: {
     loggedIn: () => store.loggedIn,
@@ -334,7 +346,8 @@ export default {
 #app .member-edit-container,
 #app .beat-details-container,
 #app .catch-return-container,
-#app .membership-admin-container {
+#app .membership-admin-container,
+#app .club-settings-container {
   width: 100%;
   max-width: none;
   margin: 0;

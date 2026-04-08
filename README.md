@@ -16,6 +16,10 @@ HLaS is a fishing club membership management application with separate member an
 - Added a new Admin tab: **App Settings**.
 - Added global **Date Format** configuration in App Settings with selectable format patterns.
 - Added backend `/admin/app-settings` API to load/save global app settings.
+- Added a new member-facing **Club Settings** page (role-gated the same as Membership Admin).
+- Added club-level Catch Return field visibility configuration that Club Admin users can manage.
+- Catch Return form fields and the **My Recent Returns** columns now show/hide based on club settings.
+- Added backend `/club-settings` API to load/save per-club member settings.
 - Restored the member login club dropdown loading from `/clubs`.
 - Restored and improved Membership Admin sorting and filtering behavior.
 - `Members_Name` opens Edit Member Details; `Number` opens member lookup/details.
@@ -43,6 +47,7 @@ HLaS is a fishing club membership management application with separate member an
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
 - **Member/club users** use the main UI at `/` (App.vue)
 - **Admin App Settings tab** for global application settings (starting with Date Format)
+- **Club Settings page** for club-scoped Catch Return visibility controls
 - **Session tokens** and **principal context** now include `user_type` for robust permission checks
 - **API endpoints** allow admin/system users to operate globally, without requiring a club context
 - **Frontend and backend code** refactored for clean separation and maintainability
@@ -125,6 +130,34 @@ Backend routes:
 - `GET /documents/<document_id>/download?club=<SHORT_NAME>`
 - `POST /documents` (multipart form: `club`, `file`, optional `title`)
 - `DELETE /documents/<document_id>?club=<SHORT_NAME>`
+
+### Club Settings page
+
+Club settings are now configurable in the member UI for users who can access Membership Admin.
+
+Current behavior:
+
+- A new **Club Settings** action appears below **Membership Admin** in the left navigation for users with `member.club.list` permission.
+- Club Settings includes a **Catch Return Fields** visibility list (Yes/No per field).
+- Saved settings are scoped to the currently logged-in club.
+- Catch Return uses these settings to control both:
+   - which input fields are shown in the entry form
+   - which columns are shown in **My Recent Returns** (including settings-aware Notes behavior)
+
+Backend routes:
+
+- `GET /club-settings?club=<SHORT_NAME>`
+- `PUT /club-settings`
+
+Permissions:
+
+- Read: authenticated member for the scoped club
+- Update: `member.club.list` (same gate used for Membership Admin)
+
+Persistence behavior:
+
+- PostgreSQL mode: stored in `app_settings` with `scope='club:<SHORT_NAME>'` and `key='club_settings'`
+- Fallback: `backend/club_settings.json`
 
 ### Beat Details page
 

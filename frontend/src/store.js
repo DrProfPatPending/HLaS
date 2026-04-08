@@ -416,6 +416,7 @@ export function getExpiryDateStyle(dateString) {
 export function sectionDisplayName(sectionKey) {
   const names = {
     'club-information': 'Club Information',
+    'club-settings': 'Club Settings',
     'my-club': 'My Club',
     'club-store': 'Club Store',
     newsletters: 'Newsletters',
@@ -900,6 +901,7 @@ export function cancelEdit() {
 // ---------------------------------------------------------------------------
 export function canNavigateToSection(sectionKey) {
   if (sectionKey === 'membership-admin') return canAccessMembershipAdmin.value;
+  if (sectionKey === 'club-settings') return canAccessMembershipAdmin.value;
   if (sectionKey === 'newsletters') return canAccessNewsletters.value;
   return true;
 }

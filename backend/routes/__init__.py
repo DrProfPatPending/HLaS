@@ -8,6 +8,7 @@ from routes.public_routes import create_public_blueprint
 from routes.role_routes import create_role_blueprint
 from routes.field_order_routes import create_field_order_blueprint
 from routes.app_settings_routes import create_app_settings_blueprint
+from routes.club_settings_routes import create_club_settings_blueprint
 
 __all__ = [
     'create_public_blueprint',
@@ -19,4 +20,5 @@ __all__ = [
     'create_role_blueprint',
     'create_field_order_blueprint',
     'create_app_settings_blueprint',
+    'create_club_settings_blueprint',
 ]

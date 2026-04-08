@@ -25,6 +25,16 @@
             Membership Admin
           </button>
         </li>
+        <li>
+          <button
+            type="button"
+            :disabled="!canAccessMembershipAdmin"
+            :title="canAccessMembershipAdmin ? '' : 'Requires Membership Admin permission'"
+            @click="navigate('club-settings')"
+          >
+            Club Settings
+          </button>
+        </li>
       </ul>
     </details>
 

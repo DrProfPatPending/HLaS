@@ -37,6 +37,11 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - `POST /documents` for uploads (Club Admin+ via `document.club.manage`)
    - `DELETE /documents/<id>?club=<SHORT_NAME>` for deletes (Club Admin+)
 
+- **Club Settings API Endpoints:**
+   - `GET /club-settings?club=<SHORT_NAME>` for loading club-scoped member settings
+   - `PUT /club-settings` for saving club-scoped member settings (Club Admin/Membership Admin gate via `member.club.list`)
+   - Current setting scope includes Catch Return field visibility used by both the form and recent-returns table columns
+
 ---
 
 ## Frontend Changes
@@ -109,6 +114,9 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
 - App Settings persistence:
    - PostgreSQL mode: `app_settings(scope='global', key='app_settings')`
    - JSON fallback: `backend/app_settings.json`
+- Club Settings persistence:
+   - PostgreSQL mode: `app_settings(scope='club:<SHORT_NAME>', key='club_settings')`
+   - JSON fallback: `backend/club_settings.json`
 
 ### Member photo deployment steps
 
