@@ -34,7 +34,7 @@ function extractPreferredClubFromUrl() {
     const clubFromQuery = (params.get('club') || '').trim();
     if (clubFromQuery) return clubFromQuery;
 
-    const match = String(window.location.pathname || '').match(/^\/club\/([^/]+)/i);
+    const match = String(window.location.pathname || '').match(/^\/clubs?\/([^/]+)/i);
     if (!match || !match[1]) return '';
     return decodeURIComponent(match[1]).trim();
   } catch {
