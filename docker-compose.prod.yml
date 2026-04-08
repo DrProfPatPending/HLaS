@@ -2,11 +2,9 @@ name: hlas
 
 services:
   postgres:
+    env_file:
+      - .env.prod
     image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-hlas}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hlas}
-      POSTGRES_DB: ${POSTGRES_DB:-hlas}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -19,6 +17,8 @@ services:
       - "5433:5432"
 
   backend:
+    env_file:
+      - .env.prod
     image: ${BACKEND_IMAGE}
     build:
       context: .
@@ -28,10 +28,6 @@ services:
         condition: service_healthy
     environment:
       HLAS_DATA_DIR: /data
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      HLAS_USE_POSTGRES_READS: ${HLAS_USE_POSTGRES_READS:-false}
-      DATABASE_URL: ${DATABASE_URL:-}
-      GAAFFS_SMTP_PASSWORD: ${GAAFFS_SMTP_PASSWORD}
     volumes:
       - hlas_data:/data
       - ./backend/club_logos:/app/club_logos
@@ -64,6 +60,8 @@ services:
       start_period: 10s
 
   caddy:
+    env_file:
+      - .env.prod
     image: caddy:2.8-alpine
     depends_on:
       frontend:
@@ -71,8 +69,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      DOMAIN: ${DOMAIN}
     volumes:
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
