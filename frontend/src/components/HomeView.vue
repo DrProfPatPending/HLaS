@@ -82,26 +82,26 @@
           </thead>
           <tbody>
             <tr v-if="documentsLoading">
-              <td :colspan="documentsColumnCount">Loading documents...</td>
+              <td class="documents-empty-title-cell">Loading documents...</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
             </tr>
             <tr v-else-if="!documents.length">
-              <td :colspan="documentsColumnCount">No documents uploaded yet.</td>
+              <td class="documents-empty-title-cell">No documents uploaded yet.</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
             </tr>
             <tr v-else v-for="doc in documents" :key="doc.id">
-              <td
-                v-for="column in visibleDocumentsColumns"
-                :key="`docs-cell-${doc.id}-${column.key}`"
-                :class="{
-                  'documents-file-cell': column.key === 'File',
-                  'documents-actions-cell': column.key === 'Actions',
-                }"
-                :style="getColumnStyle('home_documents', column.key)"
-              >
-                <span v-if="column.key === 'Title'">{{ doc.title || doc.fileName }}</span>
-                <span v-else-if="column.key === 'File'">{{ doc.fileName }}</span>
-                <span v-else-if="column.key === 'Uploaded'">{{ formatNewsDate(doc.createdAt) }}</span>
-                <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
-                <span v-else-if="column.key === 'Actions'">
+              <td class="documents-title-cell">{{ doc.title || doc.fileName }}</td>
+              <td class="documents-file-cell">{{ doc.fileName }}</td>
+              <td>{{ formatNewsDate(doc.createdAt) }}</td>
+              <td>{{ formatFileSize(doc.fileSize) }}</td>
+              <td class="documents-actions-cell">
+                <div class="documents-actions-stack">
                   <button type="button" class="documents-link-btn" @click="downloadDocument(doc)">Download</button>
                   <button
                     v-if="canManageDocuments"
@@ -111,7 +111,7 @@
                   >
                     Delete
                   </button>
-                </span>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -483,7 +483,7 @@ export default {
 }
 
 .documents-delete-btn {
-  margin-left: 8px;
+  margin-left: 0;
 }
 
 .documents-upload-button:disabled {
@@ -516,10 +516,31 @@ export default {
 }
 
 .documents-actions-cell {
-  white-space: nowrap;
+  white-space: normal;
 }
 
+.documents-actions-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.documents-title-cell,
 .documents-file-cell {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.documents-link-btn,
+.documents-delete-btn {
+  font-size: 9pt;
+  line-height: 1.15;
+  padding: 4px 8px;
+}
+
+.documents-empty-title-cell {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
