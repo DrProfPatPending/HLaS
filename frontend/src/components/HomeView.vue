@@ -126,8 +126,8 @@ export default {
     loggedInClub: () => store.loggedInClub,
     accessError: () => store.accessError,
     canManageDocuments: () => store.memberPermissions.includes('document.club.manage'),
-    clubNewsTitle: () => `${clubDetails.value.fullName} News and Updates`,
-    clubDocumentsTitle: () => `${clubDetails.value.fullName} Documents`,
+    clubNewsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} News and Updates`,
+    clubDocumentsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} Documents`,
     newsItems() {
       return [
         {
