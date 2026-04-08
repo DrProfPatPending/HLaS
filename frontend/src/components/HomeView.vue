@@ -18,6 +18,13 @@
               >
                 {{ column.label }}
               </th>
+              <th
+                v-for="column in visibleNewsColumns"
+                :key="`news-head-${column.key}`"
+                :style="getColumnStyle('home_news', column.key)"
+              >
+                {{ column.label }}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -34,18 +41,21 @@
                 <span v-else-if="column.key === 'Status'" class="news-status-badge" :class="`is-${item.status.toLowerCase()}`">
 =======
             <tr v-if="newsLoading">
-              <td colspan="4">Loading news/updates...</td>
+              <td :colspan="newsColumnCount">Loading news/updates...</td>
             </tr>
             <tr v-else-if="!newsItems.length">
-              <td colspan="4">No news/updates posted yet.</td>
+              <td :colspan="newsColumnCount">No news/updates posted yet.</td>
             </tr>
-            <tr v-else v-for="item in newsItems" :key="item.id">
-              <td>{{ formatNewsDate(item.date) }}</td>
-              <td>{{ item.category }}</td>
-              <td>{{ item.update }}</td>
-              <td>
-                <span class="news-status-badge" :class="newsStatusClass(item.status)">
->>>>>>> 3c06a244 (News and Updates changes.)
+            <tr v-for="item in newsItems" :key="item.id">
+              <td
+                v-for="column in visibleNewsColumns"
+                :key="`news-cell-${item.id}-${column.key}`"
+                :style="getColumnStyle('home_news', column.key)"
+              >
+                <span v-if="column.key === 'Date'">{{ formatNewsDate(item.date) }}</span>
+                <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
+                <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
+                <span v-else-if="column.key === 'Status'" class="news-status-badge" :class="newsStatusClass(item.status)">
                   {{ item.status }}
                 </span>
               </td>
@@ -91,34 +101,45 @@
               >
                 {{ column.label }}
               </th>
+              <th
+                v-for="column in visibleDocumentsColumns"
+                :key="`docs-head-${column.key}`"
+                :style="getColumnStyle('home_documents', column.key)"
+              >
+                {{ column.label }}
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="documentsLoading">
-              <td class="documents-empty-title-cell">Loading documents...</td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
+              <td :colspan="documentsColumnCount">Loading documents...</td>
             </tr>
             <tr v-else-if="!documents.length">
-              <td class="documents-empty-title-cell">No documents uploaded yet.</td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
+              <td :colspan="documentsColumnCount">No documents uploaded yet.</td>
             </tr>
             <tr v-else v-for="doc in documents" :key="doc.id">
-              <td class="documents-title-cell">
-                <button type="button" class="documents-title-link" @click="openDocumentPreview(doc)">
+              <td
+                v-for="column in visibleDocumentsColumns"
+                :key="`docs-cell-${doc.id}-${column.key}`"
+                :class="{
+                  'documents-title-cell': column.key === 'Title',
+                  'documents-file-cell': column.key === 'File',
+                  'documents-actions-cell': column.key === 'Actions',
+                }"
+                :style="getColumnStyle('home_documents', column.key)"
+              >
+                <button
+                  v-if="column.key === 'Title'"
+                  type="button"
+                  class="documents-title-link"
+                  @click="openDocumentPreview(doc)"
+                >
                   {{ doc.title || doc.fileName }}
                 </button>
-              </td>
-              <td class="documents-file-cell">{{ doc.fileName }}</td>
-              <td>{{ formatNewsDate(doc.createdAt) }}</td>
-              <td>{{ formatFileSize(doc.fileSize) }}</td>
-              <td class="documents-actions-cell">
-                <div class="documents-actions-stack">
+                <span v-else-if="column.key === 'File'">{{ doc.fileName }}</span>
+                <span v-else-if="column.key === 'Uploaded'">{{ formatNewsDate(doc.createdAt) }}</span>
+                <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
+                <div v-else-if="column.key === 'Actions'" class="documents-actions-stack">
                   <button type="button" class="documents-link-btn" @click="downloadDocument(doc)">Download</button>
                   <button
                     v-if="canManageDocuments"
@@ -155,6 +176,7 @@ export default {
       documentsLoading: false,
       documentsError: '',
       fieldOrder: {},
+      fieldOrder: {},
       uploadTitle: '',
       uploadFile: null,
       uploadBusy: false,
@@ -188,7 +210,6 @@ export default {
     },
     clubNewsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} News and Updates`,
     clubDocumentsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} Documents`,
-<<<<<<< HEAD
     newsColumns() {
       return [
         { key: 'Date', label: 'Date' },
@@ -212,36 +233,12 @@ export default {
     visibleDocumentsColumns() {
       return this.getVisibleColumns('home_documents', this.documentColumns);
     },
+    newsColumnCount() {
+      return this.visibleNewsColumns.length || 1;
+    },
     documentsColumnCount() {
       return this.visibleDocumentsColumns.length || 1;
     },
-    newsItems() {
-      return [
-        {
-          id: 'notice-1',
-          date: '05 Apr 2026',
-          category: 'Club Notice',
-          message: 'Season opening briefing will be published here once the news backend is connected.',
-          status: 'Draft',
-        },
-        {
-          id: 'notice-2',
-          date: '04 Apr 2026',
-          category: 'River Conditions',
-          message: 'This placeholder row can later show urgent river level alerts or temporary access restrictions.',
-          status: 'Planned',
-        },
-        {
-          id: 'notice-3',
-          date: '02 Apr 2026',
-          category: 'Membership',
-          message: 'Member updates, reminders, and general announcements will appear in this central panel.',
-          status: 'Queued',
-        },
-      ];
-    },
-=======
->>>>>>> 3c06a244 (News and Updates changes.)
   },
   methods: {
     formatNewsDate(value) {
@@ -287,6 +284,40 @@ export default {
         svg: 'image/svg+xml',
       };
       return mimeByExtension[extension] || fallbackType || 'application/octet-stream';
+    },
+    loadFieldOrder() {
+      return axios.get(`${API_BASE_URL}/field-order`)
+        .then((res) => {
+          const loaded = res.data?.field_order;
+          this.fieldOrder = loaded && typeof loaded === 'object' ? loaded : {};
+        })
+        .catch(() => {
+          this.fieldOrder = {};
+        });
+    },
+    isColumnVisible(contextKey, columnKey) {
+      const configured = this.fieldOrder?.show_columns?.[contextKey]?.[columnKey];
+      return configured !== false;
+    },
+    getVisibleColumns(contextKey, fallbackColumns) {
+      const fallbackMap = new Map(fallbackColumns.map(column => [column.key, column]));
+      const configuredOrder = Array.isArray(this.fieldOrder?.[contextKey])
+        ? this.fieldOrder[contextKey]
+        : fallbackColumns.map(column => column.key);
+
+      const ordered = configuredOrder
+        .map(key => fallbackMap.get(key))
+        .filter(Boolean)
+        .filter(column => this.isColumnVisible(contextKey, column.key));
+
+      if (ordered.length) return ordered;
+      return fallbackColumns.filter(column => this.isColumnVisible(contextKey, column.key));
+    },
+    getColumnStyle(contextKey, columnKey) {
+      const rawMinWidth = this.fieldOrder?.minimum_widths?.[contextKey]?.[columnKey];
+      const minWidth = Number(rawMinWidth);
+      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
+      return { minWidth: `${minWidth}px` };
     },
     fetchDocuments() {
       this.documentsLoading = true;
@@ -392,15 +423,14 @@ export default {
     },
   },
   mounted() {
-<<<<<<< HEAD
     this.loadFieldOrder();
-=======
     this.fetchNewsUpdates();
 >>>>>>> 3c06a244 (News and Updates changes.)
     this.fetchDocuments();
   },
   watch: {
     loggedInClub() {
+      this.loadFieldOrder();
       this.fetchNewsUpdates();
       this.fetchDocuments();
     },
