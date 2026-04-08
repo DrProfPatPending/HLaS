@@ -11,8 +11,8 @@ from db import get_postgres_backend, is_postgres_reads_enabled
 _member_tokens_fallback = {}
 _member_refresh_tokens_fallback = {}
 
-MEMBER_TOKEN_TTL_SECONDS = int(os.getenv('HLAS_MEMBER_TOKEN_TTL_SECONDS', '43200'))
-MEMBER_REFRESH_TOKEN_TTL_SECONDS = int(os.getenv('HLAS_MEMBER_REFRESH_TOKEN_TTL_SECONDS', str(60 * 60 * 24 * 30)))
+MEMBER_TOKEN_TTL_SECONDS = int(os.getenv('HLAS_MEMBER_TOKEN_TTL_SECONDS', '300'))
+MEMBER_REFRESH_TOKEN_TTL_SECONDS = int(os.getenv('HLAS_MEMBER_REFRESH_TOKEN_TTL_SECONDS', '600'))
 
 
 def _hash_member_token(raw_token):
