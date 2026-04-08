@@ -96,7 +96,7 @@ export default {
     login,
     checkIfClubSpecificUrl() {
       try {
-        const match = String(window.location.pathname || '').match(/^\/club\/([^/]+)/i);
+        const match = String(window.location.pathname || '').match(/^\/clubs?\/([^/]+)/i);
         this.isClubSpecificUrl = !!match && !!match[1];
       } catch {
         this.isClubSpecificUrl = false;

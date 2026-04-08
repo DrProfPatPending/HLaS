@@ -160,6 +160,7 @@ export default {
     loggedIn: () => store.loggedIn,
     loggedInUsername: () => store.loggedInUsername,
     loggedInClub: () => store.loggedInClub,
+    selectedClub: () => store.selectedClub,
     activeSection: () => store.activeSection,
     canAccessMembershipAdmin: () => canAccessMembershipAdmin.value,
     canAccessNewsletters: () => canAccessNewsletters.value,
@@ -178,8 +179,50 @@ export default {
   beforeUnmount() {
     teardownAuthInterceptor();
   },
+  watch: {
+    loggedInClub: {
+      immediate: true,
+      handler() {
+        this.updateClubFavicon();
+      },
+    },
+    selectedClub() {
+      this.updateClubFavicon();
+    },
+  },
   methods: {
     sectionDisplayName,
+    resolveClubFaviconUrl(clubShortName) {
+      const normalizedClub = String(clubShortName || '').trim();
+      if (!normalizedClub) return '/favicon.ico';
+
+      const apiBase = String(store.apiBaseUrl || '/api').trim() || '/api';
+      const absoluteApiBase = /^https?:\/\//i.test(apiBase)
+        ? apiBase
+        : `${window.location.origin}${apiBase.startsWith('/') ? '' : '/'}${apiBase}`;
+
+      return `${absoluteApiBase}/club_logo/${encodeURIComponent(normalizedClub)}`;
+    },
+    updateClubFavicon() {
+      try {
+        const activeClub = store.loggedIn ? store.loggedInClub : store.selectedClub;
+        const faviconHref = this.resolveClubFaviconUrl(activeClub);
+
+        let link = document.getElementById('club-favicon-link');
+        if (!link) {
+          link = document.createElement('link');
+          link.id = 'club-favicon-link';
+          link.rel = 'icon';
+          link.type = 'image/png';
+          document.head.appendChild(link);
+        }
+        link.href = faviconHref;
+
+        const resolvedClub = String(activeClub || '').trim();
+        document.title = resolvedClub ? `HLaS - ${resolvedClub}` : 'HLaS Member login';
+      } catch {
+      }
+    },
     navigate(sectionKey) {
       navigateToSection(sectionKey);
     },

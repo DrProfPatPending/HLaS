@@ -80,7 +80,7 @@
             </tr>
             <tr v-else v-for="doc in documents" :key="doc.id">
               <td>{{ doc.title || doc.fileName }}</td>
-              <td>{{ doc.fileName }}</td>
+              <td class="documents-file-cell">{{ doc.fileName }}</td>
               <td>{{ formatNewsDate(doc.createdAt) }}</td>
               <td>{{ formatFileSize(doc.fileSize) }}</td>
               <td class="documents-actions-cell">
@@ -436,6 +436,11 @@ export default {
 
 .documents-actions-cell {
   white-space: nowrap;
+}
+
+.documents-file-cell {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .documents-error {
