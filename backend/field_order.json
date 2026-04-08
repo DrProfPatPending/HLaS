@@ -14,6 +14,12 @@
   "beat_details": [
     "Beat_ID", "Beat_Name", "River", "Position", "Beat_Upstream", "Beat_Downstream", "Beat_Description", "Detailed_Description", "Beat_Upstream_Coords", "Beat_Downstream_Coords", "Parking_Locations"
   ],
+  "home_news": [
+    "Date", "Category", "Update", "Status"
+  ],
+  "home_documents": [
+    "Title", "File", "Uploaded", "Size", "Actions"
+  ],
   "minimum_widths": {
     "fishing_beats": {
       "Beat_ID": 50,
@@ -23,6 +29,19 @@
       "Beat_Downstream": 50,
       "Beat_Description": 50,
       "Position": 50
+    },
+    "home_news": {
+      "Date": 110,
+      "Category": 120,
+      "Update": 260,
+      "Status": 90
+    },
+    "home_documents": {
+      "Title": 180,
+      "File": 260,
+      "Uploaded": 120,
+      "Size": 80,
+      "Actions": 120
     }
   },
   "show_columns": {
@@ -47,6 +66,19 @@
       "Beat_Upstream_Coords": true,
       "Beat_Downstream_Coords": true,
       "Parking_Locations": true
+    },
+    "home_news": {
+      "Date": true,
+      "Category": true,
+      "Update": true,
+      "Status": true
+    },
+    "home_documents": {
+      "Title": true,
+      "File": true,
+      "Uploaded": true,
+      "Size": true,
+      "Actions": true
     }
   }
 }

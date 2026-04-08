@@ -17,8 +17,27 @@ def _save_field_order_to_json(data):
         f.write('\n')
 
 
+def _merge_field_order_defaults(defaults, loaded):
+    if not isinstance(defaults, dict):
+        return loaded if isinstance(loaded, dict) else defaults
+
+    merged = dict(defaults)
+    if not isinstance(loaded, dict):
+        return merged
+
+    for key, loaded_value in loaded.items():
+        default_value = defaults.get(key)
+        if isinstance(default_value, dict) and isinstance(loaded_value, dict):
+            merged[key] = _merge_field_order_defaults(default_value, loaded_value)
+        else:
+            merged[key] = loaded_value
+
+    return merged
+
+
 def load_field_order_config(deps=None):
     deps = deps or {}
+    default_config = _load_field_order_from_json()
     is_postgres_reads_enabled = deps.get('is_postgres_reads_enabled')
     get_postgres_backend = deps.get('get_postgres_backend')
 
@@ -38,11 +57,11 @@ def load_field_order_config(deps=None):
 
             loaded = row[0] if row else None
             if isinstance(loaded, dict) and loaded:
-                return loaded
+                return _merge_field_order_defaults(default_config, loaded)
         except Exception:
             pass
 
-    return _load_field_order_from_json()
+            return default_config
 
 
 def save_field_order_config(data, deps=None):
