@@ -644,6 +644,7 @@ def get_valid_club_short_names():
 from routes import (
     create_admin_blueprint,
     create_admin_user_blueprint,
+    create_club_settings_blueprint,
     create_document_blueprint,
     create_member_blueprint,
     create_newsletter_blueprint,
@@ -729,6 +730,7 @@ def create_app():
     app_instance.register_blueprint(create_field_order_blueprint(route_deps))
     from routes.app_settings_routes import create_app_settings_blueprint
     app_instance.register_blueprint(create_app_settings_blueprint(route_deps))
+    app_instance.register_blueprint(create_club_settings_blueprint(route_deps))
 
     return app_instance
 
