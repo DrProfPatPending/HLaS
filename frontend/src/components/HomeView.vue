@@ -21,6 +21,7 @@
             </tr>
           </thead>
           <tbody>
+<<<<<<< HEAD
             <tr v-for="item in newsItems" :key="item.id">
               <td
                 v-for="column in visibleNewsColumns"
@@ -31,15 +32,27 @@
                 <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
                 <span v-else-if="column.key === 'Update'">{{ item.message }}</span>
                 <span v-else-if="column.key === 'Status'" class="news-status-badge" :class="`is-${item.status.toLowerCase()}`">
+=======
+            <tr v-if="newsLoading">
+              <td colspan="4">Loading news/updates...</td>
+            </tr>
+            <tr v-else-if="!newsItems.length">
+              <td colspan="4">No news/updates posted yet.</td>
+            </tr>
+            <tr v-else v-for="item in newsItems" :key="item.id">
+              <td>{{ formatNewsDate(item.date) }}</td>
+              <td>{{ item.category }}</td>
+              <td>{{ item.update }}</td>
+              <td>
+                <span class="news-status-badge" :class="newsStatusClass(item.status)">
+>>>>>>> 3c06a244 (News and Updates changes.)
                   {{ item.status }}
                 </span>
               </td>
             </tr>
           </tbody>
         </table>
-        <p class="home-news-note">
-          Placeholder content only for now. Backend-backed news alerts and club messages can be wired in later.
-        </p>
+        <p v-if="newsError" class="home-news-note">{{ newsError }}</p>
       </div>
 
       <div class="home-documents-card">
@@ -135,6 +148,9 @@ export default {
   name: 'HomeView',
   data() {
     return {
+      newsItems: [],
+      newsLoading: false,
+      newsError: '',
       documents: [],
       documentsLoading: false,
       documentsError: '',
@@ -172,6 +188,7 @@ export default {
     },
     clubNewsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} News and Updates`,
     clubDocumentsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} Documents`,
+<<<<<<< HEAD
     newsColumns() {
       return [
         { key: 'Date', label: 'Date' },
@@ -223,6 +240,8 @@ export default {
         },
       ];
     },
+=======
+>>>>>>> 3c06a244 (News and Updates changes.)
   },
   methods: {
     formatNewsDate(value) {
@@ -235,6 +254,25 @@ export default {
       if (bytes < 1024) return `${bytes} B`;
       if (bytes < (1024 * 1024)) return `${(bytes / 1024).toFixed(1)} KB`;
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    },
+    newsStatusClass(status) {
+      const normalizedStatus = String(status || '').trim().toLowerCase();
+      if (!normalizedStatus) return '';
+      return `is-${normalizedStatus.replace(/[^a-z0-9_-]/g, '-')}`;
+    },
+    fetchNewsUpdates() {
+      this.newsLoading = true;
+      this.newsError = '';
+      return axios.get(`${API_BASE_URL}/news-updates`, {
+        params: { club: this.loggedInClub, limit: 20 },
+      }).then((res) => {
+        this.newsItems = Array.isArray(res.data?.updates) ? res.data.updates : [];
+      }).catch((err) => {
+        this.newsItems = [];
+        this.newsError = err?.response?.data?.error || 'Unable to load news/updates';
+      }).finally(() => {
+        this.newsLoading = false;
+      });
     },
     inferDocumentMimeType(fileName, fallbackType) {
       const extension = String(fileName || '').toLowerCase().split('.').pop();
@@ -354,11 +392,16 @@ export default {
     },
   },
   mounted() {
+<<<<<<< HEAD
     this.loadFieldOrder();
+=======
+    this.fetchNewsUpdates();
+>>>>>>> 3c06a244 (News and Updates changes.)
     this.fetchDocuments();
   },
   watch: {
     loggedInClub() {
+      this.fetchNewsUpdates();
       this.fetchDocuments();
     },
   },
@@ -456,6 +499,16 @@ export default {
 .news-status-badge.is-queued {
   background: #e4f7e7;
   color: #21633a;
+}
+
+.news-status-badge.is-published {
+  background: #e4f7e7;
+  color: #21633a;
+}
+
+.news-status-badge.is-archived {
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .home-news-note {

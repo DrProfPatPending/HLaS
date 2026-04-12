@@ -1,6 +1,78 @@
 <template>
   <div class="newsletters-container">
-    <h2>Newsletters</h2>
+    <h2>News and Updates</h2>
+    <p>Post club news/updates and manage member newsletters from one page.</p>
+
+    <section class="news-updates-post-section">
+      <h3>Create News/Update Post</h3>
+      <form class="news-updates-post-form" @submit.prevent="createNewsUpdatePost">
+        <label>
+          <span>Date *</span>
+          <input v-model="newsPostForm.date" type="date" required />
+        </label>
+        <label>
+          <span>Category</span>
+          <input v-model="newsPostForm.category" type="text" maxlength="80" placeholder="e.g. Club Notice" />
+        </label>
+        <label>
+          <span>Status</span>
+          <select v-model="newsPostForm.status">
+            <option value="Published">Published</option>
+            <option value="Draft">Draft</option>
+            <option value="Planned">Planned</option>
+            <option value="Archived">Archived</option>
+          </select>
+        </label>
+        <label class="news-updates-post-message-field">
+          <span>Update *</span>
+          <textarea
+            v-model="newsPostForm.update"
+            rows="3"
+            maxlength="500"
+            placeholder="Write the update to display on the Home page table"
+            required
+          ></textarea>
+        </label>
+        <div class="news-updates-post-actions">
+          <button type="submit" :disabled="newsPostBusy">
+            {{ newsPostBusy ? 'Posting…' : 'Post Update' }}
+          </button>
+          <button type="button" :disabled="newsPostBusy" @click="fetchNewsUpdates">Refresh Posts</button>
+        </div>
+      </form>
+      <p v-if="newsPostStatus" class="newsletter-status">{{ newsPostStatus }}</p>
+      <p v-if="newsPostError" class="newsletter-error">{{ newsPostError }}</p>
+    </section>
+
+    <section class="news-updates-list-section">
+      <h3>Current Club Posts</h3>
+      <table class="newsletter-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Update</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="newsUpdatesLoading">
+            <td colspan="4">Loading posts...</td>
+          </tr>
+          <tr v-else-if="!newsUpdates.length">
+            <td colspan="4">No posts yet.</td>
+          </tr>
+          <tr v-else v-for="post in newsUpdates" :key="post.id">
+            <td>{{ formatNewsDate(post.date) }}</td>
+            <td>{{ post.category }}</td>
+            <td>{{ post.update }}</td>
+            <td>{{ post.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <h3>Newsletter Distribution</h3>
     <p>Filter members, build a selected list, choose a template, and send club newsletters.</p>
     <div class="newsletter-actions newsletter-toolbar">
       <label class="newsletter-template-label" for="newsletter-template-select">Template</label>
@@ -246,8 +318,12 @@
 
 <script>
 import axios from 'axios';
-import { store, API_BASE_URL, memberIdentity } from '../store.js';
+import { store, API_BASE_URL, memberIdentity, formatConfiguredDate } from '../store.js';
 import { fieldOrderConfig, loadFieldOrderConfig } from '../store.js';
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default {
   name: 'Newsletters',
@@ -281,6 +357,17 @@ export default {
         E_Mail: '',
         Member_Type: '',
         Paid_Up_2026: '',
+      },
+      newsUpdates: [],
+      newsUpdatesLoading: false,
+      newsPostBusy: false,
+      newsPostStatus: '',
+      newsPostError: '',
+      newsPostForm: {
+        date: todayIsoDate(),
+        category: '',
+        update: '',
+        status: 'Published',
       },
     };
   },
@@ -331,6 +418,8 @@ export default {
   },
   created() {
     loadFieldOrderConfig();
+    this.init();
+    this.fetchNewsUpdates();
   },
   beforeUnmount() {
     if (this.newsletterFilterDebounceTimer) clearTimeout(this.newsletterFilterDebounceTimer);
@@ -343,6 +432,64 @@ export default {
       this.newsletterPrepareError = '';
       this.fetchNewsletterTemplates();
       this.fetchNewsletterMembers();
+    },
+    formatNewsDate(value) {
+      const formatted = formatConfiguredDate(value, 'Date');
+      return formatted || value;
+    },
+    fetchNewsUpdates() {
+      this.newsUpdatesLoading = true;
+      this.newsPostError = '';
+      return axios
+        .get(`${API_BASE_URL}/news-updates`, {
+          params: { club: store.loggedInClub, limit: 50 },
+        })
+        .then((res) => {
+          this.newsUpdates = Array.isArray(res?.data?.updates) ? res.data.updates : [];
+        })
+        .catch((err) => {
+          this.newsUpdates = [];
+          this.newsPostError = err?.response?.data?.error || 'Failed to load news/updates posts.';
+        })
+        .finally(() => {
+          this.newsUpdatesLoading = false;
+        });
+    },
+    createNewsUpdatePost() {
+      this.newsPostStatus = '';
+      this.newsPostError = '';
+
+      const payload = {
+        club: store.loggedInClub,
+        date: this.newsPostForm.date,
+        category: String(this.newsPostForm.category || '').trim(),
+        update: String(this.newsPostForm.update || '').trim(),
+        status: String(this.newsPostForm.status || 'Published').trim(),
+      };
+
+      if (!payload.date) {
+        this.newsPostError = 'Date is required.';
+        return;
+      }
+      if (!payload.update) {
+        this.newsPostError = 'Update is required.';
+        return;
+      }
+
+      this.newsPostBusy = true;
+      return axios
+        .post(`${API_BASE_URL}/news-updates`, payload)
+        .then(() => {
+          this.newsPostStatus = 'News/update post created.';
+          this.newsPostForm.update = '';
+          this.fetchNewsUpdates();
+        })
+        .catch((err) => {
+          this.newsPostError = err?.response?.data?.error || 'Failed to create post.';
+        })
+        .finally(() => {
+          this.newsPostBusy = false;
+        });
     },
     goHome() {
       store.activeSection = 'home';
@@ -378,7 +525,7 @@ export default {
           if (err.response?.status === 403) {
             this.newsletterMembers = [];
             this.newsletterTotalMembers = 0;
-            store.accessError = 'You do not have permission to access newsletters.';
+            store.accessError = 'You do not have permission to access news and updates.';
             store.activeSection = 'home';
           }
         });
