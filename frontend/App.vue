@@ -76,7 +76,7 @@
             :class="{ 'is-active': activeSection === 'newsletters', 'is-admin': true }"
             @click="navigate('newsletters')"
           >
-            Newsletters
+            News/Updates
           </button>
           <button
             v-if="canAccessMembershipAdmin"

@@ -1,7 +1,11 @@
 import re
 import smtplib
+import json
+import os
+import secrets
 
 from email.message import EmailMessage
+from datetime import datetime
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy import String, and_, cast, select
 
@@ -16,6 +20,7 @@ def create_newsletter_blueprint(deps):
     get_db_for_club = deps['get_db_for_club']
     get_postgres_backend = deps['get_postgres_backend']
     _resolve_postgres_club_id = deps['_resolve_postgres_club_id']
+    is_postgres_reads_enabled = deps.get('is_postgres_reads_enabled', lambda: False)
     is_postgres_writes_enabled = deps['is_postgres_writes_enabled']
     get_column = deps['get_column']
     get_identifier_column = deps['get_identifier_column']
@@ -26,6 +31,197 @@ def create_newsletter_blueprint(deps):
     NEWSLETTER_TEMPLATES = deps['NEWSLETTER_TEMPLATES']
     NEWSLETTER_TEMPLATE_TAGS = deps['NEWSLETTER_TEMPLATE_TAGS']
     get_smtp_config_for_club = deps['get_smtp_config_for_club']
+    require_authenticated = deps['require_authenticated']
+    get_current_principal = deps['get_current_principal']
+
+    NEWS_UPDATES_SETTINGS_KEY = 'news_updates'
+
+    def _news_updates_json_path():
+        app_data_dir = deps.get('APP_DATA_DIR') or os.path.dirname(__file__)
+        return os.path.join(app_data_dir, 'news_updates.json')
+
+    def _normalize_date(raw_value):
+        value = str(raw_value or '').strip()
+        if not value:
+            return ''
+        try:
+            return datetime.strptime(value, '%Y-%m-%d').strftime('%Y-%m-%d')
+        except ValueError:
+            return ''
+
+    def _normalize_status(raw_value):
+        value = str(raw_value or '').strip()
+        return value or 'Published'
+
+    def _normalize_news_post(raw_post):
+        post = raw_post if isinstance(raw_post, dict) else {}
+        normalized_date = _normalize_date(post.get('date'))
+        return {
+            'id': str(post.get('id') or '').strip() or secrets.token_hex(8),
+            'date': normalized_date,
+            'category': str(post.get('category') or '').strip(),
+            'update': str(post.get('update') or post.get('message') or '').strip(),
+            'status': _normalize_status(post.get('status')),
+            'createdAt': str(post.get('createdAt') or '').strip() or datetime.utcnow().isoformat(timespec='seconds') + 'Z',
+        }
+
+    def _normalize_news_posts(raw_posts):
+        source = raw_posts if isinstance(raw_posts, list) else []
+        normalized = []
+        for post in source:
+            normalized_post = _normalize_news_post(post)
+            if not normalized_post['date'] or not normalized_post['update']:
+                continue
+            normalized.append(normalized_post)
+        normalized.sort(key=lambda item: (item.get('date', ''), item.get('createdAt', '')), reverse=True)
+        return normalized
+
+    def _load_all_news_updates_from_json():
+        path = _news_updates_json_path()
+        if not os.path.exists(path):
+            return {}
+        try:
+            with open(path, 'r', encoding='utf-8') as file_handle:
+                loaded = json.load(file_handle)
+            return loaded if isinstance(loaded, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    def _save_all_news_updates_to_json(all_news_updates):
+        path = _news_updates_json_path()
+        with open(path, 'w', encoding='utf-8') as file_handle:
+            json.dump(all_news_updates, file_handle, indent=2)
+            file_handle.write('\n')
+
+    def _load_news_updates_for_club(club_short_name):
+        normalized_club = str(club_short_name or '').strip()
+        if not normalized_club:
+            return []
+
+        if is_postgres_reads_enabled():
+            try:
+                backend = get_postgres_backend()
+                session = backend['session_factory']()
+                app_settings_table = backend['app_settings_table']
+                try:
+                    row = session.execute(
+                        select(app_settings_table.c.value).where(
+                            and_(
+                                app_settings_table.c.scope == f'club:{normalized_club}',
+                                app_settings_table.c.key == NEWS_UPDATES_SETTINGS_KEY,
+                            )
+                        )
+                    ).first()
+                finally:
+                    session.close()
+                return _normalize_news_posts(row[0] if row else [])
+            except Exception:
+                pass
+
+        all_news_updates = _load_all_news_updates_from_json()
+        return _normalize_news_posts(all_news_updates.get(normalized_club, []))
+
+    def _save_news_updates_for_club(club_short_name, posts):
+        normalized_club = str(club_short_name or '').strip()
+        normalized_posts = _normalize_news_posts(posts)
+
+        all_news_updates = _load_all_news_updates_from_json()
+        all_news_updates[normalized_club] = normalized_posts
+        _save_all_news_updates_to_json(all_news_updates)
+
+        if is_postgres_writes_enabled():
+            backend = get_postgres_backend()
+            session = backend['session_factory']()
+            app_settings_table = backend['app_settings_table']
+            try:
+                existing = session.execute(
+                    select(app_settings_table.c.id).where(
+                        and_(
+                            app_settings_table.c.scope == f'club:{normalized_club}',
+                            app_settings_table.c.key == NEWS_UPDATES_SETTINGS_KEY,
+                        )
+                    )
+                ).first()
+                if existing:
+                    session.execute(
+                        app_settings_table.update().where(app_settings_table.c.id == existing[0]).values(value=normalized_posts)
+                    )
+                else:
+                    session.execute(
+                        app_settings_table.insert().values(
+                            scope=f'club:{normalized_club}',
+                            key=NEWS_UPDATES_SETTINGS_KEY,
+                            value=normalized_posts,
+                        )
+                    )
+                session.commit()
+            except Exception:
+                session.rollback()
+                raise
+            finally:
+                session.close()
+
+    @bp.route('/news-updates', methods=['GET'])
+    def list_news_updates():
+        requested_club = str(request.args.get('club', '')).strip()
+        auth_error = require_authenticated(requested_club)
+        if auth_error:
+            return auth_error
+
+        principal = get_current_principal(requested_club)
+        if principal is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        club = str(principal.get('scope_club_short_name') or principal.get('club_short_name') or '').strip()
+        if not club:
+            return jsonify({'updates': [], 'club': ''})
+
+        limit = request.args.get('limit', default=20, type=int)
+        if not limit or limit < 1:
+            limit = 20
+        limit = min(limit, 200)
+
+        posts = _load_news_updates_for_club(club)[:limit]
+        return jsonify({'club': club, 'updates': posts})
+
+    @bp.route('/news-updates', methods=['POST'])
+    def create_news_update():
+        payload = request.json or {}
+        requested_club = str(payload.get('club') or '').strip()
+        auth_error = require_permission('newsletter.send', requested_club)
+        if auth_error:
+            return auth_error
+
+        principal = get_current_principal(requested_club)
+        if principal is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        club = str(principal.get('scope_club_short_name') or principal.get('club_short_name') or '').strip()
+        if not club:
+            return jsonify({'error': 'Club is required'}), 400
+
+        normalized_date = _normalize_date(payload.get('date'))
+        category = str(payload.get('category') or '').strip()
+        update_text = str(payload.get('update') or '').strip()
+        status = _normalize_status(payload.get('status'))
+
+        if not normalized_date:
+            return jsonify({'error': 'Date is required and must be YYYY-MM-DD'}), 400
+        if not update_text:
+            return jsonify({'error': 'Update is required'}), 400
+
+        existing_posts = _load_news_updates_for_club(club)
+        new_post = {
+            'id': secrets.token_hex(8),
+            'date': normalized_date,
+            'category': category,
+            'update': update_text,
+            'status': status,
+            'createdAt': datetime.utcnow().isoformat(timespec='seconds') + 'Z',
+        }
+        updated_posts = [new_post, *existing_posts]
+        _save_news_updates_for_club(club, updated_posts)
+        return jsonify({'success': True, 'club': club, 'post': new_post}), 201
 
     @bp.route('/newsletter/prepare_recipients', methods=['POST'])
     def prepare_newsletter_recipients():
