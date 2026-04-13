@@ -344,4 +344,101 @@ def create_admin_blueprint(deps):
         except Exception as exc:
             return jsonify({'error': f'SMTP test failed: {exc}'}), 502
 
+    @bp.route('/admin/clubs/<short_name>/beats/export', methods=['GET'])
+    def admin_export_beats(short_name):
+        """Export beats for a club from PostgreSQL database as JSON"""
+        auth_error = require_permission('club.update', short_name)
+        if auth_error:
+            return auth_error
+        
+        clubs = load_clubs_config()
+        club = next((c for c in clubs if c.get('shortName') == short_name), None)
+        if not club:
+            return jsonify({'error': f'Club "{short_name}" not found'}), 404
+        
+        # Try to fetch from PostgreSQL if available
+        if is_postgres_writes_enabled():
+            try:
+                from db import get_postgres_backend
+                backend = get_postgres_backend()
+                session = backend['session_factory']()
+                try:
+                    clubs_table = backend['clubs_table']
+                    club_beats_table = backend['club_beats_table']
+                    
+                    # Get club ID from PostgreSQL
+                    club_row = session.execute(
+                        select(clubs_table.c.id).where(clubs_table.c.short_name == short_name)
+                    ).scalar_one_or_none()
+                    
+                    if not club_row:
+                        # Fall back to JSON config
+                        return jsonify({'beats': club.get('beats', [])})
+                    
+                    # Query beats from PostgreSQL
+                    beat_rows = session.execute(
+                        select(club_beats_table).where(club_beats_table.c.club_id == club_row)
+                    ).fetchall()
+                    
+                    # Convert database rows to JSON format
+                    beats = []
+                    for row in beat_rows:
+                        beat = {
+                            'Beat_Name': row.beat_name or '',
+                            'Beat_ID': row.beat_id or '',
+                            'River': row.river or '',
+                            'Position': row.position or '',
+                            'Beat_Upstream': row.beat_upstream or '',
+                            'Beat_Downstream': row.beat_downstream or '',
+                            'Beat_Description': row.beat_description or '',
+                            'Detailed_Description': row.detailed_description or '',
+                            'Beat_Upstream_Latitude': row.beat_upstream_latitude or '',
+                            'Beat_Upstream_Longitude': row.beat_upstream_longitude or '',
+                            'Beat_Downstream_Latitude': row.beat_downstream_latitude or '',
+                            'Beat_Downstream_Longitude': row.beat_downstream_longitude or '',
+                            'Parking_Locations': row.parking_locations or [],
+                        }
+                        beats.append(beat)
+                    
+                    return jsonify({'beats': beats})
+                finally:
+                    session.close()
+            except Exception as exc:
+                logger.warning(f"Failed to export beats from PostgreSQL for {short_name}: {exc}")
+                # Fall back to JSON config
+        
+        return jsonify({'beats': club.get('beats', [])})
+
+    @bp.route('/admin/clubs/<short_name>/beats/import', methods=['POST'])
+    def admin_import_beats(short_name):
+        """Import beats for a club and update clubs.config.json"""
+        auth_error = require_permission('club.update', short_name)
+        if auth_error:
+            return auth_error
+        
+        data = request.json or {}
+        beats = data.get('beats', [])
+        
+        if not isinstance(beats, list):
+            return jsonify({'error': 'beats must be a list'}), 400
+        
+        # Load and update clubs config
+        clubs = load_clubs_config()
+        for i, club in enumerate(clubs):
+            if club.get('shortName') == short_name:
+                clubs[i] = {
+                    'fullName': club.get('fullName', short_name),
+                    'shortName': short_name,
+                    'description': club.get('description', ''),
+                    'websiteUrl': club.get('websiteUrl', ''),
+                    'adminEmail': club.get('adminEmail', ''),
+                    'logoUrl': club.get('logoUrl', ''),
+                    'beats': normalize_beats(beats),
+                    'smtp': club.get('smtp', {}),
+                }
+                save_clubs_config(clubs)
+                return jsonify({'success': True, 'message': f'Imported {len(beats)} beats for club {short_name}'})
+        
+        return jsonify({'error': f'Club "{short_name}" not found'}), 404
+
     return bp
