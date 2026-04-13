@@ -633,29 +633,50 @@ def _register_infrastructure_hooks(app_instance):
 
 
 def _register_beats_sync_startup(app_instance):
-    """Register startup hook to sync beats from clusters.config.json to PostgreSQL.
+    """Register startup hook to sync beats from clubs.config.json to PostgreSQL.
     
-    This runs on app startup to ensure PostgreSQL club_beats table is in sync with
+    This runs on the first request to ensure PostgreSQL club_beats table is in sync with
     the JSON configuration file. Idempotent and only runs if PostgreSQL is enabled.
     """
     from db.postgres_backend import is_postgres_writes_enabled
+    import threading
     
-    @app_instance.before_first_request
-    def sync_beats_on_startup():
-        """Sync beats from JSON to PostgreSQL at startup"""
-        # Only sync if PostgreSQL writes are enabled
+    # Sync flag to prevent multiple concurrent syncs
+    _beats_sync_done = {'synced': False}
+    
+    @app_instance.before_request
+    def sync_beats_on_first_request():
+        """Sync beats from JSON to PostgreSQL on first request"""
+        # Skip if already synced
+        if _beats_sync_done['synced']:
+            return
+        
+        # Skip if PostgreSQL writes not enabled
         if not is_postgres_writes_enabled():
             return
         
         try:
             from sync_beats_json_to_postgres import sync_beats_to_postgres
-            success = sync_beats_to_postgres(dry_run=False, verbose=True)
-            if success:
-                app_instance.logger.info('Beats sync completed successfully on startup')
-            else:
-                app_instance.logger.warning('Beats sync failed during startup')
+            # Run sync in background thread to avoid blocking the request
+            def background_sync():
+                try:
+                    success = sync_beats_to_postgres(dry_run=False, verbose=True)
+                    if success:
+                        app_instance.logger.info('Beats sync completed on startup')
+                    else:
+                        app_instance.logger.warning('Beats sync failed on startup')
+                except Exception as exc:
+                    app_instance.logger.warning(f'Beats sync error on startup: {exc}')
+                finally:
+                    _beats_sync_done['synced'] = True
+            
+            # Only run if not already done
+            if not _beats_sync_done['synced']:
+                _beats_sync_done['synced'] = True  # Mark done immediately to prevent race
+                sync_thread = threading.Thread(target=background_sync, daemon=True)
+                sync_thread.start()
         except Exception as exc:
-            app_instance.logger.warning(f'Beats sync error during startup: {exc}')
+            app_instance.logger.warning(f'Beats sync setup error: {exc}')
 
 
 def get_valid_club_short_names():
