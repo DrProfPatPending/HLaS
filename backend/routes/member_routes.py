@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from flask import Blueprint, current_app, jsonify, request
-from sqlalchemy import Date, Integer, String, and_, case, cast, func, or_, select, text
+from sqlalchemy import Date, Float, Integer, String, and_, case, cast, func, or_, select, text
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -380,11 +380,11 @@ def create_member_blueprint(deps):
         if sort_by:
             sort_column = get_column(sort_by, members_table)
             if sort_column is not None:
-                if sort_by in ('Number', 'ID'):
+                if sort_by in ('Number', 'ID', 'Age', 'Subs_Expected', 'Subs_paid', 'Join_Fee'):
                     if is_postgres_reads_enabled():
                         normalized_number = func.nullif(func.trim(cast(sort_column, String)), '')
                         numeric_sort_expression = case(
-                            (normalized_number.op('~')(r'^[0-9]+$'), cast(normalized_number, Integer)),
+                            (normalized_number.op('~')(r'^-?[0-9]+(?:\.[0-9]+)?$'), cast(normalized_number, Float)),
                             else_=None,
                         )
                         if sort_order == 'desc':
@@ -399,8 +399,8 @@ def create_member_blueprint(deps):
                             )
                         sort_expression = None
                     else:
-                        sort_expression = cast(sort_column, Integer)
-                elif sort_by == 'Licence_Exp':
+                        sort_expression = cast(sort_column, Float)
+                elif sort_by in ('Licence_Exp', 'Date_of_Birth'):
                     sort_expression = cast(sort_column, Date)
                 else:
                     sort_expression = sort_column
