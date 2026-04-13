@@ -6,23 +6,25 @@
     <section class="news-updates-post-section">
       <h3>Create News/Update Post</h3>
       <form class="news-updates-post-form" @submit.prevent="createNewsUpdatePost">
-        <label>
-          <span>Date *</span>
-          <input v-model="newsPostForm.date" type="date" required />
-        </label>
-        <label>
-          <span>Category</span>
-          <input v-model="newsPostForm.category" type="text" maxlength="80" placeholder="e.g. Club Notice" />
-        </label>
-        <label>
-          <span>Status</span>
-          <select v-model="newsPostForm.status">
-            <option value="Published">Published</option>
-            <option value="Draft">Draft</option>
-            <option value="Planned">Planned</option>
-            <option value="Archived">Archived</option>
-          </select>
-        </label>
+        <div class="news-updates-post-top-row">
+          <label>
+            <span>Date *</span>
+            <input v-model="newsPostForm.date" type="date" required />
+          </label>
+          <label>
+            <span>Category</span>
+            <input v-model="newsPostForm.category" type="text" maxlength="80" placeholder="e.g. Club Notice" />
+          </label>
+          <label>
+            <span>Status</span>
+            <select v-model="newsPostForm.status">
+              <option value="Published">Published</option>
+              <option value="Draft">Draft</option>
+              <option value="Planned">Planned</option>
+              <option value="Archived">Archived</option>
+            </select>
+          </label>
+        </div>
         <label class="news-updates-post-message-field">
           <span>Update *</span>
           <textarea
@@ -783,3 +785,83 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.news-updates-post-section,
+.news-updates-list-section {
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.news-updates-post-section h3,
+.news-updates-list-section h3 {
+  margin: 0 0 10px;
+  color: #17324d;
+}
+
+.news-updates-post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.news-updates-post-top-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.news-updates-post-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.news-updates-post-form label span {
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.news-updates-post-form input,
+.news-updates-post-form select,
+.news-updates-post-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-right: 0;
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.35;
+  background: #fff;
+  color: #111827;
+}
+
+.news-updates-post-form textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.news-updates-post-message-field {
+  width: 100%;
+}
+
+.news-updates-post-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .news-updates-post-top-row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
