@@ -38,6 +38,7 @@
           <tr>
             <th>#</th>
             <th>Field</th>
+            <th>Display As</th>
             <th>Show Column</th>
             <th>Actions</th>
           </tr>
@@ -46,6 +47,15 @@
           <tr v-for="(fieldName, index) in selectedFields" :key="`${selectedContext}-${fieldName}-${index}`">
             <td class="field-order-position">{{ index + 1 }}</td>
             <td>{{ fieldName }}</td>
+            <td class="field-order-display-cell">
+              <input
+                type="text"
+                class="admin-input"
+                :value="getDisplayName(fieldName)"
+                :placeholder="fieldName"
+                @input="setDisplayName(fieldName, $event.target.value)"
+              />
+            </td>
             <td class="field-order-show-cell">
               <label class="field-order-show-toggle">
                 <input
@@ -109,6 +119,10 @@ export default {
       const showColumns = this.fieldOrder?.show_columns?.[this.selectedContext];
       return showColumns && typeof showColumns === 'object' ? showColumns : {};
     },
+    selectedDisplayNames() {
+      const displayNames = this.fieldOrder?.display_names?.[this.selectedContext];
+      return displayNames && typeof displayNames === 'object' ? displayNames : {};
+    },
   },
   mounted() {
     this.fetchFieldOrder();
@@ -159,6 +173,31 @@ export default {
       this.fieldOrder = {
         ...this.fieldOrder,
         show_columns: nextShowColumns,
+      };
+    },
+    getDisplayName(fieldName) {
+      const configured = this.selectedDisplayNames?.[fieldName];
+      return typeof configured === 'string' ? configured : '';
+    },
+    setDisplayName(fieldName, displayName) {
+      if (!this.selectedContext || !fieldName) return;
+      const nextDisplayNamesForContext = {
+        ...(this.fieldOrder?.display_names?.[this.selectedContext] || {}),
+      };
+
+      const trimmed = String(displayName || '');
+      if (trimmed.trim() === '') {
+        delete nextDisplayNamesForContext[fieldName];
+      } else {
+        nextDisplayNamesForContext[fieldName] = trimmed;
+      }
+
+      this.fieldOrder = {
+        ...this.fieldOrder,
+        display_names: {
+          ...(this.fieldOrder?.display_names || {}),
+          [this.selectedContext]: nextDisplayNamesForContext,
+        },
       };
     },
     moveUp(index) {
@@ -225,6 +264,10 @@ export default {
 
 .field-order-show-cell {
   white-space: nowrap;
+}
+
+.field-order-display-cell {
+  min-width: 220px;
 }
 
 .field-order-show-toggle {

@@ -19,7 +19,7 @@
         <tr>
           <th v-for="field in orderedMemberFields" :key="field">
             <div>
-              <span>{{ field }}</span>
+              <span>{{ getFieldDisplayName(field) }}</span>
               <span
                 class="sort-arrow"
                 :class="{ active: sortKey === field && sortOrder === 'asc' }"
@@ -39,7 +39,7 @@
               v-model="columnFilters[field]"
               class="column-filter"
               type="text"
-              :placeholder="`Filter ${field}`"
+              :placeholder="`Filter ${getFieldDisplayName(field)}`"
               @input="onFilterChange"
             />
           </th>
@@ -198,6 +198,10 @@ export default {
     exportButtonLabel() {
       return this.hasActiveFilters ? 'Export Filtered' : 'Export All';
     },
+    membershipDisplayNames() {
+      const configured = fieldOrderConfig.order?.display_names?.membership_admin;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
     orderedMemberFields() {
       const configured = fieldOrderConfig.order['membership_admin'];
       if (fieldOrderConfig.loaded && Array.isArray(configured) && configured.length) {
@@ -255,6 +259,13 @@ export default {
       return {};
     },
     getExpiryDateStyle,
+    getFieldDisplayName(field) {
+      const configured = this.membershipDisplayNames?.[field];
+      if (typeof configured === 'string' && configured.trim()) {
+        return configured.trim();
+      }
+      return field;
+    },
     buildActiveMemberFilters() {
       return Object.fromEntries(
         Object.entries(this.columnFilters || {})

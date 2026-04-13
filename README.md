@@ -47,6 +47,10 @@ HLaS is a fishing club membership management application with separate member an
    - Export respects current table filters and sort order.
    - If no filters are set, export includes all members in the selected club.
    - Export is downloaded from backend endpoint `GET /members/export`.
+- Added Field Order `Display As` customization:
+   - Admin users can now define per-column display labels per context.
+   - Field name remains fixed in config/data, while UI header text can be customized.
+   - Membership Admin table now uses configured `Display As` values for headers and filter placeholders.
 
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
@@ -166,6 +170,9 @@ Membership Admin now supports one-click export of member rows using the currentl
 Current behavior:
 
 - Export action is available in Membership Admin with a format dropdown (`CSV` or `JSON`).
+- Export button label is dynamic:
+   - `Export All` when no filters are active
+   - `Export Filtered` when one or more filters are active
 - Export request includes the current filters and sort settings.
 - If no filters are active, all members for the current club are exported.
 - Sensitive fields such as password are excluded from export output.
@@ -177,6 +184,24 @@ Backend route:
 Permissions:
 
 - Read/export: `member.club.list` (same gate used for Membership Admin table access)
+
+### Field Order `Display As`
+
+The Admin Field Order page now supports per-field display label customization.
+
+Current behavior:
+
+- New `Display As` editable column is shown for each field in each context.
+- `Display As` values are stored in `field_order.display_names[context][field]`.
+- Leaving `Display As` blank falls back to the original field name.
+- As an initial rollout, the Membership Admin table uses `display_names.membership_admin` for:
+   - table column headers
+   - filter input placeholders
+
+Backend routes:
+
+- `GET /admin/field-order`
+- `PUT /admin/field-order`
 
 Persistence behavior:
 
