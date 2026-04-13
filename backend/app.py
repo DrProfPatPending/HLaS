@@ -632,6 +632,32 @@ def _register_infrastructure_hooks(app_instance):
         return response
 
 
+def _register_beats_sync_startup(app_instance):
+    """Register startup hook to sync beats from clusters.config.json to PostgreSQL.
+    
+    This runs on app startup to ensure PostgreSQL club_beats table is in sync with
+    the JSON configuration file. Idempotent and only runs if PostgreSQL is enabled.
+    """
+    from db.postgres_backend import is_postgres_writes_enabled
+    
+    @app_instance.before_first_request
+    def sync_beats_on_startup():
+        """Sync beats from JSON to PostgreSQL at startup"""
+        # Only sync if PostgreSQL writes are enabled
+        if not is_postgres_writes_enabled():
+            return
+        
+        try:
+            from sync_beats_json_to_postgres import sync_beats_to_postgres
+            success = sync_beats_to_postgres(dry_run=False, verbose=True)
+            if success:
+                app_instance.logger.info('Beats sync completed successfully on startup')
+            else:
+                app_instance.logger.warning('Beats sync failed during startup')
+        except Exception as exc:
+            app_instance.logger.warning(f'Beats sync error during startup: {exc}')
+
+
 def get_valid_club_short_names():
     clubs = load_clubs_config()
     return {
@@ -731,6 +757,9 @@ def create_app():
     from routes.app_settings_routes import create_app_settings_blueprint
     app_instance.register_blueprint(create_app_settings_blueprint(route_deps))
     app_instance.register_blueprint(create_club_settings_blueprint(route_deps))
+
+    # Register startup hook to sync beats from JSON to PostgreSQL
+    _register_beats_sync_startup(app_instance)
 
     return app_instance
 
