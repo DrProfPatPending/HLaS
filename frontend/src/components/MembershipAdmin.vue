@@ -2,13 +2,24 @@
   <div class="membership-admin-container">
     <div class="membership-admin-header">
       <h1>{{ loggedInClub }} Members</h1>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="member-export-format" style="font-size: 0.9rem; color: #555;">Export as</label>
+        <select id="member-export-format" v-model="exportFormat">
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+        </select>
+        <button type="button" :disabled="exportBusy" @click="exportMembers">
+          {{ exportBusy ? 'Exporting…' : exportButtonLabel }}
+        </button>
+      </div>
     </div>
+    <div v-if="exportError" style="margin: 8px 0; color: #b00020;">{{ exportError }}</div>
     <table v-if="orderedMemberFields.length" class="member-table">
       <thead>
         <tr>
           <th v-for="field in orderedMemberFields" :key="field">
             <div>
-              <span>{{ field }}</span>
+              <span>{{ getFieldDisplayName(field) }}</span>
               <span
                 class="sort-arrow"
                 :class="{ active: sortKey === field && sortOrder === 'asc' }"
@@ -28,7 +39,7 @@
               v-model="columnFilters[field]"
               class="column-filter"
               type="text"
-              :placeholder="`Filter ${field}`"
+              :placeholder="`Filter ${getFieldDisplayName(field)}`"
               @input="onFilterChange"
             />
           </th>
@@ -118,7 +129,9 @@
 </template>
 
 <script>
+import axios from 'axios';
 import {
+  API_BASE_URL,
   store,
   totalPages,
   visiblePages,
@@ -144,6 +157,13 @@ import {
 
 export default {
   name: 'MembershipAdmin',
+  data() {
+    return {
+      exportFormat: 'csv',
+      exportBusy: false,
+      exportError: '',
+    };
+  },
   created() {
     loadFieldOrderConfig();
   },
@@ -170,21 +190,39 @@ export default {
     },
     lookupResult: () => store.lookupResult,
     lookupError: () => store.lookupError,
+    hasActiveFilters() {
+      return Object.values(this.columnFilters || {}).some(
+        value => value && String(value).trim() !== ''
+      );
+    },
+    exportButtonLabel() {
+      return this.hasActiveFilters ? 'Export Filtered' : 'Export All';
+    },
+    membershipDisplayNames() {
+      const configured = fieldOrderConfig.order?.display_names?.membership_admin;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    membershipShowColumns() {
+      const configured = fieldOrderConfig.order?.show_columns?.membership_admin;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
     orderedMemberFields() {
       const configured = fieldOrderConfig.order['membership_admin'];
       if (fieldOrderConfig.loaded && Array.isArray(configured) && configured.length) {
         if (this.members && this.members.length) {
           const sample = this.members[0] || {};
-          const filtered = configured.filter(f => f in sample);
+          const filtered = configured
+            .filter(f => f in sample)
+            .filter(f => this.isFieldVisible(f));
           if (filtered.length) return filtered;
         }
-        return configured;
+        return configured.filter(f => this.isFieldVisible(f));
       }
       if (this.members && this.members.length) {
         const sample = this.members[0] || {};
-        return Object.keys(sample);
+        return Object.keys(sample).filter(f => this.isFieldVisible(f));
       }
-      return Object.keys(this.columnFilters || {});
+      return Object.keys(this.columnFilters || {}).filter(f => this.isFieldVisible(f));
     },
   },
   methods: {
@@ -227,6 +265,77 @@ export default {
       return {};
     },
     getExpiryDateStyle,
+    isFieldVisible(field) {
+      const configured = this.membershipShowColumns?.[field];
+      return configured !== false;
+    },
+    getFieldDisplayName(field) {
+      const configured = this.membershipDisplayNames?.[field];
+      if (typeof configured === 'string' && configured.trim()) {
+        return configured.trim();
+      }
+      return field;
+    },
+    buildActiveMemberFilters() {
+      return Object.fromEntries(
+        Object.entries(this.columnFilters || {})
+          .filter(([, value]) => value && String(value).trim() !== '')
+          .map(([key, value]) => {
+            const trimmed = String(value).trim();
+            if (trimmed === '[BLANK]') return [key, '[BLANK]'];
+            const hasWildcard = trimmed.includes('*') || trimmed.includes('?');
+            return [key, hasWildcard ? trimmed : `*${trimmed}*`];
+          })
+      );
+    },
+    parseDownloadFilename(contentDisposition, fallbackName) {
+      const disposition = String(contentDisposition || '');
+      const match = disposition.match(/filename\*?=(?:UTF-8''|\")?([^";]+)/i);
+      if (!match || !match[1]) return fallbackName;
+      try {
+        return decodeURIComponent(match[1].replace(/\"/g, '').trim());
+      } catch {
+        return match[1].replace(/\"/g, '').trim() || fallbackName;
+      }
+    },
+    exportMembers() {
+      this.exportBusy = true;
+      this.exportError = '';
+
+      const params = {
+        club: this.loggedInClub,
+        format: this.exportFormat,
+        ...this.buildActiveMemberFilters(),
+      };
+
+      if (this.sortKey) {
+        params.sort_by = this.sortKey;
+        params.sort_order = this.sortOrder;
+      }
+
+      return axios.get(`${API_BASE_URL}/members/export`, {
+        params,
+        responseType: 'blob',
+      }).then(res => {
+        const fallbackName = `${this.loggedInClub}_members.${this.exportFormat}`;
+        const fileName = this.parseDownloadFilename(res.headers?.['content-disposition'], fallbackName);
+        const blob = new Blob([res.data], {
+          type: this.exportFormat === 'json' ? 'application/json' : 'text/csv;charset=utf-8;',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }).catch(err => {
+        this.exportError = err?.response?.data?.error || 'Export failed';
+      }).finally(() => {
+        this.exportBusy = false;
+      });
+    },
   },
 };
 </script>

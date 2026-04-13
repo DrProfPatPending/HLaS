@@ -1,7 +1,9 @@
+import csv
+import io
 from datetime import datetime
 
-from flask import Blueprint, current_app, jsonify, request
-from sqlalchemy import Date, Integer, String, and_, case, cast, func, or_, select, text
+from flask import Blueprint, Response, current_app, jsonify, request
+from sqlalchemy import Date, Float, Integer, String, and_, case, cast, func, or_, select, text
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -380,11 +382,11 @@ def create_member_blueprint(deps):
         if sort_by:
             sort_column = get_column(sort_by, members_table)
             if sort_column is not None:
-                if sort_by in ('Number', 'ID'):
+                if sort_by in ('Number', 'ID', 'Age', 'Subs_Expected', 'Subs_paid', 'Join_Fee'):
                     if is_postgres_reads_enabled():
                         normalized_number = func.nullif(func.trim(cast(sort_column, String)), '')
                         numeric_sort_expression = case(
-                            (normalized_number.op('~')(r'^[0-9]+$'), cast(normalized_number, Integer)),
+                            (normalized_number.op('~')(r'^-?[0-9]+(?:\.[0-9]+)?$'), cast(normalized_number, Float)),
                             else_=None,
                         )
                         if sort_order == 'desc':
@@ -399,8 +401,8 @@ def create_member_blueprint(deps):
                             )
                         sort_expression = None
                     else:
-                        sort_expression = cast(sort_column, Integer)
-                elif sort_by == 'Licence_Exp':
+                        sort_expression = cast(sort_column, Float)
+                elif sort_by in ('Licence_Exp', 'Date_of_Birth'):
                     sort_expression = cast(sort_column, Date)
                 else:
                     sort_expression = sort_column
@@ -417,6 +419,115 @@ def create_member_blueprint(deps):
 
         members_payload = [member_to_dict(member, members_table) for member in members]
         return jsonify({'members': members_payload, 'total': total})
+
+    @bp.route('/members/export', methods=['GET'])
+    def export_members():
+        club = request.args.get('club', 'GAAFFS')
+        auth_error = require_permission('member.club.list', club)
+        if auth_error:
+            return auth_error
+
+        export_format = str(request.args.get('format', 'csv')).strip().lower()
+        if export_format not in ('csv', 'json'):
+            return jsonify({'error': 'format must be csv or json'}), 400
+
+        sort_by = request.args.get('sort_by')
+        sort_order = request.args.get('sort_order', 'asc')
+
+        log_database_target(club)
+        db_info = get_read_db_for_club(club)
+        session = db_info['session']
+        members_table = db_info['members_table']
+        Member = db_info['Member']
+
+        filters = []
+        for column_name in FILTERABLE_COLUMNS:
+            raw_filter = request.args.get(column_name)
+            if raw_filter is None:
+                continue
+            filter_value = raw_filter.strip()
+            if not filter_value:
+                continue
+            column = get_column(column_name, members_table)
+            if column is None:
+                continue
+            if filter_value == '[BLANK]':
+                filters.append(or_(column.is_(None), cast(column, String) == ''))
+            else:
+                filters.append(cast(column, String).ilike(wildcard_to_sql_like(filter_value), escape='\\'))
+
+        members_query = select(Member)
+
+        if filters:
+            members_query = members_query.where(and_(*filters))
+
+        if sort_by:
+            sort_column = get_column(sort_by, members_table)
+            if sort_column is not None:
+                if sort_by in ('Number', 'ID', 'Age', 'Subs_Expected', 'Subs_paid', 'Join_Fee'):
+                    if is_postgres_reads_enabled():
+                        normalized_number = func.nullif(func.trim(cast(sort_column, String)), '')
+                        numeric_sort_expression = case(
+                            (normalized_number.op('~')(r'^-?[0-9]+(?:\.[0-9]+)?$'), cast(normalized_number, Float)),
+                            else_=None,
+                        )
+                        if sort_order == 'desc':
+                            members_query = members_query.order_by(
+                                numeric_sort_expression.desc().nullslast(),
+                                normalized_number.desc().nullslast(),
+                            )
+                        else:
+                            members_query = members_query.order_by(
+                                numeric_sort_expression.asc().nullslast(),
+                                normalized_number.asc().nullslast(),
+                            )
+                        sort_expression = None
+                    else:
+                        sort_expression = cast(sort_column, Float)
+                elif sort_by in ('Licence_Exp', 'Date_of_Birth'):
+                    sort_expression = cast(sort_column, Date)
+                else:
+                    sort_expression = sort_column
+
+                if sort_expression is not None:
+                    if sort_order == 'desc':
+                        members_query = members_query.order_by(sort_expression.desc())
+                    else:
+                        members_query = members_query.order_by(sort_expression.asc())
+
+        members = session.scalars(members_query).all()
+        members_payload = [member_to_dict(member, members_table) for member in members]
+        for row in members_payload:
+            row.pop('password', None)
+
+        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        if export_format == 'json':
+            response_body = {
+                'club': club,
+                'total': len(members_payload),
+                'members': members_payload,
+            }
+            response = jsonify(response_body)
+            response.headers['Content-Disposition'] = f'attachment; filename="{club}_members_{timestamp}.json"'
+            return response
+
+        csv_buffer = io.StringIO()
+        if members_payload:
+            fieldnames = list(members_payload[0].keys())
+        else:
+            fieldnames = [name for name in members_table.c.keys() if str(name).lower() != 'password']
+
+        writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames, extrasaction='ignore')
+        writer.writeheader()
+        writer.writerows(members_payload)
+
+        return Response(
+            csv_buffer.getvalue(),
+            mimetype='text/csv; charset=utf-8',
+            headers={
+                'Content-Disposition': f'attachment; filename="{club}_members_{timestamp}.csv"',
+            },
+        )
 
     @bp.route('/members/me', methods=['GET'])
     def get_current_member_profile():

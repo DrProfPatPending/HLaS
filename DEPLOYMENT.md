@@ -55,6 +55,17 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - `PUT /club-settings` for saving club-scoped member settings (Club Admin/Membership Admin gate via `member.club.list`)
    - Current setting scope includes Catch Return field visibility used by both the form and recent-returns table columns
 
+- **Membership Export API Endpoint:**
+   - `GET /members/export?club=<SHORT_NAME>&format=csv|json`
+   - Exports members using the same active filters/sort as Membership Admin
+   - If no filters are provided, exports all members for the scoped club
+   - Requires `member.club.list`
+
+- **Field Order Display Labels:**
+   - Field-order config now supports `display_names[context][field]`
+   - `Display As` values are editable in Admin Field Order UI and persisted with existing field-order payload
+   - Membership Admin now renders column headers/filter placeholders using `display_names.membership_admin`
+
 ---
 
 ## Frontend Changes
@@ -78,6 +89,10 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - `Members_Name` opens Edit Member Details
    - `Number` opens member lookup/details
    - Previous/Next navigation in edit view now operates on the full filtered result set rather than one page
+   - Added `Export Filtered` action with `CSV` / `JSON` format selector
+   - Export button label now adapts to filter state (`Export All` vs `Export Filtered`)
+   - Export respects current filter and sort state; defaults to all club members when no filters are set
+   - Field headers and filter placeholders now support Admin-configurable `Display As` labels
 - **Beat Details:**
    - dedicated member page added for beat-focused viewing
    - dropdown labels show `<Beat ID> <Beat Name>`
@@ -130,6 +145,12 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
 - Club Settings persistence:
    - PostgreSQL mode: `app_settings(scope='club:<SHORT_NAME>', key='club_settings')`
    - JSON fallback: `backend/club_settings.json`
+- Membership export output:
+   - CSV and JSON are generated on demand by backend; no schema migration required
+   - Export excludes sensitive fields such as `password`
+- Field-order display labels:
+   - Stored in existing field-order JSON/app_settings payload under `display_names`
+   - No database schema migration required
 
 ### Member photo deployment steps
 

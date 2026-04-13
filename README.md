@@ -42,6 +42,15 @@ HLaS is a fishing club membership management application with separate member an
    - `Add` to create a new beat entry.
    - `Delete` to remove the currently selected beat.
    - These controls are role-gated and hidden for users without `club_admin`.
+- Added Membership Admin bulk export for filtered members:
+   - New `Export Filtered` action with `CSV` / `JSON` format selector.
+   - Export respects current table filters and sort order.
+   - If no filters are set, export includes all members in the selected club.
+   - Export is downloaded from backend endpoint `GET /members/export`.
+- Added Field Order `Display As` customization:
+   - Admin users can now define per-column display labels per context.
+   - Field name remains fixed in config/data, while UI header text can be customized.
+   - Membership Admin table now uses configured `Display As` values for headers and filter placeholders.
 - Added **Fishing Beats import/export** functionality:
    - Backend `/admin/clubs/<club>/beats/export` API exports beats from PostgreSQL as JSON.
    - Backend `/admin/clubs/<club>/beats/import` API accepts beats JSON and updates the config.
@@ -160,6 +169,46 @@ Permissions:
 
 - Read: authenticated member for the scoped club
 - Update: `member.club.list` (same gate used for Membership Admin)
+
+### Membership Admin bulk export
+
+Membership Admin now supports one-click export of member rows using the currently active table state.
+
+Current behavior:
+
+- Export action is available in Membership Admin with a format dropdown (`CSV` or `JSON`).
+- Export button label is dynamic:
+   - `Export All` when no filters are active
+   - `Export Filtered` when one or more filters are active
+- Export request includes the current filters and sort settings.
+- If no filters are active, all members for the current club are exported.
+- Sensitive fields such as password are excluded from export output.
+
+Backend route:
+
+- `GET /members/export?club=<SHORT_NAME>&format=csv|json`
+
+Permissions:
+
+- Read/export: `member.club.list` (same gate used for Membership Admin table access)
+
+### Field Order `Display As`
+
+The Admin Field Order page now supports per-field display label customization.
+
+Current behavior:
+
+- New `Display As` editable column is shown for each field in each context.
+- `Display As` values are stored in `field_order.display_names[context][field]`.
+- Leaving `Display As` blank falls back to the original field name.
+- As an initial rollout, the Membership Admin table uses `display_names.membership_admin` for:
+   - table column headers
+   - filter input placeholders
+
+Backend routes:
+
+- `GET /admin/field-order`
+- `PUT /admin/field-order`
 
 Persistence behavior:
 
