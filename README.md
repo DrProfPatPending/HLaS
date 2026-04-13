@@ -42,6 +42,13 @@ HLaS is a fishing club membership management application with separate member an
    - `Add` to create a new beat entry.
    - `Delete` to remove the currently selected beat.
    - These controls are role-gated and hidden for users without `club_admin`.
+- Added **Fishing Beats import/export** functionality:
+   - Backend `/admin/clubs/<club>/beats/export` API exports beats from PostgreSQL as JSON.
+   - Backend `/admin/clubs/<club>/beats/import` API accepts beats JSON and updates the config.
+   - Helper scripts for syncing beats between PostgreSQL and `clubs.config.json`:
+     - `sync_beats_postgres_to_json.py` for direct database synchronization.
+     - `sync_beats_via_api.py` for API-based import/export.
+   - Beats data is now synchronized from PostgreSQL to JSON configuration for deployment.
 
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
@@ -662,6 +669,56 @@ Generic template for new clubs:
 
 Shared helper module:
 - `backend/import_beats_common.py` (CSV validation, mapping, and What3Words normalization)
+
+## Syncing Fishing Beats between Development and Production
+
+After updating fishing beats in your local development PostgreSQL database, use the export/import API to sync changes to the VPS:
+
+### Local Development: Export and Commit
+
+1. **Export beats from PostgreSQL to JSON config:**
+
+   ```bash
+   # Option 1: Direct database sync (fastest, requires DATABASE_URL)
+   python3 sync_beats_postgres_to_json.py
+   
+   # Option 2: Via API (requires running backend on localhost:5050)
+   python3 sync_beats_via_api.py
+   ```
+
+2. **Commit the updated `clubs.config.json`:**
+
+   ```bash
+   git add backend/clubs.config.json
+   git commit -m "Sync beats from local PostgreSQL: <brief description>"
+   git push origin main
+   ```
+
+### VPS Production: Import Updated Beats
+
+After pulling the updated main branch on the VPS:
+
+1. **Restart the backend container to load updated `clubs.config.json`:**
+
+   ```bash
+   docker compose down backend
+   docker compose up -d backend
+   ```
+
+2. **Optionally sync back to VPS PostgreSQL (if using PostgreSQL backend on VPS):**
+
+   ```bash
+   curl -X POST https://<YOUR_VPS_DOMAIN>/api/admin/clubs/GAAFFS/beats/import \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <ADMIN_TOKEN>" \
+     -d '{"beats": [...]}'
+   ```
+
+### API Endpoints
+
+- **Export:** `GET /admin/clubs/<club>/beats/export` → returns JSON beats array
+- **Import:** `POST /admin/clubs/<club>/beats/import` → accepts `{"beats": [...]}` payload
+- Both endpoints require `club.update` permission (Club Admin or higher)
 
 ## Security
 
