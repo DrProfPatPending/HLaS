@@ -2,7 +2,18 @@
   <div class="membership-admin-container">
     <div class="membership-admin-header">
       <h1>{{ loggedInClub }} Members</h1>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="member-export-format" style="font-size: 0.9rem; color: #555;">Export as</label>
+        <select id="member-export-format" v-model="exportFormat">
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+        </select>
+        <button type="button" :disabled="exportBusy" @click="exportMembers">
+          {{ exportBusy ? 'Exporting…' : 'Export Filtered' }}
+        </button>
+      </div>
     </div>
+    <div v-if="exportError" style="margin: 8px 0; color: #b00020;">{{ exportError }}</div>
     <table v-if="orderedMemberFields.length" class="member-table">
       <thead>
         <tr>
@@ -118,7 +129,9 @@
 </template>
 
 <script>
+import axios from 'axios';
 import {
+  API_BASE_URL,
   store,
   totalPages,
   visiblePages,
@@ -144,6 +157,13 @@ import {
 
 export default {
   name: 'MembershipAdmin',
+  data() {
+    return {
+      exportFormat: 'csv',
+      exportBusy: false,
+      exportError: '',
+    };
+  },
   created() {
     loadFieldOrderConfig();
   },
@@ -227,6 +247,66 @@ export default {
       return {};
     },
     getExpiryDateStyle,
+    buildActiveMemberFilters() {
+      return Object.fromEntries(
+        Object.entries(this.columnFilters || {})
+          .filter(([, value]) => value && String(value).trim() !== '')
+          .map(([key, value]) => {
+            const trimmed = String(value).trim();
+            if (trimmed === '[BLANK]') return [key, '[BLANK]'];
+            const hasWildcard = trimmed.includes('*') || trimmed.includes('?');
+            return [key, hasWildcard ? trimmed : `*${trimmed}*`];
+          })
+      );
+    },
+    parseDownloadFilename(contentDisposition, fallbackName) {
+      const disposition = String(contentDisposition || '');
+      const match = disposition.match(/filename\*?=(?:UTF-8''|\")?([^";]+)/i);
+      if (!match || !match[1]) return fallbackName;
+      try {
+        return decodeURIComponent(match[1].replace(/\"/g, '').trim());
+      } catch {
+        return match[1].replace(/\"/g, '').trim() || fallbackName;
+      }
+    },
+    exportMembers() {
+      this.exportBusy = true;
+      this.exportError = '';
+
+      const params = {
+        club: this.loggedInClub,
+        format: this.exportFormat,
+        ...this.buildActiveMemberFilters(),
+      };
+
+      if (this.sortKey) {
+        params.sort_by = this.sortKey;
+        params.sort_order = this.sortOrder;
+      }
+
+      return axios.get(`${API_BASE_URL}/members/export`, {
+        params,
+        responseType: 'blob',
+      }).then(res => {
+        const fallbackName = `${this.loggedInClub}_members.${this.exportFormat}`;
+        const fileName = this.parseDownloadFilename(res.headers?.['content-disposition'], fallbackName);
+        const blob = new Blob([res.data], {
+          type: this.exportFormat === 'json' ? 'application/json' : 'text/csv;charset=utf-8;',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }).catch(err => {
+        this.exportError = err?.response?.data?.error || 'Export failed';
+      }).finally(() => {
+        this.exportBusy = false;
+      });
+    },
   },
 };
 </script>
