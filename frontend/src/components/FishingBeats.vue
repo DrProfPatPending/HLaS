@@ -115,19 +115,25 @@
                   {{ selectedFishingBeat.Detailed_Description || '-' }}
                 </template>
                 <template v-else-if="column.key === 'Beat_Upstream_Coords'">
-                  <span
+                  <a
                     v-if="selectedFishingBeat.Beat_Upstream_Latitude && selectedFishingBeat.Beat_Upstream_Longitude"
+                    :href="googleMapsUrl(selectedFishingBeat.Beat_Upstream_Latitude, selectedFishingBeat.Beat_Upstream_Longitude)"
+                    rel="noopener noreferrer"
+                    @click.prevent="openGoogleMapsWindow(selectedFishingBeat.Beat_Upstream_Latitude, selectedFishingBeat.Beat_Upstream_Longitude)"
                   >
                     {{ selectedFishingBeat.Beat_Upstream_Latitude }}, {{ selectedFishingBeat.Beat_Upstream_Longitude }}
-                  </span>
+                  </a>
                   <span v-else>-</span>
                 </template>
                 <template v-else-if="column.key === 'Beat_Downstream_Coords'">
-                  <span
+                  <a
                     v-if="selectedFishingBeat.Beat_Downstream_Latitude && selectedFishingBeat.Beat_Downstream_Longitude"
+                    :href="googleMapsUrl(selectedFishingBeat.Beat_Downstream_Latitude, selectedFishingBeat.Beat_Downstream_Longitude)"
+                    rel="noopener noreferrer"
+                    @click.prevent="openGoogleMapsWindow(selectedFishingBeat.Beat_Downstream_Latitude, selectedFishingBeat.Beat_Downstream_Longitude)"
                   >
                     {{ selectedFishingBeat.Beat_Downstream_Latitude }}, {{ selectedFishingBeat.Beat_Downstream_Longitude }}
-                  </span>
+                  </a>
                   <span v-else>-</span>
                 </template>
                 <template v-else-if="column.key === 'Parking_Locations'">
@@ -417,6 +423,22 @@ export default {
         'popup=yes,width=980,height=760,resizable=yes,scrollbars=yes'
       );
       if (popupWindow) { popupWindow.focus(); return; }
+      window.location.href = url;
+    },
+    googleMapsUrl(lat, lng) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+    },
+    openGoogleMapsWindow(lat, lng) {
+      const url = this.googleMapsUrl(lat, lng);
+      const popupWindow = window.open(
+        url,
+        'google-maps-window',
+        'popup=yes,width=980,height=760,resizable=yes,scrollbars=yes'
+      );
+      if (popupWindow) {
+        popupWindow.focus();
+        return;
+      }
       window.location.href = url;
     },
     parseCoordinateValue(rawValue) {

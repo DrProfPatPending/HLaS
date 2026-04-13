@@ -168,7 +168,15 @@
               <span v-else>{{ selectedBeat.Beat_Downstream || '-' }}</span>
             </template>
             <template v-else-if="row.left.key === 'Beat_Upstream_Coords' || row.left.key === 'Beat_Downstream_Coords'">
-              {{ getCoordsDisplayValue(row.left.key) }}
+              <a
+                v-if="getCoordsPair(row.left.key)"
+                :href="googleMapsUrl(getCoordsPair(row.left.key).lat, getCoordsPair(row.left.key).lng)"
+                rel="noopener noreferrer"
+                @click.prevent="openGoogleMapsWindow(getCoordsPair(row.left.key).lat, getCoordsPair(row.left.key).lng)"
+              >
+                {{ getCoordsDisplayValue(row.left.key) }}
+              </a>
+              <span v-else>-</span>
             </template>
             <template v-else>
               {{ selectedBeat[row.left.key] || '-' }}
@@ -201,7 +209,15 @@
                 <span v-else>{{ selectedBeat.Beat_Downstream || '-' }}</span>
               </template>
               <template v-else-if="row.right.key === 'Beat_Upstream_Coords' || row.right.key === 'Beat_Downstream_Coords'">
-                {{ getCoordsDisplayValue(row.right.key) }}
+                <a
+                  v-if="getCoordsPair(row.right.key)"
+                  :href="googleMapsUrl(getCoordsPair(row.right.key).lat, getCoordsPair(row.right.key).lng)"
+                  rel="noopener noreferrer"
+                  @click.prevent="openGoogleMapsWindow(getCoordsPair(row.right.key).lat, getCoordsPair(row.right.key).lng)"
+                >
+                  {{ getCoordsDisplayValue(row.right.key) }}
+                </a>
+                <span v-else>-</span>
               </template>
               <template v-else>
                 {{ selectedBeat[row.right.key] || '-' }}
@@ -844,6 +860,33 @@ export default {
     parseCoordinateValue(rawValue) {
       const numericValue = Number.parseFloat(String(rawValue || '').trim());
       return Number.isFinite(numericValue) ? numericValue : null;
+    },
+    getCoordsPair(columnKey) {
+      if (columnKey === 'Beat_Upstream_Coords') {
+        const lat = this.selectedBeat?.Beat_Upstream_Latitude;
+        const lng = this.selectedBeat?.Beat_Upstream_Longitude;
+        if (lat && lng) return { lat, lng };
+      }
+      if (columnKey === 'Beat_Downstream_Coords') {
+        const lat = this.selectedBeat?.Beat_Downstream_Latitude;
+        const lng = this.selectedBeat?.Beat_Downstream_Longitude;
+        if (lat && lng) return { lat, lng };
+      }
+      return null;
+    },
+    googleMapsUrl(lat, lng) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+    },
+    openGoogleMapsWindow(lat, lng) {
+      const url = this.googleMapsUrl(lat, lng);
+      const popupWindow = window.open(
+        url,
+        'google-maps-window',
+        'popup=yes,width=980,height=760,resizable=yes,scrollbars=yes'
+      );
+      if (popupWindow) {
+        popupWindow.focus();
+      }
     },
     getCoordsDisplayValue(columnKey) {
       if (columnKey === 'Beat_Upstream_Coords') {
