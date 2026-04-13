@@ -9,7 +9,7 @@
           <option value="json">JSON</option>
         </select>
         <button type="button" :disabled="exportBusy" @click="exportMembers">
-          {{ exportBusy ? 'Exporting…' : 'Export Filtered' }}
+          {{ exportBusy ? 'Exporting…' : exportButtonLabel }}
         </button>
       </div>
     </div>
@@ -190,6 +190,14 @@ export default {
     },
     lookupResult: () => store.lookupResult,
     lookupError: () => store.lookupError,
+    hasActiveFilters() {
+      return Object.values(this.columnFilters || {}).some(
+        value => value && String(value).trim() !== ''
+      );
+    },
+    exportButtonLabel() {
+      return this.hasActiveFilters ? 'Export Filtered' : 'Export All';
+    },
     orderedMemberFields() {
       const configured = fieldOrderConfig.order['membership_admin'];
       if (fieldOrderConfig.loaded && Array.isArray(configured) && configured.length) {
