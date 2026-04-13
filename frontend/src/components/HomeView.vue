@@ -18,35 +18,16 @@
               >
                 {{ column.label }}
               </th>
-              <th
-                v-for="column in visibleNewsColumns"
-                :key="`news-head-${column.key}`"
-                :style="getColumnStyle('home_news', column.key)"
-              >
-                {{ column.label }}
-              </th>
             </tr>
           </thead>
           <tbody>
-<<<<<<< HEAD
-            <tr v-for="item in newsItems" :key="item.id">
-              <td
-                v-for="column in visibleNewsColumns"
-                :key="`news-cell-${item.id}-${column.key}`"
-                :style="getColumnStyle('home_news', column.key)"
-              >
-                <span v-if="column.key === 'Date'">{{ formatNewsDate(item.date) }}</span>
-                <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
-                <span v-else-if="column.key === 'Update'">{{ item.message }}</span>
-                <span v-else-if="column.key === 'Status'" class="news-status-badge" :class="`is-${item.status.toLowerCase()}`">
-=======
             <tr v-if="newsLoading">
               <td :colspan="newsColumnCount">Loading news/updates...</td>
             </tr>
             <tr v-else-if="!newsItems.length">
               <td :colspan="newsColumnCount">No news/updates posted yet.</td>
             </tr>
-            <tr v-for="item in newsItems" :key="item.id">
+            <tr v-else v-for="item in newsItems" :key="item.id">
               <td
                 v-for="column in visibleNewsColumns"
                 :key="`news-cell-${item.id}-${column.key}`"
@@ -94,13 +75,6 @@
         <table class="home-documents-table">
           <thead>
             <tr>
-              <th
-                v-for="column in visibleDocumentsColumns"
-                :key="`docs-head-${column.key}`"
-                :style="getColumnStyle('home_documents', column.key)"
-              >
-                {{ column.label }}
-              </th>
               <th
                 v-for="column in visibleDocumentsColumns"
                 :key="`docs-head-${column.key}`"
@@ -175,7 +149,6 @@ export default {
       documents: [],
       documentsLoading: false,
       documentsError: '',
-      fieldOrder: {},
       fieldOrder: {},
       uploadTitle: '',
       uploadFile: null,
@@ -425,7 +398,6 @@ export default {
   mounted() {
     this.loadFieldOrder();
     this.fetchNewsUpdates();
->>>>>>> 3c06a244 (News and Updates changes.)
     this.fetchDocuments();
   },
   watch: {
