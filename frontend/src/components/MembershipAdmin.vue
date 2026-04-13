@@ -202,21 +202,27 @@ export default {
       const configured = fieldOrderConfig.order?.display_names?.membership_admin;
       return configured && typeof configured === 'object' ? configured : {};
     },
+    membershipShowColumns() {
+      const configured = fieldOrderConfig.order?.show_columns?.membership_admin;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
     orderedMemberFields() {
       const configured = fieldOrderConfig.order['membership_admin'];
       if (fieldOrderConfig.loaded && Array.isArray(configured) && configured.length) {
         if (this.members && this.members.length) {
           const sample = this.members[0] || {};
-          const filtered = configured.filter(f => f in sample);
+          const filtered = configured
+            .filter(f => f in sample)
+            .filter(f => this.isFieldVisible(f));
           if (filtered.length) return filtered;
         }
-        return configured;
+        return configured.filter(f => this.isFieldVisible(f));
       }
       if (this.members && this.members.length) {
         const sample = this.members[0] || {};
-        return Object.keys(sample);
+        return Object.keys(sample).filter(f => this.isFieldVisible(f));
       }
-      return Object.keys(this.columnFilters || {});
+      return Object.keys(this.columnFilters || {}).filter(f => this.isFieldVisible(f));
     },
   },
   methods: {
@@ -259,6 +265,10 @@ export default {
       return {};
     },
     getExpiryDateStyle,
+    isFieldVisible(field) {
+      const configured = this.membershipShowColumns?.[field];
+      return configured !== false;
+    },
     getFieldDisplayName(field) {
       const configured = this.membershipDisplayNames?.[field];
       if (typeof configured === 'string' && configured.trim()) {
