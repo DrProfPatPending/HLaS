@@ -42,6 +42,11 @@ HLaS is a fishing club membership management application with separate member an
    - `Add` to create a new beat entry.
    - `Delete` to remove the currently selected beat.
    - These controls are role-gated and hidden for users without `club_admin`.
+- Added Membership Admin bulk export for filtered members:
+   - New `Export Filtered` action with `CSV` / `JSON` format selector.
+   - Export respects current table filters and sort order.
+   - If no filters are set, export includes all members in the selected club.
+   - Export is downloaded from backend endpoint `GET /members/export`.
 
 ## Key Features
 - **Distinct login and UI for admin/system users** at `/admin/` (AdminApp.vue)
@@ -153,6 +158,25 @@ Permissions:
 
 - Read: authenticated member for the scoped club
 - Update: `member.club.list` (same gate used for Membership Admin)
+
+### Membership Admin bulk export
+
+Membership Admin now supports one-click export of member rows using the currently active table state.
+
+Current behavior:
+
+- Export action is available in Membership Admin with a format dropdown (`CSV` or `JSON`).
+- Export request includes the current filters and sort settings.
+- If no filters are active, all members for the current club are exported.
+- Sensitive fields such as password are excluded from export output.
+
+Backend route:
+
+- `GET /members/export?club=<SHORT_NAME>&format=csv|json`
+
+Permissions:
+
+- Read/export: `member.club.list` (same gate used for Membership Admin table access)
 
 Persistence behavior:
 
