@@ -670,9 +670,17 @@ Generic template for new clubs:
 Shared helper module:
 - `backend/import_beats_common.py` (CSV validation, mapping, and What3Words normalization)
 
+Available sync scripts:
+- `sync_beats_postgres_to_json.py` (export PostgreSQL beats to JSON config - local dev)
+- `sync_beats_via_api.py` (API-based beats export/import - local dev)
+- `backend/sync_beats_json_to_postgres.py` (import JSON beats to PostgreSQL - VPS production)
+  - Used automatically on backend startup
+  - Can be run manually with `--dry-run` flag
+
 ## Syncing Fishing Beats between Development and Production
 
 After updating fishing beats in your local development PostgreSQL database, use the export/import API to sync changes to the VPS:
+
 
 ### Local Development: Export and Commit
 
@@ -694,31 +702,37 @@ After updating fishing beats in your local development PostgreSQL database, use 
    git push origin main
    ```
 
-### VPS Production: Import Updated Beats
+### VPS Production: Automatic Beats Sync
 
 After pulling the updated main branch on the VPS:
 
-1. **Restart the backend container to load updated `clubs.config.json`:**
+1. **Restart the backend container:**
 
    ```bash
    docker compose down backend
    docker compose up -d backend
    ```
 
-2. **Optionally sync back to VPS PostgreSQL (if using PostgreSQL backend on VPS):**
+2. **Beats automatically sync on startup:**
+   - Backend startup hook runs `sync_beats_json_to_postgres.py`
+   - PostgreSQL `club_beats` table is populated from `clubs.config.json`
+   - Check container logs for sync status: `docker compose logs backend | grep -i beats`
 
+3. **Manual sync (optional):**
+   
+   If you need to resync without restarting:
    ```bash
-   curl -X POST https://<YOUR_VPS_DOMAIN>/api/admin/clubs/GAAFFS/beats/import \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer <ADMIN_TOKEN>" \
-     -d '{"beats": [...]}'
+   # Dry-run first to preview changes
+   docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --dry-run
+   
+   # Actually sync beats
+   docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
    ```
 
 ### API Endpoints
 
 - **Export:** `GET /admin/clubs/<club>/beats/export` → returns JSON beats array
-- **Import:** `POST /admin/clubs/<club>/beats/import` → accepts `{"beats": [...]}` payload
-- Both endpoints require `club.update` permission (Club Admin or higher)
+- **Import (JSON):** `POST /admin/clubs/<club>/beats/import` → accepts `{"beats": [...]}` payload
 
 ## Security
 

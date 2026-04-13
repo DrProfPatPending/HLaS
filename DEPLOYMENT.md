@@ -42,8 +42,13 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - `POST /admin/clubs/<club>/beats/import` accepts beats JSON and updates the JSON config (Club Admin+ via `club.update`)
    - These endpoints enable bidirectional sync between PostgreSQL `club_beats` table and `clubs.config.json`
    - Helper scripts for programmatic sync:
-     - `sync_beats_postgres_to_json.py` for direct database sync (requires DATABASE_URL env)
-     - `sync_beats_via_api.py` for API-based export/import (requires running backend)
+     - `sync_beats_postgres_to_json.py` - exports PostgreSQL beats to JSON config (local dev)
+     - `sync_beats_via_api.py` - API-based export/import (local dev)
+     - `sync_beats_json_to_postgres.py` - imports JSON beats to PostgreSQL (VPS production)
+   - **Automatic startup sync:** Backend startup hook runs `sync_beats_json_to_postgres.py` automatically
+     - Ensures PostgreSQL club_beats table always matches `clubs.config.json` on container start
+     - Only runs if PostgreSQL writes are enabled
+     - Non-blocking (catches and logs errors)
 
 - **Club Settings API Endpoints:**
    - `GET /club-settings?club=<SHORT_NAME>` for loading club-scoped member settings
@@ -167,47 +172,73 @@ After deploying backend/frontend code that includes `club_documents` support:
 
 ### Fishing Beats sync deployment steps
 
-After deploying backend code that includes beats export/import endpoints:
+After deploying backend code that includes beats export/import and automatic startup sync:
 
-1. Ensure PostgreSQL runtime mode is enabled:
-   - `DATABASE_URL` set
-   - `HLAS_USE_POSTGRES_READS=true`
-2. Restart backend container.
-3. Export beats from source PostgreSQL and import to target (local dev → VPS):
+#### On Local Development Machine
+
+1. Update beats in PostgreSQL as needed
+2. Export beats from PostgreSQL to JSON config:
 
    **Option A: Via API (requires running backend)**
    ```bash
-   # On local dev machine (after updating beats in PostgreSQL)
    cd /opt/HLaS
    python3 sync_beats_via_api.py
-   # Commits synced beats to clubs.config.json locally
-   git add backend/clubs.config.json
-   git commit -m "Sync beats from dev PostgreSQL"
-   git push origin main
    ```
 
-   **Option B: Direct PostgreSQL export**
+   **Option B: Direct database sync (requires DATABASE_URL)**
    ```bash
-   # On local dev machine
    cd /opt/HLaS
-   docker exec hlas-backend-1 bash -c 'python3 -c "...[direct DB sync script]"'
+   docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
+   ```
+
+3. Commit updated beats to git:
+   ```bash
    git add backend/clubs.config.json
    git commit -m "Sync beats from dev PostgreSQL"
    git push origin main
    ```
 
-4. On VPS, sync beats to PostgreSQL by posting to the import endpoint:
+#### On VPS Production
+
+**Automatic sync (default approach):**
+
+1. Pull updated code with new `clubs.config.json`:
    ```bash
-   # Extract beats from clubs.config.json and POST to VPS importer
-   curl -X POST https://<YOUR_VPS_DOMAIN>/api/admin/clubs/GAAFFS/beats/import \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer <ADMIN_TOKEN>" \
-     -d @beats_gaaffs.json
+   cd /opt/hlas
+   git pull origin main
    ```
 
-5. Alternatively, if beats.config.json is already updated in `main` on VPS:
-   - The configuration is loaded when the backend container restarts
-   - No additional sync needed; next container restart uses updated beats
+2. Restart backend container:
+   ```bash
+   docker compose down backend
+   docker compose up -d backend
+   ```
+
+3. Backend startup hook automatically runs `sync_beats_json_to_postgres.py`:
+   - PostgreSQL `club_beats` table is populated from `clubs.config.json`
+   - Beats synced for all active clubs
+   - Check container logs: `docker compose logs backend | grep -i beats`
+
+**Manual sync (if needed):**
+
+You can also manually sync beats at any time without restarting:
+
+```bash
+# Test without writing (dry-run)
+docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --dry-run
+
+# Actually sync beats to PostgreSQL
+docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
+```
+
+Or via API (requires admin token):
+
+```bash
+curl -X POST https://<YOUR_VPS_DOMAIN>/api/admin/clubs/GAAFFS/beats/import \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -d '{"beats": [...]}'
+```
 
 ### Alembic caveat on older live databases
 
