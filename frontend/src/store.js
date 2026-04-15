@@ -47,6 +47,7 @@ const DEFAULT_LOGIN_CLUB = URL_PREFERRED_CLUB || 'GAAFFS';
 
 export const MY_CLUB_TABS = [
   { id: 'personal', label: 'Personal Info' },
+  { id: 'address', label: 'Address Info' },
   { id: 'security', label: 'Login/Security Details' },
   { id: 'status', label: 'Status Flags' },
 ];

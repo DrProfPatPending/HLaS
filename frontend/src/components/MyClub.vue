@@ -171,6 +171,12 @@ export default {
         'Photo_Path',
         'Date_of_Birth',
         'Age',
+        'Car_Reg',
+        'Member_Type',
+        'EA_Licence',
+        'Licence_Exp',
+      ]);
+      const addressFields = new Set([
         'Full_Address',
         'Address___Street_Address',
         'Address___Address_Line_2',
@@ -182,10 +188,6 @@ export default {
         'Phone',
         'Mobile',
         'E_Mail',
-        'Car_Reg',
-        'Member_Type',
-        'EA_Licence',
-        'Licence_Exp',
       ]);
       const statusFields = new Set([
         'Paused',
@@ -207,6 +209,7 @@ export default {
 
       const grouped = {
         personal: [],
+        address: [],
         security: [],
         status: [],
       };
@@ -214,6 +217,10 @@ export default {
       this.orderedFields.forEach(key => {
         if (statusFields.has(key)) {
           grouped.status.push(key);
+          return;
+        }
+        if (addressFields.has(key)) {
+          grouped.address.push(key);
           return;
         }
         if (personalFields.has(key)) {
