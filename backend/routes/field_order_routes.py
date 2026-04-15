@@ -61,7 +61,7 @@ def load_field_order_config(deps=None):
         except Exception:
             pass
 
-            return default_config
+    return default_config
 
 
 def save_field_order_config(data, deps=None):
