@@ -10,94 +10,116 @@
         <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
         <h3>Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</h3>
       </div>
-      <aside class="app-member-sidebar" aria-label="Primary navigation">
-        <div class="app-member-sidebar-card">
-          <div class="app-member-sidebar-title">Navigation</div>
-          <button
-            type="button"
-            class="app-member-nav-button app-member-home-button"
-            :class="{ 'is-active': activeSection === 'home' }"
-            @click="navigate('home')"
-          >
-            {{ clubShortName }}
-          </button>
-          <button
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'my-club' }"
-            @click="navigate('my-club')"
-          >
-            My Club
-          </button>
-          <button
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'beat-details' }"
-            @click="navigate('beat-details')"
-          >
-            Beat Details
-          </button>
-          <button
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'fishing-beats' }"
-            @click="navigate('fishing-beats')"
-          >
-            Fishing Beats
-          </button>
-          <button
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'catch-return' }"
-            @click="navigate('catch-return')"
-          >
-            Catch Return
-          </button>
-          <button
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'club-information' }"
-            @click="navigate('club-information')"
-          >
-            Club Information
-          </button>
-          <button
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'club-store' }"
-            @click="navigate('club-store')"
-          >
-            Club Store
-          </button>
-          <button
-            v-if="canAccessNewsletters"
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'newsletters', 'is-admin': true }"
-            @click="navigate('newsletters')"
-          >
-            News/Updates
-          </button>
-          <button
-            v-if="canAccessMembershipAdmin"
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'membership-admin' || activeSection === 'member-edit', 'is-admin': true }"
-            @click="navigate('membership-admin')"
-          >
-            Membership Admin
-          </button>
-          <button
-            v-if="canAccessMembershipAdmin"
-            type="button"
-            class="app-member-nav-button"
-            :class="{ 'is-active': activeSection === 'club-settings', 'is-admin': true }"
-            @click="navigate('club-settings')"
-          >
-            Club Settings
-          </button>
-        </div>
-      </aside>
+      <div class="app-member-sidebar-group">
+        <aside class="app-member-sidebar" aria-label="Primary navigation">
+          <div class="app-member-sidebar-card">
+            <div class="app-member-sidebar-title">Navigation</div>
+            <button
+              type="button"
+              class="app-member-nav-button app-member-home-button"
+              :class="{ 'is-active': activeSection === 'home' }"
+              @click="navigate('home')"
+            >
+              {{ clubShortName }}
+            </button>
+            <button
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'my-club' }"
+              @click="navigate('my-club')"
+            >
+              My Club
+            </button>
+            <button
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'beat-details' }"
+              @click="navigate('beat-details')"
+            >
+              Beat Details
+            </button>
+            <button
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'fishing-beats' }"
+              @click="navigate('fishing-beats')"
+            >
+              Fishing Beats
+            </button>
+            <button
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'catch-return' }"
+              @click="navigate('catch-return')"
+            >
+              Catch Return
+            </button>
+            <button
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'club-information' }"
+              @click="navigate('club-information')"
+            >
+              Club Information
+            </button>
+            <button
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'club-store' }"
+              @click="navigate('club-store')"
+            >
+              Club Store
+            </button>
+            <button
+              v-if="canAccessNewsletters"
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'newsletters', 'is-admin': true }"
+              @click="navigate('newsletters')"
+            >
+              News/Updates
+            </button>
+            <button
+              v-if="canAccessMembershipAdmin"
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'membership-admin' || activeSection === 'member-edit', 'is-admin': true }"
+              @click="navigate('membership-admin')"
+            >
+              Membership Admin
+            </button>
+            <button
+              v-if="canAccessMembershipAdmin"
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'club-settings', 'is-admin': true }"
+              @click="navigate('club-settings')"
+            >
+              Club Settings
+            </button>
+          </div>
+        </aside>
+
+        <aside
+          v-if="showMyClubSubnav"
+          class="app-member-subnav"
+          aria-label="My Club section navigation"
+        >
+          <div class="app-member-subnav-card">
+            <div class="app-member-sidebar-title">My Club</div>
+            <button
+              v-for="tab in myClubTabs"
+              :key="tab.id"
+              type="button"
+              class="app-member-subnav-button"
+              :class="{ 'is-active': myClubActiveTab === tab.id }"
+              @click="selectMyClubTab(tab.id)"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+        </aside>
+      </div>
 
       <main class="app-member-content">
         <home-view v-if="activeSection === 'home'" />
@@ -149,7 +171,9 @@ import {
   canAccessNewsletters,
   clubDetails,
   loadAppSettings,
+  MY_CLUB_TABS,
   navigateToSection,
+  setMyClubActiveTab,
   sectionDisplayName,
 } from './src/store.js';
 
@@ -177,6 +201,9 @@ export default {
     canAccessMembershipAdmin: () => canAccessMembershipAdmin.value,
     canAccessNewsletters: () => canAccessNewsletters.value,
     clubShortName: () => clubDetails.value.shortName || store.loggedInClub || 'Club',
+    myClubTabs: () => MY_CLUB_TABS,
+    myClubActiveTab: () => store.myClubActiveTab,
+    showMyClubSubnav: () => store.activeSection === 'my-club',
   },
   created() {
     loadAppSettings();
@@ -238,6 +265,9 @@ export default {
     navigate(sectionKey) {
       navigateToSection(sectionKey);
     },
+    selectMyClubTab(tabId) {
+      setMyClubActiveTab(tabId);
+    },
     goHome() {
       store.activeSection = 'home';
     },
@@ -249,17 +279,27 @@ export default {
 <style>
 #app .app-member-shell {
   display: grid;
-  grid-template-columns: max(180px, 10%) minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 20px;
   align-items: start;
   width: 100%;
   box-sizing: border-box;
   padding: 18px 20px 26px;
 }
+#app .app-member-sidebar-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
 #app .app-member-sidebar {
   min-width: 0;
 }
-#app .app-member-sidebar-card {
+#app .app-member-subnav {
+  min-width: 0;
+}
+#app .app-member-sidebar-card,
+#app .app-member-subnav-card {
   position: sticky;
   top: 18px;
   display: flex;
@@ -335,6 +375,31 @@ export default {
 #app .app-member-nav-button.is-admin.is-active {
   border-color: #215835;
   background: linear-gradient(180deg, #368c4f 0%, #215835 100%);
+}
+#app .app-member-subnav-button {
+  width: 100%;
+  min-width: 168px;
+  padding: 11px 12px;
+  border: 1px solid #9ab0c6;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f7f9fc 0%, #e3ebf3 100%);
+  color: #17324d;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+#app .app-member-subnav-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(45, 95, 139, 0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #eaf1f8 100%);
+}
+#app .app-member-subnav-button.is-active {
+  border-color: #17324d;
+  background: linear-gradient(180deg, #2f6c9c 0%, #17324d 100%);
+  color: #ffffff;
 }
 #app .app-member-content {
   min-width: 0;
@@ -1199,8 +1264,17 @@ export default {
     grid-template-columns: 1fr;
   }
 
-  #app .app-member-sidebar-card {
+  #app .app-member-sidebar-group {
+    flex-direction: column;
+  }
+
+  #app .app-member-sidebar-card,
+  #app .app-member-subnav-card {
     position: static;
+  }
+
+  #app .app-member-subnav-button {
+    min-width: 0;
   }
 }
 

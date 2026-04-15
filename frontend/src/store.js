@@ -45,6 +45,12 @@ function extractPreferredClubFromUrl() {
 const URL_PREFERRED_CLUB = extractPreferredClubFromUrl();
 const DEFAULT_LOGIN_CLUB = URL_PREFERRED_CLUB || 'GAAFFS';
 
+export const MY_CLUB_TABS = [
+  { id: 'personal', label: 'Personal Info' },
+  { id: 'security', label: 'Login/Security Details' },
+  { id: 'status', label: 'Status Flags' },
+];
+
 // ---------------------------------------------------------------------------
 // Reactive shared state
 // ---------------------------------------------------------------------------
@@ -76,6 +82,7 @@ export const store = reactive({
   // Navigation
   activeSection: 'home',
   accessError: '',
+  myClubActiveTab: 'personal',
 
   // Club list
   clubs: [],
@@ -954,4 +961,9 @@ export function navigateToSection(sectionKey) {
     return;
   }
   store.activeSection = sectionKey;
+}
+
+export function setMyClubActiveTab(tabId) {
+  if (!MY_CLUB_TABS.some(tab => tab.id === tabId)) return;
+  store.myClubActiveTab = tabId;
 }

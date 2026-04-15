@@ -6,20 +6,6 @@
     <div v-else-if="error" class="error-msg">{{ error }}</div>
 
     <div v-else>
-      <div class="my-club-tab-bar" role="tablist" aria-label="My Club sections">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          type="button"
-          class="my-club-tab-button"
-          :class="{ 'is-active': activeTab === tab.id }"
-          :aria-selected="activeTab === tab.id ? 'true' : 'false'"
-          @click="activeTab = tab.id"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
-
       <div class="member-edit-top-row">
         <div class="member-edit-actions member-edit-actions-top">
           <button v-if="!isEditing" type="button" @click="startEdit">Edit Member Details</button>
@@ -142,19 +128,11 @@ export default {
       photoVisible: true,
       memberData: {},
       editData: {},
-      activeTab: 'personal',
       newPassword: '',
       confirmPassword: '',
     };
   },
   computed: {
-    tabs() {
-      return [
-        { id: 'personal', label: 'Personal Info' },
-        { id: 'security', label: 'Login/Security Details' },
-        { id: 'status', label: 'Status Flags' },
-      ];
-    },
     loggedInClub() {
       return store.loggedInClub;
     },
@@ -242,13 +220,13 @@ export default {
       return grouped;
     },
     activeTabFields() {
-      return this.groupedFields[this.activeTab] || [];
+      return this.groupedFields[store.myClubActiveTab] || [];
     },
     showUsernameSection() {
-      return this.activeTab === 'security' && this.editData.username !== undefined;
+      return store.myClubActiveTab === 'security' && this.editData.username !== undefined;
     },
     showPasswordSection() {
-      return this.activeTab === 'security';
+      return store.myClubActiveTab === 'security';
     },
     memberId() {
       return this.memberData.id || this.memberData.ID || this.editData.id || this.editData.ID || null;
@@ -432,34 +410,6 @@ export default {
 .my-club-container {
   max-width: 900px;
   margin: 0 auto;
-}
-
-.my-club-tab-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.my-club-tab-button {
-  border: 1px solid #cfd8e3;
-  background: #f4f7fb;
-  color: #16324f;
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-
-.my-club-tab-button:hover {
-  background: #e6eef8;
-}
-
-.my-club-tab-button.is-active {
-  background: #16324f;
-  border-color: #16324f;
-  color: #ffffff;
 }
 
 .my-club-actions {
