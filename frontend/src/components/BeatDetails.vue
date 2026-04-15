@@ -142,10 +142,10 @@
 
     <table v-else-if="selectedBeat" class="beat-details-table">
       <tbody>
-        <tr v-for="column in orderedDetailColumns" :key="`detail-${column.key}`">
-          <th>{{ column.label }}</th>
+        <tr v-for="(row, rowIndex) in detailCompactRows" :key="`detail-row-${rowIndex}`">
+          <th>{{ row.left.label }}</th>
           <td>
-            <template v-if="column.key === 'Beat_Upstream'">
+            <template v-if="row.left.key === 'Beat_Upstream'">
               <a
                 v-if="selectedBeat.Beat_Upstream_W3W"
                 :href="selectedBeat.Beat_Upstream_W3W.url"
@@ -156,8 +156,7 @@
               </a>
               <span v-else>{{ selectedBeat.Beat_Upstream || '-' }}</span>
             </template>
-
-            <template v-else-if="column.key === 'Beat_Downstream'">
+            <template v-else-if="row.left.key === 'Beat_Downstream'">
               <a
                 v-if="selectedBeat.Beat_Downstream_W3W"
                 :href="selectedBeat.Beat_Downstream_W3W.url"
@@ -168,30 +167,73 @@
               </a>
               <span v-else>{{ selectedBeat.Beat_Downstream || '-' }}</span>
             </template>
-
-            <template v-else-if="column.key === 'Detailed_Description'">
-              {{ selectedBeat.Detailed_Description || '-' }}
-            </template>
-
-            <template v-else-if="column.key === 'Beat_Upstream_Coords'">
-              <span
-                v-if="selectedBeat.Beat_Upstream_Latitude && selectedBeat.Beat_Upstream_Longitude"
+            <template v-else-if="row.left.key === 'Beat_Upstream_Coords' || row.left.key === 'Beat_Downstream_Coords'">
+              <a
+                v-if="getCoordsPair(row.left.key)"
+                :href="googleMapsUrl(getCoordsPair(row.left.key).lat, getCoordsPair(row.left.key).lng)"
+                rel="noopener noreferrer"
+                @click.prevent="openGoogleMapsWindow(getCoordsPair(row.left.key).lat, getCoordsPair(row.left.key).lng)"
               >
-                {{ selectedBeat.Beat_Upstream_Latitude }}, {{ selectedBeat.Beat_Upstream_Longitude }}
-              </span>
+                {{ getCoordsDisplayValue(row.left.key) }}
+              </a>
               <span v-else>-</span>
             </template>
-
-            <template v-else-if="column.key === 'Beat_Downstream_Coords'">
-              <span
-                v-if="selectedBeat.Beat_Downstream_Latitude && selectedBeat.Beat_Downstream_Longitude"
-              >
-                {{ selectedBeat.Beat_Downstream_Latitude }}, {{ selectedBeat.Beat_Downstream_Longitude }}
-              </span>
-              <span v-else>-</span>
+            <template v-else>
+              {{ selectedBeat[row.left.key] || '-' }}
             </template>
+          </td>
 
-            <template v-else-if="column.key === 'Parking_Locations'">
+          <template v-if="row.right">
+            <th>{{ row.right.label }}</th>
+            <td>
+              <template v-if="row.right.key === 'Beat_Upstream'">
+                <a
+                  v-if="selectedBeat.Beat_Upstream_W3W"
+                  :href="selectedBeat.Beat_Upstream_W3W.url"
+                  rel="noopener noreferrer"
+                  @click.prevent="openReusableMapWindow(selectedBeat.Beat_Upstream_W3W.url)"
+                >
+                  {{ selectedBeat.Beat_Upstream_W3W.display }}
+                </a>
+                <span v-else>{{ selectedBeat.Beat_Upstream || '-' }}</span>
+              </template>
+              <template v-else-if="row.right.key === 'Beat_Downstream'">
+                <a
+                  v-if="selectedBeat.Beat_Downstream_W3W"
+                  :href="selectedBeat.Beat_Downstream_W3W.url"
+                  rel="noopener noreferrer"
+                  @click.prevent="openReusableMapWindow(selectedBeat.Beat_Downstream_W3W.url)"
+                >
+                  {{ selectedBeat.Beat_Downstream_W3W.display }}
+                </a>
+                <span v-else>{{ selectedBeat.Beat_Downstream || '-' }}</span>
+              </template>
+              <template v-else-if="row.right.key === 'Beat_Upstream_Coords' || row.right.key === 'Beat_Downstream_Coords'">
+                <a
+                  v-if="getCoordsPair(row.right.key)"
+                  :href="googleMapsUrl(getCoordsPair(row.right.key).lat, getCoordsPair(row.right.key).lng)"
+                  rel="noopener noreferrer"
+                  @click.prevent="openGoogleMapsWindow(getCoordsPair(row.right.key).lat, getCoordsPair(row.right.key).lng)"
+                >
+                  {{ getCoordsDisplayValue(row.right.key) }}
+                </a>
+                <span v-else>-</span>
+              </template>
+              <template v-else>
+                {{ selectedBeat[row.right.key] || '-' }}
+              </template>
+            </td>
+          </template>
+          <template v-else>
+            <th class="beat-details-empty-cell"></th>
+            <td class="beat-details-empty-cell"></td>
+          </template>
+        </tr>
+
+        <tr v-for="column in detailWideColumns" :key="`detail-wide-${column.key}`">
+          <th>{{ column.label }}</th>
+          <td colspan="3">
+            <template v-if="column.key === 'Parking_Locations'">
               <ul v-if="selectedBeat.Parking_Locations.length" class="beat-details-parking-list">
                 <li
                   v-for="(parking, parkingIndex) in selectedBeat.Parking_Locations"
@@ -216,7 +258,6 @@
               </ul>
               <span v-else>-</span>
             </template>
-
             <template v-else>
               {{ selectedBeat[column.key] || '-' }}
             </template>
@@ -287,6 +328,64 @@ export default {
     },
     hasParkingValidationErrors() {
       return this.parkingValidationErrors.some(Boolean);
+    },
+    detailLabelMap() {
+      const defaultLabels = {
+        Beat_ID: 'Beat ID',
+        Beat_Name: 'Beat Name',
+        River: 'River',
+        Position: 'Position',
+        Beat_Upstream: 'Beat Upstream',
+        Beat_Downstream: 'Beat Downstream',
+        Beat_Upstream_Coords: 'Upstream Co-ords',
+        Beat_Downstream_Coords: 'Downstream Co-ords',
+        Beat_Description: 'Beat Description',
+        Detailed_Description: 'Detailed Description',
+        Parking_Locations: 'Parking',
+      };
+
+      const configured = this.fieldOrder?.display_names?.beat_details;
+      if (!configured || typeof configured !== 'object') return defaultLabels;
+
+      const merged = { ...defaultLabels };
+      Object.keys(defaultLabels).forEach(key => {
+        const custom = configured[key];
+        if (typeof custom === 'string' && custom.trim()) {
+          merged[key] = custom.trim();
+        }
+      });
+      return merged;
+    },
+    detailCompactRows() {
+      const compactKeys = [
+        'Beat_ID',
+        'Beat_Name',
+        'River',
+        'Position',
+        'Beat_Upstream',
+        'Beat_Downstream',
+        'Beat_Upstream_Coords',
+        'Beat_Downstream_Coords',
+      ];
+
+      const visible = compactKeys
+        .filter(key => this.isColumnVisible('beat_details', key))
+        .map(key => ({ key, label: this.detailLabelMap[key] || key }));
+
+      const rows = [];
+      for (let i = 0; i < visible.length; i += 2) {
+        rows.push({
+          left: visible[i],
+          right: visible[i + 1] || null,
+        });
+      }
+      return rows;
+    },
+    detailWideColumns() {
+      const wideKeys = ['Beat_Description', 'Detailed_Description', 'Parking_Locations'];
+      return wideKeys
+        .filter(key => this.isColumnVisible('beat_details', key))
+        .map(key => ({ key, label: this.detailLabelMap[key] || key }));
     },
     orderedDetailColumns() {
       const detailColumnMap = {
@@ -762,6 +861,50 @@ export default {
       const numericValue = Number.parseFloat(String(rawValue || '').trim());
       return Number.isFinite(numericValue) ? numericValue : null;
     },
+    getCoordsPair(columnKey) {
+      if (columnKey === 'Beat_Upstream_Coords') {
+        const lat = this.selectedBeat?.Beat_Upstream_Latitude;
+        const lng = this.selectedBeat?.Beat_Upstream_Longitude;
+        if (lat && lng) return { lat, lng };
+      }
+      if (columnKey === 'Beat_Downstream_Coords') {
+        const lat = this.selectedBeat?.Beat_Downstream_Latitude;
+        const lng = this.selectedBeat?.Beat_Downstream_Longitude;
+        if (lat && lng) return { lat, lng };
+      }
+      return null;
+    },
+    googleMapsUrl(lat, lng) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+    },
+    openGoogleMapsWindow(lat, lng) {
+      const url = this.googleMapsUrl(lat, lng);
+      const popupWindow = window.open(
+        url,
+        'google-maps-window',
+        'popup=yes,width=980,height=760,resizable=yes,scrollbars=yes'
+      );
+      if (popupWindow) {
+        popupWindow.focus();
+      }
+    },
+    getCoordsDisplayValue(columnKey) {
+      if (columnKey === 'Beat_Upstream_Coords') {
+        if (this.selectedBeat?.Beat_Upstream_Latitude && this.selectedBeat?.Beat_Upstream_Longitude) {
+          return `${this.selectedBeat.Beat_Upstream_Latitude}, ${this.selectedBeat.Beat_Upstream_Longitude}`;
+        }
+        return '-';
+      }
+
+      if (columnKey === 'Beat_Downstream_Coords') {
+        if (this.selectedBeat?.Beat_Downstream_Latitude && this.selectedBeat?.Beat_Downstream_Longitude) {
+          return `${this.selectedBeat.Beat_Downstream_Latitude}, ${this.selectedBeat.Beat_Downstream_Longitude}`;
+        }
+        return '-';
+      }
+
+      return '-';
+    },
     async resolveBeatPointCoordinates(wordsValue, latitudeValue, longitudeValue) {
       const lat = this.parseCoordinateValue(latitudeValue);
       const lng = this.parseCoordinateValue(longitudeValue);
@@ -989,6 +1132,10 @@ export default {
 .beat-details-table th {
   width: 180px;
   background: #f0f0f0;
+}
+
+.beat-details-empty-cell {
+  background: #fafafa;
 }
 
 .beat-details-input,

@@ -37,7 +37,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-if="editData.username !== undefined">
+          <tr v-if="showUsernameSection">
             <td>{{ formatFieldName('username') }}</td>
             <td>
               <span v-if="!isEditing">{{ formatValue(memberData.username) }}</span>
@@ -49,7 +49,7 @@
             </td>
           </tr>
 
-          <tr>
+          <tr v-if="showPasswordSection">
             <td>New Password</td>
             <td>
               <input
@@ -62,7 +62,7 @@
             </td>
           </tr>
 
-          <tr>
+          <tr v-if="showPasswordSection">
             <td>Confirm New Password</td>
             <td>
               <input
@@ -74,7 +74,7 @@
             </td>
           </tr>
 
-          <tr v-for="key in orderedFields" :key="key">
+          <tr v-for="key in activeTabFields" :key="key">
             <td>{{ formatFieldName(key) }}</td>
             <td>
               <span v-if="!isEditing">{{ formatMemberFieldValue(key, memberData[key]) }}</span>
@@ -150,6 +150,83 @@ export default {
       const topKeys = preferredTop.filter(key => keys.includes(key));
       const remaining = keys.filter(key => !preferredTop.includes(key) && key !== 'username' && key !== 'password');
       return [...topKeys, ...remaining];
+    },
+    groupedFields() {
+      const personalFields = new Set([
+        'ID',
+        'id',
+        'Number',
+        'Members_Name',
+        'Title',
+        'First_Name',
+        'Last_Name',
+        'Preferred_Name',
+        'First_Names',
+        'Photo_Path',
+        'Date_of_Birth',
+        'Age',
+        'Full_Address',
+        'Address___Street_Address',
+        'Address___Address_Line_2',
+        'Address___City',
+        'County',
+        'Address___State/Prov/Region',
+        'Address___ZIP/Postal',
+        'Address___Country',
+        'Phone',
+        'Mobile',
+        'E_Mail',
+        'Car_Reg',
+      ]);
+      const statusFields = new Set([
+        'Paused',
+        'Resigned',
+        'Member_Type',
+        'Subs_Expected',
+        'Subs_paid',
+        'Join_Fee',
+        'Paid_Up_2026',
+        'Photo_Received',
+        'In_WhatsApp',
+        'In_FB',
+        'New_Member_2026',
+        'Paid_up_Card_Sent',
+        'CR2023',
+        'CR2024',
+        'CR2025',
+        'Details_Confirmed_2026',
+        'EA_Licence',
+        'Licence_Exp',
+      ]);
+
+      const grouped = {
+        personal: [],
+        security: [],
+        status: [],
+      };
+
+      this.orderedFields.forEach(key => {
+        if (statusFields.has(key)) {
+          grouped.status.push(key);
+          return;
+        }
+        if (personalFields.has(key)) {
+          grouped.personal.push(key);
+          return;
+        }
+        grouped.personal.push(key);
+      });
+
+      return grouped;
+    },
+    activeTabFields() {
+      return this.groupedFields[store.myClubActiveTab] || [];
+    },
+    showUsernameSection() {
+      return store.myClubActiveTab === 'security' && this.editData.username !== undefined;
+    },
+    showPasswordSection() {
+      return store.myClubActiveTab === 'security';
     },
     memberId() {
       return this.memberData.id || this.memberData.ID || this.editData.id || this.editData.ID || null;
