@@ -175,6 +175,9 @@ export default {
         'Member_Type',
         'EA_Licence',
         'Licence_Exp',
+        'Phone',
+        'Mobile',
+        'E_Mail',
       ]);
       const addressFields = new Set([
         'Full_Address',
@@ -185,9 +188,6 @@ export default {
         'Address___State/Prov/Region',
         'Address___ZIP/Postal',
         'Address___Country',
-        'Phone',
-        'Mobile',
-        'E_Mail',
       ]);
       const statusFields = new Set([
         'Paused',
