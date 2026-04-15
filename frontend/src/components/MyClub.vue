@@ -139,11 +139,17 @@ export default {
     apiBaseUrl() {
       return store.apiBaseUrl;
     },
+    myClubShowColumns() {
+      const configured = fieldOrderConfig.order?.show_columns?.my_club;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
     orderedFields() {
       // Use backend field order if loaded, else fallback to previous logic
       if (fieldOrderConfig.loaded && fieldOrderConfig.order['my_club']) {
-        // Only include fields present in memberData
-        return fieldOrderConfig.order['my_club'].filter(f => f in this.memberData && f !== 'username' && f !== 'password');
+        // Only include fields present in memberData and honouring show_columns visibility flags
+        return fieldOrderConfig.order['my_club'].filter(
+          f => f in this.memberData && f !== 'username' && f !== 'password' && this.isFieldVisible(f)
+        );
       }
       const keys = Object.keys(this.memberData || {});
       const preferredTop = ['ID', 'id', 'Number', 'Members_Name', 'E_Mail'];
@@ -177,11 +183,13 @@ export default {
         'Mobile',
         'E_Mail',
         'Car_Reg',
+        'Member_Type',
+        'EA_Licence',
+        'Licence_Exp',
       ]);
       const statusFields = new Set([
         'Paused',
         'Resigned',
-        'Member_Type',
         'Subs_Expected',
         'Subs_paid',
         'Join_Fee',
@@ -195,8 +203,6 @@ export default {
         'CR2024',
         'CR2025',
         'Details_Confirmed_2026',
-        'EA_Licence',
-        'Licence_Exp',
       ]);
 
       const grouped = {
@@ -253,6 +259,10 @@ export default {
     formatFieldName,
     isDateOfBirthField,
     dateInputValue: normalizeDateInputValue,
+    isFieldVisible(field) {
+      const configured = this.myClubShowColumns?.[field];
+      return configured !== false;
+    },
     normalizeEditableData(payload) {
       const normalized = { ...(payload || {}) };
       Object.keys(normalized).forEach(key => {
