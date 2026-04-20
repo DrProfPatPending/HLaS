@@ -622,6 +622,8 @@ Useful commands (from `frontend/`):
 - `npm run cap:open:ios` — open iOS project in Xcode
 
 Environment profile commands:
+- `npm run mobile:which-env` (default mode inspection)
+- `npm run mobile:which-env:dev|stage|prod`
 - `npm run mobile:sync:dev`
 - `npm run mobile:sync:stage`
 - `npm run mobile:sync:prod`
