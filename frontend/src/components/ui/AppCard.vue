@@ -1,5 +1,5 @@
 <template>
-  <component :is="tag" class="app-card">
+  <component :is="tag" class="app-card" :class="{ 'is-inherit': inheritStyle }">
     <slot />
   </component>
 </template>
@@ -12,6 +12,10 @@ export default {
       type: String,
       default: 'div',
     },
+    inheritStyle: {
+      type: Boolean,
+      default: false,
+    },
   },
 };
 </script>
@@ -23,5 +27,13 @@ export default {
   border-radius: var(--app-radius-xl);
   box-shadow: var(--app-shadow-soft);
   padding: 18px;
+}
+
+.app-card.is-inherit {
+  background: inherit;
+  border: inherit;
+  border-radius: inherit;
+  box-shadow: inherit;
+  padding: inherit;
 }
 </style>

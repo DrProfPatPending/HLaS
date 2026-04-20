@@ -3,7 +3,7 @@
     :type="type"
     :disabled="disabled"
     class="app-button"
-    :class="[`is-${variant}`, `is-${size}`]"
+    :class="[`is-${variant}`, `is-${size}`, { 'is-inherit': inheritStyle }]"
     @click="$emit('click', $event)"
   >
     <slot />
@@ -32,6 +32,10 @@ export default {
       type: String,
       default: 'md',
       validator: value => ['sm', 'md'].includes(value),
+    },
+    inheritStyle: {
+      type: Boolean,
+      default: false,
     },
   },
 };
@@ -73,5 +77,15 @@ export default {
 .app-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.app-button.is-inherit {
+  border: inherit;
+  border-radius: inherit;
+  background: inherit;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  padding: inherit;
 }
 </style>

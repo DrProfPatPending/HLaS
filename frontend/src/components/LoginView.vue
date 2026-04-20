@@ -34,20 +34,24 @@
         <label for="login-password">Password:</label>
         <input id="login-password" v-model="loginPassword" placeholder="Password" type="password" required />
       </div>
-      <button type="submit">Login</button>
+      <app-button type="submit" inherit-style>Login</app-button>
     </form>
     <div class="admin-login-link">
       <a href="/admin.html">Admin login</a>
     </div>
-    <div v-if="loginError" style="color: red;">{{ loginError }}</div>
+    <div v-if="loginError" class="login-error">{{ loginError }}</div>
   </div>
 </template>
 
 <script>
 import { store, login, API_BASE_URL } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 export default {
   name: 'LoginView',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       isClubSpecificUrl: false,
@@ -129,5 +133,9 @@ export default {
   border-radius: 4px;
   font-weight: 500;
   color: #333;
+}
+
+.login-error {
+  color: var(--app-color-state-danger);
 }
 </style>
