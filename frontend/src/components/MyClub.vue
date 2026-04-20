@@ -8,12 +8,12 @@
     <div v-else>
       <div class="member-edit-top-row">
         <div class="member-edit-actions member-edit-actions-top">
-          <button v-if="!isEditing" type="button" @click="startEdit">Edit Member Details</button>
+          <app-button v-if="!isEditing" type="button" inherit-style @click="startEdit">Edit Member Details</app-button>
           <template v-else>
-            <button type="button" class="save-btn" @click="saveEdit">Update Member</button>
-            <button type="button" @click="cancelEdit">Cancel</button>
+            <app-button type="button" class="save-btn" inherit-style @click="saveEdit">Update Member</app-button>
+            <app-button type="button" inherit-style @click="cancelEdit">Cancel</app-button>
           </template>
-          <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
+          <span v-if="passwordError" class="my-club-password-inline-error">{{ passwordError }}</span>
         </div>
 
         <div v-if="memberPhotoSrc" class="member-edit-photo-panel">
@@ -96,7 +96,7 @@
           </tr>
 
           <tr v-if="passwordError">
-            <td colspan="2" style="color: red; text-align: center;">{{ passwordError }}</td>
+            <td colspan="2" class="my-club-password-row-error">{{ passwordError }}</td>
           </tr>
         </tbody>
       </table>
@@ -106,6 +106,7 @@
 
 <script>
 import axios from 'axios';
+import AppButton from './ui/AppButton.vue';
 import {
   store,
   formatFieldName,
@@ -118,6 +119,9 @@ import {
 
 export default {
   name: 'MyClub',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       loading: true,
@@ -427,6 +431,16 @@ export default {
 .my-club-container {
   max-width: 900px;
   margin: 0 auto;
+}
+
+.my-club-password-inline-error {
+  color: var(--app-color-state-danger);
+  margin-left: 15px;
+}
+
+.my-club-password-row-error {
+  color: var(--app-color-state-danger);
+  text-align: center;
 }
 
 .my-club-actions {

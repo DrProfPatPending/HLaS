@@ -23,6 +23,17 @@
   --app-color-state-brand: #2a7;
   --app-color-state-brand-border: #1a6;
 
+  --app-badge-bg-default: #e5e7eb;
+  --app-badge-text-default: #374151;
+  --app-badge-bg-draft: #fff2cc;
+  --app-badge-text-draft: #7a5a00;
+  --app-badge-bg-planned: #dceeff;
+  --app-badge-text-planned: #0f4c81;
+  --app-badge-bg-positive: #e4f7e7;
+  --app-badge-text-positive: #21633a;
+  --app-badge-bg-archived: var(--app-badge-bg-default);
+  --app-badge-text-archived: var(--app-badge-text-default);
+
   --app-shadow-rgb: 15, 23, 42;
   --app-shadow-soft: 0 8px 22px rgba(var(--app-shadow-rgb), 0.08);
   --app-shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.25);

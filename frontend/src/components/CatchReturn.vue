@@ -54,9 +54,9 @@
       </div>
 
       <div class="catch-return-actions">
-        <button type="submit" :disabled="submitting">
+        <app-button type="submit" inherit-style :disabled="submitting">
           {{ submitting ? 'Saving…' : 'Save Catch Return' }}
-        </button>
+        </app-button>
       </div>
     </form>
 
@@ -170,6 +170,7 @@
 <script>
 import axios from 'axios';
 import { clubDetails, store, API_BASE_URL, formatConfiguredDate } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 const COUNT_FIELDS = [
   { key: 'smallTrout', label: 'Small Trout' },
@@ -206,6 +207,9 @@ function todayIsoDate() {
 
 export default {
   name: 'CatchReturn',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       submitting: false,

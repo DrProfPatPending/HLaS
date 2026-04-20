@@ -32,12 +32,12 @@
     </section>
 
     <div class="club-settings-actions">
-      <button type="button" :disabled="loading || saving" @click="loadSettings">
+      <app-button type="button" inherit-style :disabled="loading || saving" @click="loadSettings">
         {{ loading ? 'Loading…' : 'Reload' }}
-      </button>
-      <button type="button" :disabled="saving || loading" @click="saveSettings">
+      </app-button>
+      <app-button type="button" inherit-style :disabled="saving || loading" @click="saveSettings">
         {{ saving ? 'Saving…' : 'Save Settings' }}
-      </button>
+      </app-button>
     </div>
   </div>
 </template>
@@ -45,6 +45,7 @@
 <script>
 import axios from 'axios';
 import { API_BASE_URL, store } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 const CATCH_RETURN_FIELDS = [
   { key: 'sessionDate', label: 'Date' },
@@ -67,6 +68,9 @@ function defaultVisibility() {
 
 export default {
   name: 'ClubSettings',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       loading: false,

@@ -22,11 +22,11 @@
     </div>
 
     <div v-if="canManageBeats" class="beat-details-actions-row">
-      <button type="button" @click="addNewBeat" :disabled="isSaving">Add</button>
-      <button type="button" @click="startEditBeat" :disabled="isSaving || !selectedBeat || isEditing">Edit</button>
-      <button type="button" @click="saveBeatEdits" :disabled="isSaving || !isEditing || hasParkingValidationErrors">{{ isSaving ? 'Saving...' : 'Save' }}</button>
-      <button type="button" @click="cancelEditBeat" :disabled="isSaving || !isEditing">Cancel</button>
-      <button type="button" @click="deleteSelectedBeat" :disabled="isSaving || !selectedBeat">Delete</button>
+      <app-button type="button" inherit-style @click="addNewBeat" :disabled="isSaving">Add</app-button>
+      <app-button type="button" inherit-style @click="startEditBeat" :disabled="isSaving || !selectedBeat || isEditing">Edit</app-button>
+      <app-button type="button" inherit-style @click="saveBeatEdits" :disabled="isSaving || !isEditing || hasParkingValidationErrors">{{ isSaving ? 'Saving...' : 'Save' }}</app-button>
+      <app-button type="button" inherit-style @click="cancelEditBeat" :disabled="isSaving || !isEditing">Cancel</app-button>
+      <app-button type="button" inherit-style @click="deleteSelectedBeat" :disabled="isSaving || !selectedBeat">Delete</app-button>
     </div>
 
     <p v-if="beatEditError" class="beat-details-error">{{ beatEditError }}</p>
@@ -117,13 +117,14 @@
                     class="beat-details-input"
                     placeholder="Description"
                   />
-                  <button
+                  <app-button
                     type="button"
                     class="beat-details-parking-remove"
+                    inherit-style
                     @click="removeParkingLocationRow(parkingIndex)"
                   >
                     Remove
-                  </button>
+                  </app-button>
                 </div>
                 <p
                   v-if="parkingValidationErrors[parkingIndex]"
@@ -133,7 +134,7 @@
                 </p>
               </div>
 
-              <button type="button" @click="addParkingLocationRow">Add Parking Location</button>
+              <app-button type="button" inherit-style @click="addParkingLocationRow">Add Parking Location</app-button>
             </div>
           </td>
         </tr>
@@ -282,9 +283,13 @@ import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { store, clubDetails, API_BASE_URL, loadClubs } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 export default {
   name: 'BeatDetails',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       localBeats: [],

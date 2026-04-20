@@ -4,15 +4,15 @@
     <div v-if="editMemberPositionLabel" class="member-edit-position">{{ editMemberPositionLabel }}</div>
     <div class="member-edit-top-row">
       <div class="member-edit-actions member-edit-actions-top">
-        <button type="button" @click="updateMember">Update Member</button>
-        <button type="button" :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">
+        <app-button type="button" inherit-style @click="updateMember">Update Member</app-button>
+        <app-button type="button" inherit-style :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">
           Previous
-        </button>
-        <button type="button" :disabled="!hasNextEditMember" @click="navigateEditMember(1)">
+        </app-button>
+        <app-button type="button" inherit-style :disabled="!hasNextEditMember" @click="navigateEditMember(1)">
           Next
-        </button>
-        <button type="button" @click="cancelEdit">Cancel</button>
-        <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
+        </app-button>
+        <app-button type="button" inherit-style @click="cancelEdit">Cancel</app-button>
+        <span v-if="passwordError" class="member-edit-password-inline-error">{{ passwordError }}</span>
       </div>
       <div v-if="memberPhotoSrc" class="member-edit-photo-panel">
         <img
@@ -79,24 +79,25 @@
           </td>
         </tr>
         <tr v-if="passwordError">
-          <td colspan="2" style="color: red; text-align: center;">{{ passwordError }}</td>
+          <td colspan="2" class="member-edit-password-row-error">{{ passwordError }}</td>
         </tr>
       </tbody>
     </table>
     <div class="member-edit-actions">
-      <button type="button" @click="updateMember">Update Member</button>
-      <button type="button" :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">
+      <app-button type="button" inherit-style @click="updateMember">Update Member</app-button>
+      <app-button type="button" inherit-style :disabled="!hasPreviousEditMember" @click="navigateEditMember(-1)">
         Previous
-      </button>
-      <button type="button" :disabled="!hasNextEditMember" @click="navigateEditMember(1)">
+      </app-button>
+      <app-button type="button" inherit-style :disabled="!hasNextEditMember" @click="navigateEditMember(1)">
         Next
-      </button>
-      <button type="button" @click="cancelEdit">Cancel</button>
+      </app-button>
+      <app-button type="button" inherit-style @click="cancelEdit">Cancel</app-button>
     </div>
   </div>
 </template>
 
 <script>
+import AppButton from './ui/AppButton.vue';
 import {
   store,
   editMemberPositionLabel,
@@ -114,6 +115,9 @@ import {
 
 export default {
   name: 'MemberEdit',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       photoVisible: true,
@@ -178,3 +182,15 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.member-edit-password-inline-error {
+  color: var(--app-color-state-danger);
+  margin-left: 15px;
+}
+
+.member-edit-password-row-error {
+  color: var(--app-color-state-danger);
+  text-align: center;
+}
+</style>

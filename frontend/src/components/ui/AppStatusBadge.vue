@@ -30,28 +30,28 @@ export default {
   border-radius: 999px;
   font-size: 9pt;
   font-weight: 700;
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--app-badge-bg-default, #e5e7eb);
+  color: var(--app-badge-text-default, #374151);
 }
 
 .app-status-badge.is-draft {
-  background: #fff2cc;
-  color: #7a5a00;
+  background: var(--app-badge-bg-draft, #fff2cc);
+  color: var(--app-badge-text-draft, #7a5a00);
 }
 
 .app-status-badge.is-planned {
-  background: #dceeff;
-  color: #0f4c81;
+  background: var(--app-badge-bg-planned, #dceeff);
+  color: var(--app-badge-text-planned, #0f4c81);
 }
 
 .app-status-badge.is-queued,
 .app-status-badge.is-published {
-  background: #e4f7e7;
-  color: #21633a;
+  background: var(--app-badge-bg-positive, #e4f7e7);
+  color: var(--app-badge-text-positive, #21633a);
 }
 
 .app-status-badge.is-archived {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--app-badge-bg-archived, var(--app-badge-bg-default, #e5e7eb));
+  color: var(--app-badge-text-archived, var(--app-badge-text-default, #374151));
 }
 </style>
