@@ -36,10 +36,10 @@
           ></textarea>
         </label>
         <div class="news-updates-post-actions">
-          <button type="submit" :disabled="newsPostBusy">
+          <app-button type="submit" :disabled="newsPostBusy" inherit-style>
             {{ newsPostBusy ? 'Posting…' : 'Post Update' }}
-          </button>
-          <button type="button" :disabled="newsPostBusy" @click="fetchNewsUpdates">Refresh Posts</button>
+          </app-button>
+          <app-button type="button" :disabled="newsPostBusy" inherit-style @click="fetchNewsUpdates">Refresh Posts</app-button>
         </div>
       </form>
       <p v-if="newsPostStatus" class="newsletter-status">{{ newsPostStatus }}</p>
@@ -92,15 +92,15 @@
           {{ template.name }}
         </option>
       </select>
-      <button type="button" class="manage-templates-button" @click="openTemplateManager">
+      <app-button type="button" class="manage-templates-button" inherit-style @click="openTemplateManager">
         Manage Templates
-      </button>
-      <button type="button" :disabled="newsletterFilterSelectBusy" @click="selectAllNewsletterFiltered">
+      </app-button>
+      <app-button type="button" :disabled="newsletterFilterSelectBusy" inherit-style @click="selectAllNewsletterFiltered">
         {{ newsletterFilterSelectBusy ? 'Selecting…' : 'Select All Filtered' }}
-      </button>
-      <button type="button" :disabled="!newsletterSelectedMemberIds.length" @click="clearNewsletterSelection">
+      </app-button>
+      <app-button type="button" :disabled="!newsletterSelectedMemberIds.length" inherit-style @click="clearNewsletterSelection">
         Clear Selection
-      </button>
+      </app-button>
       <span>Filtered: {{ newsletterTotalMembers }}</span>
     </div>
 
@@ -109,7 +109,7 @@
       <div class="template-manager-content">
         <div class="template-manager-header">
           <h3>Manage Newsletter Templates</h3>
-          <button type="button" class="close-button" @click="closeTemplateManager">×</button>
+          <app-button type="button" class="close-button" inherit-style @click="closeTemplateManager">×</app-button>
         </div>
         <div class="template-list-section">
           <h4>Existing Templates</h4>
@@ -123,17 +123,18 @@
               <div class="template-item-header">
                 <span class="template-item-name">{{ template.name }}</span>
                 <div class="template-item-actions">
-                  <button type="button" class="edit-button" @click="editTemplate(template)">
+                  <app-button type="button" class="edit-button" inherit-style @click="editTemplate(template)">
                     Edit
-                  </button>
-                  <button
+                  </app-button>
+                  <app-button
                     type="button"
                     class="delete-button"
+                    inherit-style
                     :disabled="template.id === 'club-update' || template.id === 'membership-reminder'"
                     @click="deleteTemplate(template.id)"
                   >
                     Delete
-                  </button>
+                  </app-button>
                 </div>
               </div>
             </div>
@@ -194,12 +195,12 @@
               >&lt;{{ tag.tag }}&gt;</span>
             </div>
             <div class="template-form-actions">
-              <button type="submit" class="save-button">
+              <app-button type="submit" class="save-button" inherit-style>
                 {{ templateEditingId ? 'Update Template' : 'Create Template' }}
-              </button>
-              <button type="button" class="cancel-button" @click="cancelTemplateEdit">
+              </app-button>
+              <app-button type="button" class="cancel-button" inherit-style @click="cancelTemplateEdit">
                 Cancel
-              </button>
+              </app-button>
             </div>
           </form>
         </div>
@@ -258,11 +259,11 @@
 
     <!-- Pagination -->
     <div class="pagination-controls">
-      <button :disabled="newsletterCurrentPage === 1" @click="firstNewsletterPage">First Page</button>
-      <button :disabled="newsletterCurrentPage === 1" @click="prevNewsletterPage">Previous Page</button>
+      <app-button :disabled="newsletterCurrentPage === 1" inherit-style @click="firstNewsletterPage">First Page</app-button>
+      <app-button :disabled="newsletterCurrentPage === 1" inherit-style @click="prevNewsletterPage">Previous Page</app-button>
       <span>Page {{ newsletterCurrentPage }} of {{ newsletterTotalPages }}&nbsp;</span>
-      <button :disabled="newsletterCurrentPage === newsletterTotalPages" @click="nextNewsletterPage">Next Page</button>
-      <button :disabled="newsletterCurrentPage === newsletterTotalPages" @click="lastNewsletterPage">Last Page</button>
+      <app-button :disabled="newsletterCurrentPage === newsletterTotalPages" inherit-style @click="nextNewsletterPage">Next Page</app-button>
+      <app-button :disabled="newsletterCurrentPage === newsletterTotalPages" inherit-style @click="lastNewsletterPage">Last Page</app-button>
       <select v-model.number="newsletterPageSize" @change="onNewsletterPageSizeChange" class="records-per-page-select">
         <option value="10">10 per page</option>
         <option value="25">25 per page</option>
@@ -271,40 +272,45 @@
       </select>
     </div>
     <div class="page-numbers">
-      <button
+      <app-button
         v-for="pageNum in newsletterVisiblePages"
         :key="`newsletter-page-${pageNum}`"
+        type="button"
+        inherit-style
         :class="{ 'active': pageNum === newsletterCurrentPage }"
         @click="goToNewsletterPage(pageNum)"
       >
         {{ pageNum }}
-      </button>
+      </app-button>
     </div>
 
     <!-- Send actions -->
     <div class="newsletter-actions">
-      <button
+      <app-button
         type="button"
+        inherit-style
         :disabled="!selectedNewsletterTemplateId || newsletterSendBusy"
         @click="sendNewsletterToAllMembers"
       >
         {{ newsletterSendBusy ? 'Sending…' : 'Send Newsletter to All' }}
-      </button>
-      <button
+      </app-button>
+      <app-button
         type="button"
+        inherit-style
         :disabled="!newsletterSelectedMemberIds.length"
         @click="prepareNewsletterRecipients"
       >
         Prepare Selected for Email
-      </button>
+      </app-button>
       <span>Selected: {{ newsletterSelectedMemberIds.length }}</span>
-      <button
+      <app-button
         type="button"
+        inherit-style
         :disabled="!selectedNewsletterTemplateId || !newsletterSelectedMemberIds.length || newsletterSendBusy"
         @click="sendNewsletterToSelectedMembers"
       >
         {{ newsletterSendBusy ? 'Sending…' : 'Send Newsletter to Selected' }}
-      </button>
+      </app-button>
       <span v-if="clubSmtpFromEmail" class="newsletter-from-indicator">
         Sending from: <strong>{{ clubSmtpFromEmail }}</strong>
       </span>
@@ -322,6 +328,7 @@
 import axios from 'axios';
 import { store, API_BASE_URL, memberIdentity, formatConfiguredDate } from '../store.js';
 import { fieldOrderConfig, loadFieldOrderConfig } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
@@ -329,6 +336,9 @@ function todayIsoDate() {
 
 export default {
   name: 'Newsletters',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       newsletterMembers: [],
