@@ -1,7 +1,12 @@
 <template>
-  <component :is="tag" class="app-card" :class="{ 'is-inherit': inheritStyle }">
+  <v-card
+    :tag="tag"
+    class="app-card"
+    :class="{ 'is-inherit': inheritStyle }"
+    :variant="inheritStyle ? 'flat' : 'outlined'"
+  >
     <slot />
-  </component>
+  </v-card>
 </template>
 
 <script>

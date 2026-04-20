@@ -1,13 +1,16 @@
 <template>
-  <button
+  <v-btn
     :type="type"
     :disabled="disabled"
+    :variant="resolvedVariant"
     class="app-button"
     :class="[`is-${variant}`, `is-${size}`, { 'is-inherit': inheritStyle }]"
+    :density="size === 'sm' ? 'compact' : 'default'"
+    :ripple="!inheritStyle"
     @click="$emit('click', $event)"
   >
     <slot />
-  </button>
+  </v-btn>
 </template>
 
 <script>
@@ -38,11 +41,23 @@ export default {
       default: false,
     },
   },
+  computed: {
+    resolvedVariant() {
+      if (this.inheritStyle) return 'plain';
+      if (this.variant === 'link') return 'text';
+      if (this.variant === 'danger') return 'outlined';
+      return 'outlined';
+    },
+  },
 };
 </script>
 
 <style scoped>
 .app-button {
+  min-width: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
   border: 1px solid var(--app-color-border-soft);
   border-radius: var(--app-radius-lg);
   background: var(--app-color-bg-subtle);
@@ -61,7 +76,7 @@ export default {
 .app-button.is-link {
   border: none;
   border-radius: 0;
-  background: transparent;
+  background: transparent !important;
   color: var(--app-color-link);
   text-decoration: underline;
   text-align: left;
@@ -87,5 +102,6 @@ export default {
   font: inherit;
   line-height: inherit;
   padding: inherit;
+  min-width: inherit;
 }
 </style>

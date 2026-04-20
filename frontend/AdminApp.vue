@@ -1,5 +1,5 @@
 <template>
-  <div id="admin-app">
+  <v-app id="admin-app">
     <AdminHeader :loggedIn="loggedIn" @logout="logout" />
     <div v-if="!loggedIn" class="admin-login-container">
       <h2>Admin Login</h2>
@@ -53,7 +53,7 @@
         <FieldOrder />
       </div>
     </div>
-  </div>
+  </v-app>
 </template>
 
 <script>

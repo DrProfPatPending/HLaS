@@ -1,7 +1,7 @@
 <template>
-  <span class="app-status-badge" :class="badgeClass">
+  <v-chip class="app-status-badge" :class="badgeClass" density="compact" label>
     <slot>{{ status }}</slot>
-  </span>
+  </v-chip>
 </template>
 
 <script>
@@ -25,8 +25,7 @@ export default {
 
 <style scoped>
 .app-status-badge {
-  display: inline-block;
-  padding: 4px 8px;
+  padding: 4px 8px !important;
   border-radius: 999px;
   font-size: 9pt;
   font-weight: 700;

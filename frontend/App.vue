@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <v-app id="app">
     <app-header />
     <login-view v-if="!loggedIn" />
     <div v-else class="app-member-shell">
@@ -143,7 +143,7 @@
       <span class="app-footer-separator">|</span>
       <a href="mailto: robbie.scoff@gmail.com">Contact Us</a>
     </footer>
-  </div>
+  </v-app>
 </template>
 
 <script>
