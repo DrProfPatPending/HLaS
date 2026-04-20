@@ -605,6 +605,30 @@ Current migration approach:
 - Screens consume `AppButton`, `AppCard`, and `AppStatusBadge` instead of framework components directly.
 - This keeps reskinning and future framework changes centralized.
 
+### Mobile shells (Capacitor)
+
+The frontend now includes Capacitor project wiring for Android and iOS.
+
+Key files/folders:
+- `frontend/capacitor.config.ts`
+- `frontend/android/`
+- `frontend/ios/`
+
+Useful commands (from `frontend/`):
+- `npm run cap:sync` — build web app and sync into both native projects
+- `npm run mobile:android` — build + sync Android project
+- `npm run mobile:ios` — build + sync iOS project
+- `npm run cap:open:android` — open Android project in Android Studio
+- `npm run cap:open:ios` — open iOS project in Xcode
+
+Environment note for device builds:
+- Set `VITE_BACKEND_URL` to a reachable backend URL for real devices/emulators.
+- If unset, frontend defaults to `${window.location.origin}/api` (works for web proxy scenarios).
+
+iOS host requirements:
+- iOS builds/signing require macOS + Xcode + CocoaPods.
+- Platform files can exist on Linux/Windows, but native iOS build steps must run on macOS.
+
 Optional runtime theming (Phase 2 white-labelling):
 
 ```json

@@ -23,8 +23,12 @@ import axios from 'axios';
 import { applyThemeVariables, resolveThemeVariables } from './theme.js';
 
 // Use Caddy HTTPS proxy for backend API
+const ENV_BACKEND_URL = String(
+  import.meta.env?.VITE_BACKEND_URL || import.meta.env?.VUE_APP_BACKEND_URL || ''
+).trim();
+
 export const API_BASE_URL =
-  process.env.VUE_APP_BACKEND_URL ||
+  ENV_BACKEND_URL ||
   `${window.location.origin}/api`;
 
 const MEMBER_SESSION_STORAGE_KEY = 'hlas.memberSession';
