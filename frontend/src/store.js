@@ -21,15 +21,9 @@ export function loadFieldOrderConfig() {
 import { reactive, computed } from 'vue';
 import axios from 'axios';
 import { applyThemeVariables, resolveThemeVariables } from './theme.js';
+import { resolveApiBaseUrl } from './mobile/api-base.js';
 
-// Use Caddy HTTPS proxy for backend API
-const ENV_BACKEND_URL = String(
-  import.meta.env?.VITE_BACKEND_URL || import.meta.env?.VUE_APP_BACKEND_URL || ''
-).trim();
-
-export const API_BASE_URL =
-  ENV_BACKEND_URL ||
-  `${window.location.origin}/api`;
+export const API_BASE_URL = resolveApiBaseUrl();
 
 const MEMBER_SESSION_STORAGE_KEY = 'hlas.memberSession';
 

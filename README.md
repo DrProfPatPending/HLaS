@@ -622,8 +622,17 @@ Useful commands (from `frontend/`):
 - `npm run cap:open:ios` — open iOS project in Xcode
 
 Environment note for device builds:
-- Set `VITE_BACKEND_URL` to a reachable backend URL for real devices/emulators.
-- If unset, frontend defaults to `${window.location.origin}/api` (works for web proxy scenarios).
+- Preferred: set `VITE_MOBILE_BACKEND_URL` to a reachable backend URL for real devices/emulators.
+- Fallbacks:
+   - `VITE_BACKEND_URL` (shared web/mobile override)
+   - native default if unset (`http://10.0.2.2:5050` on Android emulator, `http://localhost:5050` on iOS simulator)
+   - web default `${window.location.origin}/api` when not running in Capacitor
+
+Phase 6 mobile hardening included:
+- Safe-area support via viewport-fit and CSS env insets.
+- Native keyboard resize handling (`Keyboard` plugin) with runtime keyboard-open class.
+- Native status bar behavior (`StatusBar` plugin with non-overlay webview).
+- Capacitor server cleartext support enabled for local HTTP development.
 
 iOS host requirements:
 - iOS builds/signing require macOS + Xcode + CocoaPods.
