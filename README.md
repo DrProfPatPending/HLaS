@@ -599,6 +599,109 @@ Notes:
 - The frontend fetches clubs from backend endpoint `/clubs` at startup.
 - If the member login club dropdown appears empty, verify that `/clubs` is returning data and that the frontend `loadClubs()` function is calling `/clubs`.
 
+### Frontend UI framework (Vuetify)
+
+The Vue frontend now uses Vuetify (Vue 3) as its component framework.
+
+- Plugin setup: `frontend/src/plugins/vuetify.js`
+- App wiring: `frontend/src/main.js` and `frontend/src/admin.js`
+- Build integration: `frontend/vite.config.js` (`vite-plugin-vuetify` with auto import)
+
+Current migration approach:
+- Shared primitives (`frontend/src/components/ui`) wrap framework components.
+- Screens consume `AppButton`, `AppCard`, and `AppStatusBadge` instead of framework components directly.
+- This keeps reskinning and future framework changes centralized.
+
+### Mobile shells (Capacitor)
+
+The frontend now includes Capacitor project wiring for Android and iOS.
+
+Key files/folders:
+- `frontend/capacitor.config.ts`
+- `frontend/android/`
+- `frontend/ios/`
+
+Useful commands (from `frontend/`):
+- `npm run cap:sync` — build web app and sync into both native projects
+- `npm run mobile:android` — build + sync Android project
+- `npm run mobile:ios` — build + sync iOS project
+- `npm run cap:open:android` — open Android project in Android Studio
+- `npm run cap:open:ios` — open iOS project in Xcode
+
+Environment profile commands:
+- `npm run mobile:which-env` (default mode inspection)
+- `npm run mobile:which-env:dev|stage|prod`
+- `npm run mobile:sync:dev`
+- `npm run mobile:sync:stage`
+- `npm run mobile:sync:prod`
+- `npm run mobile:android:dev|stage|prod`
+- `npm run mobile:ios:dev|stage|prod`
+
+Mobile env profile files:
+- `frontend/.env.mobile-dev`
+- `frontend/.env.mobile-stage`
+- `frontend/.env.mobile-prod`
+
+Environment note for device builds:
+- Preferred: set `VITE_MOBILE_BACKEND_URL` to a reachable backend URL for real devices/emulators.
+- Fallbacks:
+   - `VITE_BACKEND_URL` (shared web/mobile override)
+   - native default if unset (`http://10.0.2.2:5050` on Android emulator, `http://localhost:5050` on iOS simulator)
+   - web default `${window.location.origin}/api` when not running in Capacitor
+
+Phase 6 mobile hardening included:
+- Safe-area support via viewport-fit and CSS env insets.
+- Native keyboard resize handling (`Keyboard` plugin) with runtime keyboard-open class.
+- Native status bar behavior (`StatusBar` plugin with non-overlay webview).
+- Capacitor server cleartext support enabled for local HTTP development.
+
+iOS host requirements:
+- iOS builds/signing require macOS + Xcode + CocoaPods.
+- Platform files can exist on Linux/Windows, but native iOS build steps must run on macOS.
+
+Release process:
+- See `MOBILE_RELEASE_CHECKLIST.md` for dev/stage/prod mobile release gates and store submission flow.
+
+Optional runtime theming (Phase 2 white-labelling):
+
+```json
+{
+   "clubs": [
+      {
+         "shortName": "GAAFFS",
+         "cssVariables": {
+            "--app-color-link": "#0f4c81",
+            "--app-color-text-primary": "#17324d",
+            "--app-color-state-brand": "#21633a"
+         }
+      }
+   ]
+}
+```
+
+Theme notes:
+- Only CSS variables prefixed with `--app-` are applied.
+- Runtime club theme values are merged over the defaults in `frontend/src/styles/design-tokens.css`.
+- You can place variables under `cssVariables`, `theme.cssVariables`, or `branding.cssVariables` on each club object.
+
+### Phase 7 pilot reskin (GAAFFS + CTC)
+
+Pilot white-label theme profiles have been added for `GAAFFS` and `CTC` in:
+
+- `backend/clubs.config.json` → `clubs[].cssVariables`
+
+Quick validation checklist:
+- Start backend/frontend as normal.
+- Select/login with `GAAFFS` and confirm its green/teal palette is applied.
+- Switch to `CTC` and confirm its purple-toned palette is applied.
+- Switch to a club without `cssVariables` and verify fallback to default token values.
+- For mobile shell builds, run `npm run cap:sync` in `frontend/` and reopen native projects.
+
+Quick browser-console check:
+- Open DevTools Console on member or admin UI.
+- Run `hlasThemeDebug.dumpThemeVariables()` to print active `--app-*` variables.
+- Optional: run `hlasThemeDebug.dumpThemeVariables('--app-color-')` to focus on color tokens only.
+
 ### New club database template
 
 When a new club is created in Club Admin, backend now provisions the club database by copying:

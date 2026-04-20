@@ -8,12 +8,12 @@
     <div v-else>
       <div class="member-edit-top-row">
         <div class="member-edit-actions member-edit-actions-top">
-          <button v-if="!isEditing" type="button" @click="startEdit">Edit Member Details</button>
+          <app-button v-if="!isEditing" type="button" inherit-style @click="startEdit">Edit Member Details</app-button>
           <template v-else>
-            <button type="button" class="save-btn" @click="saveEdit">Update Member</button>
-            <button type="button" @click="cancelEdit">Cancel</button>
+            <app-button type="button" class="save-btn" inherit-style @click="saveEdit">Update Member</app-button>
+            <app-button type="button" inherit-style @click="cancelEdit">Cancel</app-button>
           </template>
-          <span v-if="passwordError" style="color: red; margin-left: 15px;">{{ passwordError }}</span>
+          <span v-if="passwordError" class="my-club-password-inline-error">{{ passwordError }}</span>
         </div>
 
         <div v-if="memberPhotoSrc" class="member-edit-photo-panel">
@@ -96,7 +96,7 @@
           </tr>
 
           <tr v-if="passwordError">
-            <td colspan="2" style="color: red; text-align: center;">{{ passwordError }}</td>
+            <td colspan="2" class="my-club-password-row-error">{{ passwordError }}</td>
           </tr>
         </tbody>
       </table>
@@ -106,6 +106,7 @@
 
 <script>
 import axios from 'axios';
+import AppButton from './ui/AppButton.vue';
 import {
   store,
   formatFieldName,
@@ -118,6 +119,9 @@ import {
 
 export default {
   name: 'MyClub',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       loading: true,
@@ -139,11 +143,17 @@ export default {
     apiBaseUrl() {
       return store.apiBaseUrl;
     },
+    myClubShowColumns() {
+      const configured = fieldOrderConfig.order?.show_columns?.my_club;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
     orderedFields() {
       // Use backend field order if loaded, else fallback to previous logic
       if (fieldOrderConfig.loaded && fieldOrderConfig.order['my_club']) {
-        // Only include fields present in memberData
-        return fieldOrderConfig.order['my_club'].filter(f => f in this.memberData && f !== 'username' && f !== 'password');
+        // Only include fields present in memberData and honouring show_columns visibility flags
+        return fieldOrderConfig.order['my_club'].filter(
+          f => f in this.memberData && f !== 'username' && f !== 'password' && this.isFieldVisible(f)
+        );
       }
       const keys = Object.keys(this.memberData || {});
       const preferredTop = ['ID', 'id', 'Number', 'Members_Name', 'E_Mail'];
@@ -165,6 +175,15 @@ export default {
         'Photo_Path',
         'Date_of_Birth',
         'Age',
+        'Car_Reg',
+        'Member_Type',
+        'EA_Licence',
+        'Licence_Exp',
+        'Phone',
+        'Mobile',
+        'E_Mail',
+      ]);
+      const addressFields = new Set([
         'Full_Address',
         'Address___Street_Address',
         'Address___Address_Line_2',
@@ -173,15 +192,10 @@ export default {
         'Address___State/Prov/Region',
         'Address___ZIP/Postal',
         'Address___Country',
-        'Phone',
-        'Mobile',
-        'E_Mail',
-        'Car_Reg',
       ]);
       const statusFields = new Set([
         'Paused',
         'Resigned',
-        'Member_Type',
         'Subs_Expected',
         'Subs_paid',
         'Join_Fee',
@@ -195,12 +209,11 @@ export default {
         'CR2024',
         'CR2025',
         'Details_Confirmed_2026',
-        'EA_Licence',
-        'Licence_Exp',
       ]);
 
       const grouped = {
         personal: [],
+        address: [],
         security: [],
         status: [],
       };
@@ -208,6 +221,10 @@ export default {
       this.orderedFields.forEach(key => {
         if (statusFields.has(key)) {
           grouped.status.push(key);
+          return;
+        }
+        if (addressFields.has(key)) {
+          grouped.address.push(key);
           return;
         }
         if (personalFields.has(key)) {
@@ -253,6 +270,10 @@ export default {
     formatFieldName,
     isDateOfBirthField,
     dateInputValue: normalizeDateInputValue,
+    isFieldVisible(field) {
+      const configured = this.myClubShowColumns?.[field];
+      return configured !== false;
+    },
     normalizeEditableData(payload) {
       const normalized = { ...(payload || {}) };
       Object.keys(normalized).forEach(key => {
@@ -410,6 +431,16 @@ export default {
 .my-club-container {
   max-width: 900px;
   margin: 0 auto;
+}
+
+.my-club-password-inline-error {
+  color: var(--app-color-state-danger);
+  margin-left: 15px;
+}
+
+.my-club-password-row-error {
+  color: var(--app-color-state-danger);
+  text-align: center;
 }
 
 .my-club-actions {

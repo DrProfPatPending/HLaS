@@ -10,15 +10,48 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "build:mobile:dev": "vite build --mode mobile-dev",
+    "build:mobile:stage": "vite build --mode mobile-stage",
+    "build:mobile:prod": "vite build --mode mobile-prod",
+    "preview": "vite preview",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:copy": "npm run build && npx cap copy",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "mobile:android": "npm run build && npx cap sync android",
+    "mobile:ios": "npm run build && npx cap sync ios",
+    "mobile:which-env": "node scripts/mobile-which-env.mjs",
+    "mobile:which-env:dev": "node scripts/mobile-which-env.mjs --mode=mobile-dev",
+    "mobile:which-env:stage": "node scripts/mobile-which-env.mjs --mode=mobile-stage",
+    "mobile:which-env:prod": "node scripts/mobile-which-env.mjs --mode=mobile-prod",
+    "mobile:sync:dev": "npm run mobile:which-env:dev && npm run build:mobile:dev && npx cap sync",
+    "mobile:sync:stage": "npm run mobile:which-env:stage && npm run build:mobile:stage && npx cap sync",
+    "mobile:sync:prod": "npm run mobile:which-env:prod && npm run build:mobile:prod && npx cap sync",
+    "mobile:android:dev": "npm run mobile:which-env:dev && npm run build:mobile:dev && npx cap sync android",
+    "mobile:android:stage": "npm run mobile:which-env:stage && npm run build:mobile:stage && npx cap sync android",
+    "mobile:android:prod": "npm run mobile:which-env:prod && npm run build:mobile:prod && npx cap sync android",
+    "mobile:ios:dev": "npm run mobile:which-env:dev && npm run build:mobile:dev && npx cap sync ios",
+    "mobile:ios:stage": "npm run mobile:which-env:stage && npm run build:mobile:stage && npx cap sync ios",
+    "mobile:ios:prod": "npm run mobile:which-env:prod && npm run build:mobile:prod && npx cap sync ios"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^7.6.2",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
+    "@capacitor/keyboard": "^8.0.3",
+    "@capacitor/status-bar": "^8.0.2",
     "axios": "^1.15.0",
     "leaflet": "^1.9.4",
-    "vue": "^3.5.32"
+    "vite-plugin-vuetify": "^2.1.3",
+    "vue": "^3.5.32",
+    "vuetify": "^4.0.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.6",
+    "typescript": "^6.0.3",
     "vite": "^8.0.8"
   }
 }

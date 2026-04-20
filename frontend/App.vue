@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <v-app id="app">
     <app-header />
     <login-view v-if="!loggedIn" />
     <div v-else class="app-member-shell">
@@ -12,7 +12,7 @@
       </div>
       <div class="app-member-sidebar-group">
         <aside class="app-member-sidebar" aria-label="Primary navigation">
-          <div class="app-member-sidebar-card">
+          <app-card class="app-member-sidebar-card">
             <div class="app-member-sidebar-title">Navigation</div>
             <button
               type="button"
@@ -97,7 +97,7 @@
             >
               Club Settings
             </button>
-          </div>
+          </app-card>
         </aside>
 
         <aside
@@ -105,7 +105,7 @@
           class="app-member-subnav"
           aria-label="My Club section navigation"
         >
-          <div class="app-member-subnav-card">
+          <app-card class="app-member-subnav-card">
             <div class="app-member-sidebar-title">My Club</div>
             <button
               v-for="tab in myClubTabs"
@@ -117,7 +117,7 @@
             >
               {{ tab.label }}
             </button>
-          </div>
+          </app-card>
         </aside>
       </div>
 
@@ -143,7 +143,7 @@
       <span class="app-footer-separator">|</span>
       <a href="mailto: robbie.scoff@gmail.com">Contact Us</a>
     </footer>
-  </div>
+  </v-app>
 </template>
 
 <script>
@@ -159,6 +159,7 @@ import CatchReturn from './src/components/CatchReturn.vue';
 import MemberEdit from './src/components/MemberEdit.vue';
 import MyClub from './src/components/MyClub.vue';
 import ClubSettings from './src/components/ClubSettings.vue';
+import AppCard from './src/components/ui/AppCard.vue';
 import {
   store,
   restoreMemberSession,
@@ -171,6 +172,7 @@ import {
   canAccessNewsletters,
   clubDetails,
   loadAppSettings,
+  syncActiveTheme,
   MY_CLUB_TABS,
   navigateToSection,
   setMyClubActiveTab,
@@ -191,6 +193,7 @@ export default {
     CatchReturn,
     MemberEdit,
     ClubSettings,
+    AppCard,
   },
   computed: {
     loggedIn: () => store.loggedIn,
@@ -223,10 +226,12 @@ export default {
       immediate: true,
       handler() {
         this.updateClubFavicon();
+        syncActiveTheme();
       },
     },
     selectedClub() {
       this.updateClubFavicon();
+      syncActiveTheme();
     },
   },
   methods: {

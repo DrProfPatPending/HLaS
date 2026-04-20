@@ -15,22 +15,24 @@
               <div class="fishing-beats-sort-header">
                 <span>{{ column.label }}</span>
                 <span class="fishing-beats-sort-controls">
-                  <button
+                  <app-button
                     type="button"
+                    inherit-style
                     class="fishing-beats-sort-button"
                     :class="{ 'is-active': isSortActive(column.key, 'asc') }"
                     @click="setSort(column.key, 'asc')"
                   >
                     Asc. ↑
-                  </button>
-                  <button
+                  </app-button>
+                  <app-button
                     type="button"
+                    inherit-style
                     class="fishing-beats-sort-button"
                     :class="{ 'is-active': isSortActive(column.key, 'desc') }"
                     @click="setSort(column.key, 'desc')"
                   >
                     Desc. ↓
-                  </button>
+                  </app-button>
                 </span>
               </div>
             </th>
@@ -188,9 +190,13 @@ import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { store, clubDetails, API_BASE_URL } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 export default {
   name: 'FishingBeats',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       fieldOrder: {},

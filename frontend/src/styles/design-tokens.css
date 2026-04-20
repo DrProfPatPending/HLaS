@@ -1,0 +1,100 @@
+:root {
+  --app-font-family-body: Helvetica, Arial, sans-serif;
+  --app-font-family-heading: Helvetica, Arial, sans-serif;
+
+  --app-color-bg-canvas: #f3f6f9;
+  --app-color-bg-surface: #ffffff;
+  --app-color-bg-subtle: #fafafa;
+  --app-color-bg-muted: #f0f0f0;
+  --app-color-bg-overlay: rgba(0, 0, 0, 0.45);
+  --app-color-bg-highlight: #fffbe6;
+
+  --app-color-text-primary: #17324d;
+  --app-color-text-secondary: #444444;
+  --app-color-text-muted: #555555;
+  --app-color-text-inverse: #ffffff;
+  --app-color-link: #0b4f8a;
+
+  --app-color-border-soft: #d7dce2;
+  --app-color-border-default: #cccccc;
+
+  --app-color-state-success: #1a7a3a;
+  --app-color-state-danger: #cc0000;
+  --app-color-state-brand: #2a7;
+  --app-color-state-brand-border: #1a6;
+
+  --app-badge-bg-default: #e5e7eb;
+  --app-badge-text-default: #374151;
+  --app-badge-bg-draft: #fff2cc;
+  --app-badge-text-draft: #7a5a00;
+  --app-badge-bg-planned: #dceeff;
+  --app-badge-text-planned: #0f4c81;
+  --app-badge-bg-positive: #e4f7e7;
+  --app-badge-text-positive: #21633a;
+  --app-badge-bg-archived: var(--app-badge-bg-default);
+  --app-badge-text-archived: var(--app-badge-text-default);
+
+  --app-shadow-rgb: 15, 23, 42;
+  --app-shadow-soft: 0 8px 22px rgba(var(--app-shadow-rgb), 0.08);
+  --app-shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.25);
+
+  --app-radius-sm: 4px;
+  --app-radius-md: 6px;
+  --app-radius-lg: 8px;
+  --app-radius-xl: 12px;
+
+  --app-space-1: 4px;
+  --app-space-2: 8px;
+  --app-space-3: 12px;
+  --app-space-4: 16px;
+  --app-space-5: 20px;
+  --app-space-6: 24px;
+  --app-space-7: 28px;
+  --app-space-8: 32px;
+
+  --app-safe-area-top: env(safe-area-inset-top, 0px);
+  --app-safe-area-right: env(safe-area-inset-right, 0px);
+  --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-area-left: env(safe-area-inset-left, 0px);
+  --app-keyboard-height: 0px;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--app-font-family-body);
+  color: var(--app-color-text-primary);
+  background: var(--app-color-bg-canvas);
+  padding-top: var(--app-safe-area-top);
+  padding-right: var(--app-safe-area-right);
+  padding-bottom: var(--app-safe-area-bottom);
+  padding-left: var(--app-safe-area-left);
+}
+
+html.is-capacitor.is-keyboard-open body {
+  padding-bottom: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--app-font-family-heading);
+  color: var(--app-color-text-primary);
+}
+
+a {
+  color: var(--app-color-link);
+}
+
+:focus-visible {
+  outline: 2px solid var(--app-color-link);
+  outline-offset: 2px;
+}

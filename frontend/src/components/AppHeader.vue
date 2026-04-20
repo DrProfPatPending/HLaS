@@ -29,7 +29,7 @@
           <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
         </td>
         <td v-if="loggedIn" class="logout-cell">
-          <button type="button" class="logout-button" @click="logout">Log Out</button>
+          <app-button type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
         </td>
       </tr>
     </tbody>
@@ -38,9 +38,13 @@
 
 <script>
 import { store, clubDetails, clubLogoSrc, logout } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 export default {
   name: 'AppHeader',
+  components: {
+    AppButton,
+  },
   computed: {
     loggedIn: () => store.loggedIn,
     loggedInUsername: () => store.loggedInUsername,

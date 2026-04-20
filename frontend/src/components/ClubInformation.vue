@@ -3,10 +3,10 @@
     <h2>{{ isEditing ? editForm.fullName : clubDetails.fullName }}</h2>
 
     <div v-if="canEditClubInformation" class="club-information-actions">
-      <button v-if="!isEditing" type="button" @click="startEdit">Edit</button>
+      <app-button v-if="!isEditing" type="button" inherit-style @click="startEdit">Edit</app-button>
       <template v-else>
-        <button type="button" @click="saveEdit" :disabled="isSaving">{{ isSaving ? 'Saving...' : 'Save' }}</button>
-        <button type="button" @click="cancelEdit" :disabled="isSaving">Cancel</button>
+        <app-button type="button" inherit-style @click="saveEdit" :disabled="isSaving">{{ isSaving ? 'Saving...' : 'Save' }}</app-button>
+        <app-button type="button" inherit-style @click="cancelEdit" :disabled="isSaving">Cancel</app-button>
       </template>
     </div>
 
@@ -83,9 +83,13 @@
 <script>
 import axios from 'axios';
 import { store, clubDetails, API_BASE_URL, loadClubs } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 export default {
   name: 'ClubInformation',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       isEditing: false,
@@ -187,13 +191,13 @@ export default {
 }
 
 .club-information-error {
-  color: #b42318;
+  color: var(--app-color-state-danger);
   margin: 0 0 8px;
   font-weight: 600;
 }
 
 .club-information-success {
-  color: #21633a;
+  color: var(--app-color-state-success);
   margin: 0 0 8px;
   font-weight: 600;
 }

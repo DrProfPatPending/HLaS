@@ -4,36 +4,38 @@
       <summary @click.stop="openMenu($event)">{{ clubShortName }}</summary>
       <ul class="member-top-menu-list">
         <li>
-          <button type="button" @click="navigate('club-information')">Club Information</button>
+          <app-button type="button" inherit-style @click="navigate('club-information')">Club Information</app-button>
         </li>
         <li>
-          <button type="button" @click="navigate('fishing-beats')">Fishing Beats</button>
+          <app-button type="button" inherit-style @click="navigate('fishing-beats')">Fishing Beats</app-button>
         </li>
         <li>
-          <button type="button" @click="navigate('beat-details')">Beat Details</button>
+          <app-button type="button" inherit-style @click="navigate('beat-details')">Beat Details</app-button>
         </li>
         <li>
-          <button type="button" @click="navigate('club-store')">Club Store</button>
+          <app-button type="button" inherit-style @click="navigate('club-store')">Club Store</app-button>
         </li>
         <li>
-          <button
+          <app-button
             type="button"
+            inherit-style
             :disabled="!canAccessMembershipAdmin"
             :title="canAccessMembershipAdmin ? '' : 'Requires Membership Admin permission'"
             @click="navigate('membership-admin')"
           >
             Membership Admin
-          </button>
+          </app-button>
         </li>
         <li>
-          <button
+          <app-button
             type="button"
+            inherit-style
             :disabled="!canAccessMembershipAdmin"
             :title="canAccessMembershipAdmin ? '' : 'Requires Membership Admin permission'"
             @click="navigate('club-settings')"
           >
             Club Settings
-          </button>
+          </app-button>
         </li>
       </ul>
     </details>
@@ -42,7 +44,7 @@
       <summary @click.stop="openMenu($event)">My HLaS</summary>
       <ul class="member-top-menu-list">
         <li>
-          <button type="button" @click="navigate('my-club')">My Club</button>
+          <app-button type="button" inherit-style @click="navigate('my-club')">My Club</app-button>
         </li>
       </ul>
     </details>
@@ -51,9 +53,13 @@
 
 <script>
 import { clubDetails, canAccessMembershipAdmin, navigateToSection } from '../store.js';
+import AppButton from './ui/AppButton.vue';
 
 export default {
   name: 'MemberTopMenu',
+  components: {
+    AppButton,
+  },
   computed: {
     clubShortName() {
       return clubDetails.value.shortName || 'Club';

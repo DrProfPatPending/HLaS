@@ -1,5 +1,5 @@
 <template>
-  <div id="admin-app">
+  <v-app id="admin-app">
     <AdminHeader :loggedIn="loggedIn" @logout="logout" />
     <div v-if="!loggedIn" class="admin-login-container">
       <h2>Admin Login</h2>
@@ -13,24 +13,26 @@
           <input v-model="loginPassword" class="admin-form-input" type="password" autocomplete="current-password" required />
         </div>
         <div v-if="loginError" class="error-msg admin-login-error">{{ loginError }}</div>
-        <button type="submit" class="save-btn">Login</button>
+        <app-button type="submit" class="save-btn" inherit-style>Login</app-button>
       </form>
     </div>
     <div v-else class="admin-container">
-      <div class="admin-info-box">
+      <app-card class="admin-info-box" inherit-style>
         <strong>Welcome to the Admin section of 'HookLineAndSinker' (HLaS)</strong><br>
         This page allows you to manage the application itself, configure the available Clubs, and sort out any issues with user logins, roles, and more. Use the tabs below to access different areas of administration.
-      </div>
+      </app-card>
       <div class="admin-tab-nav">
-        <button
+        <app-button
           v-for="tab in tabs"
           :key="tab.key"
+          type="button"
+          inherit-style
           class="admin-tab-btn"
           :class="{ 'admin-tab-btn-active': activeTab === tab.key }"
           @click="activeTab = tab.key"
         >
           {{ tab.label }}
-        </button>
+        </app-button>
       </div>
       <div v-show="activeTab === 'adminUsers'">
         <UserAdmin />
@@ -51,7 +53,7 @@
         <FieldOrder />
       </div>
     </div>
-  </div>
+  </v-app>
 </template>
 
 <script>
@@ -64,6 +66,8 @@ import FieldOrder from './src/components/admin/FieldOrder.vue';
 import AppUsers from './src/components/admin/AppUsers.vue';
 import AppSettings from './src/components/admin/AppSettings.vue';
 import { adminUrl, authHeaders, clearAdminToken, getAdminToken, setAdminToken } from './src/services/adminApi.js';
+import AppButton from './src/components/ui/AppButton.vue';
+import AppCard from './src/components/ui/AppCard.vue';
 
 const tabs = [
   { key: 'appSettings', label: 'App Settings' },
@@ -83,6 +87,8 @@ export default {
     SMTPSettings,
     FieldOrder,
     AppSettings,
+    AppButton,
+    AppCard,
   },
   data() {
     return {

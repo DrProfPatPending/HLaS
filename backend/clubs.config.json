@@ -17,6 +17,29 @@
         "useTls": false
       },
       "logoUrl": "/club_logo/GAAFFS",
+      "cssVariables": {
+        "--app-color-bg-canvas": "#eef4f6",
+        "--app-color-bg-surface": "#ffffff",
+        "--app-color-bg-subtle": "#f6fafb",
+        "--app-color-bg-muted": "#e6eef1",
+        "--app-color-bg-highlight": "#edf8f0",
+        "--app-color-text-primary": "#10394a",
+        "--app-color-text-secondary": "#2f4a55",
+        "--app-color-text-muted": "#48616b",
+        "--app-color-link": "#0e5d8b",
+        "--app-color-border-soft": "#c7d7de",
+        "--app-color-border-default": "#b6cad3",
+        "--app-color-state-brand": "#1f6b4f",
+        "--app-color-state-brand-border": "#17523d",
+        "--app-color-state-success": "#1f6b4f",
+        "--app-color-state-danger": "#b42318",
+        "--app-badge-bg-draft": "#fff4d6",
+        "--app-badge-text-draft": "#7b5a00",
+        "--app-badge-bg-planned": "#dcedf7",
+        "--app-badge-text-planned": "#0e5d8b",
+        "--app-badge-bg-positive": "#e6f5ea",
+        "--app-badge-text-positive": "#1f6b4f"
+      },
       "beats": [
         {
           "Beat_Name": "Barkston",
@@ -406,6 +429,29 @@
         "useTls": true
       },
       "logoUrl": "/club_logo/CTC",
+      "cssVariables": {
+        "--app-color-bg-canvas": "#f5f2f9",
+        "--app-color-bg-surface": "#ffffff",
+        "--app-color-bg-subtle": "#f8f5fc",
+        "--app-color-bg-muted": "#eee7f7",
+        "--app-color-bg-highlight": "#f2ecfb",
+        "--app-color-text-primary": "#2f1f48",
+        "--app-color-text-secondary": "#4b3a68",
+        "--app-color-text-muted": "#62537f",
+        "--app-color-link": "#5b3f9e",
+        "--app-color-border-soft": "#d8cdea",
+        "--app-color-border-default": "#c8b9df",
+        "--app-color-state-brand": "#6441a8",
+        "--app-color-state-brand-border": "#4f3286",
+        "--app-color-state-success": "#2d8a5a",
+        "--app-color-state-danger": "#b42318",
+        "--app-badge-bg-draft": "#f8ebff",
+        "--app-badge-text-draft": "#6a2f93",
+        "--app-badge-bg-planned": "#ece6ff",
+        "--app-badge-text-planned": "#4f3a99",
+        "--app-badge-bg-positive": "#e6f7ef",
+        "--app-badge-text-positive": "#1e6f4a"
+      },
       "beats": [
         {
           "Beat_Name": "A Beat",

@@ -2,18 +2,18 @@
   <div class="membership-admin-container">
     <div class="membership-admin-header">
       <h1>{{ loggedInClub }} Members</h1>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <label for="member-export-format" style="font-size: 0.9rem; color: #555;">Export as</label>
+      <div class="membership-export-controls">
+        <label for="member-export-format" class="membership-export-label">Export as</label>
         <select id="member-export-format" v-model="exportFormat">
           <option value="csv">CSV</option>
           <option value="json">JSON</option>
         </select>
-        <button type="button" :disabled="exportBusy" @click="exportMembers">
+        <app-button type="button" :disabled="exportBusy" @click="exportMembers" inherit-style>
           {{ exportBusy ? 'Exporting…' : exportButtonLabel }}
-        </button>
+        </app-button>
       </div>
     </div>
-    <div v-if="exportError" style="margin: 8px 0; color: #b00020;">{{ exportError }}</div>
+    <div v-if="exportError" class="membership-export-error">{{ exportError }}</div>
     <table v-if="orderedMemberFields.length" class="member-table">
       <thead>
         <tr>
@@ -67,19 +67,19 @@
           </td>
         </tr>
         <tr v-if="!members.length">
-          <td :colspan="orderedMemberFields.length" style="text-align: center; color: #888;">
+          <td :colspan="orderedMemberFields.length" class="membership-empty-state">
             No members found.
           </td>
         </tr>
       </tbody>
     </table>
-    <div v-else style="margin: 24px 0; color: #888;">No member columns configured.</div>
+    <div v-else class="membership-no-columns">No member columns configured.</div>
     <div class="pagination-controls">
-      <button :disabled="currentPage === 1" @click="firstPage">First Page</button>
-      <button :disabled="currentPage === 1" @click="prevPage">Previous Page</button>
+      <app-button :disabled="currentPage === 1" @click="firstPage" inherit-style>First Page</app-button>
+      <app-button :disabled="currentPage === 1" @click="prevPage" inherit-style>Previous Page</app-button>
       <span>Page {{ currentPage }} of {{ totalPages }}&nbsp;</span>
-      <button :disabled="currentPage === totalPages" @click="nextPage">Next Page</button>
-      <button :disabled="currentPage === totalPages" @click="lastPage">Last Page</button>
+      <app-button :disabled="currentPage === totalPages" @click="nextPage" inherit-style>Next Page</app-button>
+      <app-button :disabled="currentPage === totalPages" @click="lastPage" inherit-style>Last Page</app-button>
       <select v-model.number="pageSize" @change="onPageSizeChange" class="records-per-page-select">
         <option value="10">10 per page</option>
         <option value="25">25 per page</option>
@@ -88,28 +88,30 @@
       </select>
     </div>
     <div class="page-numbers">
-      <button
+      <app-button
         v-for="pageNum in visiblePages"
         :key="pageNum"
+        type="button"
+        inherit-style
         :class="{ 'active': pageNum === currentPage }"
         @click="goToPage(pageNum)"
       >
         {{ pageNum }}
-      </button>
+      </app-button>
     </div>
     <hr />
     <div v-if="showMembershipDetails">
       <div class="membership-details-header">
         <h2>Membership Details</h2>
-        <button v-if="lookupResult && !lookupError" type="button" @click="hideLookupDetails">
+        <app-button v-if="lookupResult && !lookupError" type="button" @click="hideLookupDetails" inherit-style>
           Hide Details
-        </button>
+        </app-button>
       </div>
       <form @submit.prevent="lookupMember">
         <input v-model="lookupNumber" placeholder="Membership Number" required />
-        <button type="submit">Lookup</button>
+        <app-button type="submit" inherit-style>Lookup</app-button>
       </form>
-      <div v-if="lookupError" style="color: red;">{{ lookupError }}</div>
+      <div v-if="lookupError" class="membership-lookup-error">{{ lookupError }}</div>
       <table v-if="lookupResult" class="lookup-table">
         <thead>
           <tr>
@@ -130,6 +132,7 @@
 
 <script>
 import axios from 'axios';
+import AppButton from './ui/AppButton.vue';
 import {
   API_BASE_URL,
   store,
@@ -157,6 +160,9 @@ import {
 
 export default {
   name: 'MembershipAdmin',
+  components: {
+    AppButton,
+  },
   data() {
     return {
       exportFormat: 'csv',
@@ -339,3 +345,35 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.membership-export-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.membership-export-label {
+  font-size: 0.9rem;
+  color: var(--app-color-text-muted);
+}
+
+.membership-export-error {
+  margin: 8px 0;
+  color: var(--app-color-state-danger);
+}
+
+.membership-empty-state {
+  text-align: center;
+  color: #888;
+}
+
+.membership-no-columns {
+  margin: 24px 0;
+  color: #888;
+}
+
+.membership-lookup-error {
+  color: var(--app-color-state-danger);
+}
+</style>
