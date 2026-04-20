@@ -660,6 +660,24 @@ Theme notes:
 - Runtime club theme values are merged over the defaults in `frontend/src/styles/design-tokens.css`.
 - You can place variables under `cssVariables`, `theme.cssVariables`, or `branding.cssVariables` on each club object.
 
+### Phase 7 pilot reskin (GAAFFS + CTC)
+
+Pilot white-label theme profiles have been added for `GAAFFS` and `CTC` in:
+
+- `backend/clubs.config.json` → `clubs[].cssVariables`
+
+Quick validation checklist:
+- Start backend/frontend as normal.
+- Select/login with `GAAFFS` and confirm its green/teal palette is applied.
+- Switch to `CTC` and confirm its purple-toned palette is applied.
+- Switch to a club without `cssVariables` and verify fallback to default token values.
+- For mobile shell builds, run `npm run cap:sync` in `frontend/` and reopen native projects.
+
+Quick browser-console check:
+- Open DevTools Console on member or admin UI.
+- Run `hlasThemeDebug.dumpThemeVariables()` to print active `--app-*` variables.
+- Optional: run `hlasThemeDebug.dumpThemeVariables('--app-color-')` to focus on color tokens only.
+
 ### New club database template
 
 When a new club is created in Club Admin, backend now provisions the club database by copying:
