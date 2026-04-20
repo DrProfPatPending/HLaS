@@ -6,7 +6,7 @@
     </div>
 
     <section class="home-panels-grid">
-      <div class="home-news-card">
+      <app-card class="home-news-card">
         <h4>{{ clubNewsTitle }}</h4>
         <table class="home-news-table">
           <thead>
@@ -36,17 +36,15 @@
                 <span v-if="column.key === 'Date'">{{ formatNewsDate(item.date) }}</span>
                 <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
                 <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
-                <span v-else-if="column.key === 'Status'" class="news-status-badge" :class="newsStatusClass(item.status)">
-                  {{ item.status }}
-                </span>
+                <app-status-badge v-else-if="column.key === 'Status'" :status="item.status" />
               </td>
             </tr>
           </tbody>
         </table>
         <p v-if="newsError" class="home-news-note">{{ newsError }}</p>
-      </div>
+      </app-card>
 
-      <div class="home-documents-card">
+      <app-card class="home-documents-card">
         <h4>{{ clubDocumentsTitle }}</h4>
 
         <form v-if="canManageDocuments" class="documents-upload-form" @submit.prevent="uploadDocument">
@@ -64,9 +62,9 @@
               @change="onFileSelected"
             />
           </div>
-          <button type="submit" :disabled="uploadBusy" class="documents-upload-button">
+          <app-button type="submit" :disabled="uploadBusy" class="documents-upload-button">
             {{ uploadBusy ? 'Uploading...' : 'Upload Document' }}
-          </button>
+          </app-button>
         </form>
 
         <p v-if="uploadError" class="documents-error">{{ uploadError }}</p>
@@ -102,33 +100,35 @@
                 }"
                 :style="getColumnStyle('home_documents', column.key)"
               >
-                <button
+                <app-button
                   v-if="column.key === 'Title'"
-                  type="button"
+                  variant="link"
                   class="documents-title-link"
                   @click="openDocumentPreview(doc)"
                 >
                   {{ doc.title || doc.fileName }}
-                </button>
+                </app-button>
                 <span v-else-if="column.key === 'File'">{{ doc.fileName }}</span>
                 <span v-else-if="column.key === 'Uploaded'">{{ formatNewsDate(doc.createdAt) }}</span>
                 <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
                 <div v-else-if="column.key === 'Actions'" class="documents-actions-stack">
-                  <button type="button" class="documents-link-btn" @click="downloadDocument(doc)">Download</button>
-                  <button
+                  <app-button type="button" size="sm" class="documents-link-btn" @click="downloadDocument(doc)">Download</app-button>
+                  <app-button
                     v-if="canManageDocuments"
                     type="button"
+                    size="sm"
+                    variant="danger"
                     class="documents-delete-btn"
                     @click="deleteDocument(doc)"
                   >
                     Delete
-                  </button>
+                  </app-button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
-      </div>
+      </app-card>
     </section>
 
     <p v-if="accessError" class="access-error">{{ accessError }}</p>
@@ -138,9 +138,17 @@
 <script>
 import axios from 'axios';
 import { store, clubDetails, formatConfiguredDate, API_BASE_URL } from '../store.js';
+import AppCard from './ui/AppCard.vue';
+import AppButton from './ui/AppButton.vue';
+import AppStatusBadge from './ui/AppStatusBadge.vue';
 
 export default {
   name: 'HomeView',
+  components: {
+    AppCard,
+    AppButton,
+    AppStatusBadge,
+  },
   data() {
     return {
       newsItems: [],
@@ -224,11 +232,6 @@ export default {
       if (bytes < 1024) return `${bytes} B`;
       if (bytes < (1024 * 1024)) return `${(bytes / 1024).toFixed(1)} KB`;
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    },
-    newsStatusClass(status) {
-      const normalizedStatus = String(status || '').trim().toLowerCase();
-      if (!normalizedStatus) return '';
-      return `is-${normalizedStatus.replace(/[^a-z0-9_-]/g, '-')}`;
     },
     fetchNewsUpdates() {
       this.newsLoading = true;
@@ -442,10 +445,6 @@ export default {
 
 .home-news-card,
 .home-documents-card {
-  background: #fff;
-  border: 1px solid #d7dce2;
-  border-radius: 12px;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
   padding: 18px;
 }
 
@@ -480,39 +479,6 @@ export default {
   background: #f8fbfd;
 }
 
-.news-status-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 9pt;
-  font-weight: 700;
-}
-
-.news-status-badge.is-draft {
-  background: #fff2cc;
-  color: #7a5a00;
-}
-
-.news-status-badge.is-planned {
-  background: #dceeff;
-  color: #0f4c81;
-}
-
-.news-status-badge.is-queued {
-  background: #e4f7e7;
-  color: #21633a;
-}
-
-.news-status-badge.is-published {
-  background: #e4f7e7;
-  color: #21633a;
-}
-
-.news-status-badge.is-archived {
-  background: #e5e7eb;
-  color: #374151;
-}
-
 .home-news-note {
   margin: 14px 0 0;
   color: #475569;
@@ -536,24 +502,8 @@ export default {
   padding: 8px;
 }
 
-.documents-upload-button,
-.documents-link-btn,
-.documents-delete-btn {
-  border: 1px solid #c7d2e0;
-  border-radius: 8px;
-  background: #f8fbfd;
-  color: #17324d;
-  padding: 7px 12px;
-  cursor: pointer;
-}
-
 .documents-delete-btn {
   margin-left: 0;
-}
-
-.documents-upload-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .home-documents-table {
@@ -606,14 +556,6 @@ export default {
 }
 
 .documents-title-link {
-  border: none;
-  background: transparent;
-  color: #0f4c81;
-  text-decoration: underline;
-  text-align: left;
-  padding: 0;
-  cursor: pointer;
-  font: inherit;
   max-width: 100%;
 }
 
