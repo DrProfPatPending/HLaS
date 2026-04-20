@@ -10,6 +10,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:mobile:dev": "vite build --mode mobile-dev",
+    "build:mobile:stage": "vite build --mode mobile-stage",
+    "build:mobile:prod": "vite build --mode mobile-prod",
     "preview": "vite preview",
     "cap:add:android": "npx cap add android",
     "cap:add:ios": "npx cap add ios",
@@ -18,7 +21,16 @@
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios",
     "mobile:android": "npm run build && npx cap sync android",
-    "mobile:ios": "npm run build && npx cap sync ios"
+    "mobile:ios": "npm run build && npx cap sync ios",
+    "mobile:sync:dev": "npm run build:mobile:dev && npx cap sync",
+    "mobile:sync:stage": "npm run build:mobile:stage && npx cap sync",
+    "mobile:sync:prod": "npm run build:mobile:prod && npx cap sync",
+    "mobile:android:dev": "npm run build:mobile:dev && npx cap sync android",
+    "mobile:android:stage": "npm run build:mobile:stage && npx cap sync android",
+    "mobile:android:prod": "npm run build:mobile:prod && npx cap sync android",
+    "mobile:ios:dev": "npm run build:mobile:dev && npx cap sync ios",
+    "mobile:ios:stage": "npm run build:mobile:stage && npx cap sync ios",
+    "mobile:ios:prod": "npm run build:mobile:prod && npx cap sync ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",

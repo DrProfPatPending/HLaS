@@ -621,6 +621,18 @@ Useful commands (from `frontend/`):
 - `npm run cap:open:android` — open Android project in Android Studio
 - `npm run cap:open:ios` — open iOS project in Xcode
 
+Environment profile commands:
+- `npm run mobile:sync:dev`
+- `npm run mobile:sync:stage`
+- `npm run mobile:sync:prod`
+- `npm run mobile:android:dev|stage|prod`
+- `npm run mobile:ios:dev|stage|prod`
+
+Mobile env profile files:
+- `frontend/.env.mobile-dev`
+- `frontend/.env.mobile-stage`
+- `frontend/.env.mobile-prod`
+
 Environment note for device builds:
 - Preferred: set `VITE_MOBILE_BACKEND_URL` to a reachable backend URL for real devices/emulators.
 - Fallbacks:
@@ -637,6 +649,9 @@ Phase 6 mobile hardening included:
 iOS host requirements:
 - iOS builds/signing require macOS + Xcode + CocoaPods.
 - Platform files can exist on Linux/Windows, but native iOS build steps must run on macOS.
+
+Release process:
+- See `MOBILE_RELEASE_CHECKLIST.md` for dev/stage/prod mobile release gates and store submission flow.
 
 Optional runtime theming (Phase 2 white-labelling):
 
