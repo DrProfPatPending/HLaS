@@ -592,6 +592,19 @@ Notes:
 - The frontend fetches clubs from backend endpoint `/clubs` at startup.
 - If the member login club dropdown appears empty, verify that `/clubs` is returning data and that the frontend `loadClubs()` function is calling `/clubs`.
 
+### Frontend UI framework (Vuetify)
+
+The Vue frontend now uses Vuetify (Vue 3) as its component framework.
+
+- Plugin setup: `frontend/src/plugins/vuetify.js`
+- App wiring: `frontend/src/main.js` and `frontend/src/admin.js`
+- Build integration: `frontend/vite.config.js` (`vite-plugin-vuetify` with auto import)
+
+Current migration approach:
+- Shared primitives (`frontend/src/components/ui`) wrap framework components.
+- Screens consume `AppButton`, `AppCard`, and `AppStatusBadge` instead of framework components directly.
+- This keeps reskinning and future framework changes centralized.
+
 Optional runtime theming (Phase 2 white-labelling):
 
 ```json
