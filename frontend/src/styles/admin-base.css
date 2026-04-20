@@ -1,13 +1,13 @@
 .save-btn {
-  background: #2a7;
-  color: #fff;
-  border: 1px solid #1a6;
+  background: var(--app-color-state-brand);
+  color: var(--app-color-text-inverse);
+  border: 1px solid var(--app-color-state-brand-border);
 }
 
 .admin-panel {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  background: var(--app-color-bg-subtle);
+  border: 1px solid var(--app-color-border-default);
+  border-radius: var(--app-radius-md);
   padding: 16px 20px;
   margin: 24px 0 28px;
   max-width: 900px;
@@ -42,7 +42,7 @@
 .admin-search-input {
   padding: 6px 8px;
   font-size: 10pt;
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: var(--app-font-family-body);
 }
 
 .admin-form-input {
@@ -69,28 +69,28 @@
 .admin-tab-nav {
   display: flex;
   gap: 4px;
-  border-bottom: 2px solid #ccc;
+  border-bottom: 2px solid var(--app-color-border-default);
   margin-bottom: 20px;
 }
 
 .admin-tab-btn {
   padding: 7px 20px;
   font-size: 10pt;
-  font-family: Helvetica, Arial, sans-serif;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
+  font-family: var(--app-font-family-body);
+  background: var(--app-color-bg-muted);
+  border: 1px solid var(--app-color-border-default);
   border-bottom: none;
   cursor: pointer;
-  border-radius: 4px 4px 0 0;
-  color: #555;
+  border-radius: var(--app-radius-sm) var(--app-radius-sm) 0 0;
+  color: var(--app-color-text-muted);
 }
 
 .admin-tab-btn-active {
-  background: #fff;
-  border-color: #ccc;
-  border-bottom: 2px solid #fff;
+  background: var(--app-color-bg-surface);
+  border-color: var(--app-color-border-default);
+  border-bottom: 2px solid var(--app-color-bg-surface);
   margin-bottom: -2px;
-  color: #111;
+  color: var(--app-color-text-primary);
   font-weight: bold;
 }
 
@@ -103,13 +103,13 @@
 
 .admin-table th,
 .admin-table td {
-  border: 1px solid #ccc;
+  border: 1px solid var(--app-color-border-default);
   padding: 6px 9px;
   text-align: left;
 }
 
 .admin-table th {
-  background: #f0f0f0;
+  background: var(--app-color-bg-muted);
   white-space: nowrap;
 }
 
@@ -123,7 +123,7 @@
   margin: 2px 3px;
   padding: 4px 10px;
   font-size: 8.5pt;
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: var(--app-font-family-body);
   cursor: pointer;
 }
 
@@ -131,7 +131,7 @@
 .admin-loading-text,
 .admin-muted-text,
 .admin-info-text {
-  color: #444;
+  color: var(--app-color-text-secondary);
 }
 
 .admin-info-text {
@@ -141,7 +141,7 @@
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
+  background: var(--app-color-bg-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -149,12 +149,12 @@
 }
 
 .admin-modal-card {
-  background: #fff;
-  border-radius: 8px;
+  background: var(--app-color-bg-surface);
+  border-radius: var(--app-radius-lg);
   padding: 28px 32px;
   min-width: 420px;
   max-width: 520px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  box-shadow: var(--app-shadow-modal);
 }
 
 .admin-modal-actions {
@@ -165,17 +165,17 @@
 }
 
 .admin-edit-row {
-  background: #fffbe6;
+  background: var(--app-color-bg-highlight);
 }
 
 .error-msg {
-  color: #c00;
+  color: var(--app-color-state-danger);
   margin: 8px 0;
   font-size: 10pt;
 }
 
 .success-msg {
-  color: #1a7a3a;
+  color: var(--app-color-state-success);
   margin: 8px 0;
   font-size: 10pt;
 }
