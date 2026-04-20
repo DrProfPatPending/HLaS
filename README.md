@@ -592,6 +592,28 @@ Notes:
 - The frontend fetches clubs from backend endpoint `/clubs` at startup.
 - If the member login club dropdown appears empty, verify that `/clubs` is returning data and that the frontend `loadClubs()` function is calling `/clubs`.
 
+Optional runtime theming (Phase 2 white-labelling):
+
+```json
+{
+   "clubs": [
+      {
+         "shortName": "GAAFFS",
+         "cssVariables": {
+            "--app-color-link": "#0f4c81",
+            "--app-color-text-primary": "#17324d",
+            "--app-color-state-brand": "#21633a"
+         }
+      }
+   ]
+}
+```
+
+Theme notes:
+- Only CSS variables prefixed with `--app-` are applied.
+- Runtime club theme values are merged over the defaults in `frontend/src/styles/design-tokens.css`.
+- You can place variables under `cssVariables`, `theme.cssVariables`, or `branding.cssVariables` on each club object.
+
 ### New club database template
 
 When a new club is created in Club Admin, backend now provisions the club database by copying:

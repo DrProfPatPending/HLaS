@@ -20,6 +20,7 @@ export function loadFieldOrderConfig() {
 }
 import { reactive, computed } from 'vue';
 import axios from 'axios';
+import { applyThemeVariables, resolveThemeVariables } from './theme.js';
 
 // Use Caddy HTTPS proxy for backend API
 export const API_BASE_URL =
@@ -58,6 +59,10 @@ export const MY_CLUB_TABS = [
 export const store = reactive({
   apiBaseUrl: API_BASE_URL,
   appDateFormat: 'DD/MM/YY',
+  appSettings: {},
+  clubSettings: {},
+  activeThemeVariables: {},
+  activeThemeClub: '',
 
   // Auth
   loggedIn: false,
@@ -335,14 +340,38 @@ export function loadAppSettings() {
   return axios.get(`${API_BASE_URL}/app-settings`)
     .then(res => {
       const settings = res?.data?.settings || {};
+      store.appSettings = settings;
       const dateFormat = String(settings.dateFormat || '').trim();
       if (dateFormat) {
         store.appDateFormat = dateFormat;
       }
+      syncActiveTheme();
     })
     .catch(() => {
       store.appDateFormat = store.appDateFormat || 'DD/MM/YY';
+      store.appSettings = {};
+      syncActiveTheme();
     });
+}
+
+export function syncActiveTheme() {
+  const activeClub = String(store.loggedIn ? store.loggedInClub : store.selectedClub).trim();
+  const normalizedActiveClub = activeClub.toLowerCase();
+
+  const matchedClub = Array.isArray(store.clubs)
+    ? store.clubs.find(club => String(club?.shortName || '').trim().toLowerCase() === normalizedActiveClub) || null
+    : null;
+
+  const resolvedThemeVariables = resolveThemeVariables({
+    appSettings: store.appSettings,
+    clubSettings: store.clubSettings,
+    activeClub,
+    matchedClub,
+  });
+
+  store.activeThemeClub = activeClub;
+  store.activeThemeVariables = resolvedThemeVariables;
+  applyThemeVariables(resolvedThemeVariables);
 }
 
 export function isDateOfBirthField(field) {
@@ -541,6 +570,7 @@ export function restoreMemberSession() {
     store.memberRefreshToken = typeof payload.memberRefreshToken === 'string' ? payload.memberRefreshToken : '';
     store.memberRoles = normalizeStringList(payload.memberRoles);
     store.memberPermissions = normalizeStringList(payload.memberPermissions);
+    syncActiveTheme();
   } catch {
     clearMemberSession();
   }
@@ -643,6 +673,7 @@ export function loadClubs() {
       );
       if (matchedPreferredClub) {
         store.selectedClub = matchedPreferredClub.shortName;
+        syncActiveTheme();
         return;
       }
     }
@@ -651,8 +682,10 @@ export function loadClubs() {
     if (!selectedExists && clubs.length) {
       store.selectedClub = clubs[0].shortName;
     }
+    syncActiveTheme();
   }).catch(() => {
     store.clubs = [];
+    syncActiveTheme();
   });
 }
 
@@ -718,6 +751,7 @@ export function login() {
         store.activeSection = 'home';
         store.currentPage = 1;
         store.accessError = '';
+        syncActiveTheme();
         if (store.memberPermissions.includes('member.club.list')) {
           fetchMembers();
         }
@@ -758,6 +792,7 @@ export function logout() {
   store.loginPassword = '';
   store.members = [];
   store.totalMembers = 0;
+  syncActiveTheme();
   store.currentPage = 1;
   store.lookupNumber = '';
   store.lookupResult = null;

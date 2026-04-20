@@ -171,6 +171,7 @@ import {
   canAccessNewsletters,
   clubDetails,
   loadAppSettings,
+  syncActiveTheme,
   MY_CLUB_TABS,
   navigateToSection,
   setMyClubActiveTab,
@@ -223,10 +224,12 @@ export default {
       immediate: true,
       handler() {
         this.updateClubFavicon();
+        syncActiveTheme();
       },
     },
     selectedClub() {
       this.updateClubFavicon();
+      syncActiveTheme();
     },
   },
   methods: {
