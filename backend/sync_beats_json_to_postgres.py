@@ -115,6 +115,7 @@ def sync_beats_to_postgres(dry_run: bool = False, verbose: bool = True) -> bool:
                         beat_downstream_latitude=beat_data.get('Beat_Downstream_Latitude', ''),
                         beat_downstream_longitude=beat_data.get('Beat_Downstream_Longitude', ''),
                         parking_locations=beat_data.get('Parking_Locations', []),
+                        pools=beat_data.get('Pools', []),
                     )
                     
                     if not dry_run:
