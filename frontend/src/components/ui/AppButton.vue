@@ -74,19 +74,32 @@ export default {
 }
 
 .app-button.is-link {
-  border: none;
+  border: none !important;
   border-radius: 0;
   background: transparent !important;
-  color: var(--app-color-link);
+  color: var(--app-color-link) !important;
   text-decoration: underline;
   text-align: left;
   padding: 0;
 }
 
+.app-button.is-link :deep(.v-btn__content) {
+  color: var(--app-color-link) !important;
+}
+
+.app-button.is-link :deep(.v-btn__overlay),
+.app-button.is-link :deep(.v-btn__underlay) {
+  background: transparent !important;
+}
+
 .app-button.is-danger {
-  border-color: var(--app-color-state-danger);
-  color: var(--app-color-state-danger);
+  border-color: var(--app-color-state-danger) !important;
+  color: var(--app-color-state-danger) !important;
   background: var(--app-color-bg-surface);
+}
+
+.app-button.is-danger :deep(.v-btn__content) {
+  color: var(--app-color-state-danger) !important;
 }
 
 .app-button:disabled {
