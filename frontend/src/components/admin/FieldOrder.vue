@@ -128,6 +128,16 @@ export default {
     this.fetchFieldOrder();
   },
   methods: {
+    resolveFieldOrderSaveErrorMessage(err, fallbackMessage) {
+      const statusCode = err?.response?.status;
+      if (statusCode === 401) {
+        return 'Session expired. Please log in again, then retry.';
+      }
+      if (statusCode === 403) {
+        return 'You do not have permission to update field-order configuration.';
+      }
+      return err?.response?.data?.error || fallbackMessage;
+    },
     showStatus(msg, isError = false) {
       this.statusMsg = msg;
       this.statusError = isError;
@@ -234,7 +244,7 @@ export default {
           this.showStatus('Field-order configuration saved successfully.');
         })
         .catch(err => {
-          this.showStatus(err.response?.data?.error || 'Failed to save field-order configuration.', true);
+          this.showStatus(this.resolveFieldOrderSaveErrorMessage(err, 'Failed to save field-order configuration.'), true);
         })
         .finally(() => {
           this.saving = false;

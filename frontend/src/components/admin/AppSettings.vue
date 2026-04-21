@@ -57,6 +57,16 @@ export default {
     this.fetchSettings();
   },
   methods: {
+    resolveAdminErrorMessage(err, fallbackMessage) {
+      const statusCode = err?.response?.status;
+      if (statusCode === 401) {
+        return 'Session expired. Please log in again, then retry.';
+      }
+      if (statusCode === 403) {
+        return 'You do not have permission to update app settings.';
+      }
+      return err?.response?.data?.error || fallbackMessage;
+    },
     showStatus(message, isError = false) {
       this.statusMsg = message;
       this.statusError = isError;
@@ -95,7 +105,7 @@ export default {
           this.showStatus('App settings saved successfully.');
         })
         .catch(err => {
-          this.showStatus(err.response?.data?.error || 'Failed to save app settings', true);
+          this.showStatus(this.resolveAdminErrorMessage(err, 'Failed to save app settings'), true);
         })
         .finally(() => {
           this.saving = false;

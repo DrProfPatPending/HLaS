@@ -989,11 +989,29 @@ export default {
           this.beatEditSuccess = successMessage;
         })
         .catch(error => {
-          this.beatEditError = error?.response?.data?.error || 'Failed to update beats.';
+          this.beatEditError = this.resolveBeatSaveErrorMessage(error);
         })
         .finally(() => {
           this.isSaving = false;
         });
+    },
+    resolveBeatSaveErrorMessage(error) {
+      const statusCode = error?.response?.status;
+      if (statusCode === 401) {
+        return 'Session expired. Please log in again, then retry saving beat changes.';
+      }
+      if (statusCode === 403) {
+        return 'You do not have permission to update beats for this club.';
+      }
+
+      const apiError = String(error?.response?.data?.error || '').trim();
+      if (apiError) return apiError;
+
+      if (store?.loginError && String(store.loginError).trim()) {
+        return String(store.loginError).trim();
+      }
+
+      return 'Failed to update beats.';
     },
     saveBeatEdits() {
       if (!this.isEditing) return;

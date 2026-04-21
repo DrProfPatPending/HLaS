@@ -469,27 +469,27 @@
           "Pools": [
             {
               "Sequence": "1",
-              "Name": "Willow Glide",
-              "Description": "Long gentle glide with weed lanes and evening dry-fly activity.",
-              "Location": "///skirt.noble.angles",
-              "Latitude": "52.23072",
-              "Longitude": "0.10481"
+              "Name": "Bridge Pool",
+              "Description": "Shallow cascade into reasonably deep pool going underneath the Ickleton Road bridge.",
+              "Location": "///outs.clips.squad",
+              "Latitude": "52.078765",
+              "Longitude": "0.17989"
             },
             {
               "Sequence": "2",
-              "Name": "Gravel Run",
+              "Name": "Bend Pool",
               "Description": "Shallow riffle tail with productive nymphing seam.",
-              "Location": "///river.fish.hatch",
-              "Latitude": "52.23136",
-              "Longitude": "0.10617"
+              "Location": "///scribble.noticing.chats",
+              "Latitude": "52.077957",
+              "Longitude": "0.180154"
             },
             {
               "Sequence": "3",
-              "Name": "Bend Pool",
+              "Name": "Footbridge Pool",
               "Description": "Deeper bend pool under overhanging trees.",
-              "Location": "///trout.calm.water",
-              "Latitude": "52.23201",
-              "Longitude": "0.10749"
+              "Location": "///symphonic.silk.bill",
+              "Latitude": "52.077687",
+              "Longitude": "0.181425"
             }
           ]
         },

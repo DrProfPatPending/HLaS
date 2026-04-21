@@ -113,6 +113,16 @@ export default {
     };
   },
   methods: {
+    resolveSmtpSaveErrorMessage(err, fallbackMessage) {
+      const statusCode = err?.response?.status;
+      if (statusCode === 401) {
+        return 'Session expired. Please log in again, then retry.';
+      }
+      if (statusCode === 403) {
+        return 'You do not have permission to update SMTP settings for this club.';
+      }
+      return err?.response?.data?.error || fallbackMessage;
+    },
     showStatus(msg, isError = false) {
       this.statusMsg = msg;
       this.statusError = isError;
@@ -222,7 +232,7 @@ export default {
           this.validationErrors = [];
         })
         .catch(err => {
-          this.showStatus(err.response?.data?.error || 'Failed to save SMTP settings', true);
+          this.showStatus(this.resolveSmtpSaveErrorMessage(err, 'Failed to save SMTP settings'), true);
         })
         .finally(() => {
           this.saving = false;
