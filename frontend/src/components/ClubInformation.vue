@@ -122,6 +122,16 @@ export default {
     },
   },
   methods: {
+    resolveClubInformationSaveErrorMessage(err) {
+      const statusCode = err?.response?.status;
+      if (statusCode === 401) {
+        return 'Session expired. Please log in again, then retry.';
+      }
+      if (statusCode === 403) {
+        return 'You do not have permission to update club information.';
+      }
+      return err?.response?.data?.error || 'Failed to update club information.';
+    },
     resetEditForm() {
       this.editForm = {
         fullName: this.clubDetails.fullName || '',
@@ -165,7 +175,7 @@ export default {
           this.saveSuccess = 'Club information updated.';
         })
         .catch((err) => {
-          this.saveError = err?.response?.data?.error || 'Failed to update club information.';
+          this.saveError = this.resolveClubInformationSaveErrorMessage(err);
         })
         .finally(() => {
           this.isSaving = false;

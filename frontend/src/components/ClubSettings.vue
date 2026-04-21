@@ -88,6 +88,16 @@ export default {
     this.loadSettings();
   },
   methods: {
+    resolveClubSettingsSaveErrorMessage(err) {
+      const statusCode = err?.response?.status;
+      if (statusCode === 401) {
+        return 'Session expired. Please log in again, then retry.';
+      }
+      if (statusCode === 403) {
+        return 'You do not have permission to update club settings.';
+      }
+      return err?.response?.data?.error || 'Unable to save club settings.';
+    },
     normalizeVisibility(rawVisibility) {
       const source = rawVisibility && typeof rawVisibility === 'object' ? rawVisibility : {};
       const normalized = defaultVisibility();
@@ -137,7 +147,7 @@ export default {
           this.status = 'Club settings saved.';
         })
         .catch(err => {
-          this.error = err?.response?.data?.error || 'Unable to save club settings.';
+          this.error = this.resolveClubSettingsSaveErrorMessage(err);
         })
         .finally(() => {
           this.saving = false;

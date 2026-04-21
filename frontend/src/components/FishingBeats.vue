@@ -166,6 +166,34 @@
                   </ul>
                   <span v-else>-</span>
                 </template>
+                <template v-else-if="column.key === 'Pools'">
+                  <ul
+                    v-if="selectedFishingBeat.Pools.length"
+                    class="fishing-beat-parking-list"
+                  >
+                    <li
+                      v-for="(pool, poolIndex) in selectedFishingBeat.Pools"
+                      :key="`pool-${poolIndex}`"
+                    >
+                      <strong>#{{ pool.Sequence || poolIndex + 1 }} {{ pool.Name || `Pool ${poolIndex + 1}` }}</strong>
+                      <span v-if="pool.Latitude && pool.Longitude">
+                        ({{ pool.Latitude }}, {{ pool.Longitude }})
+                      </span>
+                      <span v-if="pool.Location_W3W">
+                        &mdash;
+                        <a
+                          href="#"
+                          class="w3w-link"
+                          @click.prevent="openReusableMapWindow(pool.Location_W3W.url)"
+                        >
+                          {{ pool.Location_W3W.display }}
+                        </a>
+                      </span>
+                      <span v-if="pool.Description"> - {{ pool.Description }}</span>
+                    </li>
+                  </ul>
+                  <span v-else>-</span>
+                </template>
                 <template v-else>
                   {{ selectedFishingBeat[column.key] || '-' }}
                 </template>
@@ -255,6 +283,7 @@ export default {
         Beat_Upstream_Coords: { key: 'Beat_Upstream_Coords', label: 'Upstream Co-ords' },
         Beat_Downstream_Coords: { key: 'Beat_Downstream_Coords', label: 'Downstream Co-ords' },
         Parking_Locations: { key: 'Parking_Locations', label: 'Parking' },
+        Pools: { key: 'Pools', label: 'Pools' },
       };
       const orderedKeys = [
         ...this.orderedTableColumns.map(column => column.key),
@@ -262,6 +291,7 @@ export default {
         'Beat_Upstream_Coords',
         'Beat_Downstream_Coords',
         'Parking_Locations',
+        'Pools',
       ];
       return orderedKeys.map(key => detailColumnMap[key]).filter(Boolean);
     },
@@ -294,6 +324,7 @@ export default {
                   Longitude: loc && loc.Longitude ? loc.Longitude : '',
                 }))
             : [],
+          Pools: this.normalizePoolsForDisplay(beat && beat.Pools),
           Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
           Detailed_Description: beat && beat.Detailed_Description ? beat.Detailed_Description : '',
         };
@@ -451,6 +482,44 @@ export default {
       const numericValue = Number.parseFloat(String(rawValue || '').trim());
       return Number.isFinite(numericValue) ? numericValue : null;
     },
+    parsePoolsInput(rawPools) {
+      const parsed = Array.isArray(rawPools) ? rawPools : [];
+      const normalized = parsed
+        .filter(pool => pool && typeof pool === 'object')
+        .map(pool => ({
+          Sequence: String(pool?.Sequence || '').trim(),
+          Name: String(pool?.Name || '').trim(),
+          Location: String(pool?.Location || '').trim(),
+          Description: String(pool?.Description || '').trim(),
+          Latitude: String(pool?.Latitude || '').trim(),
+          Longitude: String(pool?.Longitude || '').trim(),
+        }))
+        .filter(pool =>
+          pool.Sequence || pool.Name || pool.Location || pool.Description || pool.Latitude || pool.Longitude
+        )
+        .map((pool, index) => {
+          const sequenceNumber = Number.parseInt(pool.Sequence, 10);
+          return {
+            ...pool,
+            Sequence: Number.isFinite(sequenceNumber) && sequenceNumber > 0
+              ? String(sequenceNumber)
+              : String(index + 1),
+          };
+        })
+        .sort((a, b) => Number.parseInt(a.Sequence, 10) - Number.parseInt(b.Sequence, 10))
+        .map((pool, index) => ({
+          ...pool,
+          Sequence: String(index + 1),
+        }));
+
+      return normalized;
+    },
+    normalizePoolsForDisplay(rawPools) {
+      return this.parsePoolsInput(rawPools).map(pool => ({
+        ...pool,
+        Location_W3W: this.parseWhat3Words(pool.Location),
+      }));
+    },
     async resolveBeatPointCoordinates(wordsValue, latitudeValue, longitudeValue) {
       const lat = this.parseCoordinateValue(latitudeValue);
       const lng = this.parseCoordinateValue(longitudeValue);
@@ -537,6 +606,45 @@ export default {
       const downstreamLatLng = L.latLng(downstreamCoords.lat, downstreamCoords.lng);
       const allBoundsPoints = [upstreamLatLng, downstreamLatLng];
 
+      const sortedPools = Array.isArray(selectedBeat.Pools)
+        ? [...selectedBeat.Pools].sort((a, b) => Number.parseInt(a.Sequence, 10) - Number.parseInt(b.Sequence, 10))
+        : [];
+
+      const poolMarkers = [];
+      const poolRoutePoints = [];
+      for (let i = 0; i < sortedPools.length; i += 1) {
+        const pool = sortedPools[i];
+        const poolCoords = await this.resolveBeatPointCoordinates(
+          pool?.Location,
+          pool?.Latitude,
+          pool?.Longitude
+        );
+        if (!poolCoords) continue;
+
+        const poolLatLng = L.latLng(poolCoords.lat, poolCoords.lng);
+        poolRoutePoints.push(poolLatLng);
+        allBoundsPoints.push(poolLatLng);
+
+        const sequenceLabel = pool?.Sequence || String(i + 1);
+        const nameLabel = pool?.Name ? `#${sequenceLabel} ${pool.Name}` : `Pool #${sequenceLabel}`;
+        const locationW3W = pool?.Location_W3W || this.parseWhat3Words(pool?.Location || '');
+        let poolPopup = nameLabel;
+        if (locationW3W) poolPopup += `<br><a href="${locationW3W.url}" target="what3words-map-window">${locationW3W.display}</a>`;
+        if (pool?.Description) poolPopup += `<br>${pool.Description}`;
+
+        const poolMarker = L.marker(poolLatLng, {
+          icon: L.divIcon({
+            className: 'pool-pin-marker',
+            html: `<div class="pool-pin-dot">${sequenceLabel}</div>`,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+          }),
+        }).bindPopup(poolPopup);
+
+        poolMarker.addTo(this.fishingBeatMapInstance);
+        poolMarkers.push(poolMarker);
+      }
+
       const upstreamMarker = L.circleMarker(upstreamLatLng, {
         radius: 7, color: '#1f77b4', fillColor: '#1f77b4', fillOpacity: 0.8,
       }).bindPopup('Upstream limit');
@@ -545,7 +653,7 @@ export default {
         radius: 7, color: '#d62728', fillColor: '#d62728', fillOpacity: 0.8,
       }).bindPopup('Downstream limit');
 
-      const boundaryLine = L.polyline([upstreamLatLng, downstreamLatLng], {
+      const boundaryLine = L.polyline([downstreamLatLng, ...poolRoutePoints, upstreamLatLng], {
         color: '#2f2f2f', weight: 3,
       });
 
@@ -584,14 +692,22 @@ export default {
       upstreamMarker.addTo(this.fishingBeatMapInstance);
       downstreamMarker.addTo(this.fishingBeatMapInstance);
       boundaryLine.addTo(this.fishingBeatMapInstance);
-      this.fishingBeatMapLayers = [upstreamMarker, downstreamMarker, boundaryLine, ...parkingLayers];
+      this.fishingBeatMapLayers = [upstreamMarker, downstreamMarker, boundaryLine, ...poolMarkers, ...parkingLayers];
 
       this.fishingBeatMapInstance.invalidateSize();
       const bounds = L.latLngBounds(allBoundsPoints);
       this.fishingBeatMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
-      this.fishingBeatMapStatus = parkingLayers.length
-        ? `Showing upstream/downstream limits and ${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}.`
-        : 'Showing upstream and downstream limits.';
+      const poolLabel = `${poolMarkers.length} pool node${poolMarkers.length === 1 ? '' : 's'}`;
+      const parkingLabel = `${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}`;
+      if (poolMarkers.length && parkingLayers.length) {
+        this.fishingBeatMapStatus = `Showing route limits with ${poolLabel} and ${parkingLabel}.`;
+      } else if (poolMarkers.length) {
+        this.fishingBeatMapStatus = `Showing route limits with ${poolLabel}.`;
+      } else if (parkingLayers.length) {
+        this.fishingBeatMapStatus = `Showing upstream/downstream limits and ${parkingLabel}.`;
+      } else {
+        this.fishingBeatMapStatus = 'Showing upstream and downstream limits.';
+      }
     },
     destroyFishingBeatMap() {
       this.clearFishingBeatMapLayers();
@@ -604,3 +720,44 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.fishing-beat-parking-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+:deep(.parking-pin-marker),
+:deep(.pool-pin-marker) {
+  background: transparent;
+  border: none;
+}
+
+:deep(.parking-pin-dot) {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #198754;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+:deep(.pool-pin-dot) {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #6f42c1;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+</style>

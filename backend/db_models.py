@@ -77,6 +77,7 @@ club_beats = Table(
     Column("beat_downstream_latitude", String(64), nullable=False, server_default=""),
     Column("beat_downstream_longitude", String(64), nullable=False, server_default=""),
     Column("parking_locations", JSONB, nullable=False, server_default="[]"),
+    Column("pools", JSONB, nullable=False, server_default="[]"),
     UniqueConstraint("club_id", "beat_id", name="uq_club_beats_club_id_beat_id"),
 )
 

@@ -473,8 +473,34 @@
               "Location": "refusals.flies.offers",
               "Longitude": "0.18030",
               "Description": "Roadside parking near bridge"
-            }
-          ]
+              }
+            ],
+            "Pools": [
+              {
+                "Sequence": "1",
+                "Name": "Bridge Pool",
+                "Description": "Shallow cascade into reasonably deep pool going underneath the Ickleton Road bridge.",
+                "Location": "///outs.clips.squad",
+                "Latitude": "52.078765",
+                "Longitude": "0.17989"
+              },
+              {
+                "Sequence": "2",
+                "Name": "Bend Pool",
+                "Description": "Shallow riffle tail with productive nymphing seam.",
+                "Location": "///scribble.noticing.chats",
+                "Latitude": "52.077957",
+                "Longitude": "0.180154"
+              },
+              {
+                "Sequence": "3",
+                "Name": "Footbridge Pool",
+                "Description": "Deeper bend pool under overhanging trees.",
+                "Location": "///symphonic.silk.bill",
+                "Latitude": "52.077687",
+                "Longitude": "0.181425"
+              }
+            ]
         },
         {
           "Beat_Name": "B Beat",

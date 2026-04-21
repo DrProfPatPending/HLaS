@@ -178,6 +178,39 @@ def normalize_parking_locations(parking_source):
     return normalized
 
 
+def normalize_pools(pools_source):
+    if not isinstance(pools_source, list):
+        return []
+
+    normalized = []
+    for index, pool in enumerate(pools_source):
+        if not isinstance(pool, dict):
+            continue
+
+        sequence_raw = str(pool.get('Sequence', '')).strip()
+        try:
+            sequence_value = int(sequence_raw)
+        except (TypeError, ValueError):
+            sequence_value = index + 1
+        if sequence_value < 1:
+            sequence_value = index + 1
+
+        normalized.append({
+            'Sequence': str(sequence_value),
+            'Name': str(pool.get('Name', '')).strip(),
+            'Description': str(pool.get('Description', '')).strip(),
+            'Location': normalize_what3words_words(pool.get('Location', '')),
+            'Latitude': str(pool.get('Latitude', '')).strip(),
+            'Longitude': str(pool.get('Longitude', '')).strip(),
+        })
+
+    normalized.sort(key=lambda value: int(value.get('Sequence', '0') or 0))
+    for seq, pool in enumerate(normalized, start=1):
+        pool['Sequence'] = str(seq)
+
+    return normalized
+
+
 def normalize_what3words_words(raw_value):
     value = str(raw_value or '').strip()
     if not value:
@@ -221,6 +254,7 @@ def normalize_beats(beats_source):
             'Beat_Downstream_Latitude': str(beat.get('Beat_Downstream_Latitude', '')).strip(),
             'Beat_Downstream_Longitude': str(beat.get('Beat_Downstream_Longitude', '')).strip(),
             'Parking_Locations': normalize_parking_locations(beat.get('Parking_Locations', [])),
+            'Pools': normalize_pools(beat.get('Pools', [])),
         })
 
     return normalized
