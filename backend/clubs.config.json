@@ -465,7 +465,33 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [
+            {
+              "Sequence": "1",
+              "Name": "Willow Glide",
+              "Description": "Long gentle glide with weed lanes and evening dry-fly activity.",
+              "Location": "///skirt.noble.angles",
+              "Latitude": "52.23072",
+              "Longitude": "0.10481"
+            },
+            {
+              "Sequence": "2",
+              "Name": "Gravel Run",
+              "Description": "Shallow riffle tail with productive nymphing seam.",
+              "Location": "///river.fish.hatch",
+              "Latitude": "52.23136",
+              "Longitude": "0.10617"
+            },
+            {
+              "Sequence": "3",
+              "Name": "Bend Pool",
+              "Description": "Deeper bend pool under overhanging trees.",
+              "Location": "///trout.calm.water",
+              "Latitude": "52.23201",
+              "Longitude": "0.10749"
+            }
+          ]
         },
         {
           "Beat_Name": "B Beat",

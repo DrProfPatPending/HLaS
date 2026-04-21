@@ -24,7 +24,7 @@
     <div v-if="canManageBeats" class="beat-details-actions-row">
       <app-button type="button" inherit-style @click="addNewBeat" :disabled="isSaving">Add</app-button>
       <app-button type="button" inherit-style @click="startEditBeat" :disabled="isSaving || !selectedBeat || isEditing">Edit</app-button>
-      <app-button type="button" inherit-style @click="saveBeatEdits" :disabled="isSaving || !isEditing || hasParkingValidationErrors">{{ isSaving ? 'Saving...' : 'Save' }}</app-button>
+      <app-button type="button" inherit-style @click="saveBeatEdits" :disabled="isSaving || !isEditing || hasLocationValidationErrors">{{ isSaving ? 'Saving...' : 'Save' }}</app-button>
       <app-button type="button" inherit-style @click="cancelEditBeat" :disabled="isSaving || !isEditing">Cancel</app-button>
       <app-button type="button" inherit-style @click="deleteSelectedBeat" :disabled="isSaving || !selectedBeat">Delete</app-button>
     </div>
@@ -135,6 +135,67 @@
               </div>
 
               <app-button type="button" inherit-style @click="addParkingLocationRow">Add Parking Location</app-button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th>Pools</th>
+          <td>
+            <div class="beat-details-pools-editor">
+              <div
+                v-for="(pool, poolIndex) in editForm.Pools"
+                :key="`pool-edit-${poolIndex}`"
+                class="beat-details-pools-editor-row-wrap"
+              >
+                <div class="beat-details-pools-editor-row">
+                  <input
+                    v-model="pool.Sequence"
+                    :class="['beat-details-input', { 'beat-details-input-invalid': isPoolFieldInvalid(poolIndex, 'Sequence') }]"
+                    placeholder="Seq"
+                  />
+                  <input
+                    v-model="pool.Name"
+                    class="beat-details-input"
+                    placeholder="Name"
+                  />
+                  <input
+                    v-model="pool.Location"
+                    :class="['beat-details-input', { 'beat-details-input-invalid': isPoolFieldInvalid(poolIndex, 'Location') }]"
+                    placeholder="What3Words (///word.word.word)"
+                  />
+                  <input
+                    v-model="pool.Latitude"
+                    :class="['beat-details-input', { 'beat-details-input-invalid': isPoolFieldInvalid(poolIndex, 'Latitude') }]"
+                    placeholder="Latitude"
+                  />
+                  <input
+                    v-model="pool.Longitude"
+                    :class="['beat-details-input', { 'beat-details-input-invalid': isPoolFieldInvalid(poolIndex, 'Longitude') }]"
+                    placeholder="Longitude"
+                  />
+                  <input
+                    v-model="pool.Description"
+                    class="beat-details-input"
+                    placeholder="Description"
+                  />
+                  <app-button
+                    type="button"
+                    class="beat-details-pool-remove"
+                    inherit-style
+                    @click="removePoolRow(poolIndex)"
+                  >
+                    Remove
+                  </app-button>
+                </div>
+                <p
+                  v-if="poolValidationErrors[poolIndex]"
+                  class="beat-details-pool-validation"
+                >
+                  {{ poolValidationErrors[poolIndex] }}
+                </p>
+              </div>
+
+              <app-button type="button" inherit-style @click="addPoolRow">Add Pool</app-button>
             </div>
           </td>
         </tr>
@@ -259,6 +320,31 @@
               </ul>
               <span v-else>-</span>
             </template>
+            <template v-else-if="column.key === 'Pools'">
+              <ul v-if="selectedBeat.Pools.length" class="beat-details-pools-list">
+                <li
+                  v-for="(pool, poolIndex) in selectedBeat.Pools"
+                  :key="`pool-${poolIndex}`"
+                >
+                  <strong>#{{ pool.Sequence || poolIndex + 1 }} {{ pool.Name || `Pool ${poolIndex + 1}` }}</strong>
+                  <span v-if="pool.Latitude && pool.Longitude">
+                    ({{ pool.Latitude }}, {{ pool.Longitude }})
+                  </span>
+                  <span v-if="pool.Location_W3W">
+                    &mdash;
+                    <a
+                      href="#"
+                      class="w3w-link"
+                      @click.prevent="openReusableMapWindow(pool.Location_W3W.url)"
+                    >
+                      {{ pool.Location_W3W.display }}
+                    </a>
+                  </span>
+                  <span v-if="pool.Description"> - {{ pool.Description }}</span>
+                </li>
+              </ul>
+              <span v-else>-</span>
+            </template>
             <template v-else>
               {{ selectedBeat[column.key] || '-' }}
             </template>
@@ -319,6 +405,7 @@ export default {
         Beat_Description: '',
         Detailed_Description: '',
         Parking_Locations: [],
+        Pools: [],
       },
     };
   },
@@ -334,6 +421,18 @@ export default {
     hasParkingValidationErrors() {
       return this.parkingValidationErrors.some(Boolean);
     },
+    poolValidationErrors() {
+      if (!this.isEditing || !Array.isArray(this.editForm.Pools)) {
+        return [];
+      }
+      return this.editForm.Pools.map(pool => this.getPoolValidationError(pool));
+    },
+    hasPoolValidationErrors() {
+      return this.poolValidationErrors.some(Boolean);
+    },
+    hasLocationValidationErrors() {
+      return this.hasParkingValidationErrors || this.hasPoolValidationErrors;
+    },
     detailLabelMap() {
       const defaultLabels = {
         Beat_ID: 'Beat ID',
@@ -347,6 +446,7 @@ export default {
         Beat_Description: 'Beat Description',
         Detailed_Description: 'Detailed Description',
         Parking_Locations: 'Parking',
+        Pools: 'Pools',
       };
 
       const configured = this.fieldOrder?.display_names?.beat_details;
@@ -387,7 +487,7 @@ export default {
       return rows;
     },
     detailWideColumns() {
-      const wideKeys = ['Beat_Description', 'Detailed_Description', 'Parking_Locations'];
+      const wideKeys = ['Beat_Description', 'Detailed_Description', 'Parking_Locations', 'Pools'];
       return wideKeys
         .filter(key => this.isColumnVisible('beat_details', key))
         .map(key => ({ key, label: this.detailLabelMap[key] || key }));
@@ -405,6 +505,7 @@ export default {
         Beat_Upstream_Coords: { key: 'Beat_Upstream_Coords', label: 'Upstream Co-ords' },
         Beat_Downstream_Coords: { key: 'Beat_Downstream_Coords', label: 'Downstream Co-ords' },
         Parking_Locations: { key: 'Parking_Locations', label: 'Parking' },
+        Pools: { key: 'Pools', label: 'Pools' },
       };
       const fallbackOrder = [
         'Beat_ID',
@@ -418,6 +519,7 @@ export default {
         'Beat_Upstream_Coords',
         'Beat_Downstream_Coords',
         'Parking_Locations',
+        'Pools',
       ];
       const configuredOrder = Array.isArray(this.fieldOrder.beat_details)
         ? this.fieldOrder.beat_details
@@ -456,6 +558,7 @@ export default {
                   Longitude: loc && loc.Longitude ? loc.Longitude : '',
                 }))
             : [],
+          Pools: this.normalizePoolsForDisplay(beat && beat.Pools),
           Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
           Detailed_Description: beat && beat.Detailed_Description ? beat.Detailed_Description : '',
         };
@@ -537,6 +640,7 @@ export default {
                 Longitude: String(loc?.Longitude || '').trim(),
               }))
           : [],
+        Pools: this.parsePoolsInput(beat?.Pools),
       };
     },
     beginEditForBeat(beat, isAdding = false) {
@@ -557,6 +661,7 @@ export default {
         Beat_Description: source.Beat_Description,
         Detailed_Description: source.Detailed_Description,
         Parking_Locations: this.cloneParkingLocations(source.Parking_Locations),
+        Pools: this.clonePools(source.Pools),
       };
       this.isEditing = true;
     },
@@ -589,6 +694,38 @@ export default {
       if (!this.isEditing) return;
       this.editForm.Parking_Locations = this.editForm.Parking_Locations.filter((_, i) => i !== index);
     },
+    clonePools(pools) {
+      if (!Array.isArray(pools)) return [];
+      return pools
+        .filter(pool => pool && typeof pool === 'object')
+        .map(pool => ({
+          Sequence: String(pool?.Sequence || '').trim(),
+          Name: String(pool?.Name || '').trim(),
+          Location: String(pool?.Location || '').trim(),
+          Description: String(pool?.Description || '').trim(),
+          Latitude: String(pool?.Latitude || '').trim(),
+          Longitude: String(pool?.Longitude || '').trim(),
+        }));
+    },
+    addPoolRow() {
+      if (!this.isEditing) return;
+      const nextSequence = this.editForm.Pools.length + 1;
+      this.editForm.Pools = [
+        ...this.editForm.Pools,
+        {
+          Sequence: String(nextSequence),
+          Name: '',
+          Location: '',
+          Description: '',
+          Latitude: '',
+          Longitude: '',
+        },
+      ];
+    },
+    removePoolRow(index) {
+      if (!this.isEditing) return;
+      this.editForm.Pools = this.editForm.Pools.filter((_, i) => i !== index);
+    },
     getParkingValidationError(location) {
       const w3wValue = String(location?.Location || '').trim();
       const latitudeValue = String(location?.Latitude || '').trim();
@@ -614,8 +751,60 @@ export default {
 
       return errors.join(' · ');
     },
+    getPoolValidationError(pool) {
+      const sequenceValue = String(pool?.Sequence || '').trim();
+      const sequenceNumber = Number.parseInt(sequenceValue, 10);
+      const errors = [];
+
+      if (!sequenceValue || !Number.isFinite(sequenceNumber) || sequenceNumber < 1) {
+        errors.push('Sequence must be a whole number starting at 1');
+      }
+
+      const locationError = this.getParkingValidationError({
+        Location: pool?.Location,
+        Latitude: pool?.Latitude,
+        Longitude: pool?.Longitude,
+      });
+      if (locationError) errors.push(locationError);
+
+      return errors.join(' · ');
+    },
     isParkingFieldInvalid(parkingIndex, fieldName) {
       const location = this.editForm?.Parking_Locations?.[parkingIndex] || {};
+      const w3wValue = String(location?.Location || '').trim();
+      const latitudeValue = String(location?.Latitude || '').trim();
+      const longitudeValue = String(location?.Longitude || '').trim();
+
+      if (fieldName === 'Location') {
+        return Boolean(w3wValue) && !this.isValidWhat3WordsValue(w3wValue);
+      }
+
+      const hasCoordinatePairMismatch =
+        (Boolean(latitudeValue) && !Boolean(longitudeValue)) ||
+        (!Boolean(latitudeValue) && Boolean(longitudeValue));
+
+      if (fieldName === 'Latitude') {
+        return (Boolean(latitudeValue) && !this.isValidLatitudeValue(latitudeValue)) || hasCoordinatePairMismatch;
+      }
+
+      if (fieldName === 'Longitude') {
+        return (Boolean(longitudeValue) && !this.isValidLongitudeValue(longitudeValue)) || hasCoordinatePairMismatch;
+      }
+
+      return false;
+    },
+    isPoolFieldInvalid(poolIndex, fieldName) {
+      const pool = this.editForm?.Pools?.[poolIndex] || {};
+      const sequenceValue = String(pool?.Sequence || '').trim();
+      const sequenceNumber = Number.parseInt(sequenceValue, 10);
+
+      if (fieldName === 'Sequence') {
+        return !sequenceValue || !Number.isFinite(sequenceNumber) || sequenceNumber < 1;
+      }
+
+      return this.isParkingFieldInvalidLike(pool, fieldName);
+    },
+    isParkingFieldInvalidLike(location, fieldName) {
       const w3wValue = String(location?.Location || '').trim();
       const latitudeValue = String(location?.Latitude || '').trim();
       const longitudeValue = String(location?.Longitude || '').trim();
@@ -683,6 +872,7 @@ export default {
         Beat_Description: '',
         Detailed_Description: '',
         Parking_Locations: [],
+        Pools: [],
       });
       this.localBeats = [...this.localBeats, newBeat];
       this.selectedBeatKey = this.beatKey(newBeat);
@@ -713,6 +903,44 @@ export default {
           Longitude: String(loc?.Longitude || '').trim(),
         }));
     },
+    parsePoolsInput(rawPools) {
+      const parsed = Array.isArray(rawPools) ? rawPools : [];
+      const normalized = parsed
+        .filter(pool => pool && typeof pool === 'object')
+        .map(pool => ({
+          Sequence: String(pool?.Sequence || '').trim(),
+          Name: String(pool?.Name || '').trim(),
+          Location: String(pool?.Location || '').trim(),
+          Description: String(pool?.Description || '').trim(),
+          Latitude: String(pool?.Latitude || '').trim(),
+          Longitude: String(pool?.Longitude || '').trim(),
+        }))
+        .filter(pool =>
+          pool.Sequence || pool.Name || pool.Location || pool.Description || pool.Latitude || pool.Longitude
+        )
+        .map((pool, index) => {
+          const sequenceNumber = Number.parseInt(pool.Sequence, 10);
+          return {
+            ...pool,
+            Sequence: Number.isFinite(sequenceNumber) && sequenceNumber > 0
+              ? String(sequenceNumber)
+              : String(index + 1),
+          };
+        })
+        .sort((a, b) => Number.parseInt(a.Sequence, 10) - Number.parseInt(b.Sequence, 10))
+        .map((pool, index) => ({
+          ...pool,
+          Sequence: String(index + 1),
+        }));
+
+      return normalized;
+    },
+    normalizePoolsForDisplay(rawPools) {
+      return this.parsePoolsInput(rawPools).map(pool => ({
+        ...pool,
+        Location_W3W: this.parseWhat3Words(pool.Location),
+      }));
+    },
     buildBeatFromEditForm() {
       return this.normalizeBeatRecord({
         Beat_ID: this.editForm.Beat_ID,
@@ -728,6 +956,7 @@ export default {
         Beat_Description: this.editForm.Beat_Description,
         Detailed_Description: this.editForm.Detailed_Description,
         Parking_Locations: this.parseParkingLocationsInput(this.editForm.Parking_Locations),
+        Pools: this.parsePoolsInput(this.editForm.Pools),
       });
     },
     persistBeats(updatedBeats, successMessage, selectedKeyAfterSave = '') {
@@ -769,8 +998,8 @@ export default {
     saveBeatEdits() {
       if (!this.isEditing) return;
 
-      if (this.hasParkingValidationErrors) {
-        this.beatEditError = 'Fix parking validation errors before saving.';
+      if (this.hasLocationValidationErrors) {
+        this.beatEditError = 'Fix parking/pool validation errors before saving.';
         return;
       }
 
@@ -998,6 +1227,46 @@ export default {
       const downstreamLatLng = L.latLng(downstreamCoords.lat, downstreamCoords.lng);
       const allBoundsPoints = [upstreamLatLng, downstreamLatLng];
 
+      const sortedPools = Array.isArray(selectedBeat.Pools)
+        ? [...selectedBeat.Pools].sort((a, b) => Number.parseInt(a.Sequence, 10) - Number.parseInt(b.Sequence, 10))
+        : [];
+
+      const poolMarkers = [];
+      const poolRoutePoints = [];
+      for (let i = 0; i < sortedPools.length; i += 1) {
+        const pool = sortedPools[i];
+        const poolCoords = await this.resolveBeatPointCoordinates(
+          pool?.Location,
+          pool?.Latitude,
+          pool?.Longitude
+        );
+        if (!poolCoords) continue;
+        const poolLatLng = L.latLng(poolCoords.lat, poolCoords.lng);
+        poolRoutePoints.push(poolLatLng);
+        allBoundsPoints.push(poolLatLng);
+
+        const sequenceLabel = pool?.Sequence || String(i + 1);
+        const nameLabel = pool?.Name ? `#${sequenceLabel} ${pool.Name}` : `Pool #${sequenceLabel}`;
+        const locationW3W = pool?.Location_W3W || this.parseWhat3Words(pool?.Location || '');
+        let poolPopup = nameLabel;
+        if (locationW3W) {
+          poolPopup += `<br><a href="${locationW3W.url}" target="what3words-map-window">${locationW3W.display}</a>`;
+        }
+        if (pool?.Description) poolPopup += `<br>${pool.Description}`;
+
+        const poolMarker = L.marker(poolLatLng, {
+          icon: L.divIcon({
+            className: 'pool-pin-marker',
+            html: `<div class="pool-pin-dot">${sequenceLabel}</div>`,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+          }),
+        }).bindPopup(poolPopup);
+
+        poolMarker.addTo(this.beatDetailsMapInstance);
+        poolMarkers.push(poolMarker);
+      }
+
       const upstreamMarker = L.circleMarker(upstreamLatLng, {
         radius: 7, color: '#1f77b4', fillColor: '#1f77b4', fillOpacity: 0.8,
       }).bindPopup('Upstream limit');
@@ -1006,7 +1275,7 @@ export default {
         radius: 7, color: '#d62728', fillColor: '#d62728', fillOpacity: 0.8,
       }).bindPopup('Downstream limit');
 
-      const boundaryLine = L.polyline([upstreamLatLng, downstreamLatLng], {
+      const boundaryLine = L.polyline([downstreamLatLng, ...poolRoutePoints, upstreamLatLng], {
         color: '#2f2f2f', weight: 3,
       });
 
@@ -1047,14 +1316,22 @@ export default {
       upstreamMarker.addTo(this.beatDetailsMapInstance);
       downstreamMarker.addTo(this.beatDetailsMapInstance);
       boundaryLine.addTo(this.beatDetailsMapInstance);
-      this.beatDetailsMapLayers = [upstreamMarker, downstreamMarker, boundaryLine, ...parkingLayers];
+      this.beatDetailsMapLayers = [upstreamMarker, downstreamMarker, boundaryLine, ...poolMarkers, ...parkingLayers];
 
       this.beatDetailsMapInstance.invalidateSize();
       const bounds = L.latLngBounds(allBoundsPoints);
       this.beatDetailsMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
-      this.beatDetailsMapStatus = parkingLayers.length
-        ? `Showing upstream/downstream limits and ${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}.`
-        : 'Showing upstream and downstream limits.';
+      const poolLabel = `${poolMarkers.length} pool node${poolMarkers.length === 1 ? '' : 's'}`;
+      const parkingLabel = `${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}`;
+      if (poolMarkers.length && parkingLayers.length) {
+        this.beatDetailsMapStatus = `Showing route limits with ${poolLabel} and ${parkingLabel}.`;
+      } else if (poolMarkers.length) {
+        this.beatDetailsMapStatus = `Showing route limits with ${poolLabel}.`;
+      } else if (parkingLayers.length) {
+        this.beatDetailsMapStatus = `Showing upstream/downstream limits and ${parkingLabel}.`;
+      } else {
+        this.beatDetailsMapStatus = 'Showing upstream and downstream limits.';
+      }
     },
     destroyBeatDetailsMap() {
       this.clearBeatDetailsMapLayers();
@@ -1158,6 +1435,11 @@ export default {
   padding-left: 18px;
 }
 
+.beat-details-pools-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
 .beat-details-parking-editor {
   display: flex;
   flex-direction: column;
@@ -1182,6 +1464,34 @@ export default {
 }
 
 .beat-details-parking-validation {
+  margin: 0;
+  font-size: 9pt;
+}
+
+.beat-details-pools-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beat-details-pools-editor-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.beat-details-pools-editor-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr 120px 120px 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.beat-details-pool-remove {
+  white-space: nowrap;
+}
+
+.beat-details-pool-validation {
   margin: 0;
   font-size: 9pt;
 }
@@ -1212,6 +1522,25 @@ export default {
   height: 20px;
   border-radius: 50%;
   background: #2ca02c;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+:deep(.pool-pin-marker) {
+  background: transparent;
+  border: none;
+}
+
+:deep(.pool-pin-dot) {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #6f42c1;
   color: #fff;
   display: flex;
   align-items: center;

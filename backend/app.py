@@ -278,6 +278,7 @@ def _load_clubs_config_from_postgres():
             'Beat_Downstream_Latitude': row.beat_downstream_latitude or '',
             'Beat_Downstream_Longitude': row.beat_downstream_longitude or '',
             'Parking_Locations': row.parking_locations or [],
+            'Pools': row.pools or [],
         })
 
     normalized_clubs = []
@@ -500,6 +501,7 @@ def save_clubs_config(clubs):
                     'beat_downstream_latitude': str(beat.get('Beat_Downstream_Latitude', '')).strip(),
                     'beat_downstream_longitude': str(beat.get('Beat_Downstream_Longitude', '')).strip(),
                     'parking_locations': beat.get('Parking_Locations', []),
+                    'pools': beat.get('Pools', []),
                 })
             if beat_rows:
                 session.execute(beats_table.insert(), beat_rows)
