@@ -559,6 +559,13 @@ export default {
 
 .documents-title-link {
   max-width: 100%;
+  color: var(--app-color-link) !important;
+}
+
+.documents-title-link:hover,
+.documents-title-link:focus,
+.documents-title-link:active {
+  color: var(--app-color-link) !important;
 }
 
 .documents-empty-title-cell {
