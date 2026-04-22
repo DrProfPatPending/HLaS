@@ -14,65 +14,67 @@
       </div>
     </div>
     <div v-if="exportError" class="membership-export-error">{{ exportError }}</div>
-    <table v-if="orderedMemberFields.length" class="member-table">
-      <thead>
-        <tr>
-          <th v-for="field in orderedMemberFields" :key="field">
-            <div>
-              <span>{{ getFieldDisplayName(field) }}</span>
-              <span
-                class="sort-arrow"
-                :class="{ active: sortKey === field && sortOrder === 'asc' }"
-                @click="setSort(field, 'asc')"
-              >
-                ▲
+    <div v-if="orderedMemberFields.length" class="membership-table-scroll" aria-label="Membership table horizontal scroll region">
+      <table class="member-table">
+        <thead>
+          <tr>
+            <th v-for="field in orderedMemberFields" :key="field">
+              <div>
+                <span>{{ getFieldDisplayName(field) }}</span>
+                <span
+                  class="sort-arrow"
+                  :class="{ active: sortKey === field && sortOrder === 'asc' }"
+                  @click="setSort(field, 'asc')"
+                >
+                  ▲
+                </span>
+                <span
+                  class="sort-arrow"
+                  :class="{ active: sortKey === field && sortOrder === 'desc' }"
+                  @click="setSort(field, 'desc')"
+                >
+                  ▼
+                </span>
+              </div>
+              <input
+                v-model="columnFilters[field]"
+                class="column-filter"
+                type="text"
+                :placeholder="`Filter ${getFieldDisplayName(field)}`"
+                @input="onFilterChange"
+              />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="member in members" :key="member.id || member.ID || member.Number">
+            <td v-for="field in orderedMemberFields" :key="field">
+              <span v-if="field === 'Members_Name' && member[field]">
+                <a href="#" class="member-link" @click.prevent="openMemberEdit(member)">
+                  {{ member[field] }}
+                </a>
               </span>
-              <span
-                class="sort-arrow"
-                :class="{ active: sortKey === field && sortOrder === 'desc' }"
-                @click="setSort(field, 'desc')"
-              >
-                ▼
+              <span v-else-if="field === 'Number' && member[field]">
+                <a href="#" class="member-link" @click.prevent="lookupMemberByNumber(member[field])">
+                  {{ member[field] }}
+                </a>
               </span>
-            </div>
-            <input
-              v-model="columnFilters[field]"
-              class="column-filter"
-              type="text"
-              :placeholder="`Filter ${getFieldDisplayName(field)}`"
-              @input="onFilterChange"
-            />
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="member in members" :key="member.id || member.ID || member.Number">
-          <td v-for="field in orderedMemberFields" :key="field">
-            <span v-if="field === 'Members_Name' && member[field]">
-              <a href="#" class="member-link" @click.prevent="openMemberEdit(member)">
-                {{ member[field] }}
-              </a>
-            </span>
-            <span v-else-if="field === 'Number' && member[field]">
-              <a href="#" class="member-link" @click.prevent="lookupMemberByNumber(member[field])">
-                {{ member[field] }}
-              </a>
-            </span>
-            <span v-else-if="field === 'E_Mail' && member[field]">
-              <a :href="`mailto:${member[field]}`">{{ member[field] }}</a>
-            </span>
-            <span v-else :style="getMemberFieldStyle(field, member[field])">
-              {{ formatMemberFieldValue(field, member[field]) }}
-            </span>
-          </td>
-        </tr>
-        <tr v-if="!members.length">
-          <td :colspan="orderedMemberFields.length" class="membership-empty-state">
-            No members found.
-          </td>
-        </tr>
-      </tbody>
-    </table>
+              <span v-else-if="field === 'E_Mail' && member[field]">
+                <a :href="`mailto:${member[field]}`">{{ member[field] }}</a>
+              </span>
+              <span v-else :style="getMemberFieldStyle(field, member[field])">
+                {{ formatMemberFieldValue(field, member[field]) }}
+              </span>
+            </td>
+          </tr>
+          <tr v-if="!members.length">
+            <td :colspan="orderedMemberFields.length" class="membership-empty-state">
+              No members found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div v-else class="membership-no-columns">No member columns configured.</div>
     <div class="pagination-controls">
       <app-button :disabled="currentPage === 1" @click="firstPage" inherit-style>First Page</app-button>
@@ -375,5 +377,57 @@ export default {
 
 .membership-lookup-error {
   color: var(--app-color-state-danger);
+}
+
+.membership-table-scroll {
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.membership-table-scroll .member-table {
+  min-width: 100%;
+}
+
+.membership-table-scroll .member-table th {
+  font-size: 8pt;
+}
+
+.membership-table-scroll .member-table td {
+  font-size: 6pt;
+}
+
+@media (max-width: 1000px) {
+  .membership-table-scroll {
+    overflow-x: visible;
+  }
+
+  .membership-table-scroll .member-table {
+    min-width: 100%;
+  }
+
+  .membership-table-scroll .member-table th {
+    font-size: 8pt;
+    min-width: 0 !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .membership-table-scroll .member-table td {
+    font-size: 6pt;
+    min-width: 0 !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (min-width: 1001px) {
+  .membership-table-scroll {
+    overflow-x: auto;
+  }
+
+  .membership-table-scroll .member-table {
+    min-width: max-content;
+  }
 }
 </style>
