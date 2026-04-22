@@ -356,8 +356,20 @@ export default {
 }
 
 .membership-export-label {
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10pt;
+  line-height: 1;
   color: var(--app-color-text-muted);
+}
+
+.membership-admin-header {
+  align-items: center;
+}
+
+#member-export-format,
+#member-export-format option {
+  font-size: 10pt;
 }
 
 .membership-export-error {
