@@ -439,8 +439,10 @@ export default {
 .home-panels-grid {
   min-width: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 18px;
+  width: 80%;
+  max-width: 80%;
 }
 
 .home-news-card,
@@ -557,6 +559,13 @@ export default {
 
 .documents-title-link {
   max-width: 100%;
+  color: var(--app-color-link) !important;
+}
+
+.documents-title-link:hover,
+.documents-title-link:focus,
+.documents-title-link:active {
+  color: var(--app-color-link) !important;
 }
 
 .documents-empty-title-cell {
@@ -578,6 +587,8 @@ export default {
 
   .home-panels-grid {
     grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 100%;
   }
 
   .documents-upload-fields {
