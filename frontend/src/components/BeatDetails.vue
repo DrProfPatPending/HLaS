@@ -32,6 +32,24 @@
     <p v-if="beatEditError" class="beat-details-error">{{ beatEditError }}</p>
     <p v-if="beatEditSuccess" class="beat-details-success">{{ beatEditSuccess }}</p>
 
+    <table v-if="selectedBeat && !isEditing" class="beat-details-quick-info-table">
+      <tbody>
+        <tr>
+          <th>{{ detailLabelMap.River }}</th>
+          <td>{{ selectedBeat.River || '-' }}</td>
+          <th>{{ detailLabelMap.Beat_Name }}</th>
+          <td>{{ selectedBeat.Beat_Name || '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div v-if="selectedBeat && !isEditing" class="beat-details-map-wrap">
+      <div ref="beatDetailsMap" class="beat-details-map"></div>
+      <div v-if="beatDetailsMapStatus" class="beat-details-map-status">
+        {{ beatDetailsMapStatus }}
+      </div>
+    </div>
+
     <table v-if="selectedBeat && isEditing" class="beat-details-table">
       <tbody>
         <tr>
@@ -352,13 +370,6 @@
         </tr>
       </tbody>
     </table>
-
-    <div v-if="selectedBeat" class="beat-details-map-wrap">
-      <div ref="beatDetailsMap" class="beat-details-map"></div>
-      <div v-if="beatDetailsMapStatus" class="beat-details-map-status">
-        {{ beatDetailsMapStatus }}
-      </div>
-    </div>
 
     <p v-else-if="!clubBeats.length">No fishing beats are configured for this club.</p>
   </div>
@@ -1413,6 +1424,31 @@ export default {
   border: 1px solid #ccc;
   border-radius: 4px;
   background: #fff;
+}
+
+.beat-details-quick-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  background: #fff;
+}
+
+.beat-details-quick-info-table th,
+.beat-details-quick-info-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+  font-size: 10pt;
+}
+
+.beat-details-quick-info-table th {
+  width: 20%;
+  background: #f0f0f0;
+  font-weight: 600;
+}
+
+.beat-details-quick-info-table td {
+  width: 30%;
 }
 
 .beat-details-table {
