@@ -1283,6 +1283,70 @@ export default {
   }
 }
 
+@media (max-width: 768px) {
+  #app .app-member-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 20px;
+    padding: 18px 0 26px;
+  }
+
+  #app .app-member-sidebar-group {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  #app .app-member-sidebar-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 80vw;
+    padding: 16px 8px;
+  }
+
+  #app .app-member-subnav-card {
+    width: 80vw;
+  }
+
+  #app .app-member-sidebar-title {
+    grid-column: 1 / -1;
+  }
+
+  #app .app-member-nav-button {
+    width: 100%;
+    padding: 10px 8px;
+    font-size: 9pt;
+  }
+
+  #app .app-member-content {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  #app .mobile-home-greeting {
+    width: 80vw;
+    margin: 0 auto !important;
+  }
+
+  #app .home-container,
+  #app .section-placeholder,
+  #app .club-information-container,
+  #app .newsletters-container,
+  #app .member-edit-container,
+  #app .beat-details-container,
+  #app .catch-return-container,
+  #app .membership-admin-container,
+  #app .club-settings-container {
+    width: 80vw;
+  }
+}
+
 @media (max-width: 400px) {
   #app .mobile-home-greeting {
     margin: 0 8px 10px;

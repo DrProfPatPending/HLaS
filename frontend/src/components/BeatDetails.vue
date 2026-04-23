@@ -32,6 +32,24 @@
     <p v-if="beatEditError" class="beat-details-error">{{ beatEditError }}</p>
     <p v-if="beatEditSuccess" class="beat-details-success">{{ beatEditSuccess }}</p>
 
+    <table v-if="selectedBeat && !isEditing" class="beat-details-quick-info-table">
+      <tbody>
+        <tr>
+          <th>{{ detailLabelMap.River }}</th>
+          <td>{{ selectedBeat.River || '-' }}</td>
+          <th>{{ detailLabelMap.Beat_Name }}</th>
+          <td>{{ selectedBeat.Beat_Name || '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div v-if="selectedBeat && !isEditing" class="beat-details-map-wrap">
+      <div ref="beatDetailsMap" class="beat-details-map"></div>
+      <div v-if="beatDetailsMapStatus" class="beat-details-map-status">
+        {{ beatDetailsMapStatus }}
+      </div>
+    </div>
+
     <table v-if="selectedBeat && isEditing" class="beat-details-table">
       <tbody>
         <tr>
@@ -202,7 +220,7 @@
       </tbody>
     </table>
 
-    <table v-else-if="selectedBeat" class="beat-details-table">
+    <table v-else-if="selectedBeat" class="beat-details-table beat-details-table-readonly">
       <tbody>
         <tr v-for="(row, rowIndex) in detailCompactRows" :key="`detail-row-${rowIndex}`">
           <th>{{ row.left.label }}</th>
@@ -352,13 +370,6 @@
         </tr>
       </tbody>
     </table>
-
-    <div v-if="selectedBeat" class="beat-details-map-wrap">
-      <div ref="beatDetailsMap" class="beat-details-map"></div>
-      <div v-if="beatDetailsMapStatus" class="beat-details-map-status">
-        {{ beatDetailsMapStatus }}
-      </div>
-    </div>
 
     <p v-else-if="!clubBeats.length">No fishing beats are configured for this club.</p>
   </div>
@@ -1415,6 +1426,31 @@ export default {
   background: #fff;
 }
 
+.beat-details-quick-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  background: #fff;
+}
+
+.beat-details-quick-info-table th,
+.beat-details-quick-info-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+  font-size: 10pt;
+}
+
+.beat-details-quick-info-table th {
+  width: 20%;
+  background: #f0f0f0;
+  font-weight: 600;
+}
+
+.beat-details-quick-info-table td {
+  width: 30%;
+}
+
 .beat-details-table {
   width: 100%;
   border-collapse: collapse;
@@ -1528,6 +1564,35 @@ export default {
   margin-top: 8px;
   font-size: 10pt;
   color: #333;
+}
+
+@media (max-width: 1000px) {
+  .beat-details-table-readonly {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .beat-details-table-readonly tbody tr {
+    display: grid;
+    grid-template-columns: minmax(120px, 36%) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .beat-details-table-readonly th,
+  .beat-details-table-readonly td {
+    width: auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .beat-details-table-readonly .beat-details-empty-cell {
+    display: none;
+  }
+
+  .beat-details-table-readonly td[colspan="3"] {
+    grid-column: 2;
+  }
 }
 
 :deep(.parking-pin-marker) {
