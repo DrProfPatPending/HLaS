@@ -220,7 +220,7 @@
       </tbody>
     </table>
 
-    <table v-else-if="selectedBeat" class="beat-details-table">
+    <table v-else-if="selectedBeat" class="beat-details-table beat-details-table-readonly">
       <tbody>
         <tr v-for="(row, rowIndex) in detailCompactRows" :key="`detail-row-${rowIndex}`">
           <th>{{ row.left.label }}</th>
@@ -1564,6 +1564,35 @@ export default {
   margin-top: 8px;
   font-size: 10pt;
   color: #333;
+}
+
+@media (max-width: 1000px) {
+  .beat-details-table-readonly {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .beat-details-table-readonly tbody tr {
+    display: grid;
+    grid-template-columns: minmax(120px, 36%) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .beat-details-table-readonly th,
+  .beat-details-table-readonly td {
+    width: auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .beat-details-table-readonly .beat-details-empty-cell {
+    display: none;
+  }
+
+  .beat-details-table-readonly td[colspan="3"] {
+    grid-column: 2;
+  }
 }
 
 :deep(.parking-pin-marker) {
