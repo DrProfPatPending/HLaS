@@ -1310,7 +1310,11 @@ export default {
   }
 
   #app .app-member-subnav-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
     width: 80vw;
+    padding: 16px 8px;
   }
 
   #app .app-member-sidebar-title {
@@ -1319,6 +1323,13 @@ export default {
 
   #app .app-member-nav-button {
     width: 100%;
+    padding: 10px 8px;
+    font-size: 9pt;
+  }
+
+  #app .app-member-subnav-button {
+    width: 100%;
+    min-width: 0;
     padding: 10px 8px;
     font-size: 9pt;
   }
