@@ -680,6 +680,7 @@ iOS host requirements:
 
 Release process:
 - See `MOBILE_RELEASE_CHECKLIST.md` for dev/stage/prod mobile release gates and store submission flow.
+- For first-time iOS upload setup (Xcode signing + TestFlight), see `IOS_TESTFLIGHT_FIRST_UPLOAD.md`.
 
 Optional runtime theming (Phase 2 white-labelling):
 
