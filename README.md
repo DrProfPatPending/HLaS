@@ -13,6 +13,14 @@ HLaS is a fishing club membership management application with separate member an
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
+- **Mobile responsive navigation:** the main Navigation Bar now switches to a 2-column grid layout at ≤ 768 px, containing buttons sized to 80 % of the screen width, stacked above page content.
+- **Mobile full-width layout:** the application shell, nav card, subnav card, and all content containers now expand to 100 % window width in responsive mode, with content areas independently centred at 80 vw.
+- **Beat Details page restructure:** the read-only Beat Details page now shows:
+   1. A compact 2-column quick-info bar with **River** and **Beat Name** at the top.
+   2. The interactive map directly below the quick-info bar.
+   3. The full details table (2-column and 4-column rows) below the map.
+- **Beat Details responsive table:** on screens ≤ 1000 px the details table collapses from the 4-cell per row layout into a 2-column label/value grid, preventing horizontal overflow.
+- **Frontend dependency upgrades (April 2026):** `vue 3.5.33`, `vuetify 4.0.6`, `vite 8.0.10`, `axios 1.15.2`; security fix: `follow-redirects` updated via `npm audit fix` (GHSA-r4q5-vmmm-2653).
 - Added a new Admin tab: **App Settings**.
 - Added global **Date Format** configuration in App Settings with selectable format patterns.
 - Added backend `/admin/app-settings` API to load/save global app settings.
@@ -210,18 +218,26 @@ Persistence behavior:
 
 ### Beat Details page
 
-The new Beat Details page provides a dedicated beat-centric detail view separate from the Fishing Beats listing.
+The Beat Details page provides a dedicated beat-centric detail view separate from the Fishing Beats listing.
 
-Current behavior:
+Page layout (read-only mode):
+
+1. **Quick-info bar** — a compact 2-column table showing **River** and **Beat Name** immediately after the beat selector.
+2. **Map** — interactive Leaflet map directly below the quick-info bar, showing upstream/downstream limits and parking markers.
+3. **Details table** — full field-order-driven table below the map, with 2-column compact rows and 4-column wide rows for descriptions, parking, and pools.
+
+Responsive behaviour:
+
+- On screens ≤ 1 000 px the details table collapses to a 2-column label/value grid to prevent horizontal overflow.
+
+Other behaviour:
 
 - beat selector labels display `<Beat ID> <Beat Name>`
 - detail fields use the `beat_details` field-order context from `field_order.json` / `app_settings`
-- map display reuses the Fishing Beats detail map implementation
-- map shows upstream and downstream limits plus any configured parking markers
 - what3words locations are resolved through `/w3w/coordinates` when direct coordinates are unavailable
 - users with `club_admin` role can edit/save beat details for the selected beat
 - users with `club_admin` role can add new beats and delete the selected beat
-- users without `club_admin` role continue to see read-only beat details
+- users without `club_admin` role see the page in read-only mode
 
 Configuration sources:
 
@@ -816,6 +832,42 @@ Shared helper module:
 - `backend/import_beats_common.py` (CSV validation, mapping, and What3Words normalization)
 
 ## Security
+
+## Mobile Responsive UI
+
+The application is optimised for mobile devices with the following responsive breakpoints:
+
+| Breakpoint | Behaviour |
+|---|---|
+| ≤ 1 000 px | Navigation sidebar stacks above content; sticky positioning disabled |
+| ≤ 768 px | Navigation buttons switch to a 2-column grid layout at 80 vw; all content areas expand to 100 % window width and are centred at 80 vw |
+| ≤ 400 px | Home greeting font sizes reduced for very small screens |
+
+Responsive rules are all located in the `@media` blocks at the bottom of `frontend/App.vue`.
+
+Per-page responsive rules:
+
+- **Beat Details** — details table collapses to a 2-column label/value grid (≤ 1 000 px), defined in `frontend/src/components/BeatDetails.vue`.
+- **Catch Return** — responsive adjustments at ≤ 720 px.
+- **Membership Admin** — responsive adjustments at ≤ 1 000 px / ≥ 1 001 px.
+- **Newsletters** — layout adjustments at ≤ 900 px.
+
+## Frontend Dependencies
+
+Current pinned versions (as of April 2026):
+
+| Package | Version |
+|---|---|
+| vue | ^3.5.33 |
+| vuetify | ^4.0.6 |
+| vite | ^8.0.10 |
+| axios | ^1.15.2 |
+| leaflet | ^1.9.4 |
+| @capacitor/core | ^8.3.1 |
+| @capacitor/android | ^8.3.1 |
+| @capacitor/ios | ^8.3.1 |
+
+Security audit status: **0 vulnerabilities** (last checked April 2026).
 
 ## Production deployment (Docker + VPS)
 
