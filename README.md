@@ -646,6 +646,16 @@ Environment profile commands:
 - `npm run mobile:android:dev|stage|prod`
 - `npm run mobile:ios:dev|stage|prod`
 
+Capacitor profile behaviour:
+- Profiles are selected via the sync helper (`frontend/scripts/capacitor-sync.mjs`) and passed as `CAPACITOR_PROFILE=dev|stage|prod`.
+- `frontend/capacitor.config.ts` now maps profile-specific app identifiers:
+   - prod: `com.hlas.app`
+   - stage: `com.hlas.app.stage`
+   - dev: `com.hlas.app.dev`
+- `server.cleartext` is profile-aware:
+   - prod: `false` (production-safe default)
+   - stage/dev: `true` (local/staging HTTP flexibility)
+
 Mobile env profile files:
 - `frontend/.env.mobile-dev`
 - `frontend/.env.mobile-stage`
@@ -662,7 +672,7 @@ Phase 6 mobile hardening included:
 - Safe-area support via viewport-fit and CSS env insets.
 - Native keyboard resize handling (`Keyboard` plugin) with runtime keyboard-open class.
 - Native status bar behavior (`StatusBar` plugin with non-overlay webview).
-- Capacitor server cleartext support enabled for local HTTP development.
+- Capacitor server cleartext support enabled for local/staging profiles and disabled in production profile.
 
 iOS host requirements:
 - iOS builds/signing require macOS + Xcode + CocoaPods.
