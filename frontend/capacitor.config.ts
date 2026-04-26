@@ -1,3 +1,11 @@
+// Vite env type declarations for TS
+interface ImportMetaEnv {
+  readonly VITE_CAPACITOR_PROFILE?: string;
+  readonly VITE_APP_ENV?: string;
+}
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
 import type { CapacitorConfig } from '@capacitor/cli';
 
 type CapacitorProfile = 'dev' | 'stage' | 'prod';
@@ -9,7 +17,12 @@ function normalizeProfile(raw: string): CapacitorProfile {
   return 'dev';
 }
 
-const profile = normalizeProfile(process.env.CAPACITOR_PROFILE || process.env.VITE_APP_ENV || 'prod');
+// Use import.meta.env for Vite compatibility
+const profile = normalizeProfile(
+  import.meta.env.VITE_CAPACITOR_PROFILE ||
+  import.meta.env.VITE_APP_ENV ||
+  'prod'
+);
 const isProd = profile === 'prod';
 const isStage = profile === 'stage';
 
@@ -29,7 +42,7 @@ const config: CapacitorConfig = {
   appId,
   appName,
   webDir: 'dist',
-  bundledWebRuntime: false,
+  // bundledWebRuntime is not a valid CapacitorConfig property and has been removed
   server: {
     cleartext: !isProd,
   },
