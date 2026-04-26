@@ -1,4 +1,13 @@
-// capacitor.config.js - CommonJS for Capacitor CLI compatibility
+// Vite env type declarations for TS
+interface ImportMetaEnv {
+  readonly VITE_CAPACITOR_PROFILE?: string;
+  readonly VITE_APP_ENV?: string;
+}
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize } from '@capacitor/keyboard';
 
 const KeyboardResize = {
   Body: 'body',
@@ -7,16 +16,17 @@ const KeyboardResize = {
   None: 'none',
 };
 
-function normalizeProfile(raw) {
+function normalizeProfile(raw: string | undefined | null) {
   const value = String(raw || '').trim().toLowerCase();
   if (value === 'prod' || value === 'production' || value === 'mobile-prod') return 'prod';
   if (value === 'stage' || value === 'staging' || value === 'mobile-stage') return 'stage';
   return 'dev';
 }
 
+// Use import.meta.env for Vite compatibility
 const profile = normalizeProfile(
-  process.env.CAPACITOR_PROFILE ||
-  process.env.VITE_APP_ENV ||
+  import.meta.env.VITE_CAPACITOR_PROFILE ||
+  import.meta.env.VITE_APP_ENV ||
   'prod'
 );
 const isProd = profile === 'prod';
@@ -34,7 +44,8 @@ const appName = isProd
     ? 'HLaS Stage'
     : 'HLaS Dev';
 
-const config = {
+// bundledWebRuntime is not a valid CapacitorConfig property and has been removed
+const config: CapacitorConfig = {
   appId,
   appName,
   webDir: 'dist',
@@ -54,4 +65,4 @@ const config = {
 
 console.log(`[capacitor] profile=${profile} appId=${appId} cleartext=${String(!isProd)}`);
 
-module.exports = config;
+export default config;
