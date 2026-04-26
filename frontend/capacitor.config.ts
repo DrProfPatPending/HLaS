@@ -7,6 +7,7 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize } from '@capacitor/keyboard';
 
 type CapacitorProfile = 'dev' | 'stage' | 'prod';
 
@@ -48,7 +49,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      resize: 'body',
+      resize: KeyboardResize.Body,
       resizeOnFullScreen: true,
     },
     StatusBar: {
