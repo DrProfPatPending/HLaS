@@ -1,6 +1,7 @@
 
 
 import { initializeMobileRuntime } from './mobile/runtime.js';
+import { registerThemeDebugHelpers } from './theme-debug.js';
 import { Capacitor } from '@capacitor/core';
 
 initializeMobileRuntime();
