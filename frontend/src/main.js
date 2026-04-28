@@ -4,6 +4,10 @@ import { initializeMobileRuntime } from './mobile/runtime.js';
 import { registerThemeDebugHelpers } from './theme-debug.js';
 import { Capacitor } from '@capacitor/core';
 
+import { createApp } from 'vue';
+import App from '../App.vue';
+import { vuetify } from './plugins/vuetify.js';
+
 initializeMobileRuntime();
 registerThemeDebugHelpers();
 
