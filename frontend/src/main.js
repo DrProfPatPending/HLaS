@@ -1,11 +1,12 @@
-import { createApp } from 'vue';
-import App from '../App.vue';
-import './styles/design-tokens.css';
-import { vuetify } from './plugins/vuetify.js';
-import { initializeMobileRuntime } from './mobile/runtime.js';
-import { registerThemeDebugHelpers } from './theme-debug.js';
+
+import { Capacitor } from '@capacitor/core';
 
 initializeMobileRuntime();
 registerThemeDebugHelpers();
+
+// Redirect to /club/CTC/ on mobile native launch if at root
+if (Capacitor.isNativePlatform() && window.location.pathname === '/') {
+	window.location.replace('/club/CTC/');
+}
 
 createApp(App).use(vuetify).mount('#app');
