@@ -1,4 +1,6 @@
 
+
+import { initializeMobileRuntime } from './mobile/runtime.js';
 import { Capacitor } from '@capacitor/core';
 
 initializeMobileRuntime();
