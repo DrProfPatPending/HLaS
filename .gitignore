@@ -18,3 +18,5 @@ deploy/.env*
 .frontend.pid
 *.log
 hlas_pg*_dump_*.sql
+.DS_Store
+*.swp
