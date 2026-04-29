@@ -1,6 +1,6 @@
 <template>
   <div class="home-container">
-    <div class="home-page-header">
+    <div class="home-page-header" v-if="VerboseDebug">
       <h2>Hello {{ greetingFirstName }},</h2>
       <h3>Welcome to the website for {{ welcomeClubShortName }}</h3>
     </div>
@@ -138,6 +138,7 @@
 <script>
 import axios from 'axios';
 import { store, clubDetails, formatConfiguredDate, API_BASE_URL } from '../store.js';
+import { VerboseDebug } from '../localConfig.js';
 import AppCard from './ui/AppCard.vue';
 import AppButton from './ui/AppButton.vue';
 import AppStatusBadge from './ui/AppStatusBadge.vue';
@@ -162,6 +163,7 @@ export default {
       uploadFile: null,
       uploadBusy: false,
       uploadError: '',
+      VerboseDebug,
     };
   },
   computed: {

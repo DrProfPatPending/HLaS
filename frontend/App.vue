@@ -4,7 +4,7 @@
     <login-view v-if="!loggedIn" />
     <div v-else class="app-member-shell">
       <div
-        v-if="activeSection === 'home'"
+        v-if="activeSection === 'home' && VerboseDebug"
         class="mobile-home-greeting"
       >
         <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
@@ -147,6 +147,7 @@
 </template>
 
 <script>
+import { VerboseDebug } from './src/localConfig.js';
 import AppHeader from './src/components/AppHeader.vue';
 import LoginView from './src/components/LoginView.vue';
 import HomeView from './src/components/HomeView.vue';
@@ -180,6 +181,11 @@ import {
 } from './src/store.js';
 
 export default {
+    data() {
+      return {
+        VerboseDebug,
+      };
+    },
   components: {
     AppHeader,
     LoginView,
