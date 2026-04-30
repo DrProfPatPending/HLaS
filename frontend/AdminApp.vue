@@ -7,9 +7,10 @@
         <div class="admin-form-row">
           <label class="admin-form-label">Username:</label>
           <input v-model="loginUsername" class="admin-form-input" type="text" autocomplete="username" required />
-          <div style="margin-top: 6px;">
-            <label style="font-weight: normal;">
-              <input type="checkbox" v-model="rememberMe" /> Remember me
+          <div class="remember-me-row">
+            <label class="remember-me-label">
+              <input type="checkbox" v-model="rememberMe" class="remember-me-checkbox" />
+              <span>Remember me</span>
             </label>
           </div>
         </div>
@@ -190,5 +191,20 @@ export default {
   font-size: 11pt;
   color: #223;
   box-shadow: 0 2px 8px rgba(180,200,220,0.07);
+}
+
+.remember-me-row {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+}
+.remember-me-label {
+  display: flex;
+  align-items: center;
+  font-weight: normal;
+  gap: 6px;
+}
+.remember-me-checkbox {
+  margin: 0;
 }
 </style>

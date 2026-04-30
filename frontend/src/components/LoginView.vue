@@ -29,9 +29,10 @@
       <div class="form-field">
         <label for="login-username">Username:</label>
         <input id="login-username" v-model="loginUsername" placeholder="Username" required />
-        <div style="margin-top: 6px;">
-          <label style="font-weight: normal;">
-            <input type="checkbox" v-model="rememberMe" /> Remember me
+        <div class="remember-me-row">
+          <label class="remember-me-label">
+            <input type="checkbox" v-model="rememberMe" class="remember-me-checkbox" />
+            <span>Remember me</span>
           </label>
         </div>
       </div>
@@ -157,5 +158,20 @@ export default {
 
 .login-error {
   color: var(--app-color-state-danger);
+}
+
+.remember-me-row {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+}
+.remember-me-label {
+  display: flex;
+  align-items: center;
+  font-weight: normal;
+  gap: 6px;
+}
+.remember-me-checkbox {
+  margin: 0;
 }
 </style>
