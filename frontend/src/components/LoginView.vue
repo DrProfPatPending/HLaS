@@ -29,6 +29,11 @@
       <div class="form-field">
         <label for="login-username">Username:</label>
         <input id="login-username" v-model="loginUsername" placeholder="Username" required />
+        <div style="margin-top: 6px;">
+          <label style="font-weight: normal;">
+            <input type="checkbox" v-model="rememberMe" /> Remember me
+          </label>
+        </div>
       </div>
       <div class="form-field">
         <label for="login-password">Password:</label>
@@ -55,6 +60,7 @@ export default {
   data() {
     return {
       isClubSpecificUrl: false,
+      rememberMe: false,
     };
   },
   computed: {
@@ -95,9 +101,23 @@ export default {
   },
   mounted() {
     this.checkIfClubSpecificUrl();
+    // Prefill username if remembered
+    const remembered = window.localStorage.getItem('hlas.rememberedUsername');
+    if (remembered) {
+      this.loginUsername = remembered;
+      this.rememberMe = true;
+    }
   },
   methods: {
-    login,
+    login() {
+      // Store username if rememberMe checked, else clear
+      if (this.rememberMe) {
+        window.localStorage.setItem('hlas.rememberedUsername', this.loginUsername);
+      } else {
+        window.localStorage.removeItem('hlas.rememberedUsername');
+      }
+      login();
+    },
     checkIfClubSpecificUrl() {
       try {
         const match = String(window.location.pathname || '').match(/^\/clubs?\/([^/]+)/i);

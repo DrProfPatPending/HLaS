@@ -7,6 +7,11 @@
         <div class="admin-form-row">
           <label class="admin-form-label">Username:</label>
           <input v-model="loginUsername" class="admin-form-input" type="text" autocomplete="username" required />
+          <div style="margin-top: 6px;">
+            <label style="font-weight: normal;">
+              <input type="checkbox" v-model="rememberMe" /> Remember me
+            </label>
+          </div>
         </div>
         <div class="admin-form-row">
           <label class="admin-form-label">Password:</label>
@@ -98,11 +103,18 @@ export default {
       loggedIn: !!getAdminToken(),
       activeTab: 'appSettings',
       tabs,
+      rememberMe: false,
     };
   },
   methods: {
     login() {
       this.loginError = '';
+      // Store username if rememberMe checked, else clear
+      if (this.rememberMe) {
+        window.localStorage.setItem('hlas.adminRememberedUsername', this.loginUsername);
+      } else {
+        window.localStorage.removeItem('hlas.adminRememberedUsername');
+      }
       axios.post(adminUrl('/admin/login'), {
         username: this.loginUsername,
         password: this.loginPassword,
@@ -122,6 +134,14 @@ export default {
           this.loginError = err.response?.data?.error || 'Login failed';
         });
     },
+      mounted() {
+        // Prefill admin username if remembered
+        const remembered = window.localStorage.getItem('hlas.adminRememberedUsername');
+        if (remembered) {
+          this.loginUsername = remembered;
+          this.rememberMe = true;
+        }
+      },
     logout() {
       axios.post(adminUrl('/admin/logout'), {}, { headers: authHeaders() }).catch(() => {});
       clearAdminToken();
