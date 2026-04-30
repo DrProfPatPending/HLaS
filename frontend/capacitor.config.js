@@ -1,11 +1,3 @@
-// Vite env type declarations for TS
-interface ImportMetaEnv {
-  readonly VITE_CAPACITOR_PROFILE?: string;
-  readonly VITE_APP_ENV?: string;
-}
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
 import type { CapacitorConfig } from '@capacitor/cli';
 import { KeyboardResize } from '@capacitor/keyboard';
 
