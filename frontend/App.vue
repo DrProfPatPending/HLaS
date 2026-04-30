@@ -7,8 +7,8 @@
         v-if="activeSection === 'home' && VerboseDebug"
         class="mobile-home-greeting"
       >
-        <h2>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</h2>
-        <h3>Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</h3>
+        <p>Hello {{ loggedInUsername }} [{{ loggedInClub }}]</p>
+        <p>Welcome to HookLineandSinker your one-stop shop<br>for fishing club management.</p>
       </div>
       <div class="app-member-sidebar-group">
         <aside class="app-member-sidebar" aria-label="Primary navigation">
