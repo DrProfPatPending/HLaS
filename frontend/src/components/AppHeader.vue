@@ -23,14 +23,19 @@
           />
         </td>
         <td class="logo-spacer"></td>
-        <td v-if="loggedIn" class="login-info-cell">
-          Logged in as: {{ loggedInUsername }} ({{ loggedInClub }})
-          <br v-if="hasAdminRole" />
-          <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
-        </td>
         <td v-if="loggedIn" class="logout-cell">
           <app-button type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
         </td>
+      </tr>
+      <tr>
+          <td v-if="loggedIn" class="login-info-cell">
+          User: {{ loggedInUsername }} ({{ loggedInClub }})
+          <br v-if="hasAdminRole" />
+          <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
+        </td>
+        <td class="logo-spacer"></td>
+        <td class="logo-spacer"></td>
+        <td class="logo-spacer"></td>
       </tr>
     </tbody>
   </table>
