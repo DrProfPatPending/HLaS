@@ -74,7 +74,6 @@ export default {
 };
 </script>
 
-</style>
 <style scoped>
 .login-info-cell {
   font-size: 15px;
@@ -89,5 +88,4 @@ export default {
 .logo-spacer {
   font-size: 15px;
 }
-</style>
 </style>
