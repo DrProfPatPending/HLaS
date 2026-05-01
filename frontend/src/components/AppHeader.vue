@@ -30,11 +30,11 @@
       <tr>
           <td v-if="loggedIn" class="login-info-cell">
           User: {{ loggedInUsername }} ({{ loggedInClub }})
-          <br v-if="hasAdminRole" />
-          <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
         </td>
         <td class="logo-spacer"></td>
-        <td class="logo-spacer"></td>
+        <td class="login-info-admin">
+          <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
+        </td>
         <td class="logo-spacer"></td>
       </tr>
     </tbody>
