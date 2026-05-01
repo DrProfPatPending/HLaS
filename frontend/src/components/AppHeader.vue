@@ -1,13 +1,11 @@
 <template>
-  <table class="logo-table">
+  <table class="logo-table" style="width:90%; table-layout:fixed;">
     <tbody>
       <tr>
-        <td class="logo-cell">
+        <td class="logo-cell align-left">
           <img src="../../logos/HLaS.png" alt="HLaS logo" class="app-logo" @click="goHome" />
         </td>
-        <td class="logo-spacer">Spacer 1</td>
-        <td class="logo-spacer">Spacer 2</td>
-        <td class="logo-cell">
+        <td v-if="loggedIn" class="logo-cell align-center">
           <a
             v-if="loggedIn && websiteUrl"
             :href="websiteUrl"
@@ -24,17 +22,19 @@
             @error="onClubLogoError"
           />
         </td>
+        <td class="logo-cell align-right">
+          <app-button v-if="loggedIn" type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
+        </td>
       </tr>
       <tr>
-        <td v-if="loggedIn" class="login-info-cell">
-          User: {{ loggedInUsername }} ({{ loggedInClub }})
+        <td v-if="loggedIn" class="login-info-cell align-left">
+          User: {{ loggedInUsername }}
         </td>
-        <td class="logo-spacer">Spacer 3</td>
-        <td class="login-info-admin">
+        <td v-if="loggedIn" class="login-info-cell align-center">
+          Club: {{ loggedInClub }}
+        </td>
+        <td class="login-info-admin align-right">
           <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
-        </td>
-        <td v-if="loggedIn" class="logout-cell">
-          <app-button type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
         </td>
       </tr>
     </tbody>
@@ -75,6 +75,19 @@ export default {
 </script>
 
 <style scoped>
+.logo-table {
+  width: 100%;
+  table-layout: fixed;
+}
+.align-left {
+  text-align: left;
+}
+.align-center {
+  text-align: center;
+}
+.align-right {
+  text-align: right;
+}
 .login-info-cell {
   font-size: 15px;
   color: #222;
@@ -83,11 +96,6 @@ export default {
 .login-info-admin {
   color: #2f7a45;
   font-weight: 700;
-  font-size: 10px;
-}
-.logo-spacer {
-  font-size: 10px;
-  color: #222;
-  font-weight: 500;
+  font-size: 15px;
 }
 </style>
