@@ -23,19 +23,19 @@
           />
         </td>
         <td class="logo-spacer"></td>
-        <td v-if="loggedIn" class="logout-cell">
-          <app-button type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
-        </td>
+        <td class="logo-spacer"></td>
       </tr>
       <tr>
-          <td v-if="loggedIn" class="login-info-cell">
+        <td v-if="loggedIn" class="login-info-cell">
           User: {{ loggedInUsername }} ({{ loggedInClub }})
         </td>
         <td class="logo-spacer"></td>
         <td class="login-info-admin">
           <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
         </td>
-        <td class="logo-spacer"></td>
+        <td v-if="loggedIn" class="logout-cell">
+          <app-button type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
+        </td>
       </tr>
     </tbody>
   </table>
@@ -75,8 +75,14 @@ export default {
 </script>
 
 <style scoped>
+.login-info-cell {
+  font-size: 15px;
+  color: #222;
+  font-weight: 500;
+}
 .login-info-admin {
   color: #2f7a45;
   font-weight: 700;
+  font-size: 15px;
 }
 </style>
