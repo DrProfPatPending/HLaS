@@ -83,9 +83,11 @@ export default {
 .login-info-admin {
   color: #2f7a45;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 10px;
 }
 .logo-spacer {
-  font-size: 15px;
+  font-size: 10px;
+  color: #222;
+  font-weight: 500;
 }
 </style>
