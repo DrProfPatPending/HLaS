@@ -5,6 +5,8 @@
         <td class="logo-cell">
           <img src="../../logos/HLaS.png" alt="HLaS logo" class="app-logo" @click="goHome" />
         </td>
+        <td class="logo-spacer">Spacer 1</td>
+        <td class="logo-spacer">Spacer 2</td>
         <td class="logo-cell">
           <a
             v-if="loggedIn && websiteUrl"
@@ -22,14 +24,12 @@
             @error="onClubLogoError"
           />
         </td>
-        <td class="logo-spacer"></td>
-        <td class="logo-spacer"></td>
       </tr>
       <tr>
         <td v-if="loggedIn" class="login-info-cell">
           User: {{ loggedInUsername }} ({{ loggedInClub }})
         </td>
-        <td class="logo-spacer"></td>
+        <td class="logo-spacer">Spacer 3</td>
         <td class="login-info-admin">
           <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
         </td>
@@ -74,6 +74,7 @@ export default {
 };
 </script>
 
+</style>
 <style scoped>
 .login-info-cell {
   font-size: 15px;
@@ -85,4 +86,8 @@ export default {
   font-weight: 700;
   font-size: 15px;
 }
+.logo-spacer {
+  font-size: 15px;
+}
+</style>
 </style>
