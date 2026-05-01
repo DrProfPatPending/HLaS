@@ -35,6 +35,7 @@
         </td>
         <td class="login-info-admin align-right">
           <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
+          <span v-else class="login-info-admin">Normal</span>
         </td>
       </tr>
     </tbody>
@@ -76,7 +77,7 @@ export default {
 
 <style scoped>
 .logo-table {
-  width: 100%;
+  width: 90%;
   table-layout: fixed;
 }
 .align-left {
@@ -89,13 +90,13 @@ export default {
   text-align: right;
 }
 .login-info-cell {
-  font-size: 15px;
+  font-size: 12px;
   color: #222;
   font-weight: 500;
 }
 .login-info-admin {
   color: #2f7a45;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 12px;
 }
 </style>
