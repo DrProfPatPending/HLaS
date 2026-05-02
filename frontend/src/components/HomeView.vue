@@ -103,34 +103,34 @@
                 :class="{
                   'documents-title-cell': column.key === 'Title',
                   'documents-file-cell': column.key === 'File',
-                  'documents-actions-cell': column.key === 'Actions',
                 }"
                 :style="getColumnStyle('home_documents', column.key)"
               >
-                <app-button
-                  v-if="column.key === 'Title'"
-                  variant="link"
-                  class="documents-title-link"
-                  @click="openDocumentPreview(doc)"
-                >
-                  {{ doc.title || doc.fileName }}
-                </app-button>
+                <template v-if="column.key === 'Title'">
+                  <app-button
+                    variant="link"
+                    class="documents-title-link"
+                    @click="openDocumentPreview(doc)"
+                  >
+                    {{ doc.title || doc.fileName }}
+                  </app-button>
+                  <div class="documents-actions-stack">
+                    <app-button type="button" size="sm" class="documents-link-btn" @click="downloadDocument(doc)">Download</app-button>
+                    <app-button
+                      v-if="canManageDocuments"
+                      type="button"
+                      size="sm"
+                      variant="danger"
+                      class="documents-delete-btn"
+                      @click="deleteDocument(doc)"
+                    >
+                      Delete
+                    </app-button>
+                  </div>
+                </template>
                 <span v-else-if="column.key === 'File'">{{ doc.fileName }}</span>
                 <span v-else-if="column.key === 'Uploaded'">{{ formatNewsDate(doc.createdAt) }}</span>
                 <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
-                <div v-else-if="column.key === 'Actions'" class="documents-actions-stack">
-                  <app-button type="button" size="sm" class="documents-link-btn" @click="downloadDocument(doc)">Download</app-button>
-                  <app-button
-                    v-if="canManageDocuments"
-                    type="button"
-                    size="sm"
-                    variant="danger"
-                    class="documents-delete-btn"
-                    @click="deleteDocument(doc)"
-                  >
-                    Delete
-                  </app-button>
-                </div>
               </td>
             </tr>
           </tbody>
