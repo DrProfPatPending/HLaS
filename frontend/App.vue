@@ -139,6 +139,7 @@
       </main>
     </div>
     <footer class="app-footer">
+      <img src="./logos/HLaS.png" alt="HLaS logo" class="app-footer-logo" />
       <span>(c) 2026 - ScoffySoft</span>
       <span class="app-footer-separator">|</span>
       <a href="mailto: robbie.scoff@gmail.com">Contact Us</a>
@@ -1002,13 +1003,20 @@ export default {
   font-family: Arial, sans-serif;
 }
 #app .app-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-top: 28px;
   padding-top: 12px;
   border-top: 1px solid #ccc;
   font-family: Helvetica, Arial, sans-serif;
   font-size: 9pt;
-  text-align: center;
   color: #444;
+}
+#app .app-footer-logo {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 #app .app-footer-separator {
   margin: 0 8px;

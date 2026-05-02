@@ -1,11 +1,8 @@
 <template>
-  <table class="logo-table" style="width:90%; table-layout:fixed;">
+  <table class="logo-table" style="width:80%; table-layout:fixed;">
     <tbody>
       <tr>
         <td class="logo-cell align-left">
-          <img src="../../logos/HLaS.png" alt="HLaS logo" class="app-logo" @click="goHome" />
-        </td>
-        <td v-if="loggedIn" class="logo-cell align-center">
           <a
             v-if="loggedIn && websiteUrl"
             :href="websiteUrl"
@@ -22,20 +19,15 @@
             @error="onClubLogoError"
           />
         </td>
-        <td class="logo-cell align-right">
-          <app-button v-if="loggedIn" type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
-        </td>
-      </tr>
-      <tr>
         <td v-if="loggedIn" class="login-info-cell align-left">
-          User: {{ loggedInUsername }}
+          <div class="login-info-line">User: {{ loggedInUsername }}</div>
+          <div class="login-info-line">Club: {{ loggedInClub }}</div>
+          <div class="login-info-line">
+            <span class="login-info-label">User Type: </span><span v-if="hasAdminRole" class="login-info-admin">Admin</span><span v-else class="login-info-normal">Normal</span>
+          </div>
         </td>
-        <td v-if="loggedIn" class="login-info-cell align-center">
-          Club: {{ loggedInClub }}
-        </td>
-        <td class="login-info-admin align-right">
-          <span v-if="hasAdminRole" class="login-info-admin">Admin</span>
-          <span v-else class="login-info-admin">Normal</span>
+        <td class="logout-cell align-right">
+          <app-button v-if="loggedIn" type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
         </td>
       </tr>
     </tbody>
@@ -64,9 +56,6 @@ export default {
     logoSrc: () => clubLogoSrc.value,
   },
   methods: {
-    goHome() {
-      store.activeSection = 'home';
-    },
     onClubLogoError() {
       store.clubLogoLoadFailed = true;
     },
@@ -77,26 +66,54 @@ export default {
 
 <style scoped>
 .logo-table {
-  width: 90%;
+  width: 80%;
   table-layout: fixed;
 }
 .align-left {
   text-align: left;
-}
-.align-center {
-  text-align: center;
+  vertical-align: middle;
 }
 .align-right {
   text-align: right;
+  vertical-align: middle;
+}
+.logo-cell {
+  width: 72px;
+  padding: 4px 6px;
+  border: none;
+  vertical-align: middle;
 }
 .login-info-cell {
-  font-size: 12px;
+  padding: 4px 10px;
+  border: none;
+  vertical-align: middle;
+  text-align: left;
+}
+.logout-cell {
+  padding: 4px 6px;
+  border: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.login-info-line {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
+  color: #222;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.login-info-label {
   color: #222;
   font-weight: 500;
 }
 .login-info-admin {
   color: #2f7a45;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 8pt;
+}
+.login-info-normal {
+  color: #17324d;
+  font-weight: 600;
+  font-size: 8pt;
 }
 </style>
