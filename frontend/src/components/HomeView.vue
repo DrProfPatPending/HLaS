@@ -209,13 +209,16 @@ export default {
       ];
     },
     documentColumns() {
-      return [
+      // Only show File and Uploaded columns if VerboseDebug is true
+      const cols = [
         { key: 'Title', label: 'Title' },
-        { key: 'File', label: 'File' },
-        { key: 'Uploaded', label: 'Uploaded' },
         { key: 'Size', label: 'Size' },
-        { key: 'Actions', label: 'Actions' },
       ];
+      if (this.VerboseDebug) {
+        cols.splice(1, 0, { key: 'File', label: 'File' });
+        cols.splice(2, 0, { key: 'Uploaded', label: 'Uploaded' });
+      }
+      return cols;
     },
     visibleNewsColumns() {
       return this.getVisibleColumns('home_news', this.newsColumns);
