@@ -535,6 +535,17 @@ export default {
   font-size: 10pt;
 }
 
+.home-documents-table th.documents-title-cell,
+.home-documents-table td.documents-title-cell {
+  width: 80%;
+  max-width: 80%;
+}
+.home-documents-table th:last-child,
+.home-documents-table td:last-child {
+  width: 20%;
+  max-width: 20%;
+}
+
 .home-documents-table thead th {
   background: #eaf2f8;
   color: #17324d;
