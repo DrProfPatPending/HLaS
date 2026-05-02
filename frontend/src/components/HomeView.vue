@@ -564,7 +564,7 @@ export default {
 
 .documents-link-btn,
 .documents-delete-btn {
-  font-size: 9pt;
+  font-size: 10pt;
   line-height: 1.15;
   padding: 4px 8px;
 }
@@ -610,7 +610,9 @@ export default {
   .home-news-table th,
   .home-news-table td,
   .home-documents-table th,
-  .home-documents-table td {
+  .home-documents-table td,
+  .documents-link-btn,
+  .documents-delete-btn {
     font-size: 8pt;
   }
 }
