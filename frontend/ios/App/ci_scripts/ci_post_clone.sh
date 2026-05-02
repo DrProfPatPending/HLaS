@@ -12,6 +12,10 @@ brew install cocoapods
 cd "$CI_PRIMARY_REPOSITORY_PATH/frontend"
 npm install
 
+# Build the web app and sync with Capacitor
+npm run build:mobile:prod
+npx cap sync ios
+
 # Run CocoaPods to generate the missing xcconfig files
 cd ios/App
 pod install
