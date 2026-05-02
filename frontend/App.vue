@@ -324,7 +324,7 @@ export default {
   font-family: Helvetica, Arial, sans-serif;
 }
 #app .app-member-sidebar-title {
-  font-size: 0.95rem;
+  font-size: 10pt;
   font-weight: 700;
   color: #17324d;
 }
@@ -338,15 +338,15 @@ export default {
 }
 #app .app-member-nav-button {
   width: 100%;
-  padding: 11px 12px;
+  padding: 6px 10px;
   border: 1px solid #2d5f8b;
   border-radius: 8px;
   background: linear-gradient(180deg, #4b86b4 0%, #2d5f8b 100%);
   color: #fff;
   font-family: Helvetica, Arial, sans-serif;
-  font-size: 10pt;
+  font-size: 8pt;
   font-weight: 600;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
@@ -1018,8 +1018,20 @@ export default {
 #app .mobile-home-greeting {
   display: none;
 }
+#app h1 {
+  font-size: 16pt;
+  font-family: Helvetica, Arial, sans-serif;
+}
 #app h2 {
-  font-size: 14pt;
+  font-size: 12pt;
+  font-family: Helvetica, Arial, sans-serif;
+}
+#app h3 {
+  font-size: 10pt;
+  font-family: Helvetica, Arial, sans-serif;
+}
+#app h4 {
+  font-size: 9pt;
   font-family: Helvetica, Arial, sans-serif;
 }
 #app form {
@@ -1329,8 +1341,9 @@ export default {
 
   #app .app-member-nav-button {
     width: 100%;
-    padding: 10px 8px;
-    font-size: 9pt;
+    padding: 5px 6px;
+    font-size: 7pt;
+    text-align: center;
   }
 
   #app .app-member-subnav-button {

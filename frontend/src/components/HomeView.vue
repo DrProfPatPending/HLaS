@@ -1,3 +1,10 @@
+/* Ensure status badge in News and Updates table matches table font size */
+.home-news-table .app-status-badge {
+  font-size: 10pt;
+}
+  .home-news-table .app-status-badge {
+    font-size: 8pt;
+  }
 <template>
   <div class="home-container">
     <div class="home-page-header" v-if="VerboseDebug">
@@ -595,6 +602,13 @@ export default {
 
   .documents-upload-fields {
     grid-template-columns: 1fr;
+  }
+
+  .home-news-table th,
+  .home-news-table td,
+  .home-documents-table th,
+  .home-documents-table td {
+    font-size: 8pt;
   }
 }
 .access-error {
