@@ -34,20 +34,59 @@
             <tr v-else-if="!newsItems.length">
               <td :colspan="newsColumnCount">No news/updates posted yet.</td>
             </tr>
-            <tr v-else v-for="item in newsItems" :key="item.id">
-              <td
-                v-for="column in visibleNewsColumns"
-                :key="`news-cell-${item.id}-${column.key}`"
-                :style="getColumnStyle('home_news', column.key)"
-              >
-                <template v-if="column.key === 'Date'">
-                  <span>{{ formatNewsDate(item.date) }}</span>
-                  <div class="news-date-status"><app-status-badge :status="item.status" /></div>
-                </template>
-                <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
-                <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
-              </td>
-            </tr>
+            <template v-else v-for="item in newsItems" :key="item.id">
+              <!-- Inline edit row -->
+              <tr v-if="editingNewsId === item.id" class="news-edit-row">
+                <td :colspan="newsColumnCount">
+                  <div class="news-edit-form">
+                    <div class="news-edit-fields">
+                      <label class="news-edit-label">Date
+                        <input v-model="editNewsForm.date" type="date" class="news-edit-input" />
+                      </label>
+                      <label class="news-edit-label">Category
+                        <input v-model="editNewsForm.category" type="text" class="news-edit-input" placeholder="Category" />
+                      </label>
+                      <label class="news-edit-label">Status
+                        <select v-model="editNewsForm.status" class="news-edit-input">
+                          <option value="Draft">Draft</option>
+                          <option value="Published">Published</option>
+                          <option value="Archived">Archived</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label class="news-edit-label news-edit-update-label">Update
+                      <textarea v-model="editNewsForm.update" rows="3" class="news-edit-textarea" />
+                    </label>
+                    <p v-if="editNewsError" class="news-edit-error">{{ editNewsError }}</p>
+                    <div class="news-edit-actions">
+                      <app-button type="button" size="sm" class="news-edit-save-btn" :disabled="editNewsBusy" @click="saveNewsEdit(item)">{{ editNewsBusy ? 'Saving...' : 'Save' }}</app-button>
+                      <app-button type="button" size="sm" variant="secondary" class="news-edit-cancel-btn" :disabled="editNewsBusy" @click="cancelNewsEdit">Cancel</app-button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <!-- Normal display row -->
+              <tr v-else>
+                <td
+                  v-for="column in visibleNewsColumns"
+                  :key="`news-cell-${item.id}-${column.key}`"
+                  :style="getColumnStyle('home_news', column.key)"
+                >
+                  <template v-if="column.key === 'Date'">
+                    <span>{{ formatNewsDate(item.date) }}</span>
+                    <div class="news-date-status"><app-status-badge :status="item.status" /></div>
+                  </template>
+                  <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
+                  <template v-else-if="column.key === 'Update'">
+                    <span>{{ item.update || item.message }}</span>
+                    <div v-if="canManageNews" class="news-admin-actions">
+                      <app-button type="button" size="sm" class="news-edit-btn" @click="editNewsItem(item)">Edit</app-button>
+                      <app-button type="button" size="sm" variant="danger" class="news-delete-btn" :disabled="deleteNewsBusy === item.id" @click="deleteNewsItem(item)">{{ deleteNewsBusy === item.id ? 'Deleting...' : 'Delete' }}</app-button>
+                    </div>
+                  </template>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
         <p v-if="newsError" class="home-news-note">{{ newsError }}</p>
@@ -146,7 +185,7 @@
 
 <script>
 import axios from 'axios';
-import { store, clubDetails, formatConfiguredDate, API_BASE_URL } from '../store.js';
+import { store, clubDetails, formatConfiguredDate, API_BASE_URL, canAccessNewsletters } from '../store.js';
 import { VerboseDebug } from '../localConfig.js';
 import AppCard from './ui/AppCard.vue';
 import AppButton from './ui/AppButton.vue';
@@ -173,6 +212,11 @@ export default {
       uploadBusy: false,
       uploadError: '',
       VerboseDebug,
+      editingNewsId: null,
+      editNewsForm: { date: '', category: '', update: '', status: '' },
+      editNewsBusy: false,
+      editNewsError: '',
+      deleteNewsBusy: null,
     };
   },
   computed: {
@@ -181,6 +225,7 @@ export default {
     loggedInUser: () => store.loggedInUser,
     accessError: () => store.accessError,
     canManageDocuments: () => store.memberPermissions.includes('document.club.manage'),
+    canManageNews: () => canAccessNewsletters.value,
     greetingFirstName() {
       const user = this.loggedInUser || {};
       const candidates = [
@@ -245,6 +290,51 @@ export default {
       if (bytes < 1024) return `${bytes} B`;
       if (bytes < (1024 * 1024)) return `${(bytes / 1024).toFixed(1)} KB`;
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    },
+    editNewsItem(item) {
+      this.editingNewsId = item.id;
+      this.editNewsForm = {
+        date: item.date || '',
+        category: item.category || '',
+        update: item.update || item.message || '',
+        status: item.status || 'Published',
+      };
+      this.editNewsError = '';
+    },
+    cancelNewsEdit() {
+      this.editingNewsId = null;
+      this.editNewsError = '';
+    },
+    saveNewsEdit(item) {
+      this.editNewsBusy = true;
+      this.editNewsError = '';
+      return axios.put(`${API_BASE_URL}/news-updates/${item.id}`, {
+        club: this.loggedInClub,
+        date: this.editNewsForm.date,
+        category: this.editNewsForm.category,
+        update: this.editNewsForm.update,
+        status: this.editNewsForm.status,
+      }).then(() => {
+        this.editingNewsId = null;
+        this.fetchNewsUpdates();
+      }).catch((err) => {
+        this.editNewsError = err?.response?.data?.error || 'Failed to save';
+      }).finally(() => {
+        this.editNewsBusy = false;
+      });
+    },
+    deleteNewsItem(item) {
+      if (!window.confirm(`Delete this news post?`)) return Promise.resolve();
+      this.deleteNewsBusy = item.id;
+      return axios.delete(`${API_BASE_URL}/news-updates/${item.id}`, {
+        params: { club: this.loggedInClub },
+      }).then(() => {
+        this.fetchNewsUpdates();
+      }).catch((err) => {
+        this.newsError = err?.response?.data?.error || 'Failed to delete';
+      }).finally(() => {
+        this.deleteNewsBusy = null;
+      });
     },
     fetchNewsUpdates() {
       this.newsLoading = true;
@@ -494,6 +584,86 @@ export default {
   margin-top: 6px;
 }
 
+.news-admin-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.news-edit-btn,
+.news-delete-btn {
+  font-size: 8pt;
+  line-height: 1.15;
+  padding: 3px 8px;
+}
+
+.news-edit-row td {
+  padding: 12px;
+}
+
+.news-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.news-edit-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.news-edit-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 9pt;
+  font-weight: 600;
+  color: #17324d;
+  gap: 3px;
+}
+
+.news-edit-update-label {
+  width: 100%;
+}
+
+.news-edit-input {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  border: 1px solid #d7dce2;
+  border-radius: 6px;
+  padding: 5px 8px;
+  min-width: 120px;
+}
+
+.news-edit-textarea {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  border: 1px solid #d7dce2;
+  border-radius: 6px;
+  padding: 5px 8px;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.news-edit-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 9pt;
+  font-weight: 600;
+}
+
+.news-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.news-edit-save-btn,
+.news-edit-cancel-btn {
+  font-size: 9pt;
+  padding: 5px 14px;
+}
+
 .home-news-table tbody tr:nth-child(even) {
   background: #f8fbfd;
 }
@@ -632,7 +802,9 @@ export default {
 
   .home-news-table .app-status-badge,
   .documents-link-btn,
-  .documents-delete-btn {
+  .documents-delete-btn,
+  .news-edit-btn,
+  .news-delete-btn {
     font-size: 6pt;
   }
 }

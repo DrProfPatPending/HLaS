@@ -223,6 +223,68 @@ def create_newsletter_blueprint(deps):
         _save_news_updates_for_club(club, updated_posts)
         return jsonify({'success': True, 'club': club, 'post': new_post}), 201
 
+    @bp.route('/news-updates/<post_id>', methods=['PUT'])
+    def update_news_update(post_id):
+        payload = request.json or {}
+        requested_club = str(payload.get('club') or '').strip()
+        auth_error = require_permission('newsletter.send', requested_club)
+        if auth_error:
+            return auth_error
+
+        principal = get_current_principal(requested_club)
+        if principal is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        club = str(principal.get('scope_club_short_name') or principal.get('club_short_name') or '').strip()
+        if not club:
+            return jsonify({'error': 'Club is required'}), 400
+
+        existing_posts = _load_news_updates_for_club(club)
+        post = next((p for p in existing_posts if str(p.get('id')) == str(post_id)), None)
+        if post is None:
+            return jsonify({'error': 'Post not found'}), 404
+
+        if 'date' in payload:
+            normalized_date = _normalize_date(payload['date'])
+            if not normalized_date:
+                return jsonify({'error': 'Date must be YYYY-MM-DD'}), 400
+            post['date'] = normalized_date
+        if 'category' in payload:
+            post['category'] = str(payload['category'] or '').strip()
+        if 'update' in payload:
+            update_text = str(payload['update'] or '').strip()
+            if not update_text:
+                return jsonify({'error': 'Update text is required'}), 400
+            post['update'] = update_text
+        if 'status' in payload:
+            post['status'] = _normalize_status(payload['status'])
+
+        _save_news_updates_for_club(club, existing_posts)
+        return jsonify({'success': True, 'club': club, 'post': post})
+
+    @bp.route('/news-updates/<post_id>', methods=['DELETE'])
+    def delete_news_update(post_id):
+        requested_club = str(request.args.get('club', '')).strip()
+        auth_error = require_permission('newsletter.send', requested_club)
+        if auth_error:
+            return auth_error
+
+        principal = get_current_principal(requested_club)
+        if principal is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        club = str(principal.get('scope_club_short_name') or principal.get('club_short_name') or '').strip()
+        if not club:
+            return jsonify({'error': 'Club is required'}), 400
+
+        existing_posts = _load_news_updates_for_club(club)
+        updated_posts = [p for p in existing_posts if str(p.get('id')) != str(post_id)]
+        if len(updated_posts) == len(existing_posts):
+            return jsonify({'error': 'Post not found'}), 404
+
+        _save_news_updates_for_club(club, updated_posts)
+        return jsonify({'success': True, 'club': club})
+
     @bp.route('/newsletter/prepare_recipients', methods=['POST'])
     def prepare_newsletter_recipients():
         data = request.json or {}
