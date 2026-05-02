@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# Xcode Cloud does not pre-install Node.js or CocoaPods.
+# Homebrew is available; install both tools here.
+brew install node
+brew install cocoapods
+
 # Install frontend npm dependencies first — the Podfile resolves
 # Capacitor pods via ../../node_modules/@capacitor/ios, so node_modules
 # must exist before `pod install` runs.
