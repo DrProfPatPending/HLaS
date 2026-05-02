@@ -588,6 +588,8 @@ export default {
   display: inline-flex;
   gap: 6px;
   margin-top: 6px;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .news-edit-btn,
@@ -739,6 +741,7 @@ export default {
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
+  max-width: 100%;
 }
 
 .documents-title-cell,
@@ -804,6 +807,27 @@ export default {
   .documents-link-btn,
   .documents-delete-btn {
     font-size: 6pt;
+    padding: 2px 5px;
+    line-height: 1.1;
+  }
+
+  .news-edit-btn,
+  .news-delete-btn {
+    font-size: 6pt;
+    padding: 2px 5px;
+    line-height: 1.1;
+  }
+
+  .news-admin-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .documents-actions-stack {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 }
 .access-error {
