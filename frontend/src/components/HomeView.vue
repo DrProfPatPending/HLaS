@@ -1,9 +1,9 @@
-/* Ensure status badge in News and Updates table matches table font size */
+/* Status badge in News and Updates table */
 .home-news-table .app-status-badge {
-  font-size: 10pt;
+  font-size: 8pt;
 }
   .home-news-table .app-status-badge {
-    font-size: 8pt;
+    font-size: 6pt;
   }
 <template>
   <div class="home-container">
@@ -580,7 +580,7 @@ export default {
 
 .documents-link-btn,
 .documents-delete-btn {
-  font-size: 10pt;
+  font-size: 8pt;
   line-height: 1.15;
   padding: 4px 8px;
 }
@@ -626,10 +626,14 @@ export default {
   .home-news-table th,
   .home-news-table td,
   .home-documents-table th,
-  .home-documents-table td,
+  .home-documents-table td {
+    font-size: 8pt;
+  }
+
+  .home-news-table .app-status-badge,
   .documents-link-btn,
   .documents-delete-btn {
-    font-size: 8pt;
+    font-size: 6pt;
   }
 }
 .access-error {
