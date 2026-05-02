@@ -592,9 +592,9 @@ export default {
 
 .news-edit-btn,
 .news-delete-btn {
-  font-size: 8pt;
+  font-size: 6pt;
   line-height: 1.15;
-  padding: 3px 8px;
+  padding: 2px 6px;
 }
 
 .news-edit-row td {
@@ -802,9 +802,7 @@ export default {
 
   .home-news-table .app-status-badge,
   .documents-link-btn,
-  .documents-delete-btn,
-  .news-edit-btn,
-  .news-delete-btn {
+  .documents-delete-btn {
     font-size: 6pt;
   }
 }
