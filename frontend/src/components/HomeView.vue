@@ -40,10 +40,12 @@
                 :key="`news-cell-${item.id}-${column.key}`"
                 :style="getColumnStyle('home_news', column.key)"
               >
-                <span v-if="column.key === 'Date'">{{ formatNewsDate(item.date) }}</span>
+                <template v-if="column.key === 'Date'">
+                  <span>{{ formatNewsDate(item.date) }}</span>
+                  <div class="news-date-status"><app-status-badge :status="item.status" /></div>
+                </template>
                 <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
                 <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
-                <app-status-badge v-else-if="column.key === 'Status'" :status="item.status" />
               </td>
             </tr>
           </tbody>
@@ -205,7 +207,6 @@ export default {
         { key: 'Date', label: 'Date' },
         { key: 'Category', label: 'Category' },
         { key: 'Update', label: 'Update' },
-        { key: 'Status', label: 'Status' },
       ];
     },
     documentColumns() {
@@ -487,6 +488,10 @@ export default {
 .home-news-table thead th {
   background: #eaf2f8;
   color: #17324d;
+}
+
+.news-date-status {
+  margin-top: 6px;
 }
 
 .home-news-table tbody tr:nth-child(even) {
