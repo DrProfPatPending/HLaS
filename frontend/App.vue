@@ -296,7 +296,7 @@ export default {
   align-items: start;
   width: 100%;
   box-sizing: border-box;
-  padding: 18px 20px 26px;
+  padding: 10px 20px 26px;
 }
 #app .app-member-sidebar-group {
   display: flex;
@@ -316,8 +316,8 @@ export default {
   top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 12px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 1px solid #d7dce2;
   border-radius: 12px;
   background: #fff;
@@ -992,14 +992,14 @@ export default {
 #app .club-logo {
   display: block;
   margin: 0;
-  max-height: 64px;
-  max-width: 64px;
+  max-height: 48px;
+  max-width: 48px;
 }
 #app {
   max-width: none;
   width: 100%;
   margin: 0;
-  padding: 70px 12px 12px 12px;
+  padding: 56px 12px 12px 12px;
   font-family: Arial, sans-serif;
 }
 #app .app-footer {
@@ -1315,7 +1315,7 @@ export default {
     flex-direction: column;
     width: 100%;
     gap: 20px;
-    padding: 18px 0 26px;
+    padding: 8px 0 26px;
   }
 
   #app .app-member-sidebar-group {

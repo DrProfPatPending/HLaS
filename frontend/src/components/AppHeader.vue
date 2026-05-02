@@ -79,18 +79,18 @@ export default {
 }
 .logo-cell {
   width: 72px;
-  padding: 4px 6px;
+  padding: 2px 6px;
   border: none;
   vertical-align: middle;
 }
 .login-info-cell {
-  padding: 4px 10px;
+  padding: 2px 10px;
   border: none;
   vertical-align: middle;
   text-align: left;
 }
 .logout-cell {
-  padding: 4px 6px;
+  padding: 2px 6px;
   border: none;
   white-space: nowrap;
   vertical-align: middle;
