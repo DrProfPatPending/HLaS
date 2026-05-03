@@ -369,49 +369,53 @@ python3 backend/backup_cli.py upload full-2026-01-15T10-30-45 \
   --key=snapshots/2026-01/full-backup
 ```
 
-## Scheduling Automated Backups
+## Scheduling Backups
 
-### Using Cron (Linux/Mac)
+Automated backups can be scheduled using:
+
+1. **Interactive Setup (Recommended)** - Guided configuration tool
+2. **Cron** - Traditional Linux task scheduler
+3. **Systemd Timers** - Modern Linux approach
+4. **Docker Compose** - Container-based scheduling
+
+### Quick Start
 
 ```bash
-# Setup daily full backups at 2 AM
-python3 backend/backup_cli.py schedule --interval=daily --type=full
-
-# Or manually add to crontab:
-0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full >> /var/log/hlas-backup.log 2>&1
+# Run the interactive setup assistant
+chmod +x backend/install_backup_scheduler.sh
+./backend/install_backup_scheduler.sh
 ```
 
-Available intervals:
-- `hourly` - Every hour
-- `daily` - 2 AM daily (UTC)
-- `weekly` - 2 AM Sundays (UTC)
-- `monthly` - 2 AM 1st of month (UTC)
+This will guide you through the entire setup process.
 
-### Using Docker Compose
+### Manual Setup Options
 
-Create a separate service for scheduled backups:
+For detailed instructions on each scheduling method, see:
 
-```yaml
-services:
-  backup-scheduler:
-    image: alpine:latest
-    entrypoint: /bin/sh -c
-    command: |
-      while true; do
-        echo "Running scheduled backup..."
-        docker run --rm \
-          --volumes-from hlas-backend \
-          --network host \
-          -e DATABASE_URL="$DATABASE_URL" \
-          -e HLAS_BACKUP_DIR=/data/backups \
-          hlas-backend python3 backup_cli.py create-full
-        sleep 86400  # Daily
-      done
-    depends_on:
-      - backend
+**[→ BACKUP_SCHEDULING_GUIDE.md](BACKUP_SCHEDULING_GUIDE.md)** - Comprehensive guide with examples
+
+Quick reference:
+
+```bash
+# Cron-based (traditional)
+cd backend
+export DATABASE_URL="postgresql://..."
+./schedule_backups_cron.sh daily
+
+# Systemd timers (modern, recommended)
+sudo cp backend/hlas-backup.service /etc/systemd/system/
+sudo cp backend/hlas-backup.timer /etc/systemd/system/
+sudo systemctl enable hlas-backup.timer
+sudo systemctl start hlas-backup.timer
 ```
 
-### Restore from Snapshot
+### Available Scheduling Templates
+
+- **[schedule_backups_cron.sh](backend/schedule_backups_cron.sh)** - Cron setup script
+- **[hlas-backup.service](backend/hlas-backup.service)** - Systemd service unit
+- **[hlas-backup.timer](backend/hlas-backup.timer)** - Systemd timer unit
+- **[SYSTEMD_TIMER_EXAMPLES.md](backend/SYSTEMD_TIMER_EXAMPLES.md)** - Timer schedule examples
+- **[install_backup_scheduler.sh](backend/install_backup_scheduler.sh)** - Interactive setup tool
 
 #### Restore Database
 
@@ -569,22 +573,82 @@ python3 backend/backup_cli.py cleanup --days=7 --max=5
 
 ## Permission Model
 
-The backup system uses role-based permissions:
+The backup system uses role-based permissions integrated with HLaS RBAC system. Permissions are stored in `backend/security/permissions.py` and enforced on all API endpoints.
+
+### Backup Permissions
 
 ```python
 {
-  'backup.create': 'Create new snapshots',
+  'backup.create': 'Create new snapshots (database, filesystem, full)',
   'backup.read': 'List and view snapshot details',
   'backup.download': 'Download snapshot files',
   'backup.delete': 'Delete snapshots',
-  'backup.restore': 'Restore from snapshots (future)',
 }
 ```
 
-Assign these to admin roles:
-- `app_admin`: All backup permissions
-- `system_admin`: All backup permissions
-- `club_admin`: Limited to club-specific data (if implemented)
+### Role-Based Access Control
+
+Backup permissions are restricted to system-level administrators:
+
+| Role | Permissions | Scope |
+|------|-------------|-------|
+| `app_owner` | `backup.*` (all) | System-wide, all clubs |
+| `app_admin` | `backup.*` (all) | System-wide, all clubs |
+| `club_manager` | None | Limited to club-scoped data |
+| `club_admin` | None | Limited to club-scoped data |
+| `user` | None | Limited to self-data |
+
+### Why Admin-Only?
+
+Backup operations are restricted because they:
+1. Provide access to sensitive system data
+2. Can impact system availability during backups
+3. Include database and file system data for all clubs
+4. Require trusted administrator oversight
+5. Should not be delegated to club-level admins
+
+### Permission Enforcement
+
+All backup API endpoints require `@require_backup_permission` decorator:
+
+```python
+@bp.route('/snapshots', methods=['GET'])
+@require_backup_permission('read')
+def list_snapshots():
+    # Only app_admin and app_owner can call this
+    ...
+```
+
+If a user without the required permission attempts to access a backup endpoint:
+- API returns `401 Unauthorized` if not authenticated
+- API returns `403 Forbidden` if authenticated but lacks permission
+
+### Integration Points
+
+The backup system hooks into HLaS authentication and authorization:
+
+- `require_permission()` - Validates user roles before API access
+- `Principal` context - Contains user roles and permissions
+- Role assignments - Managed via `/admin/roles` API
+- Audit logging - All backup operations can be logged for compliance
+
+### Example: Checking User Permissions
+
+```bash
+# As app_owner or app_admin - SUCCESS
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:5050/admin/backups/snapshots
+# Response: 200 OK with snapshot list
+
+# As club_admin - FORBIDDEN
+curl -H "Authorization: Bearer $CLUB_ADMIN_TOKEN" \
+  http://localhost:5050/admin/backups/snapshots
+# Response: 403 Forbidden
+
+# Without token - UNAUTHORIZED
+curl http://localhost:5050/admin/backups/snapshots
+# Response: 401 Unauthorized
+```
 
 ## Future Enhancements
 

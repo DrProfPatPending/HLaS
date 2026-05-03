@@ -1,0 +1,72 @@
+# HLaS Backup Service - Systemd Edition
+#
+# Systemd service unit for running HLaS backups.
+# More modern and reliable than cron for system services.
+#
+# Installation:
+#   1. Place this file at: /etc/systemd/system/hlas-backup.service
+#   2. Create companion timer: /etc/systemd/system/hlas-backup.timer
+#   3. Enable and start:
+#      $ sudo systemctl daemon-reload
+#      $ sudo systemctl enable hlas-backup.timer
+#      $ sudo systemctl start hlas-backup.timer
+#
+# Management:
+#   $ sudo systemctl status hlas-backup.timer
+#   $ sudo systemctl list-timers hlas-backup.timer
+#   $ sudo journalctl -u hlas-backup -f
+#
+# Notes:
+#   - Requires the companion .timer file to schedule execution
+#   - Logs go to systemd journal (view with journalctl)
+#   - Survives reboot automatically if enabled
+#   - Better error handling and logging than cron
+
+[Unit]
+Description=HLaS Backup Service
+Documentation=file:///opt/HLaS/BACKUP_SYSTEM.md
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/HLaS/backend
+
+# Sets database connection - adjust to your setup
+Environment="DATABASE_URL=postgresql://hlas:password@localhost:5432/hlas"
+Environment="HLAS_BACKUP_DIR=/data/backups"
+Environment="HLAS_LOG_LEVEL=INFO"
+
+# Run backup command
+ExecStart=/usr/bin/python3 /opt/HLaS/backend/backup_cli.py create-full \
+    --description="Scheduled automated backup"
+
+# Cleanup old backups after 5 minutes
+ExecStartPost=/bin/sleep 300
+ExecStartPost=/usr/bin/python3 /opt/HLaS/backend/backup_cli.py cleanup \
+    --days=30 --max=7
+
+# Restart policy
+Restart=on-failure
+RestartSec=60
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits - adjust as needed
+CPUQuota=50%
+MemoryLimit=1G
+TasksMax=100
+
+# Timeout - increase if backups are large
+TimeoutStartSec=3600
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hlas-backup
+
+[Install]
+WantedBy=multi-user.target

@@ -653,6 +653,7 @@ from routes import (
     create_public_blueprint,
     create_role_blueprint,
 )
+from routes.backup_routes import create_backup_routes
 
 
 def create_app():
@@ -741,6 +742,10 @@ def create_app():
 # Module-level instance for backward compatibility with `from app import app`
 app = create_app()
 register_admin_app_users_route(app)
+
+# Register backup routes if enabled
+if os.getenv('ENABLE_BACKUPS', 'true').lower() == 'true':
+    create_backup_routes(app, get_principal_context, require_permission)
 
 
 

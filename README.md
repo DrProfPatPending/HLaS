@@ -13,6 +13,13 @@ HLaS is a fishing club membership management application with separate member an
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
+- **Comprehensive backup & snapshot system:** Database and file backups for disaster recovery.
+   - Full snapshots combine database (`pg_dump`) and file system backups into versioned archives.
+   - Upload snapshots to AWS S3, MinIO, DigitalOcean Spaces, or any S3-compatible storage.
+   - Automated cleanup policies (retention by age or snapshot count).
+   - CLI tool (`backup_cli.py`) for manual operations and cron scheduling.
+   - REST API endpoints for programmatic access (gated by `app_admin`/`app_owner`).
+   - See `BACKUP_SYSTEM.md` and `BACKUP_QUICK_START.md` for complete documentation.
 - **Mobile responsive navigation:** the main Navigation Bar now switches to a 2-column grid layout at ≤ 768 px, containing buttons sized to 80 % of the screen width, stacked above page content.
 - **Mobile full-width layout:** the application shell, nav card, subnav card, and all content containers now expand to 100 % window width in responsive mode, with content areas independently centred at 80 vw.
 - **Beat Details page restructure:** the read-only Beat Details page now shows:
@@ -927,5 +934,19 @@ After import, fully restart Edge/Chrome and test:
 - Migration script available: `backend/migrate_passwords.py` to hash existing plain-text passwords
 
 ---
+
+## Documentation
+
+For comprehensive information on specific features and operations, refer to:
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment architecture, backend changes, API endpoints
+- **[BACKUP_SYSTEM.md](BACKUP_SYSTEM.md)** - Backup system setup, usage, troubleshooting, and best practices
+- **[BACKUP_QUICK_START.md](BACKUP_QUICK_START.md)** - 5-minute backup system setup guide
+- **[BACKUP_SCHEDULING_GUIDE.md](BACKUP_SCHEDULING_GUIDE.md)** - Automated backup scheduling (cron, systemd, Docker)
+- **[.env.backup.example](.env.backup.example)** - Backup system configuration template
+- **[docker-compose.backup.yml](docker-compose.backup.yml)** - Docker Compose examples for automated backups
+- **[backend/install_backup_scheduler.sh](backend/install_backup_scheduler.sh)** - Interactive backup scheduling setup tool
+- **[MOBILE_RELEASE_CHECKLIST.md](MOBILE_RELEASE_CHECKLIST.md)** - iOS TestFlight release process
+- **[IOS_TESTFLIGHT_FIRST_UPLOAD.md](IOS_TESTFLIGHT_FIRST_UPLOAD.md)** - Initial TestFlight setup
 
 For further details, see the documentation in each folder.

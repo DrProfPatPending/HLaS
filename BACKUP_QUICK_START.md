@@ -82,65 +82,58 @@ python3 backend/backup_cli.py upload full-2026-01-15T10-30-45
 
 ## Automated Backups
 
-### Option 1: Cron (Linux/Mac)
+### Option 1: Interactive Setup (Recommended)
+
+Use the setup assistant for guided configuration:
 
 ```bash
-# Setup daily backups at 2 AM
-python3 backend/backup_cli.py schedule --interval=daily --type=full
-
-# Or manually add to crontab
-crontab -e
-# Add: 0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full
+chmod +x backend/install_backup_scheduler.sh
+./backend/install_backup_scheduler.sh
 ```
 
-### Option 2: Docker Compose Service
+This will:
+- Check your system requirements
+- Test database connectivity  
+- Guide you through cron or systemd timer setup
+- Run a test backup
+- Show monitoring commands
+
+### Option 2: Cron-Based Scheduling
 
 ```bash
-# Use the provided backup service
-docker-compose -f docker-compose.prod.yml -f docker-compose.backup.yml up -d
+cd backend
+export DATABASE_URL="postgresql://user:pass@host:5432/db"
+chmod +x schedule_backups_cron.sh
+./schedule_backups_cron.sh daily        # Daily at 2 AM
+./schedule_backups_cron.sh list         # View schedule
 ```
 
-### Option 3: Systemd Timer (Linux)
+Available schedules:
+- `daily` - Daily at 2 AM
+- `hourly` - Every hour
+- `weekly` - Daily + extra weekly
 
-Create `/etc/systemd/system/hlas-backup.service`:
+### Option 3: Systemd Timers (Modern Linux)
 
-```ini
-[Unit]
-Description=HLaS Backup Service
-After=network.target
-
-[Service]
-Type=oneshot
-WorkingDirectory=/opt/HLaS
-ExecStart=/usr/bin/python3 /opt/HLaS/backend/backup_cli.py create-full
-Environment=DATABASE_URL=%i
-User=root
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Create `/etc/systemd/system/hlas-backup.timer`:
-
-```ini
-[Unit]
-Description=HLaS Daily Backup
-Requires=hlas-backup.service
-
-[Timer]
-OnCalendar=daily
-OnCalendar=*-*-* 02:00:00
-
-[Install]
-WantedBy=timers.target
-```
-
-Enable:
 ```bash
-systemctl daemon-reload
-systemctl enable hlas-backup.timer
-systemctl start hlas-backup.timer
+# Copy service files
+sudo cp backend/hlas-backup.service /etc/systemd/system/
+sudo cp backend/hlas-backup.timer /etc/systemd/system/
+
+# Edit to set DATABASE_URL
+sudo nano /etc/systemd/system/hlas-backup.service
+
+# Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable hlas-backup.timer
+sudo systemctl start hlas-backup.timer
+
+# Monitor
+sudo systemctl list-timers hlas-backup.timer
+sudo journalctl -u hlas-backup -f
 ```
+
+For detailed scheduling options, see [BACKUP_SCHEDULING_GUIDE.md](BACKUP_SCHEDULING_GUIDE.md).
 
 ---
 

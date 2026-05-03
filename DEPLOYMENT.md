@@ -369,6 +369,46 @@ Notes:
    - backend is running updated code
    - `/api/member_photo/...` returns image bytes
 
+### Backup & Snapshot System
+
+A comprehensive backup solution has been implemented to protect both PostgreSQL database and file assets:
+
+- **Backup API Endpoints:**
+   - `GET /admin/backups/snapshots` - List all snapshots
+   - `POST /admin/backups/snapshots/create/full` - Create full snapshot (database + files)
+   - `POST /admin/backups/snapshots/create/database` - Create database-only snapshot
+   - `POST /admin/backups/snapshots/create/filesystem` - Create filesystem-only snapshot
+   - `POST /admin/backups/snapshots/{id}/upload` - Upload snapshot to cloud storage
+   - `GET /admin/backups/snapshots/{id}/download` - Download snapshot
+   - `DELETE /admin/backups/snapshots/{id}` - Delete snapshot
+   - `POST /admin/backups/cleanup` - Cleanup old snapshots per retention policy
+   - `GET /admin/backups/status` - System status and statistics
+
+- **Permissions:**
+   - `backup.create` - Create new snapshots
+   - `backup.read` - List and view snapshot details
+   - `backup.download` - Download snapshot files
+   - `backup.delete` - Delete snapshots
+   - Restricted to `app_admin` and `app_owner` roles only
+
+- **CLI Tool:**
+   - `python3 backend/backup_cli.py create-full` - Manual full backup
+   - `python3 backend/backup_cli.py list` - List snapshots
+   - `python3 backend/backup_cli.py status` - System status
+   - `python3 backend/backup_cli.py cleanup` - Cleanup old snapshots
+   - `python3 backend/backup_cli.py schedule` - Setup automated scheduling
+
+- **Cloud Storage Integration:**
+   - Supports AWS S3, MinIO, DigitalOcean Spaces, or any S3-compatible service
+   - Upload snapshots to cloud for off-site redundancy
+   - Configure via environment variables or API
+
+- **Setup:**
+   - See `BACKUP_SYSTEM.md` for comprehensive setup and usage guide
+   - See `BACKUP_QUICK_START.md` for 5-minute quick start
+   - Configuration template: `.env.backup.example`
+   - Docker Compose example: `docker-compose.backup.yml`
+
 ### Useful operational SQL/scripts
 
 - Paused-field verification packs:
