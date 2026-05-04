@@ -3,79 +3,59 @@
     <!-- Navigation Header -->
     <nav class="mini-site-nav">
       <div class="nav-container">
-        <div class="nav-branding">
-          <h1>{{ miniSite.title || clubCode }}</h1>
-          <p v-if="miniSite.tagline" class="nav-tagline">{{ miniSite.tagline }}</p>
+        <!-- Logo Left -->
+        <div class="nav-logo">
+          <img
+            v-if="miniSite.logo_url"
+            :src="miniSite.logo_url"
+            :alt="miniSite.title"
+            class="logo-image"
+          />
+          <div v-else class="logo-placeholder">{{ miniSite.title || clubCode }}</div>
         </div>
+
+        <!-- Menu Center -->
         <ul class="nav-links">
-          <li><a href="#home" @click.prevent="currentSection = 'home'">Home</a></li>
-          <li><a href="#about" @click.prevent="currentSection = 'about'">About</a></li>
-          <li><a href="#beats" @click.prevent="currentSection = 'beats'">Fishing Beats</a></li>
-          <li><a href="#contact" @click.prevent="currentSection = 'contact'">Contact</a></li>
-          <li><a href="#login" class="login-link">Login</a></li>
+          <li v-for="page in enabledPages" :key="page.id">
+            <a
+              :href="`#${page.id}`"
+              :class="{ active: currentPage === page.id }"
+              @click.prevent="currentPage = page.id"
+            >
+              {{ page.title }}
+            </a>
+          </li>
         </ul>
+
+        <!-- Login Button Right -->
+        <a href="#login" class="login-button" @click.prevent="navigateToLogin">
+          Log In
+        </a>
       </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section v-if="currentSection === 'home'" class="mini-site-hero">
-      <img
-        v-if="miniSite.hero_image_url"
-        :src="miniSite.hero_image_url"
-        :alt="miniSite.title"
-        class="hero-image"
+    <!-- Page Content -->
+    <main class="mini-site-main">
+      <component
+        :is="currentPageComponent"
+        :key="currentPage"
+        :club-name="miniSite.title || clubCode"
+        :headline="getPageContent(currentPage, 'headline')"
+        :tagline="miniSite.tagline"
+        :description="miniSite.description"
+        :hero-image="miniSite.hero_image_url"
+        :content="getPageContent(currentPage, 'content')"
+        :contact-email="miniSite.contact_email"
+        :contact-phone="miniSite.contact_phone"
+        :contact-address="miniSite.contact_address"
       />
-      <div class="hero-overlay" />
-      <div class="hero-content">
-        <h2>{{ miniSite.title }}</h2>
-        <p v-if="miniSite.description">{{ miniSite.description }}</p>
-        <button class="cta-button" @click="navigateToLogin">Join Us</button>
-      </div>
-    </section>
-
-    <!-- Content Sections -->
-    <section v-if="currentSection === 'home'" class="mini-site-content">
-      <div class="content-container">
-        <div class="featured-card">
-          <h3>Welcome to {{ miniSite.title }}</h3>
-          <p v-if="miniSite.description">{{ miniSite.description }}</p>
-          <p>
-            Discover the best fishing opportunities in the region. Manage your fishing activity,
-            track your catches, and connect with fellow members.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- About Section (Placeholder) -->
-    <section v-if="currentSection === 'about'" class="mini-site-content">
-      <div class="content-container">
-        <h3>About {{ miniSite.title }}</h3>
-        <p>Club information section - coming soon</p>
-      </div>
-    </section>
-
-    <!-- Beats Section (Placeholder) -->
-    <section v-if="currentSection === 'beats'" class="mini-site-content">
-      <div class="content-container">
-        <h3>Fishing Beats</h3>
-        <p>Featured fishing beats - coming soon</p>
-      </div>
-    </section>
-
-    <!-- Contact Section (Placeholder) -->
-    <section v-if="currentSection === 'contact'" class="mini-site-content">
-      <div class="content-container">
-        <h3>Contact Us</h3>
-        <p>Contact information - coming soon</p>
-      </div>
-    </section>
+    </main>
 
     <!-- Footer -->
     <footer class="mini-site-footer">
       <div class="footer-content">
         <p>&copy; 2026 {{ miniSite.title }}. All rights reserved.</p>
-        <div v-if="miniSite.social_links" class="social-links">
+        <div v-if="miniSite.social_links && Object.keys(miniSite.social_links).length > 0" class="social-links">
           <a
             v-for="(url, platform) in miniSite.social_links"
             :key="platform"
@@ -93,10 +73,33 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import MiniSiteHome from './MiniSiteHome.vue';
+import MiniSiteAbout from './MiniSiteAbout.vue';
+import MiniSiteWaters from './MiniSiteWaters.vue';
+import MiniSiteNews from './MiniSiteNews.vue';
+import MiniSiteJoin from './MiniSiteJoin.vue';
+import MiniSiteContact from './MiniSiteContact.vue';
+
+const PAGE_COMPONENTS = {
+  home: MiniSiteHome,
+  about: MiniSiteAbout,
+  waters: MiniSiteWaters,
+  news: MiniSiteNews,
+  join: MiniSiteJoin,
+  contact: MiniSiteContact,
+};
 
 export default {
   name: 'MiniSiteDesktop',
+  components: {
+    MiniSiteHome,
+    MiniSiteAbout,
+    MiniSiteWaters,
+    MiniSiteNews,
+    MiniSiteJoin,
+    MiniSiteContact,
+  },
   props: {
     miniSite: {
       type: Object,
@@ -106,27 +109,66 @@ export default {
       type: String,
       required: true,
     },
+    initialPage: {
+      type: String,
+      default: 'home',
+    },
   },
   setup(props) {
-    const currentSection = ref('home');
+    const currentPage = ref(props.initialPage);
+
+    // Get enabled pages from the pages array
+    const enabledPages = computed(() => {
+      if (!props.miniSite.pages || !Array.isArray(props.miniSite.pages)) {
+        return [];
+      }
+      return props.miniSite.pages.filter((page) => page.enabled);
+    });
+
+    // Get the current page component
+    const currentPageComponent = computed(() => {
+      return PAGE_COMPONENTS[currentPage.value] || MiniSiteHome;
+    });
+
+    // Get page-specific content
+    const getPageContent = (pageId, contentType) => {
+      const page = props.miniSite.pages?.find((p) => p.id === pageId);
+      if (!page) return '';
+
+      switch (contentType) {
+        case 'headline':
+          return page.headline || '';
+        case 'content':
+          return page.content || '';
+        default:
+          return '';
+      }
+    };
 
     const navigateToLogin = () => {
       window.location.href = `/club/${props.clubCode}/login/`;
     };
 
     return {
-      currentSection,
+      currentPage,
+      enabledPages,
+      currentPageComponent,
+      getPageContent,
       navigateToLogin,
     };
   },
 };
 </script>
 
+
 <style scoped>
 .mini-site-desktop {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: #fff;
   color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Navigation */
@@ -141,147 +183,89 @@ export default {
 }
 
 .nav-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 2rem;
 }
 
-.nav-branding h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+/* Logo */
+.nav-logo {
+  flex-shrink: 0;
 }
 
-.nav-tagline {
-  margin: 0.25rem 0 0 0;
-  font-size: 0.9rem;
-  opacity: 0.9;
+.logo-image {
+  height: 50px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
 }
 
+.logo-placeholder {
+  font-size: 1.2rem;
+  font-weight: bold;
+  white-space: nowrap;
+  color: white;
+}
+
+/* Navigation Links */
 .nav-links {
   display: flex;
   list-style: none;
   margin: 0;
   padding: 0;
   gap: 2rem;
+  flex: 1;
+  justify-content: center;
 }
 
 .nav-links a {
   color: white;
   text-decoration: none;
   font-size: 0.95rem;
-  transition: opacity 0.2s;
+  font-weight: 500;
+  transition: opacity 0.3s, border-bottom 0.3s;
+  border-bottom: 2px solid transparent;
+  padding: 0.5rem 0;
 }
 
 .nav-links a:hover {
   opacity: 0.8;
+  border-bottom-color: white;
 }
 
-.login-link {
-  background: #ff6b6b;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.login-link:hover {
-  background: #ff5252;
+.nav-links a.active {
+  border-bottom-color: white;
   opacity: 1;
 }
 
-/* Hero Section */
-.mini-site-hero {
-  position: relative;
-  height: 400px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hero-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.hero-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  color: white;
-  max-width: 600px;
-  padding: 2rem;
-}
-
-.hero-content h2 {
-  font-size: 2.5rem;
-  margin: 0 0 1rem 0;
-  font-weight: 700;
-}
-
-.hero-content p {
-  font-size: 1.1rem;
-  margin: 0 0 2rem 0;
-  line-height: 1.5;
-}
-
-.cta-button {
+/* Login Button */
+.login-button {
+  flex-shrink: 0;
   background: #ff6b6b;
   color: white;
-  border: none;
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
+  padding: 0.5rem 1.5rem;
   border-radius: 4px;
-  cursor: pointer;
+  text-decoration: none;
   font-weight: 600;
-  transition: background 0.2s;
+  font-size: 0.95rem;
+  transition: background 0.3s, transform 0.2s;
+  display: inline-block;
+  white-space: nowrap;
 }
 
-.cta-button:hover {
+.login-button:hover {
   background: #ff5252;
+  transform: translateY(-2px);
 }
 
-/* Content */
-.mini-site-content {
-  max-width: 1200px;
-  margin: 3rem auto;
-  padding: 0 2rem;
-}
-
-.content-container {
-  background: #f9f9f9;
-  padding: 2rem;
-  border-radius: 8px;
-  line-height: 1.6;
-}
-
-.featured-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  border-left: 4px solid #2d6a45;
-}
-
-.featured-card h3 {
-  margin-top: 0;
-  color: #2d6a45;
+/* Main Content */
+.mini-site-main {
+  flex: 1;
+  width: 100%;
 }
 
 /* Footer */
@@ -296,6 +280,10 @@ export default {
 .footer-content {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.footer-content p {
+  margin: 0;
 }
 
 .social-links {
@@ -316,24 +304,49 @@ export default {
   color: #ff8787;
 }
 
+/* Responsive Design */
+@media (max-width: 1000px) {
+  .nav-container {
+    gap: 1.5rem;
+  }
+
+  .nav-links {
+    gap: 1.5rem;
+  }
+
+  .nav-links a {
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 768px) {
   .nav-container {
     flex-direction: column;
     gap: 1rem;
+    padding: 1rem;
+  }
+
+  .logo-image {
+    height: 40px;
   }
 
   .nav-links {
-    margin-top: 1rem;
-    flex-direction: column;
+    order: 3;
+    width: 100%;
     gap: 1rem;
+    flex-direction: column;
+    justify-content: center;
   }
 
-  .hero-content h2 {
-    font-size: 1.8rem;
+  .nav-links a {
+    padding: 0.75rem;
+    text-align: center;
   }
 
-  .hero-content p {
-    font-size: 0.95rem;
+  .login-button {
+    order: 2;
+    width: 100%;
+    text-align: center;
   }
 }
 </style>

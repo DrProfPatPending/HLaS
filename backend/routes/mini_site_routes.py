@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import and_, select
+from mini_site_pages import normalize_pages_config, get_enabled_pages, PAGE_TEMPLATES
 
 
 def create_mini_site_routes(deps):
@@ -63,11 +64,12 @@ def create_mini_site_routes(deps):
                     'tagline': '',
                     'hero_image_url': '',
                     'description': '',
-                    'pages': [],
+                    'pages': normalize_pages_config([], club_short_name),
                     'social_links': {},
                 })
 
             row_dict = row._mapping
+            pages = normalize_pages_config(row_dict.get('pages', []), club_short_name)
             return jsonify({
                 'id': row_dict.get('id'),
                 'club_id': row_dict.get('club_id'),
@@ -76,7 +78,7 @@ def create_mini_site_routes(deps):
                 'tagline': row_dict.get('tagline', ''),
                 'hero_image_url': row_dict.get('hero_image_url', ''),
                 'description': row_dict.get('description', ''),
-                'pages': row_dict.get('pages', []),
+                'pages': pages,
                 'social_links': row_dict.get('social_links', {}),
             })
 
@@ -130,7 +132,14 @@ def create_mini_site_routes(deps):
             tagline = str(payload.get('tagline', '')).strip()
             hero_image_url = str(payload.get('hero_image_url', '')).strip()
             description = str(payload.get('description', '')).strip()
-            pages = payload.get('pages', []) if isinstance(payload.get('pages'), list) else []
+            
+            # Handle pages: convert from frontend format (array of IDs) to internal format
+            pages_input = payload.get('pages', []) if isinstance(payload.get('pages'), list) else []
+            # If pages are IDs (strings), convert to page objects with enabled flag
+            if pages_input and isinstance(pages_input[0], str):
+                pages_input = [{'id': page_id, 'enabled': True} for page_id in pages_input]
+            
+            pages = normalize_pages_config(pages_input, club_short_name)
             social_links = payload.get('social_links', {}) if isinstance(payload.get('social_links'), dict) else {}
 
             # Check if mini site config exists

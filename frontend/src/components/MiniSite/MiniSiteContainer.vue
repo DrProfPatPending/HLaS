@@ -5,6 +5,7 @@
       v-if="!isResponsive && miniSiteData"
       :mini-site="miniSiteData"
       :club-code="clubCode"
+      :initial-page="currentPageFromUrl"
     />
 
     <!-- Responsive: Show placeholder with note about mini site -->
@@ -22,7 +23,7 @@
 </template>
 
 <script>
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { API_BASE_URL } from '../../store.js';
 import MiniSiteDesktop from './MiniSiteDesktop.vue';
@@ -44,6 +45,23 @@ export default {
     const miniSiteData = ref(null);
     const loadingMessage = ref('Loading mini site...');
     const isResponsive = ref(false);
+    const currentPageFromUrl = ref('home');
+
+    // Parse page from URL path
+    const parsePageFromUrl = () => {
+      const pathMatch = window.location.pathname.match(
+        /\/club\/([^/]+)\/([^/]*)\/?$/
+      );
+      if (pathMatch && pathMatch[2]) {
+        const pageName = pathMatch[2].toLowerCase();
+        // Validate page name (allow only alphanumeric and hyphens)
+        if (/^[a-z0-9-]+$/.test(pageName)) {
+          currentPageFromUrl.value = pageName;
+          return;
+        }
+      }
+      currentPageFromUrl.value = 'home';
+    };
 
     // Check if responsive mode (mobile)
     const updateResponsiveState = () => {
@@ -51,6 +69,9 @@ export default {
     };
 
     onMounted(async () => {
+      // Parse initial page from URL
+      parsePageFromUrl();
+
       // Setup responsive listener
       updateResponsiveState();
       window.addEventListener('resize', updateResponsiveState);
@@ -61,6 +82,25 @@ export default {
           `${API_BASE_URL}/club/${props.clubCode}/mini-site`
         );
         miniSiteData.value = response.data;
+
+        // Validate that requested page is enabled
+        if (
+          miniSiteData.value.pages &&
+          !miniSiteData.value.pages.some(
+            (p) => p.id === currentPageFromUrl.value && p.enabled
+          )
+        ) {
+          // If page not enabled, redirect to home
+          if (
+            !miniSiteData.value.pages.some((p) => p.id === 'home' && p.enabled)
+          ) {
+            // Home not enabled (shouldn't happen), show error
+            loadingMessage.value = 'Home page not available.';
+          } else {
+            // Redirect to home
+            currentPageFromUrl.value = 'home';
+          }
+        }
       } catch (error) {
         console.error('Error fetching mini site config:', error);
         loadingMessage.value = 'Mini site not available for this club.';
@@ -72,6 +112,7 @@ export default {
       miniSiteData,
       loadingMessage,
       isResponsive,
+      currentPageFromUrl,
     };
   },
 };

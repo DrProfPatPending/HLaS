@@ -101,6 +101,24 @@
               Mobile/Responsive: Shows placeholder with redirect to login
             </p>
           </div>
+
+          <!-- Pages Section -->
+          <div class="pages-config">
+            <h4>Pages</h4>
+            <p class="pages-description">Select which pages appear on your mini site.</p>
+            <div class="pages-grid">
+              <label v-for="page in miniSitePages" :key="page.id" class="page-checkbox">
+                <input
+                  v-model="miniSite.pages"
+                  :value="page.id"
+                  type="checkbox"
+                  :disabled="!page.canDisable"
+                />
+                <span>{{ page.title }}</span>
+                <span v-if="!page.canDisable" class="page-badge">Always enabled</span>
+              </label>
+            </div>
+          </div>
         </template>
       </div>
     </section>
@@ -136,6 +154,15 @@ const CATCH_RETURN_FIELDS = [
   { key: 'predatorDamage', label: 'Predator Damage' },
 ];
 
+const MINI_SITE_PAGES = [
+  { id: 'home', title: 'Home', canDisable: false },
+  { id: 'about', title: 'About Us', canDisable: true },
+  { id: 'waters', title: 'Our Waters', canDisable: true },
+  { id: 'news', title: 'News', canDisable: true },
+  { id: 'join', title: 'Join', canDisable: true },
+  { id: 'contact', title: 'Contact Us', canDisable: true },
+];
+
 function defaultVisibility() {
   return Object.fromEntries(CATCH_RETURN_FIELDS.map(field => [field.key, true]));
 }
@@ -147,6 +174,7 @@ function defaultMiniSite() {
     tagline: '',
     description: '',
     hero_image_url: '',
+    pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
   };
 }
 
@@ -168,6 +196,7 @@ export default {
   computed: {
     loggedInClub: () => store.loggedInClub,
     catchReturnFields: () => CATCH_RETURN_FIELDS,
+    miniSitePages: () => MINI_SITE_PAGES,
     miniSiteUrl() {
       const domain = window.location.origin;
       return `${domain}/club/${this.loggedInClub}/`;
@@ -223,12 +252,18 @@ export default {
           params: { club: this.loggedInClub },
         })
         .then(res => {
+          // Extract enabled page IDs from the pages array
+          const enabledPageIds = res?.data?.pages
+            ? res.data.pages.filter(p => p.enabled).map(p => p.id)
+            : ['home', 'about', 'waters', 'news', 'join', 'contact'];
+          
           this.miniSite = {
             enabled: res?.data?.enabled || false,
             title: res?.data?.title || '',
             tagline: res?.data?.tagline || '',
             description: res?.data?.description || '',
             hero_image_url: res?.data?.hero_image_url || '',
+            pages: enabledPageIds,
           };
         })
         .catch(err => {
@@ -251,6 +286,9 @@ export default {
         },
       };
 
+      // Build pages array for API (list of enabled page IDs)
+      const pagesArray = this.miniSite.pages || [];
+      
       const miniSitePayload = {
         club: this.loggedInClub,
         enabled: this.miniSite.enabled,
@@ -258,6 +296,7 @@ export default {
         tagline: this.miniSite.tagline,
         description: this.miniSite.description,
         hero_image_url: this.miniSite.hero_image_url,
+        pages: pagesArray, // Send the list of enabled page IDs
       };
 
       // Save both settings in parallel
@@ -428,6 +467,82 @@ export default {
   font-family: monospace;
   color: #2d6a45;
 }
+
+/* Pages Configuration */
+.pages-config {
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  border: 1px solid #d0d0d0;
+}
+
+.pages-config h4 {
+  margin: 0 0 0.5rem 0;
+  color: #1a472a;
+  font-size: 1rem;
+}
+
+.pages-description {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.pages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.page-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.page-checkbox:hover:not(:has(input:disabled)) {
+  background: #f0f0f0;
+  border-color: #2d6a45;
+}
+
+.page-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.page-checkbox input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.page-checkbox span:first-of-type {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.page-badge {
+  font-size: 0.75rem;
+  background: #2d6a45;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 2px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.page-checkbox:has(input:disabled) {
+  opacity: 0.7;
+}
+
 
 .club-settings-actions {
   margin-top: 12px;
