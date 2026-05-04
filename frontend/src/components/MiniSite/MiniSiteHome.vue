@@ -28,6 +28,14 @@
       </div>
     </section>
 
+    <section v-if="backgroundImageUrl" class="home-background-section">
+      <img
+        :src="backgroundImageUrl"
+        :alt="`${clubName} background`"
+        class="background-image"
+      />
+    </section>
+
     <section class="home-features">
       <div class="feature-grid">
         <div class="feature-card">
@@ -52,10 +60,15 @@
 
 <script>
 import { computed } from 'vue';
+import { API_BASE_URL } from '../../store.js';
 
 export default {
   name: 'MiniSiteHome',
   props: {
+    clubCode: {
+      type: String,
+      required: true,
+    },
     clubName: {
       type: String,
       required: true,
@@ -85,8 +98,14 @@ export default {
       return `Welcome to ${props.clubName} - a small fishing club which offers access to some of the prettiest rivers and finest fly fishing in the UK.`;
     });
 
+    const backgroundImageUrl = computed(() => {
+      if (!props.clubCode) return '';
+      return `${API_BASE_URL}/club_background/${props.clubCode}`;
+    });
+
     return {
       displayHeadline,
+      backgroundImageUrl,
     };
   },
 };
@@ -190,6 +209,22 @@ export default {
   line-height: 1.6;
   max-width: 700px;
   margin: 0 auto;
+}
+
+/* Background Section */
+.home-background-section {
+  padding: 2rem;
+  background: white;
+}
+
+.background-image {
+  width: 100%;
+  max-width: 1200px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  height: auto;
 }
 
 /* Features Section */

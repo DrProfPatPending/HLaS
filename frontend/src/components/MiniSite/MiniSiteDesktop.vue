@@ -22,7 +22,7 @@
               :class="{ active: currentPage === page.id }"
               @click.prevent="currentPage = page.id"
             >
-              {{ page.title }}
+              {{ page.label }}
             </a>
           </li>
         </ul>
@@ -39,6 +39,7 @@
       <component
         :is="currentPageComponent"
         :key="currentPage"
+        :club-code="clubCode"
         :club-name="miniSite.title || clubCode"
         :headline="getPageContent(currentPage, 'headline')"
         :tagline="miniSite.tagline"
@@ -121,12 +122,24 @@ export default {
   setup(props) {
     const currentPage = ref(props.initialPage);
 
+    // Define menu items with display labels
+    const menuItems = [
+      { id: 'home', label: 'Home' },
+      { id: 'about', label: 'About Us' },
+      { id: 'waters', label: 'Our Waters' },
+      { id: 'join', label: 'Join Us' },
+      { id: 'contact', label: 'Contact' },
+    ];
+
     // Get enabled pages from the pages array
     const enabledPages = computed(() => {
       if (!props.miniSite.pages || !Array.isArray(props.miniSite.pages)) {
-        return [];
+        return menuItems; // Show all menu items if no pages configured
       }
-      return props.miniSite.pages.filter((page) => page.enabled);
+      const enabledPageIds = props.miniSite.pages
+        .filter((page) => page.enabled)
+        .map((page) => page.id);
+      return menuItems.filter((item) => enabledPageIds.includes(item.id));
     });
 
     // Get the current page component
