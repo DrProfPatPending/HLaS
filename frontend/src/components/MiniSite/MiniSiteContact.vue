@@ -125,18 +125,23 @@ export default {
 .page-header {
   background: linear-gradient(135deg, #2d6a45 0%, #1a472a 100%);
   color: white;
-  padding: 3rem 2rem;
+  padding: 1rem;
   text-align: center;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .page-header h1 {
-  margin: 0 0 1rem 0;
-  font-size: 2rem;
+  margin: 0;
+  font-size: 14pt;
 }
 
 .subheading {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 10pt;
   opacity: 0.9;
 }
 
@@ -270,11 +275,11 @@ export default {
 
 @media (max-width: 768px) {
   .page-header {
-    padding: 2rem 1.5rem;
+    height: 90px;
   }
 
   .page-header h1 {
-    font-size: 1.5rem;
+    font-size: 12pt;
   }
 
   .contact-content {
