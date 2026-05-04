@@ -1,5 +1,8 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import and_, select
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mini_site_pages import normalize_pages_config, get_enabled_pages, PAGE_TEMPLATES
 
 

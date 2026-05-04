@@ -737,17 +737,20 @@ def create_app():
     from routes.mini_site_routes import create_mini_site_routes
     app_instance.register_blueprint(create_mini_site_routes(route_deps))
 
+    # Register additional routes that work with app directly
+    register_admin_app_users_route(app_instance)
+    
+    # Register backup routes if enabled
+    if os.getenv('ENABLE_BACKUPS', 'true').lower() == 'true':
+        from routes.backup_routes import create_backup_routes
+        create_backup_routes(app_instance, route_deps['get_current_principal'], route_deps['require_permission'])
+
     return app_instance
 
 
 
 # Module-level instance for backward compatibility with `from app import app`
 app = create_app()
-register_admin_app_users_route(app)
-
-# Register backup routes if enabled
-if os.getenv('ENABLE_BACKUPS', 'true').lower() == 'true':
-    create_backup_routes(app, get_principal_context, require_permission)
 
 
 
