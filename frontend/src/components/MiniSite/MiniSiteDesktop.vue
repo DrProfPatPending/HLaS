@@ -6,8 +6,8 @@
         <!-- Logo Left -->
         <div class="nav-logo">
           <img
-            v-if="miniSite.logo_url"
-            :src="miniSite.logo_url"
+            v-if="clubLogoUrl"
+            :src="clubLogoUrl"
             :alt="miniSite.title"
             class="logo-image"
           />
@@ -108,6 +108,10 @@ export default {
     clubCode: {
       type: String,
       required: true,
+    },
+    clubLogoUrl: {
+      type: String,
+      default: '',
     },
     initialPage: {
       type: String,

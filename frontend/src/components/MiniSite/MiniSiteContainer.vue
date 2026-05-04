@@ -5,6 +5,7 @@
       v-if="!isResponsive && miniSiteData"
       :mini-site="miniSiteData"
       :club-code="clubCode"
+      :club-logo-url="clubLogoUrl"
       :initial-page="currentPageFromUrl"
     />
 
@@ -43,9 +44,18 @@ export default {
   },
   setup(props) {
     const miniSiteData = ref(null);
+    const clubLogoUrl = ref('');
     const loadingMessage = ref('Loading mini site...');
     const isResponsive = ref(false);
     const currentPageFromUrl = ref('home');
+
+    // Build club logo URL (same as LoginView)
+    const buildLogoUrl = (logoUrlFromClub) => {
+      const logoUrl = String(logoUrlFromClub || '').trim();
+      if (!logoUrl) return '';
+      if (/^https?:\/\//.test(logoUrl)) return logoUrl;
+      return `${API_BASE_URL}${logoUrl.startsWith('/') ? '' : '/'}${logoUrl}`;
+    };
 
     // Parse page from URL path
     const parsePageFromUrl = () => {
@@ -75,6 +85,19 @@ export default {
       // Setup responsive listener
       updateResponsiveState();
       window.addEventListener('resize', updateResponsiveState);
+
+      // Fetch clubs data to get logo URL
+      try {
+        const clubsResponse = await axios.get(`${API_BASE_URL}/clubs`);
+        const club = clubsResponse.data.clubs?.find(
+          (c) => c.shortName === props.clubCode
+        );
+        if (club?.logoUrl) {
+          clubLogoUrl.value = buildLogoUrl(club.logoUrl);
+        }
+      } catch (error) {
+        console.error('Error fetching clubs data:', error);
+      }
 
       // Fetch mini site config
       try {
@@ -110,6 +133,7 @@ export default {
 
     return {
       miniSiteData,
+      clubLogoUrl,
       loadingMessage,
       isResponsive,
       currentPageFromUrl,

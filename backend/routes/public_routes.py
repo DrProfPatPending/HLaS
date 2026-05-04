@@ -8,7 +8,7 @@ from urllib.request import urlopen
 from flask import Blueprint, Response, current_app, jsonify, request, send_from_directory
 from sqlalchemy import and_, select
 
-from db_models import club_logos
+from db_models import club_logos, club_backgrounds
 from routes.app_settings_routes import load_app_settings_config
 from routes.field_order_routes import load_field_order_config
 
@@ -314,6 +314,38 @@ def create_public_blueprint(deps):
                 return Response(image_data, mimetype=mime_type)
         except Exception as e:
             logger.exception(f"Exception in club_logo endpoint for club {short_name}: {e}")
+            return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+
+    @bp.route('/club_background/<short_name>', methods=['GET'])
+    def club_background(short_name):
+        import logging
+        logger = logging.getLogger("club_background")
+        logger.debug(f"Request for club background: {short_name}")
+        db_engine = deps.get('db_engine')
+        logger.debug(f"db_engine from deps: {db_engine}")
+        if db_engine is None:
+            db_engine = getattr(current_app, 'db_engine', None)
+            logger.debug(f"db_engine from current_app: {db_engine}")
+        if db_engine is None:
+            logger.error("Database engine not available")
+            return jsonify({'error': 'Database engine not available'}), 500
+        try:
+            with db_engine.connect() as conn:
+                stmt = select(
+                    club_backgrounds.c.image_data,
+                    club_backgrounds.c.mime_type
+                ).where(club_backgrounds.c.club_short_name == short_name)
+                logger.debug(f"SQL statement: {stmt}")
+                result = conn.execute(stmt).first()
+                logger.debug(f"Query result: {result}")
+                if not result:
+                    logger.warning(f"Background not found for club: {short_name}")
+                    return jsonify({'error': 'Background not found'}), 404
+                image_data, mime_type = result
+                logger.debug(f"image_data type: {type(image_data)}, mime_type: {mime_type}")
+                return Response(image_data, mimetype=mime_type)
+        except Exception as e:
+            logger.exception(f"Exception in club_background endpoint for club {short_name}: {e}")
             return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
     return bp
