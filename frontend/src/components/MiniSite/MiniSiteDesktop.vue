@@ -215,7 +215,7 @@ export default {
 }
 
 .logo-image {
-  height: 50px;
+  height: 100px;
   width: auto;
   max-width: 150px;
   object-fit: contain;
