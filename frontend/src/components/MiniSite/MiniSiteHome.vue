@@ -119,7 +119,7 @@ export default {
 /* Hero Section */
 .home-hero {
   position: relative;
-  height: 400px;
+  height: 100px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -168,18 +168,18 @@ export default {
   text-align: center;
   color: white;
   max-width: 800px;
-  padding: 2rem;
+  padding: 0.5rem;
 }
 
 .hero-content h1 {
-  font-size: 2.2rem;
-  margin: 0 0 1rem 0;
+  font-size: 14pt;
+  margin: 0;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .hero-tagline {
-  font-size: 1.1rem;
+  font-size: 10pt;
   margin: 0;
   opacity: 0.9;
 }
@@ -274,11 +274,11 @@ export default {
 
 @media (max-width: 768px) {
   .home-hero {
-    height: 250px;
+    height: 90px;
   }
 
   .hero-content h1 {
-    font-size: 1.5rem;
+    font-size: 12pt;
   }
 
   .home-welcome h2 {
