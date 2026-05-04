@@ -13,7 +13,14 @@ HLaS is a fishing club membership management application with separate member an
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
-- **Comprehensive backup & snapshot system:** Database and file backups for disaster recovery.
+- **Club Mini Sites:** Optional public-facing marketing websites for each club.
+   - Per-club configuration (enabled/disabled, title, tagline, description, hero image).
+   - Desktop: Full mini site with navigation, hero section, featured content, social links.
+   - Mobile/Responsive: Placeholder with message to view on desktop, with link to login.
+   - Public access via `/club/{clubCode}/` (no authentication required).
+   - Admin UI in Club Settings to manage mini site configuration.
+   - Separate public API endpoint `/api/club/{id}/mini-site` for external integration.
+   - See **Comprehensive backup & snapshot system:** Database and file backups for disaster recovery.
    - Full snapshots combine database (`pg_dump`) and file system backups into versioned archives.
    - Upload snapshots to AWS S3, MinIO, DigitalOcean Spaces, or any S3-compatible storage.
    - Automated cleanup policies (retention by age or snapshot count).
@@ -940,6 +947,7 @@ After import, fully restart Edge/Chrome and test:
 For comprehensive information on specific features and operations, refer to:
 
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment architecture, backend changes, API endpoints
+- **[MINI_SITE.md](MINI_SITE.md)** - Club mini sites feature guide, configuration, and API reference
 - **[BACKUP_SYSTEM.md](BACKUP_SYSTEM.md)** - Backup system setup, usage, troubleshooting, and best practices
 - **[BACKUP_QUICK_START.md](BACKUP_QUICK_START.md)** - 5-minute backup system setup guide
 - **[BACKUP_SCHEDULING_GUIDE.md](BACKUP_SCHEDULING_GUIDE.md)** - Automated backup scheduling (cron, systemd, Docker)

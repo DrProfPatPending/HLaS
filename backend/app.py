@@ -734,6 +734,8 @@ def create_app():
     from routes.app_settings_routes import create_app_settings_blueprint
     app_instance.register_blueprint(create_app_settings_blueprint(route_deps))
     app_instance.register_blueprint(create_club_settings_blueprint(route_deps))
+    from routes.mini_site_routes import create_mini_site_routes
+    app_instance.register_blueprint(create_mini_site_routes(route_deps))
 
     return app_instance
 

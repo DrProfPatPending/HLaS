@@ -62,6 +62,66 @@ def create_public_blueprint(deps):
     def get_clubs():
         return jsonify({'clubs': load_clubs_config()})
 
+    @bp.route('/club/<club_short_name>/mini-site', methods=['GET'])
+    def get_club_mini_site_config(club_short_name):
+        """
+        Public endpoint: Get mini site configuration for a club (if enabled).
+        No authentication required.
+        """
+        if not is_postgres_reads_enabled():
+            return jsonify({
+                'enabled': False,
+                'error': 'Mini site feature not available',
+            }), 404
+
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            clubs_table = backend['clubs_table']
+            
+            # Get club_id
+            club_id = session.execute(
+                select(clubs_table.c.id).where(
+                    and_(clubs_table.c.short_name == club_short_name, clubs_table.c.is_active.is_(True))
+                )
+            ).scalar_one_or_none()
+            
+            if club_id is None:
+                return jsonify({'error': 'Club not found'}), 404
+            
+            # Try to get mini site from PostgreSQL
+            try:
+                club_mini_sites_table = backend.get('club_mini_sites_table')
+                if club_mini_sites_table is not None:
+                    mini_site_row = session.execute(
+                        select(club_mini_sites_table).where(club_mini_sites_table.c.club_id == club_id)
+                    ).first()
+                    
+                    if mini_site_row is not None:
+                        row_dict = mini_site_row._mapping.copy()
+                        return jsonify({
+                            'id': row_dict.get('id'),
+                            'club_id': row_dict.get('club_id'),
+                            'enabled': row_dict.get('enabled', False),
+                            'title': row_dict.get('title', ''),
+                            'tagline': row_dict.get('tagline', ''),
+                            'hero_image_url': row_dict.get('hero_image_url', ''),
+                            'description': row_dict.get('description', ''),
+                            'pages': row_dict.get('pages', []),
+                            'social_links': row_dict.get('social_links', {}),
+                        })
+            except Exception as e:
+                current_app.logger.error(f"Error fetching mini site from PostgreSQL: {e}")
+            
+            # Mini site not configured yet
+            return jsonify({
+                'enabled': False,
+                'error': 'Mini site not configured for this club',
+            }), 404
+            
+        finally:
+            session.close()
+
     @bp.route('/field-order', methods=['GET'])
     def get_field_order():
         try:
