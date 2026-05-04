@@ -179,6 +179,43 @@ def save_uploaded_logo(short_name, logo_file):
     return get_club_logo_url(short_name)
 
 
+def save_uploaded_background(short_name, background_file, db_engine):
+    """Save an uploaded background image to the club_backgrounds table in PostgreSQL."""
+    if background_file is None or not background_file.filename:
+        return
+
+    file_name_lower = background_file.filename.lower()
+    if not file_name_lower.endswith('.png'):
+        raise ValueError('Background file must be a PNG (.png)')
+
+    content = background_file.read()
+    if not content.startswith(b'\x89PNG\r\n\x1a\n'):
+        raise ValueError('Background file content is not a valid PNG')
+
+    # Import here to avoid circular imports
+    from db_models import club_backgrounds
+    
+    try:
+        with db_engine.begin() as conn:
+            conn.execute(
+                club_backgrounds.insert().values(
+                    club_short_name=short_name,
+                    image_data=content,
+                    mime_type='image/png',
+                ).on_conflict_do_update(
+                    index_elements=['club_short_name'],
+                    set_{
+                        'image_data': content,
+                        'mime_type': 'image/png',
+                        'updated_at': func.now(),
+                    }
+                )
+            )
+    except Exception as e:
+        raise ValueError(f'Failed to save background image: {str(e)}')
+
+
+
 def create_empty_club_database(short_name):
     if not os.path.exists(CLUB_DB_TEMPLATE_PATH):
         raise FileNotFoundError('Database template template.db was not found')
@@ -713,6 +750,7 @@ def create_app():
         'get_smtp_config_for_club': get_smtp_config_for_club,
         'save_clubs_config': save_clubs_config,
         'save_uploaded_logo': save_uploaded_logo,
+        'save_uploaded_background': save_uploaded_background,
         'create_empty_club_database': create_empty_club_database,
         'normalize_beats': normalize_beats,
         'db_engine': db_engine,
