@@ -19,10 +19,13 @@
 	Keep this file free of stale comment blocks.
 
 ## Last Documentation Update
-April 2026 — updated for:
-- Mobile responsive navigation (2-column layout, 80 vw, ≤ 768 px breakpoint)
-- Beat Details page restructure (quick-info bar → map → details table)
-- Beat Details responsive table (2-column label/value at ≤ 1 000 px)
+May 2026 — updated for:
+- MiniSite UI refinements: Compact page headers (100px), 14pt font sizes
+- Club background images: PostgreSQL storage with admin upload capability
+- Navigation logo expansion (100px height)
+- Background image display on Home page with responsive styling
+- Consistent styling across all MiniSite pages
+- April 2026 updates: Mobile responsive navigation, Beat Details restructure, responsive table styling
 - Frontend dependency upgrades: vue 3.5.33, vuetify 4.0.6, vite 8.0.10, axios 1.15.2
 - npm audit security fix: follow-redirects (GHSA-r4q5-vmmm-2653) resolved
 

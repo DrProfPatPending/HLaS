@@ -206,34 +206,44 @@ MiniSiteView.vue (Router/main entry)
 
 **Color Scheme:**
 - Primary accent: `#2d6a45` (trout-green)
-- Hero overlay dark: `rgba(0, 0, 0, 0.4)`
+- Hero overlay dark: `rgba(0, 0, 0, 0.3)`
 - Header background: gradient from `#1a472a` to `#2d6a45`
 - CTA button: `#ff6b6b` (red accent)
 
 **Typography:**
 - Sans-serif stack: `-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, ...`
 - Navigation links: 0.95rem, white
-- Hero title: 2.5rem, bold, white
+- Navigation logo: 100px height, auto width (maintains aspect ratio)
+- Page headers: 14pt bold, white, centered
+- Page subheadings: 10pt, white, 90% opacity
 - Content: 1rem, #333
 
 **Layout:**
-- Sticky navigation header
-- Hero section: 400px height with background image
+- Sticky navigation header with prominent club logo
+- Compact page header: 100px height (90px mobile) with centered title
+- Compact hero section: 100px height with background image overlay
+- Background image section: Full-width responsive, 100% width with max-width 1200px
 - Content container: max-width 1200px, centered
 - Mobile fallback: Responsive CSS at 768px breakpoint
 
-### Mobile Placeholder (`MiniSitePlaceholder.vue`)
+### Mobile & Responsive Design
 
-**Color Scheme:**
+**Responsive Breakpoints:**
+- **Desktop (768px+):** Full mini site with navigation, hero, and content sections
+- **Mobile (<768px):** Placeholder with option to view on desktop
+
+**Mobile Color Scheme:**
 - Same primary green as desktop
 - Light backgrounds for readability
 - Soft borders for card-like sections
 
-**Layout:**
+**Mobile Layout:**
 - Full width responsive (100vw)
 - Touch-friendly buttons
 - Vertical stack layout
 - Large readable text
+- Compact headers (90px height)
+- Responsive tables (2-column at ≤1000px)
 
 ---
 

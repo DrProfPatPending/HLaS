@@ -13,6 +13,14 @@ HLaS is a fishing club membership management application with separate member an
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
+- **Club Mini Site UI Refinements (May 2026):**
+   - Compact page headers: 100px height with 14pt titles (90px/12pt on mobile)
+   - Compact hero banner: 100px with background image display
+   - Expanded navigation logo: 100px height for better brand visibility
+   - Background image section: Positioned prominently on Home page
+   - Club background images: PostgreSQL-backed storage and admin upload capability
+   - Applied consistent compact styling across all pages (Home, About, Join, Our Waters, Contact)
+
 - **Club Mini Sites:** Optional public-facing marketing websites for each club.
    - Per-club configuration (enabled/disabled, title, tagline, description, hero image).
    - Desktop: Full mini site with navigation, hero section, featured content, social links.
@@ -20,6 +28,7 @@ HLaS is a fishing club membership management application with separate member an
    - Public access via `/club/{clubCode}/` (no authentication required).
    - Admin UI in Club Settings to manage mini site configuration.
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration.
+   - Club background image storage in PostgreSQL with admin upload capability.
    - See **Comprehensive backup & snapshot system:** Database and file backups for disaster recovery.
    - Full snapshots combine database (`pg_dump`) and file system backups into versioned archives.
    - Upload snapshots to AWS S3, MinIO, DigitalOcean Spaces, or any S3-compatible storage.
