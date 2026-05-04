@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 
-# Upgrade npm to v11.12.1
-RUN npm install -g npm@11.12.1
+# Upgrade npm to v11.13.0
+RUN npm install -g npm@11.13.0
 
 WORKDIR /app
 
