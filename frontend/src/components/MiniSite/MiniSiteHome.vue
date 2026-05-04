@@ -18,6 +18,14 @@
       </div>
     </div>
 
+    <section v-if="backgroundImageUrl" class="home-background-section">
+      <img
+        :src="backgroundImageUrl"
+        :alt="`${clubName} background`"
+        class="background-image"
+      />
+    </section>
+
     <section class="home-welcome">
       <div class="welcome-container">
         <h2>{{ clubName }}</h2>
@@ -26,14 +34,6 @@
           A small fishing club which offers access to some of the prettiest rivers and finest fly fishing in the UK.
         </p>
       </div>
-    </section>
-
-    <section v-if="backgroundImageUrl" class="home-background-section">
-      <img
-        :src="backgroundImageUrl"
-        :alt="`${clubName} background`"
-        class="background-image"
-      />
     </section>
 
     <section class="home-features">
