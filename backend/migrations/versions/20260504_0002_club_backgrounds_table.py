@@ -1,13 +1,13 @@
 """
 Add club_backgrounds table for storing club background images as BLOBs
 
-Revision ID: 20260504_0001
-Revises: 20260318_0007
+Revision ID: 20260504_0002
+Revises: 20260504_0001
 Create Date: 2026-05-04
 """
 
-revision = '20260504_0001'
-down_revision = '20260318_0007'
+revision = '20260504_0002'
+down_revision = '20260504_0001'
 branch_labels = None
 depends_on = None
 
