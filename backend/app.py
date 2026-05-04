@@ -192,24 +192,22 @@ def save_uploaded_background(short_name, background_file, db_engine):
     if not content.startswith(b'\x89PNG\r\n\x1a\n'):
         raise ValueError('Background file content is not a valid PNG')
 
-    # Import here to avoid circular imports
-    from db_models import club_backgrounds
-    
     try:
         with db_engine.begin() as conn:
             conn.execute(
-                club_backgrounds.insert().values(
-                    club_short_name=short_name,
-                    image_data=content,
-                    mime_type='image/png',
-                ).on_conflict_do_update(
-                    index_elements=['club_short_name'],
-                    set_{
-                        'image_data': content,
-                        'mime_type': 'image/png',
-                        'updated_at': func.now(),
-                    }
-                )
+                text('''
+                    INSERT INTO club_backgrounds (club_short_name, image_data, mime_type, updated_at)
+                    VALUES (:club_short_name, :image_data, :mime_type, now())
+                    ON CONFLICT (club_short_name) DO UPDATE SET
+                        image_data = EXCLUDED.image_data,
+                        mime_type = EXCLUDED.mime_type,
+                        updated_at = now()
+                '''),
+                {
+                    'club_short_name': short_name,
+                    'image_data': content,
+                    'mime_type': 'image/png'
+                }
             )
     except Exception as e:
         raise ValueError(f'Failed to save background image: {str(e)}')
