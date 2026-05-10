@@ -66,6 +66,17 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - `Display As` values are editable in Admin Field Order UI and persisted with existing field-order payload
    - Membership Admin now renders column headers/filter placeholders using `display_names.membership_admin`
 
+- **Club Mini Site API Endpoints:**
+   - `GET /mini-site?club=<SHORT_NAME>` for loading club mini site configuration (authenticated, requires `club.read`)
+   - `PUT /mini-site?club=<SHORT_NAME>` for saving mini site configuration (Club Admin+ via `club.update`)
+   - `GET /club/<club_short_name>/mini-site` public endpoint (no auth) for fetching enabled mini site config
+   - POST/GET operations return: `enabled`, `title`, `tagline`, `description`, `hero_image_url`, `pages`, `social_links`
+
+- **Database Migration:**
+   - Alembic migration `20260504_0001_club_mini_sites_table.py` creates `club_mini_sites` table
+   - Table schema: `club_id` (unique FK to clubs), `enabled`, `title`, `tagline`, `description`, `hero_image_url`, `pages` (JSONB), `social_links` (JSONB)
+   - Indexed on `club_id` (unique) and `enabled` for fast lookups
+
 ---
 
 ## Frontend Changes
@@ -105,10 +116,22 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
    - post-login member home page now uses a left-side vertical action stack
    - central placeholder `News and Updates` table is present until backend news/message endpoints are implemented
    - `Documents` table is shown alongside news and backed by live document APIs
-- **Club Information editing:**
-   - member-facing Club Information page now supports inline Edit/Save for users with `club_admin` role
-   - users without `club_admin` remain read-only
-   - no delete action is exposed in member UI
+- **Club Settings:**
+   - member-facing Club Settings page allows clubs to configure:
+     - Catch Return field visibility (which fields appear in the form and recent returns table)
+     - Club Mini Site (marketing website configuration for each club)
+   - Club Admin+ users can manage these settings
+   - Settings are stored in PostgreSQL and applied cluster-wide
+
+- **Club Mini Sites:**
+   - Optional public-facing marketing websites for each club (per-club configuration)
+   - Desktop users: Full mini site with navigation, hero section, club content, social links footer
+   - Mobile/Responsive users: Placeholder with message directing to desktop mode
+   - Public access via `/club/{clubCode}/` (no authentication required)
+   - Admin UI in Club Settings to enable/disable and configure mini site (title, tagline, description, hero image)
+   - Separate public API endpoint `/api/club/{id}/mini-site` for external integration
+   - PostgreSQL table: `club_mini_sites` with per-club settings (indexed on `club_id` and `enabled`)
+
 - **Frontend build environment:**
    - frontend package metadata now targets npm `11.12.1`
    - local startup scripts invoke `npx --yes npm@11.12.1` for the Vite dev server
@@ -451,6 +474,75 @@ Notes:
    - `member_photos` contains rows
    - backend is running updated code
    - `/api/member_photo/...` returns image bytes
+
+### Backup & Snapshot System
+
+A comprehensive backup solution has been implemented to protect both PostgreSQL database and file assets:
+
+- **Backup API Endpoints:**
+   - `GET /admin/backups/snapshots` - List all snapshots
+   - `POST /admin/backups/snapshots/create/full` - Create full snapshot (database + files)
+   - `POST /admin/backups/snapshots/create/database` - Create database-only snapshot
+   - `POST /admin/backups/snapshots/create/filesystem` - Create filesystem-only snapshot
+   - `POST /admin/backups/snapshots/{id}/upload` - Upload snapshot to cloud storage
+   - `GET /admin/backups/snapshots/{id}/download` - Download snapshot
+   - `DELETE /admin/backups/snapshots/{id}` - Delete snapshot
+   - `POST /admin/backups/cleanup` - Cleanup old snapshots per retention policy
+   - `GET /admin/backups/status` - System status and statistics
+
+- **Permissions:**
+   - `backup.create` - Create new snapshots
+   - `backup.read` - List and view snapshot details
+   - `backup.download` - Download snapshot files
+   - `backup.delete` - Delete snapshots
+   - Restricted to `app_admin` and `app_owner` roles only
+
+- **CLI Tool:**
+   - `python3 backend/backup_cli.py create-full` - Manual full backup
+   - `python3 backend/backup_cli.py list` - List snapshots
+   - `python3 backend/backup_cli.py status` - System status
+   - `python3 backend/backup_cli.py cleanup` - Cleanup old snapshots
+   - `python3 backend/backup_cli.py schedule` - Setup automated scheduling
+
+- **Cloud Storage Integration:**
+   - Supports AWS S3, MinIO, DigitalOcean Spaces, or any S3-compatible service
+   - Upload snapshots to cloud for off-site redundancy
+   - Configure via environment variables or API
+
+- **Setup:**
+   - See `BACKUP_SYSTEM.md` for comprehensive setup and usage guide
+   - See `BACKUP_QUICK_START.md` for 5-minute quick start
+   - Configuration template: `.env.backup.example`
+   - Docker Compose example: `docker-compose.backup.yml`
+
+### Club Mini Sites
+
+Optional public-facing marketing websites for each club:
+
+- **Configuration:**
+   - Access via Club Settings page (member UI → Club Settings)
+   - Club Admin+ users can enable/disable and configure per-club mini site
+   - Configurable fields: `enabled`, `title`, `tagline`, `description`, `hero_image_url`
+   - Store images externally (e.g., CDN, S3) and reference via URL
+
+- **Public Access:**
+   - Desktop view: Full mini site at `/club/{clubCode}/`
+   - Mobile/Responsive view: Placeholder at `/club/{clubCode}/` with link to desktop
+   - Public API: `GET /api/club/{id}/mini-site` (no authentication required)
+
+- **API Endpoints (Authenticated):**
+   - `GET /mini-site?club=<SHORT_NAME>` - Fetch mini site config (requires `club.read`)
+   - `PUT /mini-site?club=<SHORT_NAME>` - Update mini site config (Club Admin+ via `club.update`)
+
+- **Routing:**
+   - `/club/{clubCode}/` - Mini site landing page (or login if disabled)
+   - `/club/{clubCode}/login/` - Login page (always accessible, any device)
+
+- **Future Enhancements:**
+   - Admin UI for editing page content and gallery
+   - Email contact forms with club-specific email routing
+   - Event calendar integration
+   - Member testimonials and gallery
 
 ### Useful operational SQL/scripts
 

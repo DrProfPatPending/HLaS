@@ -179,6 +179,41 @@ def save_uploaded_logo(short_name, logo_file):
     return get_club_logo_url(short_name)
 
 
+def save_uploaded_background(short_name, background_file, db_engine):
+    """Save an uploaded background image to the club_backgrounds table in PostgreSQL."""
+    if background_file is None or not background_file.filename:
+        return
+
+    file_name_lower = background_file.filename.lower()
+    if not file_name_lower.endswith('.png'):
+        raise ValueError('Background file must be a PNG (.png)')
+
+    content = background_file.read()
+    if not content.startswith(b'\x89PNG\r\n\x1a\n'):
+        raise ValueError('Background file content is not a valid PNG')
+
+    try:
+        with db_engine.begin() as conn:
+            conn.execute(
+                text('''
+                    INSERT INTO club_backgrounds (club_short_name, image_data, mime_type, updated_at)
+                    VALUES (:club_short_name, :image_data, :mime_type, now())
+                    ON CONFLICT (club_short_name) DO UPDATE SET
+                        image_data = EXCLUDED.image_data,
+                        mime_type = EXCLUDED.mime_type,
+                        updated_at = now()
+                '''),
+                {
+                    'club_short_name': short_name,
+                    'image_data': content,
+                    'mime_type': 'image/png'
+                }
+            )
+    except Exception as e:
+        raise ValueError(f'Failed to save background image: {str(e)}')
+
+
+
 def create_empty_club_database(short_name):
     if not os.path.exists(CLUB_DB_TEMPLATE_PATH):
         raise FileNotFoundError('Database template template.db was not found')
@@ -700,6 +735,7 @@ from routes import (
     create_public_blueprint,
     create_role_blueprint,
 )
+from routes.backup_routes import create_backup_routes
 
 
 def create_app():
@@ -759,6 +795,7 @@ def create_app():
         'get_smtp_config_for_club': get_smtp_config_for_club,
         'save_clubs_config': save_clubs_config,
         'save_uploaded_logo': save_uploaded_logo,
+        'save_uploaded_background': save_uploaded_background,
         'create_empty_club_database': create_empty_club_database,
         'normalize_beats': normalize_beats,
         'db_engine': db_engine,
@@ -780,6 +817,16 @@ def create_app():
     from routes.app_settings_routes import create_app_settings_blueprint
     app_instance.register_blueprint(create_app_settings_blueprint(route_deps))
     app_instance.register_blueprint(create_club_settings_blueprint(route_deps))
+    from routes.mini_site_routes import create_mini_site_routes
+    app_instance.register_blueprint(create_mini_site_routes(route_deps))
+
+    # Register additional routes that work with app directly
+    register_admin_app_users_route(app_instance)
+    
+    # Register backup routes if enabled
+    if os.getenv('ENABLE_BACKUPS', 'true').lower() == 'true':
+        from routes.backup_routes import create_backup_routes
+        create_backup_routes(app_instance, route_deps['get_current_principal'], route_deps['require_permission'])
 
     # Register startup hook to sync beats from JSON to PostgreSQL
     _register_beats_sync_startup(app_instance)
@@ -790,7 +837,6 @@ def create_app():
 
 # Module-level instance for backward compatibility with `from app import app`
 app = create_app()
-register_admin_app_users_route(app)
 
 
 

@@ -123,6 +123,9 @@ export default {
       try {
         const match = String(window.location.pathname || '').match(/^\/clubs?\/([^/]+)/i);
         this.isClubSpecificUrl = !!match && !!match[1];
+        if (match && match[1]) {
+          store.selectedClub = match[1];
+        }
       } catch {
         this.isClubSpecificUrl = false;
       }
@@ -170,8 +173,6 @@ export default {
   align-items: center;
   font-weight: normal;
   gap: 6px;
-  font-size: 13px;
-  white-space: nowrap;
 }
 .remember-me-checkbox {
   margin: 0;

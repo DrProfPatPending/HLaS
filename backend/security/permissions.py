@@ -33,6 +33,10 @@ PERMISSIONS = {
     'role.assign.club': {'app_admin', 'app_owner'},
     'role.assign.global': {'app_owner'},
     'system.settings': {'app_owner'},
+    'backup.create': {'app_admin', 'app_owner'},
+    'backup.read': {'app_admin', 'app_owner'},
+    'backup.download': {'app_admin', 'app_owner'},
+    'backup.delete': {'app_admin', 'app_owner'},
 }
 
 

@@ -753,6 +753,13 @@ export function login() {
         if (store.memberPermissions.includes('member.club.list')) {
           fetchMembers();
         }
+        // Persist session before redirecting
+        persistMemberSession();
+        // Redirect after successful login
+        setTimeout(() => {
+          // Always redirect to main app dashboard, not back to mini site
+          window.location.href = '/';
+        }, 100);
       } else {
         store.loginError = res.data.error || 'Login failed';
       }

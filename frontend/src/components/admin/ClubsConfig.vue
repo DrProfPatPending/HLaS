@@ -32,6 +32,13 @@
         <img :src="clubLogoPreview" alt="Logo Preview" class="club-logo-preview" />
       </div>
       <div class="admin-form-row">
+        <label class="admin-form-label">Background (PNG):</label>
+        <input type="file" accept="image/png" @change="onNewClubBackgroundChange" />
+      </div>
+      <div v-if="clubBackgroundPreview" class="admin-form-row">
+        <img :src="clubBackgroundPreview" alt="Background Preview" class="club-background-preview" />
+      </div>
+      <div class="admin-form-row">
         <button type="submit" class="save-btn">Add Club</button>
       </div>
       <div v-if="statusMsg" :class="statusMsgError ? 'error-msg' : 'success-msg'">{{ statusMsg }}</div>
@@ -90,6 +97,8 @@ export default {
       newClub: { shortName: '', fullName: '', description: '', websiteUrl: '', adminEmail: '' },
       newClubLogoFile: null,
       clubLogoPreview: '',
+      newClubBackgroundFile: null,
+      clubBackgroundPreview: '',
       editingShortName: null,
       editForm: {},
       statusMsg: '',
@@ -117,13 +126,16 @@ export default {
       }
       const formData = new FormData();
       Object.entries(this.newClub).forEach(([k, v]) => formData.append(k, v));
-      if (this.newClubLogoFile) formData.append('logo', this.newClubLogoFile);
+      if (this.newClubLogoFile) formData.append('logoFile', this.newClubLogoFile);
+      if (this.newClubBackgroundFile) formData.append('backgroundFile', this.newClubBackgroundFile);
       adminPost('/admin/clubs', formData)
         .then(() => {
           this.showStatus('Club added successfully.');
           this.newClub = { shortName: '', fullName: '', description: '', websiteUrl: '', adminEmail: '' };
           this.newClubLogoFile = null;
           this.clubLogoPreview = '';
+          this.newClubBackgroundFile = null;
+          this.clubBackgroundPreview = '';
           this.fetchClubs();
         })
         .catch(err => {
@@ -182,6 +194,26 @@ export default {
       reader.onload = e => { this.clubLogoPreview = e.target.result; };
       reader.readAsDataURL(file);
     },
+    onNewClubBackgroundChange(event) {
+      const file = event.target.files && event.target.files.length ? event.target.files[0] : null;
+      if (!file) {
+        this.newClubBackgroundFile = null;
+        this.clubBackgroundPreview = '';
+        return;
+      }
+      const isPngType = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+      if (!isPngType) {
+        this.newClubBackgroundFile = null;
+        event.target.value = '';
+        this.showStatus('Background must be a PNG file.', true);
+        this.clubBackgroundPreview = '';
+        return;
+      }
+      this.newClubBackgroundFile = file;
+      const reader = new FileReader();
+      reader.onload = e => { this.clubBackgroundPreview = e.target.result; };
+      reader.readAsDataURL(file);
+    },
     showStatus(msg, isError = false) {
       this.statusMsg = msg;
       this.statusMsgError = isError;
@@ -202,6 +234,12 @@ export default {
 .club-logo-preview {
   max-height: 40px;
   max-width: 120px;
+}
+
+.club-background-preview {
+  max-height: 80px;
+  max-width: 300px;
+  border: 1px solid #ccc;
 }
 
 .clubs-table th {

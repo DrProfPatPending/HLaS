@@ -268,6 +268,32 @@ club_logos = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
 
+club_backgrounds = Table(
+    "club_backgrounds",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("club_short_name", String(32), unique=True, nullable=False),
+    Column("image_data", LargeBinary, nullable=False),
+    Column("mime_type", String(64), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
+club_mini_sites = Table(
+    "club_mini_sites",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), unique=True, nullable=False),
+    Column("enabled", Boolean, nullable=False, server_default="false"),
+    Column("title", String(255), nullable=False, server_default=""),
+    Column("tagline", String(255), nullable=False, server_default=""),
+    Column("hero_image_url", String(255), nullable=False, server_default=""),
+    Column("description", Text, nullable=False, server_default=""),
+    Column("pages", JSONB, nullable=False, server_default="[]"),
+    Column("social_links", JSONB, nullable=False, server_default="{}"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
 security_audit_log = Table(
     "security_audit_log",
     metadata,

@@ -2,14 +2,16 @@
   <div class="club-settings-container">
     <div class="club-settings-header">
       <h2>Club Settings</h2>
-      <p>Configure Catch Return field visibility for {{ loggedInClub }}.</p>
+      <p>Configure settings for {{ loggedInClub }}.</p>
     </div>
 
     <p v-if="status" class="club-settings-status">{{ status }}</p>
     <p v-if="error" class="club-settings-error">{{ error }}</p>
 
+    <!-- Catch Return Fields Section -->
     <section class="club-settings-section">
       <h3>Catch Return Fields</h3>
+      <p class="section-description">Show/hide fields in the Catch Return form for club members.</p>
       <table class="club-settings-table">
         <thead>
           <tr>
@@ -29,6 +31,96 @@
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <!-- Mini Site Section -->
+    <section class="club-settings-section">
+      <h3>Club Mini Site</h3>
+      <p class="section-description">Create a public-facing marketing website for your club.</p>
+      
+      <div class="mini-site-config">
+        <label class="mini-site-toggle">
+          <input v-model="miniSite.enabled" type="checkbox" />
+          <span class="toggle-label">{{ miniSite.enabled ? 'Enable' : 'Disable' }} Mini Site</span>
+        </label>
+        <p class="mini-site-hint">
+          {{ miniSite.enabled ? 'Your mini site is enabled and accessible.' : 'Enable to create a public marketing page.' }}
+        </p>
+
+        <template v-if="miniSite.enabled">
+          <div class="form-group">
+            <label for="mini-site-title">Site Title</label>
+            <input
+              id="mini-site-title"
+              v-model="miniSite.title"
+              type="text"
+              placeholder="e.g., Cambridge Trout Club"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="mini-site-tagline">Tagline</label>
+            <input
+              id="mini-site-tagline"
+              v-model="miniSite.tagline"
+              type="text"
+              placeholder="e.g., Premier fly fishing destination"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="mini-site-description">Description</label>
+            <textarea
+              id="mini-site-description"
+              v-model="miniSite.description"
+              placeholder="Brief description of your club"
+              class="form-input"
+              rows="4"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="mini-site-hero">Hero Image URL</label>
+            <input
+              id="mini-site-hero"
+              v-model="miniSite.hero_image_url"
+              type="url"
+              placeholder="https://..."
+              class="form-input"
+            />
+            <p class="form-hint">URL to an image for the hero section (desktop view)</p>
+          </div>
+
+          <div class="mini-site-preview">
+            <strong>Mini Site URL:</strong>
+            <code>{{ miniSiteUrl }}</code>
+            <p class="form-hint">
+              Desktop users: Full mini site<br />
+              Mobile/Responsive: Shows placeholder with redirect to login
+            </p>
+          </div>
+
+          <!-- Pages Section -->
+          <div class="pages-config">
+            <h4>Pages</h4>
+            <p class="pages-description">Select which pages appear on your mini site.</p>
+            <div class="pages-grid">
+              <label v-for="page in miniSitePages" :key="page.id" class="page-checkbox">
+                <input
+                  v-model="miniSite.pages"
+                  :value="page.id"
+                  type="checkbox"
+                  :disabled="!page.canDisable"
+                />
+                <span>{{ page.title }}</span>
+                <span v-if="!page.canDisable" class="page-badge">Always enabled</span>
+              </label>
+            </div>
+          </div>
+        </template>
+      </div>
     </section>
 
     <div class="club-settings-actions">
@@ -62,8 +154,28 @@ const CATCH_RETURN_FIELDS = [
   { key: 'predatorDamage', label: 'Predator Damage' },
 ];
 
+const MINI_SITE_PAGES = [
+  { id: 'home', title: 'Home', canDisable: false },
+  { id: 'about', title: 'About Us', canDisable: true },
+  { id: 'waters', title: 'Our Waters', canDisable: true },
+  { id: 'news', title: 'News', canDisable: true },
+  { id: 'join', title: 'Join', canDisable: true },
+  { id: 'contact', title: 'Contact Us', canDisable: true },
+];
+
 function defaultVisibility() {
   return Object.fromEntries(CATCH_RETURN_FIELDS.map(field => [field.key, true]));
+}
+
+function defaultMiniSite() {
+  return {
+    enabled: false,
+    title: '',
+    tagline: '',
+    description: '',
+    hero_image_url: '',
+    pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
+  };
 }
 
 export default {
@@ -78,11 +190,17 @@ export default {
       status: '',
       error: '',
       visibility: defaultVisibility(),
+      miniSite: defaultMiniSite(),
     };
   },
   computed: {
     loggedInClub: () => store.loggedInClub,
     catchReturnFields: () => CATCH_RETURN_FIELDS,
+    miniSitePages: () => MINI_SITE_PAGES,
+    miniSiteUrl() {
+      const domain = window.location.origin;
+      return `${domain}/club/${this.loggedInClub}/`;
+    },
   },
   created() {
     this.loadSettings();
@@ -112,8 +230,10 @@ export default {
       this.loading = true;
       this.error = '';
       this.status = '';
+      this.miniSite = defaultMiniSite();
 
-      return axios
+      // Load catch return settings
+      axios
         .get(`${API_BASE_URL}/club-settings`, {
           params: { club: this.loggedInClub },
         })
@@ -124,6 +244,31 @@ export default {
         .catch(err => {
           this.visibility = defaultVisibility();
           this.error = err?.response?.data?.error || 'Unable to load club settings.';
+        });
+
+      // Load mini site settings
+      axios
+        .get(`${API_BASE_URL}/mini-site`, {
+          params: { club: this.loggedInClub },
+        })
+        .then(res => {
+          // Extract enabled page IDs from the pages array
+          const enabledPageIds = res?.data?.pages
+            ? res.data.pages.filter(p => p.enabled).map(p => p.id)
+            : ['home', 'about', 'waters', 'news', 'join', 'contact'];
+          
+          this.miniSite = {
+            enabled: res?.data?.enabled || false,
+            title: res?.data?.title || '',
+            tagline: res?.data?.tagline || '',
+            description: res?.data?.description || '',
+            hero_image_url: res?.data?.hero_image_url || '',
+            pages: enabledPageIds,
+          };
+        })
+        .catch(err => {
+          // Mini site endpoint not available or not configured, that's ok
+          this.miniSite = defaultMiniSite();
         })
         .finally(() => {
           this.loading = false;
@@ -134,15 +279,31 @@ export default {
       this.error = '';
       this.status = '';
 
-      const payload = {
+      const catchReturnPayload = {
         club: this.loggedInClub,
         settings: {
           catchReturnFieldVisibility: this.normalizeVisibility(this.visibility),
         },
       };
 
-      return axios
-        .put(`${API_BASE_URL}/club-settings`, payload)
+      // Build pages array for API (list of enabled page IDs)
+      const pagesArray = this.miniSite.pages || [];
+      
+      const miniSitePayload = {
+        club: this.loggedInClub,
+        enabled: this.miniSite.enabled,
+        title: this.miniSite.title,
+        tagline: this.miniSite.tagline,
+        description: this.miniSite.description,
+        hero_image_url: this.miniSite.hero_image_url,
+        pages: pagesArray, // Send the list of enabled page IDs
+      };
+
+      // Save both settings in parallel
+      Promise.all([
+        axios.put(`${API_BASE_URL}/club-settings`, catchReturnPayload),
+        axios.put(`${API_BASE_URL}/mini-site`, miniSitePayload),
+      ])
         .then(() => {
           this.status = 'Club settings saved.';
         })
@@ -171,14 +332,26 @@ export default {
   color: #475569;
 }
 
+.club-settings-section {
+  margin-bottom: 2rem;
+}
+
 .club-settings-section h3 {
   margin: 0 0 10px;
+  color: #1a472a;
+}
+
+.section-description {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.95rem;
 }
 
 .club-settings-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  margin-bottom: 1rem;
 }
 
 .club-settings-table th,
@@ -197,7 +370,179 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
 }
+
+.club-settings-toggle input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* Mini Site Styles */
+.mini-site-config {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 4px;
+  border-left: 4px solid #2d6a45;
+}
+
+.mini-site-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+}
+
+.mini-site-toggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+}
+
+.toggle-label {
+  font-weight: 600;
+  color: #1a472a;
+  font-size: 1rem;
+}
+
+.mini-site-hint {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #17324d;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2d6a45;
+  box-shadow: 0 0 4px rgba(45, 106, 69, 0.2);
+}
+
+.form-hint {
+  margin: 0.5rem 0 0 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.mini-site-preview {
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  border: 1px solid #d0d0d0;
+}
+
+.mini-site-preview strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #17324d;
+}
+
+.mini-site-preview code {
+  background: #f0f0f0;
+  padding: 0.5rem;
+  border-radius: 4px;
+  display: block;
+  word-break: break-all;
+  font-family: monospace;
+  color: #2d6a45;
+}
+
+/* Pages Configuration */
+.pages-config {
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  border: 1px solid #d0d0d0;
+}
+
+.pages-config h4 {
+  margin: 0 0 0.5rem 0;
+  color: #1a472a;
+  font-size: 1rem;
+}
+
+.pages-description {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.pages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.page-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.page-checkbox:hover:not(:has(input:disabled)) {
+  background: #f0f0f0;
+  border-color: #2d6a45;
+}
+
+.page-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.page-checkbox input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.page-checkbox span:first-of-type {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.page-badge {
+  font-size: 0.75rem;
+  background: #2d6a45;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 2px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.page-checkbox:has(input:disabled) {
+  opacity: 0.7;
+}
+
 
 .club-settings-actions {
   margin-top: 12px;

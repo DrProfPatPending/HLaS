@@ -1,0 +1,57 @@
+# HLaS Backup Timer - Systemd Edition
+#
+# Systemd timer to schedule HLaS backup service.
+# Works with: hlas-backup.service
+#
+# Installation:
+#   1. Place hlas-backup.service at: /etc/systemd/system/hlas-backup.service
+#   2. Place this file at: /etc/systemd/system/hlas-backup.timer
+#   3. Enable and start:
+#      $ sudo systemctl daemon-reload
+#      $ sudo systemctl enable hlas-backup.timer
+#      $ sudo systemctl start hlas-backup.timer
+#
+# Check status:
+#   $ sudo systemctl status hlas-backup.timer
+#   $ sudo systemctl list-timers hlas-backup.timer
+#   $ sudo systemctl start hlas-backup.service  # Run immediately
+#
+# View logs:
+#   $ sudo journalctl -u hlas-backup -f        # Follow logs
+#   $ sudo journalctl -u hlas-backup --since today
+#
+# Cron-like schedule format (OnCalendar):
+#   Dow Year-Month-Day Hour:Minute:Second
+#
+#   Examples:
+#   *-*-* 02:00:00          Every day at 2 AM
+#   Mon *-*-* 02:00:00      Every Monday at 2 AM
+#   *-*-01 02:00:00         1st of month at 2 AM
+#   0 * * * *               Every hour (simplified cron)
+#
+# Duration examples (OnBootSec/OnUnitActiveSec):
+#   1h   = 1 hour
+#   30m  = 30 minutes
+#   3600s = 3600 seconds
+
+[Unit]
+Description=HLaS Backup Schedule
+Documentation=file:///opt/HLaS/BACKUP_SYSTEM.md
+Requires=hlas-backup.service
+
+[Timer]
+# Daily backup at 2 AM UTC
+OnCalendar=*-*-* 02:00:00
+
+# Randomize by up to 5 minutes to avoid resource spikes
+RandomizedDelaySec=5m
+
+# If missed (system was off), run within 10 minutes of boot
+Persistent=true
+AccuracySec=1m
+
+# Unit to run
+Unit=hlas-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -19,6 +19,7 @@ def create_admin_blueprint(deps):
     save_clubs_config = deps['save_clubs_config']
     get_club_logo_path = deps['get_club_logo_path']
     save_uploaded_logo = deps['save_uploaded_logo']
+    save_uploaded_background = deps['save_uploaded_background']
     create_empty_club_database = deps['create_empty_club_database']
     is_postgres_writes_enabled = deps['is_postgres_writes_enabled']
     normalize_beats = deps['normalize_beats']
@@ -26,6 +27,7 @@ def create_admin_blueprint(deps):
     issue_member_token_pair = deps.get('issue_member_token_pair')
     load_member_roles = deps.get('load_member_roles')
     get_read_db_for_club = deps.get('get_read_db_for_club')
+    db_engine = deps.get('db_engine')
 
     @bp.route('/admin/login', methods=['POST'])
     def admin_login():
@@ -169,6 +171,16 @@ def create_admin_blueprint(deps):
             try:
                 logo_url = save_uploaded_logo(short_name, logo_file)
             except ValueError as exc:
+                return jsonify({'error': str(exc)}), 400
+
+        # Handle background image upload
+        background_file = request.files.get('backgroundFile')
+        if background_file and background_file.filename:
+            try:
+                save_uploaded_background(short_name, background_file, db_engine)
+            except ValueError as exc:
+                if logo_url and os.path.exists(logo_path):
+                    os.remove(logo_path)
                 return jsonify({'error': str(exc)}), 400
 
         if not is_postgres_writes_enabled():

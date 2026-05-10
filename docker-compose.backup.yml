@@ -1,0 +1,183 @@
+# Example: docker-compose.backup.yml
+#
+# Optional backup scheduler service for HLaS
+# 
+# This provides automated daily backups running in a Docker container
+# 
+# Usage:
+#   docker-compose -f docker-compose.prod.yml -f docker-compose.backup.yml up -d
+#
+# Or use docker-compose.override.yml to include automatically:
+#   cp docker-compose.backup.yml docker-compose.override.yml
+#
+# Configuration via environment variables:
+#   BACKUP_INTERVAL: 86400 (seconds) = daily
+#   BACKUP_TYPE: full | database | filesystem
+#   BACKUP_TIME: "02:00" (24-hour format, UTC)
+#   BACKUP_CLEANUP_DAYS: 30
+
+name: hlas
+
+services:
+  # Scheduled backup service - runs backup jobs on schedule
+  backup-scheduler:
+    image: ${BACKEND_IMAGE}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database connection (same as backend)
+      DATABASE_URL: ${DATABASE_URL}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      
+      # Backup configuration
+      HLAS_BACKUP_DIR: /data/backups
+      ENABLE_BACKUPS: "true"
+      
+      # Backup schedule (in seconds)
+      # 86400 = 1 day, 604800 = 1 week, 3600 = 1 hour
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-86400}
+      
+      # Backup type: full | database | filesystem
+      BACKUP_TYPE: ${BACKUP_TYPE:-full}
+      
+      # Cleanup old snapshots (days)
+      BACKUP_CLEANUP_DAYS: ${BACKUP_CLEANUP_DAYS:-30}
+      BACKUP_CLEANUP_MAX: ${BACKUP_CLEANUP_MAX:-10}
+      
+      # Cloud storage (optional)
+      BACKUP_CLOUD_BUCKET: ${BACKUP_CLOUD_BUCKET}
+      BACKUP_CLOUD_REGION: ${BACKUP_CLOUD_REGION:-us-east-1}
+      BACKUP_CLOUD_ENDPOINT: ${BACKUP_CLOUD_ENDPOINT}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    
+    volumes:
+      - hlas_backups:/data/backups
+      - backup_logs:/var/log
+    
+    # Override the default command with backup scheduler
+    entrypoint: /bin/sh
+    command: |
+      -c '
+      set -e
+      INTERVAL=$${BACKUP_INTERVAL:-86400}
+      TYPE=$${BACKUP_TYPE:-full}
+      CLEANUP_DAYS=$${BACKUP_CLEANUP_DAYS:-30}
+      CLEANUP_MAX=$${BACKUP_CLEANUP_MAX:-10}
+      
+      echo "Backup Scheduler Started"
+      echo "Interval: $${INTERVAL}s ($(($${INTERVAL}/3600))h)"
+      echo "Type: $${TYPE}"
+      
+      while true; do
+        TIMESTAMP=$$(date -u "+%Y-%m-%d %H:%M:%S")
+        echo "[$${TIMESTAMP}] Running backup..."
+        
+        python3 /app/backup_cli.py create-$${TYPE} \
+          --description="Automated backup ($${TYPE})" \
+          >> /var/log/hlas-backup.log 2>&1 || echo "Backup failed"
+        
+        echo "[$${TIMESTAMP}] Cleanup old snapshots..."
+        python3 /app/backup_cli.py cleanup \
+          --days=$${CLEANUP_DAYS} \
+          --max=$${CLEANUP_MAX} \
+          >> /var/log/hlas-backup.log 2>&1 || true
+        
+        sleep $${INTERVAL}
+      done
+      '
+    
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep -q 'backup_cli' || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    networks:
+      - default
+
+  # Optional: Backup uploader service - uploads to cloud storage on schedule
+  backup-uploader:
+    image: ${BACKEND_IMAGE}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      - backup-scheduler
+    environment:
+      HLAS_BACKUP_DIR: /data/backups
+      BACKUP_CLOUD_BUCKET: ${BACKUP_CLOUD_BUCKET}
+      BACKUP_CLOUD_REGION: ${BACKUP_CLOUD_REGION:-us-east-1}
+      BACKUP_CLOUD_ENDPOINT: ${BACKUP_CLOUD_ENDPOINT}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    
+    volumes:
+      - hlas_backups:/data/backups
+      - backup_logs:/var/log
+    
+    # Upload latest backups to cloud (only if cloud storage is configured)
+    entrypoint: /bin/sh
+    command: |
+      -c '
+      if [ -z "$${BACKUP_CLOUD_BUCKET}" ]; then
+        echo "Cloud storage not configured. Uploader disabled."
+        sleep infinity
+      fi
+      
+      UPLOAD_INTERVAL=$${BACKUP_UPLOAD_INTERVAL:-604800}  # Weekly
+      
+      echo "Backup Uploader Started"
+      echo "Cloud bucket: $${BACKUP_CLOUD_BUCKET}"
+      echo "Upload interval: $${UPLOAD_INTERVAL}s ($(($${UPLOAD_INTERVAL}/3600))h)"
+      
+      while true; do
+        TIMESTAMP=$$(date -u "+%Y-%m-%d %H:%M:%S")
+        echo "[$${TIMESTAMP}] Uploading latest backup..."
+        
+        LATEST=$$(ls -t /data/backups/snapshots/ | head -1)
+        if [ -n "$${LATEST}" ]; then
+          python3 /app/backup_cli.py upload "$${LATEST}" \
+            >> /var/log/hlas-backup.log 2>&1 || echo "Upload failed"
+        fi
+        
+        sleep $${UPLOAD_INTERVAL}
+      done
+      '
+    
+    restart: unless-stopped
+    profiles: ["backup-cloud"]  # Use: --profile backup-cloud to enable
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  hlas_backups:
+    external: true
+    name: hlas_backups
+  backup_logs:
