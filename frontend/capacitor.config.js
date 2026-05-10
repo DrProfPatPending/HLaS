@@ -1,4 +1,5 @@
-import { KeyboardResize } from '@capacitor/keyboard';
+// Pure CommonJS — required for Capacitor CLI (npx cap sync) and Xcode Cloud compatibility.
+// Do NOT use ESM import/export syntax or import.meta here.
 
 function normalizeProfile(raw) {
   const value = String(raw || '').trim().toLowerCase();
@@ -7,10 +8,7 @@ function normalizeProfile(raw) {
   return 'dev';
 }
 
-// Get profile from Vite environment or fallback to process.env for Node.js compatibility
 const profile = normalizeProfile(
-  (typeof import !== 'undefined' && import.meta?.env?.VITE_CAPACITOR_PROFILE) ||
-  (typeof import !== 'undefined' && import.meta?.env?.VITE_APP_ENV) ||
   process.env.VITE_CAPACITOR_PROFILE ||
   process.env.VITE_APP_ENV ||
   'prod'
@@ -40,7 +38,7 @@ const config = {
   },
   plugins: {
     Keyboard: {
-      resize: KeyboardResize.Body,
+      resize: 'body', // KeyboardResize.Body
       resizeOnFullScreen: true,
     },
     StatusBar: {
@@ -51,4 +49,4 @@ const config = {
 
 console.log(`[capacitor] profile=${profile} appId=${appId} cleartext=${String(!isProd)}`);
 
-export default config;
+module.exports = config;
