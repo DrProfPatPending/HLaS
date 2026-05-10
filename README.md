@@ -2,6 +2,20 @@
 
 HLaS is a fishing club membership management application with separate member and admin user experiences, PostgreSQL-backed runtime data, and Vue/Flask frontends for day-to-day club operations.
 
+## ⚡ Deployment Strategy (May 2026)
+
+HLaS uses a **two-branch deployment model** for stability and safe development:
+
+- **`main` branch** — Active development and testing. Local and staging environments.
+- **`production` branch** — Live codebase deployed on VPS (`cambridgetroutclub.org`). Only receives tested, verified changes.
+
+**Workflow:**
+1. Develop and test thoroughly on `main`
+2. Promote tested changes to `production` via `git merge main`
+3. VPS deployment scripts (`hlas_build.sh`, `rebuild_frontend.sh`) automatically pull from `production`
+
+**See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions, rollback procedures, and best practices.**
+
 ## Current Application Highlights
 - Distinct member UI and admin UI entry points.
 - PostgreSQL-backed reads and writes for clubs, members, roles, newsletters, field order, and member photos.
@@ -13,6 +27,13 @@ HLaS is a fishing club membership management application with separate member an
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
+- **Deployment Strategy (May 2026):**
+   - Implemented separate `main` (development) and `production` (VPS deployed) branches
+   - VPS deployment scripts updated to pull from `production` branch only
+   - Ensures live clubs (CTC, GAAFFS, LADFFA) only run thoroughly tested code
+   - Easy rollback procedure available if issues occur
+   - See DEPLOYMENT.md for workflow details
+
 - **Club Mini Site UI Refinements (May 2026):**
    - Compact page headers: 100px height with 14pt titles (90px/12pt on mobile)
    - Compact hero banner: 100px with background image display

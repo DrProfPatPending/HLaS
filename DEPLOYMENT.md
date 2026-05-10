@@ -9,6 +9,169 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
 
 ---
 
+## Deployment Strategy & Branch Management (May 2026)
+
+### Overview
+
+HLaS uses a **two-branch deployment strategy** to ensure production stability while enabling safe development:
+
+- **`main` branch**: Development and active feature development. Used locally and in testing environments.
+- **`production` branch**: Deployed codebase running on the VPS server (`cambridgetroutclub.org`). Only receives thoroughly tested, verified changes.
+
+This separation ensures that experimental changes on `main` never affect the live clubs (CTC, GAAFFS, LADFFA) without careful validation first.
+
+### Deployment Workflow
+
+#### Step 1: Develop and Test on `main`
+
+1. Clone or pull the latest `main` branch:
+   ```bash
+   git clone https://github.com/DrProfPatPending/HLaS.git
+   cd hlas
+   git checkout main
+   ```
+
+2. Create a feature branch for new work (optional):
+   ```bash
+   git checkout -b feature/my-feature
+   ```
+
+3. Make changes, test locally, and commit:
+   ```bash
+   git add .
+   git commit -m "Description of changes"
+   git push origin feature/my-feature  # or push to main if no feature branch
+   ```
+
+4. Test thoroughly in a local Docker environment:
+   ```bash
+   docker compose -f docker-compose.prod.yml build
+   docker compose -f docker-compose.prod.yml up
+   # Test against http://localhost
+   docker compose down
+   ```
+
+#### Step 2: Promote to `production` (VPS Deployment)
+
+Once changes are tested and verified on `main`, promote them to `production`:
+
+1. **On your local machine**, switch to production and merge main:
+   ```bash
+   git checkout production
+   git merge main
+   git push origin production
+   ```
+
+2. **On the VPS**, pull the updated production branch and restart services:
+   ```bash
+   ssh hlas@cambridgetroutclub.org
+   cd /opt/hlas
+   git checkout production
+   git pull origin production
+   ```
+
+3. **Restart the application** using one of the deployment scripts:
+   ```bash
+   # Full backend + frontend rebuild
+   ./hlas_build.sh
+   
+   # Or just rebuild frontend
+   ./rebuild_frontend.sh
+   ```
+
+4. **Verify deployment** by checking application health:
+   ```bash
+   docker compose ps
+   docker compose logs backend | tail -20
+   docker compose logs frontend | tail -20
+   ```
+
+5. **Test in browser**: Visit `https://cambridgetroutclub.org` and verify functionality
+
+### Deployment Scripts
+
+Two convenience scripts automate the VPS deployment process:
+
+**`hlas_build.sh`** — Full rebuild (backend & frontend)
+- Checks out `production` branch
+- Pulls latest code
+- Rebuilds backend and frontend containers
+- Restarts all services via docker-compose
+
+**`rebuild_frontend.sh`** — Frontend-only rebuild
+- Checks out `production` branch  
+- Pulls latest code
+- Rebuilds frontend container only
+- Restarts frontend and caddy
+
+Both scripts automatically pull from the `production` branch, ensuring only tested, promoted code is deployed.
+
+### Rollback Procedure
+
+If a production deployment causes issues:
+
+1. **Identify the previous good commit**:
+   ```bash
+   git log --oneline production
+   ```
+
+2. **Revert to the previous commit**:
+   ```bash
+   cd /opt/hlas
+   git revert <commit-hash>
+   git push origin production
+   ./hlas_build.sh  # Redeploy
+   ```
+
+   Or **force reset** if you don't want a revert commit:
+   ```bash
+   git reset --hard <commit-hash>
+   git push -f origin production
+   ./hlas_build.sh
+   ```
+
+### Git Configuration on VPS
+
+To enable pushing/pulling from the VPS, configure git with your credentials:
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+```
+
+Verify configuration:
+```bash
+git config --global user.name
+git config --global user.email
+```
+
+### Database Migrations
+
+Some deployments may include Alembic database schema migrations:
+
+1. Migrations run **automatically** during container startup via the health check scripts
+2. For manual migration trigger:
+   ```bash
+   docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm backend alembic upgrade head
+   ```
+
+3. To verify applied migrations:
+   ```bash
+   docker exec hlas-postgres-1 psql -U hlas -d hlas -c "SELECT * FROM alembic_version;"
+   ```
+
+### Best Practices
+
+1. ✅ **Always test on `main` before promoting to `production`**
+2. ✅ **Use descriptive commit messages** so deployment history is clear
+3. ✅ **Keep production deployments within business hours** when you can monitor
+4. ✅ **Document any breaking changes** in commit messages
+5. ❌ **Never force-push to `main`** — this becomes the development timeline  
+6. ❌ **Never hotfix directly on `production`** — always go through `main` first for testing
+7. ❌ **Don't skip database migrations** — they're essential for feature compatibility
+
+---
+
 ## Backend Changes
 
 - **Session Tokens:**
