@@ -5,8 +5,8 @@ echo "Rebuilding latest HLaS from Github sources"
 
 unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB HLAS_USE_POSTGRES_READS LOG_LEVEL
 echo "Pulling latest code from Git"
-git checkout main
-git pull origin main
+git checkout production
+git pull origin production
 echo "Build frontend and backend"
 docker compose --env-file .env.prod -f docker-compose.prod.yml build --no-cache backend frontend
 echo "Start postgres"

@@ -4,7 +4,8 @@ cd /opt/hlas
 
 #
 echo "Pull latest version from Git"
-git pull origin main
+git checkout production
+git pull origin production
 
 echo "Rebuild frontend with no cache"
 docker compose --env-file .env.prod -f docker-compose.prod.yml build --no-cache frontend

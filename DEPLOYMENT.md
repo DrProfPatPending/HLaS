@@ -246,10 +246,11 @@ After deploying backend code that includes beats export/import and automatic sta
 
 **Automatic sync (default approach):**
 
-1. Pull updated code with new `clubs.config.json`:
+1. Pull updated code from production branch:
    ```bash
    cd /opt/hlas
-   git pull origin main
+   git checkout production
+   git pull origin production
    ```
 
 2. Restart backend container:
@@ -257,6 +258,8 @@ After deploying backend code that includes beats export/import and automatic sta
    docker compose down backend
    docker compose up -d backend
    ```
+
+> **Note**: The `production` branch is the deployed codebase on the VPS. Promote changes to production only after testing on the `main` branch.
 
 3. Backend startup hook automatically runs `sync_beats_json_to_postgres.py`:
    - PostgreSQL `club_beats` table is populated from `clubs.config.json`
