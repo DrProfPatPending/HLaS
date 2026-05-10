@@ -95,7 +95,7 @@ export default {
       if (props.headline) {
         return props.headline;
       }
-      return `Welcome to ${props.clubName} - a small fishing club which offers access to some of the prettiest rivers and finest fly fishing in the UK.`;
+      return `Welcome to ${props.clubName} - a dedicated fly-fishing club which offers access to a lovely section of the upper River Cam. The river has a good population of native brown trout. This is a fully wild fishery with no stocking.`;
     });
 
     const backgroundImageUrl = computed(() => {
