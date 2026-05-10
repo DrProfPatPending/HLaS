@@ -1,29 +1,21 @@
-// Vite env type declarations for TS
-interface ImportMetaEnv {
-  readonly VITE_CAPACITOR_PROFILE?: string;
-  readonly VITE_APP_ENV?: string;
-}
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
-import type { CapacitorConfig } from '@capacitor/cli';
 import { KeyboardResize } from '@capacitor/keyboard';
 
-type CapacitorProfile = 'dev' | 'stage' | 'prod';
-
-function normalizeProfile(raw: string): CapacitorProfile {
+function normalizeProfile(raw) {
   const value = String(raw || '').trim().toLowerCase();
   if (value === 'prod' || value === 'production' || value === 'mobile-prod') return 'prod';
   if (value === 'stage' || value === 'staging' || value === 'mobile-stage') return 'stage';
   return 'dev';
 }
 
-// Use import.meta.env for Vite compatibility
+// Get profile from Vite environment or fallback to process.env for Node.js compatibility
 const profile = normalizeProfile(
-  import.meta.env.VITE_CAPACITOR_PROFILE ||
-  import.meta.env.VITE_APP_ENV ||
+  (typeof import !== 'undefined' && import.meta?.env?.VITE_CAPACITOR_PROFILE) ||
+  (typeof import !== 'undefined' && import.meta?.env?.VITE_APP_ENV) ||
+  process.env.VITE_CAPACITOR_PROFILE ||
+  process.env.VITE_APP_ENV ||
   'prod'
 );
+
 const isProd = profile === 'prod';
 const isStage = profile === 'stage';
 
@@ -39,11 +31,10 @@ const appName = isProd
     ? 'HLaS Stage'
     : 'HLaS Dev';
 
-const config: CapacitorConfig = {
+const config = {
   appId,
   appName,
   webDir: 'dist',
-  // bundledWebRuntime is not a valid CapacitorConfig property and has been removed
   server: {
     cleartext: !isProd,
   },
