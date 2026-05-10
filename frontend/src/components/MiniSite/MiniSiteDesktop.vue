@@ -190,7 +190,7 @@ export default {
 
 /* Navigation */
 .mini-site-nav {
-  background: linear-gradient(135deg, #1a472a 0%, #2d6a45 100%);
+  background: linear-gradient(135deg, #369256 0%, #5b9471 100%);
   color: white;
   padding: 1rem 0;
   position: sticky;
@@ -240,7 +240,7 @@ export default {
 }
 
 .nav-links a {
-  color: white;
+  color: #333 !important;
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 500;
@@ -262,8 +262,8 @@ export default {
 /* Login Button */
 .login-button {
   flex-shrink: 0;
-  background: #ff6b6b;
-  color: white;
+  background: #958fdf;
+  color: #333 !important;
   padding: 0.5rem 1.5rem;
   border-radius: 4px;
   text-decoration: none;
@@ -275,7 +275,7 @@ export default {
 }
 
 .login-button:hover {
-  background: #ff5252;
+  background: #716f77;
   transform: translateY(-2px);
 }
 
