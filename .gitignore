@@ -8,6 +8,7 @@ build/
 ID_photos/
 backend/certs/*.pem
 frontend/node_modules/
+frontend/ios/App/Podfile.lock
 # frontend/android
 # frontend/ios
 .env.prod
