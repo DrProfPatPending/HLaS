@@ -31,7 +31,7 @@
         <h2>{{ clubName }}</h2>
         <p v-if="description" class="welcome-text">{{ description }}</p>
         <p v-else class="welcome-text">
-          A small fishing club which offers access to some of the prettiest rivers and finest fly fishing in the UK.
+          We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers. We do this through maintaining a small and like-minded membership, and by a program of careful river management with a long-term plan to ensure the sustainability of the river for current and future generations of anglers.
         </p>
       </div>
     </section>
