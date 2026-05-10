@@ -123,6 +123,9 @@ export default {
       try {
         const match = String(window.location.pathname || '').match(/^\/clubs?\/([^/]+)/i);
         this.isClubSpecificUrl = !!match && !!match[1];
+        if (match && match[1]) {
+          store.selectedClub = match[1];
+        }
       } catch {
         this.isClubSpecificUrl = false;
       }
