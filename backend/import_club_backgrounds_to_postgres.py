@@ -4,17 +4,17 @@ Import club background images from backend/club_logos folder into PostgreSQL.
 Similar to import_club_logos_to_postgres.py but for background images.
 """
 
-import os
+import os as os_module
 import mimetypes
 from sqlalchemy import create_engine, text
 
 # Get database URL from environment or use default
-POSTGRES_URL = os.getenv('DATABASE_URL', 'postgresql+psycopg2://hlas:hlas@postgres:5432/hlas')
+POSTGRES_URL = os_module.getenv('DATABASE_URL', 'postgresql+psycopg://hlas:hlas@postgres:5432/hlas')
 
 # Directory containing background PNG files
-BACKGROUND_DIR = os.path.getenv(
+BACKGROUND_DIR = os_module.getenv(
     'BACKGROUND_DIR',
-    '/opt/HLaS/backend/club_logos' if os.path.exists('/opt/HLaS/backend/club_logos') else '/app/club_logos'
+    '/opt/HLaS/backend/club_logos' if os_module.path.exists('/opt/HLaS/backend/club_logos') else '/app/club_logos'
 )
 
 
@@ -35,9 +35,9 @@ def main():
 
         for club in clubs:
             short_name = club[0]  # Extract short_name from row tuple
-            background_path = os.path.join(BACKGROUND_DIR, f'{short_name}_background.png')
+            background_path = os_module.path.join(BACKGROUND_DIR, f'{short_name}_background.png')
 
-            if not os.path.isfile(background_path):
+            if not os_module.path.isfile(background_path):
                 print(f'  ⊘ No background file found for {short_name}, skipping.')
                 skipped_count += 1
                 continue
