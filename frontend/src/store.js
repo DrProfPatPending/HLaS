@@ -753,17 +753,10 @@ export function login() {
         if (store.memberPermissions.includes('member.club.list')) {
           fetchMembers();
         }
-        // Redirect after successful login - handle mini site logins
+        // Redirect after successful login
         setTimeout(() => {
-          const pathArray = window.location.pathname.split('/');
-          if (pathArray.length >= 3 && pathArray[1] === 'club' && pathArray[3] === 'login') {
-            // Redirect back to mini site home page
-            const clubCode = pathArray[2];
-            window.location.href = `/club/${clubCode}/`;
-          } else {
-            // Redirect to main app home
-            window.location.href = '/';
-          }
+          // Always redirect to main app dashboard, not back to mini site
+          window.location.href = '/';
         }, 300);
       } else {
         store.loginError = res.data.error || 'Login failed';
