@@ -45,6 +45,14 @@
 
     <div v-if="selectedBeat && !isEditing" class="beat-details-map-wrap">
       <div ref="beatDetailsMap" class="beat-details-map"></div>
+      <div class="beat-details-map-controls">
+        <button
+          v-if="beatDetailsWaypointsCount > 0"
+          type="button"
+          class="beat-details-waypoint-toggle"
+          @click="toggleWaypointMarkers"
+        >{{ showWaypointMarkers ? 'Hide Waypoints' : 'Show Waypoints' }}</button>
+      </div>
       <div v-if="beatDetailsMapStatus" class="beat-details-map-status">
         {{ beatDetailsMapStatus }}
       </div>
@@ -214,6 +222,68 @@
               </div>
 
               <app-button type="button" inherit-style @click="addPoolRow">Add Pool</app-button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th>Waypoints</th>
+          <td>
+            <div class="beat-details-waypoints-editor">
+              <div
+                v-for="(waypoint, waypointIndex) in editForm.Waypoints"
+                :key="`waypoint-edit-${waypointIndex}`"
+                class="beat-details-waypoints-editor-row-wrap"
+              >
+                <div class="beat-details-waypoints-editor-row">
+                  <input
+                    v-model="waypoint.Sequence"
+                    class="beat-details-input beat-details-input-narrow"
+                    placeholder="Seq"
+                    readonly
+                  />
+                  <input
+                    v-model="waypoint.W3W"
+                    class="beat-details-input"
+                    placeholder="What3Words (optional)"
+                  />
+                  <input
+                    v-model="waypoint.Latitude"
+                    class="beat-details-input"
+                    placeholder="Latitude"
+                  />
+                  <input
+                    v-model="waypoint.Longitude"
+                    class="beat-details-input"
+                    placeholder="Longitude"
+                  />
+                  <input
+                    v-model="waypoint.Description"
+                    class="beat-details-input"
+                    placeholder="Description (optional)"
+                  />
+                  <app-button
+                    type="button"
+                    class="beat-details-waypoint-remove"
+                    inherit-style
+                    @click="removeWaypointRow(waypointIndex)"
+                  >
+                    Remove
+                  </app-button>
+                </div>
+              </div>
+
+              <div class="beat-details-waypoints-actions">
+                <app-button type="button" inherit-style @click="addWaypointRow">Add Waypoint</app-button>
+                <label class="beat-details-gpx-label">
+                  Import GPX
+                  <input
+                    type="file"
+                    accept=".gpx,application/gpx+xml"
+                    class="beat-details-gpx-input"
+                    @change="importGpxFile"
+                  />
+                </label>
+              </div>
             </div>
           </td>
         </tr>
@@ -417,7 +487,11 @@ export default {
         Detailed_Description: '',
         Parking_Locations: [],
         Pools: [],
+        Waypoints: [],
       },
+      beatDetailsWaypointMarkers: [],
+      beatDetailsWaypointsCount: 0,
+      showWaypointMarkers: false,
     };
   },
   computed: {
@@ -570,6 +644,7 @@ export default {
                 }))
             : [],
           Pools: this.normalizePoolsForDisplay(beat && beat.Pools),
+          Waypoints: this.parseWaypointsInput(beat && beat.Waypoints),
           Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
           Detailed_Description: beat && beat.Detailed_Description ? beat.Detailed_Description : '',
         };
@@ -652,6 +727,7 @@ export default {
               }))
           : [],
         Pools: this.parsePoolsInput(beat?.Pools),
+        Waypoints: this.parseWaypointsInput(beat?.Waypoints),
       };
     },
     beginEditForBeat(beat, isAdding = false) {
@@ -673,6 +749,7 @@ export default {
         Detailed_Description: source.Detailed_Description,
         Parking_Locations: this.cloneParkingLocations(source.Parking_Locations),
         Pools: this.clonePools(source.Pools),
+        Waypoints: this.cloneWaypoints(source.Waypoints),
       };
       this.isEditing = true;
     },
@@ -736,6 +813,105 @@ export default {
     removePoolRow(index) {
       if (!this.isEditing) return;
       this.editForm.Pools = this.editForm.Pools.filter((_, i) => i !== index);
+    },
+    cloneWaypoints(waypoints) {
+      if (!Array.isArray(waypoints)) return [];
+      return waypoints
+        .filter(wp => wp && typeof wp === 'object')
+        .map(wp => ({
+          Sequence: String(wp?.Sequence || '').trim(),
+          W3W: String(wp?.W3W || '').trim(),
+          Latitude: String(wp?.Latitude || '').trim(),
+          Longitude: String(wp?.Longitude || '').trim(),
+          Description: String(wp?.Description || '').trim(),
+        }));
+    },
+    addWaypointRow() {
+      if (!this.isEditing) return;
+      const nextSequence = this.editForm.Waypoints.length + 1;
+      this.editForm.Waypoints = [
+        ...this.editForm.Waypoints,
+        { Sequence: String(nextSequence), W3W: '', Latitude: '', Longitude: '', Description: '' },
+      ];
+    },
+    removeWaypointRow(index) {
+      if (!this.isEditing) return;
+      this.editForm.Waypoints = this.editForm.Waypoints
+        .filter((_, i) => i !== index)
+        .map((wp, i) => ({ ...wp, Sequence: String(i + 1) }));
+    },
+    parseWaypointsInput(rawWaypoints) {
+      const parsed = Array.isArray(rawWaypoints) ? rawWaypoints : [];
+      return parsed
+        .filter(wp => wp && typeof wp === 'object')
+        .filter(wp => {
+          const lat = String(wp?.Latitude || '').trim();
+          const lng = String(wp?.Longitude || '').trim();
+          const w3w = String(wp?.W3W || '').trim();
+          return (lat && lng) || w3w;
+        })
+        .map((wp, index) => {
+          const sequenceNumber = Number.parseInt(String(wp?.Sequence || ''), 10);
+          return {
+            Sequence: Number.isFinite(sequenceNumber) && sequenceNumber > 0
+              ? String(sequenceNumber)
+              : String(index + 1),
+            W3W: String(wp?.W3W || '').trim(),
+            Latitude: String(wp?.Latitude || '').trim(),
+            Longitude: String(wp?.Longitude || '').trim(),
+            Description: String(wp?.Description || '').trim(),
+          };
+        })
+        .sort((a, b) => Number.parseInt(a.Sequence, 10) - Number.parseInt(b.Sequence, 10))
+        .map((wp, index) => ({ ...wp, Sequence: String(index + 1) }));
+    },
+    importGpxFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        try {
+          const parser = new DOMParser();
+          const gpxDoc = parser.parseFromString(loadEvent.target.result, 'application/xml');
+          if (gpxDoc.querySelector('parsererror')) {
+            this.beatEditError = 'GPX file could not be parsed. Please check the file format.';
+            event.target.value = '';
+            return;
+          }
+          // Prefer track points; fall back to route points
+          const trkPoints = Array.from(gpxDoc.querySelectorAll('trkpt'));
+          const rtePoints = Array.from(gpxDoc.querySelectorAll('rtept'));
+          const gpxPoints = trkPoints.length > 0 ? trkPoints : rtePoints;
+          if (!gpxPoints.length) {
+            this.beatEditError = 'No track or route points found in the GPX file.';
+            event.target.value = '';
+            return;
+          }
+          const imported = gpxPoints
+            .map((pt, index) => {
+              const lat = pt.getAttribute('lat');
+              const lon = pt.getAttribute('lon');
+              if (!lat || !lon) return null;
+              const descEl = pt.querySelector('desc');
+              const nameEl = pt.querySelector('name');
+              const description = (descEl && descEl.textContent.trim()) ||
+                                  (nameEl && nameEl.textContent.trim()) || '';
+              return { Sequence: String(index + 1), W3W: '', Latitude: lat, Longitude: lon, Description: description };
+            })
+            .filter(Boolean);
+          if (!imported.length) {
+            this.beatEditError = 'No valid lat/lon points found in the GPX file.';
+            event.target.value = '';
+            return;
+          }
+          this.editForm.Waypoints = imported;
+          this.beatEditError = '';
+        } catch {
+          this.beatEditError = 'Failed to read GPX file.';
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
     },
     getParkingValidationError(location) {
       const w3wValue = String(location?.Location || '').trim();
@@ -884,6 +1060,7 @@ export default {
         Detailed_Description: '',
         Parking_Locations: [],
         Pools: [],
+        Waypoints: [],
       });
       this.localBeats = [...this.localBeats, newBeat];
       this.selectedBeatKey = this.beatKey(newBeat);
@@ -968,6 +1145,7 @@ export default {
         Detailed_Description: this.editForm.Detailed_Description,
         Parking_Locations: this.parseParkingLocationsInput(this.editForm.Parking_Locations),
         Pools: this.parsePoolsInput(this.editForm.Pools),
+        Waypoints: this.parseWaypointsInput(this.editForm.Waypoints),
       });
     },
     persistBeats(updatedBeats, successMessage, selectedKeyAfterSave = '') {
@@ -1192,13 +1370,24 @@ export default {
       return null;
     },
     clearBeatDetailsMapLayers() {
-      if (!this.beatDetailsMapInstance || !Array.isArray(this.beatDetailsMapLayers)) return;
-      this.beatDetailsMapLayers.forEach(layer => {
-        if (layer && this.beatDetailsMapInstance.hasLayer(layer)) {
-          this.beatDetailsMapInstance.removeLayer(layer);
-        }
-      });
-      this.beatDetailsMapLayers = [];
+      if (!this.beatDetailsMapInstance) return;
+      if (Array.isArray(this.beatDetailsMapLayers)) {
+        this.beatDetailsMapLayers.forEach(layer => {
+          if (layer && this.beatDetailsMapInstance.hasLayer(layer)) {
+            this.beatDetailsMapInstance.removeLayer(layer);
+          }
+        });
+        this.beatDetailsMapLayers = [];
+      }
+      if (Array.isArray(this.beatDetailsWaypointMarkers)) {
+        this.beatDetailsWaypointMarkers.forEach(marker => {
+          if (marker && this.beatDetailsMapInstance.hasLayer(marker)) {
+            this.beatDetailsMapInstance.removeLayer(marker);
+          }
+        });
+        this.beatDetailsWaypointMarkers = [];
+      }
+      this.beatDetailsWaypointsCount = 0;
     },
     ensureBeatDetailsMap() {
       if (this.beatDetailsMapInstance) return;
@@ -1261,7 +1450,6 @@ export default {
         : [];
 
       const poolMarkers = [];
-      const poolRoutePoints = [];
       for (let i = 0; i < sortedPools.length; i += 1) {
         const pool = sortedPools[i];
         const poolCoords = await this.resolveBeatPointCoordinates(
@@ -1271,7 +1459,6 @@ export default {
         );
         if (!poolCoords) continue;
         const poolLatLng = L.latLng(poolCoords.lat, poolCoords.lng);
-        poolRoutePoints.push(poolLatLng);
         allBoundsPoints.push(poolLatLng);
 
         const sequenceLabel = pool?.Sequence || String(i + 1);
@@ -1296,6 +1483,36 @@ export default {
         poolMarkers.push(poolMarker);
       }
 
+      // Build route polyline from ordered waypoints
+      const sortedWaypoints = Array.isArray(selectedBeat.Waypoints)
+        ? [...selectedBeat.Waypoints].sort((a, b) => Number.parseInt(a.Sequence, 10) - Number.parseInt(b.Sequence, 10))
+        : [];
+      const waypointMarkers = [];
+      const routeLatLngs = [];
+      for (let i = 0; i < sortedWaypoints.length; i += 1) {
+        const wp = sortedWaypoints[i];
+        const wpCoords = await this.resolveBeatPointCoordinates(wp?.W3W, wp?.Latitude, wp?.Longitude);
+        if (requestId !== this.beatDetailsMapRequestId) return;
+        if (!wpCoords) continue;
+        const wpLatLng = L.latLng(wpCoords.lat, wpCoords.lng);
+        routeLatLngs.push(wpLatLng);
+        allBoundsPoints.push(wpLatLng);
+
+        const seqLabel = wp?.Sequence || String(i + 1);
+        let wpPopup = `Waypoint ${seqLabel}`;
+        if (wp?.Description) wpPopup += `<br>${wp.Description}`;
+        waypointMarkers.push(
+          L.circleMarker(wpLatLng, {
+            radius: 4, color: '#888', fillColor: '#bbb', fillOpacity: 0.9, weight: 1,
+          }).bindPopup(wpPopup)
+        );
+      }
+
+      let routePolyline = null;
+      if (routeLatLngs.length >= 2) {
+        routePolyline = L.polyline(routeLatLngs, { color: '#1a6ea0', weight: 3 });
+      }
+
       const upstreamMarker = L.circleMarker(upstreamLatLng, {
         radius: 7, color: '#1f77b4', fillColor: '#1f77b4', fillOpacity: 0.8,
       }).bindPopup('Upstream limit');
@@ -1303,10 +1520,6 @@ export default {
       const downstreamMarker = L.circleMarker(downstreamLatLng, {
         radius: 7, color: '#d62728', fillColor: '#d62728', fillOpacity: 0.8,
       }).bindPopup('Downstream limit');
-
-      const boundaryLine = L.polyline([downstreamLatLng, ...poolRoutePoints, upstreamLatLng], {
-        color: '#2f2f2f', weight: 3,
-      });
 
       const parkingLayers = [];
       const parkingLocations = Array.isArray(selectedBeat.Parking_Locations)
@@ -1344,23 +1557,43 @@ export default {
 
       upstreamMarker.addTo(this.beatDetailsMapInstance);
       downstreamMarker.addTo(this.beatDetailsMapInstance);
-      boundaryLine.addTo(this.beatDetailsMapInstance);
-      this.beatDetailsMapLayers = [upstreamMarker, downstreamMarker, boundaryLine, ...poolMarkers, ...parkingLayers];
+      if (routePolyline) routePolyline.addTo(this.beatDetailsMapInstance);
+      if (this.showWaypointMarkers) {
+        waypointMarkers.forEach(marker => marker.addTo(this.beatDetailsMapInstance));
+      }
+      this.beatDetailsWaypointMarkers = waypointMarkers;
+      this.beatDetailsWaypointsCount = waypointMarkers.length;
+      const routeLayers = routePolyline ? [routePolyline] : [];
+      this.beatDetailsMapLayers = [upstreamMarker, downstreamMarker, ...routeLayers, ...poolMarkers, ...parkingLayers];
 
       this.beatDetailsMapInstance.invalidateSize();
       const bounds = L.latLngBounds(allBoundsPoints);
       this.beatDetailsMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
-      const poolLabel = `${poolMarkers.length} pool node${poolMarkers.length === 1 ? '' : 's'}`;
-      const parkingLabel = `${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}`;
-      if (poolMarkers.length && parkingLayers.length) {
-        this.beatDetailsMapStatus = `Showing route limits with ${poolLabel} and ${parkingLabel}.`;
-      } else if (poolMarkers.length) {
-        this.beatDetailsMapStatus = `Showing route limits with ${poolLabel}.`;
-      } else if (parkingLayers.length) {
-        this.beatDetailsMapStatus = `Showing upstream/downstream limits and ${parkingLabel}.`;
-      } else {
-        this.beatDetailsMapStatus = 'Showing upstream and downstream limits.';
-      }
+
+      const routeDesc = waypointMarkers.length > 0
+        ? `route (${waypointMarkers.length} waypoint${waypointMarkers.length === 1 ? '' : 's'})`
+        : null;
+      const poolDesc = poolMarkers.length > 0
+        ? `${poolMarkers.length} pool${poolMarkers.length === 1 ? '' : 's'}`
+        : null;
+      const parkingDesc = parkingLayers.length > 0
+        ? `${parkingLayers.length} parking`
+        : null;
+      const parts = [routeDesc, poolDesc, parkingDesc].filter(Boolean);
+      this.beatDetailsMapStatus = parts.length
+        ? `Showing ${parts.join(', ')}.`
+        : 'Showing upstream and downstream limits.';
+    },
+    toggleWaypointMarkers() {
+      this.showWaypointMarkers = !this.showWaypointMarkers;
+      if (!this.beatDetailsMapInstance) return;
+      this.beatDetailsWaypointMarkers.forEach(marker => {
+        if (this.showWaypointMarkers) {
+          marker.addTo(this.beatDetailsMapInstance);
+        } else {
+          this.beatDetailsMapInstance.removeLayer(marker);
+        }
+      });
     },
     destroyBeatDetailsMap() {
       this.clearBeatDetailsMapLayers();
@@ -1550,8 +1783,83 @@ export default {
   font-size: 9pt;
 }
 
+.beat-details-waypoints-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beat-details-waypoints-editor-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.beat-details-waypoints-editor-row {
+  display: grid;
+  grid-template-columns: 46px 1fr 120px 120px 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.beat-details-waypoint-remove {
+  white-space: nowrap;
+}
+
+.beat-details-waypoints-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.beat-details-gpx-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  font-size: 10pt;
+  background: #f5f5f5;
+}
+
+.beat-details-gpx-label:hover {
+  background: #e8e8e8;
+}
+
+.beat-details-gpx-input {
+  display: none;
+}
+
+.beat-details-input-narrow {
+  max-width: 46px;
+}
+
 .beat-details-map-wrap {
   margin-top: 16px;
+  position: relative;
+}
+
+.beat-details-map-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.beat-details-waypoint-toggle {
+  padding: 4px 10px;
+  font-size: 10pt;
+  background: #f0f4f8;
+  border: 1px solid #aac;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.beat-details-waypoint-toggle:hover {
+  background: #dde8f5;
 }
 
 .beat-details-map {

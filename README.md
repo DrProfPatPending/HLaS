@@ -27,6 +27,16 @@ HLaS uses a **two-branch deployment model** for stability and safe development:
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
+- **Beat Details Route Waypoints (May 2026):**
+   - Beats now support an ordered `Waypoints` list (sequence, W3W stub, lat/lon, description).
+   - The map draws a route polyline through waypoints instead of the old straight-line boundary.
+   - The old downstream→pools→upstream polyline has been removed.
+   - Pool markers (numbered) and parking markers (P) remain unchanged.
+   - A **Show/Hide Waypoints** toggle button appears on the map when waypoints are present, revealing small grey dot markers at each waypoint position for development verification.
+   - The Beat Details edit form includes a full Waypoints editor (Add / Remove rows).
+   - **GPX import:** click *Import GPX* in the edit form to load a `.gpx` file exported from OS Maps Pro (or any GPX-compatible source). Track points (`<trkpt>`) or route points (`<rtept>`) are parsed client-side; no API key required.
+   - Backend: new `waypoints` JSONB column on `club_beats` (migration `20260511_0001`); `normalize_waypoints()` in `core/common.py`; waypoints read/written in `app.py` and `admin_routes.py`.
+
 - **Deployment Strategy (May 2026):**
    - Implemented separate `main` (development) and `production` (VPS deployed) branches
    - VPS deployment scripts updated to pull from `production` branch only
@@ -79,6 +89,11 @@ HLaS uses a **two-branch deployment model** for stability and safe development:
 - Member ID photos are imported into PostgreSQL and served DB-first with file fallback.
 - Added reusable SQL verification packs in `Utilities/`.
 - Added a new Beat Details member page with dedicated field-order configuration.
+- Beat Details now supports **Route Waypoints** for river route mapping:
+   - Ordered waypoints (sequence, W3W stub, lat/lon, description) define the river route.
+   - Map draws a connected polyline through waypoints; old straight boundary line removed.
+   - Waypoint dot markers can be toggled on/off via a map button (for development verification).
+   - GPX import: export a route from OS Maps Pro (or equivalent) as `.gpx` and import it directly in the beat editor — track points and route points are both supported.
 - Beat Details now reuses the Fishing Beats detail map logic, including upstream/downstream markers and parking locations.
 - The post-login member home page now presents navigation actions vertically on the left with a placeholder `<Club> News and Updates` table in the center.
 - Added database-backed club document management:

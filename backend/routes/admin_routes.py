@@ -409,6 +409,7 @@ def create_admin_blueprint(deps):
                             'Beat_Downstream_Latitude': row.beat_downstream_latitude or '',
                             'Beat_Downstream_Longitude': row.beat_downstream_longitude or '',
                             'Parking_Locations': row.parking_locations or [],
+                            'Waypoints': row.waypoints or [],
                         }
                         beats.append(beat)
                     

@@ -20,6 +20,9 @@
 
 ## Last Documentation Update
 May 2026 — updated for:
+- Beat Details Waypoints: ordered route polyline from waypoints, GPX import, waypoint toggle button
+- Removed old boundary polyline (downstream→pools→upstream) from map
+- New `waypoints` JSONB column in `club_beats` (migration 20260511_0001)
 - MiniSite UI refinements: Compact page headers (100px), 14pt font sizes
 - Club background images: PostgreSQL storage with admin upload capability
 - Navigation logo expansion (100px height)

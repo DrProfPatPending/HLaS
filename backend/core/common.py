@@ -178,6 +178,38 @@ def normalize_parking_locations(parking_source):
     return normalized
 
 
+def normalize_waypoints(waypoints_source):
+    if not isinstance(waypoints_source, list):
+        return []
+
+    normalized = []
+    for index, waypoint in enumerate(waypoints_source):
+        if not isinstance(waypoint, dict):
+            continue
+
+        sequence_raw = str(waypoint.get('Sequence', '')).strip()
+        try:
+            sequence_value = int(sequence_raw)
+        except (TypeError, ValueError):
+            sequence_value = index + 1
+        if sequence_value < 1:
+            sequence_value = index + 1
+
+        normalized.append({
+            'Sequence': str(sequence_value),
+            'W3W': normalize_what3words_words(waypoint.get('W3W', '')),
+            'Latitude': str(waypoint.get('Latitude', '')).strip(),
+            'Longitude': str(waypoint.get('Longitude', '')).strip(),
+            'Description': str(waypoint.get('Description', '')).strip(),
+        })
+
+    normalized.sort(key=lambda value: int(value.get('Sequence', '0') or 0))
+    for seq, waypoint in enumerate(normalized, start=1):
+        waypoint['Sequence'] = str(seq)
+
+    return normalized
+
+
 def normalize_pools(pools_source):
     if not isinstance(pools_source, list):
         return []
@@ -255,6 +287,7 @@ def normalize_beats(beats_source):
             'Beat_Downstream_Longitude': str(beat.get('Beat_Downstream_Longitude', '')).strip(),
             'Parking_Locations': normalize_parking_locations(beat.get('Parking_Locations', [])),
             'Pools': normalize_pools(beat.get('Pools', [])),
+            'Waypoints': normalize_waypoints(beat.get('Waypoints', [])),
         })
 
     return normalized
