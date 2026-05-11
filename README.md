@@ -614,7 +614,18 @@ If your LAN IP changes, regenerate the certificate with the new IP in Subject Al
 
 When using the Docker/Caddy-based dev server (`hlastest`), Caddy generates its own local root CA rather than using the shared cert files above. Use `trust_caddy_mac.sh` to fetch that CA certificate over SSH and install it into the macOS System Keychain, so Safari and all other macOS TLS clients trust the dev server without warnings.
 
-**Prerequisites:** SSH access to the dev server (`ssh rob@hlastest` must work), and the HLaS Docker stack must be running on that server.
+**Prerequisites:** SSH access to the dev server (`ssh rob@hlastest` must work), and the HLaS Docker stack must be running on that server with the dev Compose override (see below).
+
+#### Starting the dev stack on hlastest
+
+The dev server uses `docker-compose.dev.yml` as a Compose override. This swaps the Caddy configuration from the production Caddyfile (which tries Let's Encrypt) to [deploy/caddy/Caddyfile.dev](deploy/caddy/Caddyfile.dev), which uses Caddy's internal (local) CA and responds to the `hlastest` hostname:
+
+```bash
+# On hlastest — start or restart with the dev override
+docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml up -d
+```
+
+Without this override, Caddy will repeatedly fail ACME challenges for `cambridgetroutclub.org` and the HTTPS handshake for `hlastest` will be rejected entirely.
 
 ```bash
 # Run with defaults (rob@hlastest, /opt/HLaS)

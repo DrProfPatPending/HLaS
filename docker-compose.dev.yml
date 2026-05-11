@@ -1,0 +1,14 @@
+# Docker Compose override for the hlastest dev server.
+# Swaps the production Caddyfile for the dev variant that uses Caddy's
+# internal (local) CA instead of Let's Encrypt.
+#
+# Usage on hlastest:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml up -d
+#
+# After starting, run trust_caddy_mac.sh on your Mac once to install the
+# Caddy root CA into the macOS System Keychain.
+
+services:
+  caddy:
+    volumes:
+      - ./deploy/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
