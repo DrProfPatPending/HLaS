@@ -731,6 +731,7 @@ export default {
       };
     },
     beginEditForBeat(beat, isAdding = false) {
+      this.destroyBeatDetailsMap();
       const source = this.normalizeBeatRecord(beat);
       this.isAddingNewBeat = isAdding;
       this.editOriginalBeatKey = this.beatKey(source);
