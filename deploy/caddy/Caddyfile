@@ -1,4 +1,11 @@
-cambridgetroutclub.org {
+# Dev server Caddyfile — used on hlastest via docker-compose.dev.yml override.
+# Uses Caddy's internal (local) CA so no ACME/Let's Encrypt challenges are needed.
+# Run trust_caddy_mac.sh on your Mac to install the generated root CA into the
+# macOS System Keychain so that Safari trusts the dev server.
+
+hlastest {
+    tls internal
+
     encode zstd gzip
 
     handle_path /api/* {
