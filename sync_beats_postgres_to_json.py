@@ -80,6 +80,8 @@ def sync_beats_to_json():
                     'Beat_Downstream_Latitude': row.beat_downstream_latitude or '',
                     'Beat_Downstream_Longitude': row.beat_downstream_longitude or '',
                     'Parking_Locations': row.parking_locations or [],
+                    'Pools': row.pools or [],
+                    'Waypoints': row.waypoints or [],
                 }
                 beats.append(beat)
             

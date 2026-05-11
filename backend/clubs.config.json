@@ -54,7 +54,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Beet Pad",
@@ -69,7 +71,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Belton Park",
@@ -84,7 +88,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Chater",
@@ -99,7 +105,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Collyweston Bridge",
@@ -114,7 +122,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Colsterworth",
@@ -129,7 +139,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Duddington",
@@ -144,7 +156,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Elnor's Weir",
@@ -159,7 +173,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "GAA",
@@ -174,7 +190,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Girder Bridge",
@@ -189,7 +207,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "I Beat eXtension",
@@ -204,7 +224,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Ketton",
@@ -219,7 +241,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Papermill",
@@ -234,7 +258,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Ponton A",
@@ -257,7 +283,9 @@
               "Longitude": "-0.62006",
               "Description": ""
             }
-          ]
+          ],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Ponton B",
@@ -280,7 +308,9 @@
               "Longitude": "-0.62006",
               "Description": ""
             }
-          ]
+          ],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Stamford",
@@ -295,7 +325,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Syston - A607 Bridge",
@@ -310,7 +342,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Syston - Old Weir",
@@ -325,7 +359,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Tinwell",
@@ -340,7 +376,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Wakerley",
@@ -355,7 +393,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Washdike Lane",
@@ -378,7 +418,9 @@
               "Longitude": "-0.61966",
               "Description": "W3W: ///browsers.ranged.topped"
             }
-          ]
+          ],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Welland (orig)",
@@ -393,7 +435,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "White Bridge",
@@ -408,7 +452,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         }
       ]
     },
@@ -473,34 +519,35 @@
               "Location": "refusals.flies.offers",
               "Longitude": "0.18030",
               "Description": "Roadside parking near bridge"
-              }
-            ],
-            "Pools": [
-              {
-                "Sequence": "1",
-                "Name": "Bridge Pool",
-                "Description": "Shallow cascade into reasonably deep pool going underneath the Ickleton Road bridge.",
-                "Location": "///outs.clips.squad",
-                "Latitude": "52.078765",
-                "Longitude": "0.17989"
-              },
-              {
-                "Sequence": "2",
-                "Name": "Bend Pool",
-                "Description": "Shallow riffle tail with productive nymphing seam.",
-                "Location": "///scribble.noticing.chats",
-                "Latitude": "52.077957",
-                "Longitude": "0.180154"
-              },
-              {
-                "Sequence": "3",
-                "Name": "Footbridge Pool",
-                "Description": "Deeper bend pool under overhanging trees.",
-                "Location": "///symphonic.silk.bill",
-                "Latitude": "52.077687",
-                "Longitude": "0.181425"
-              }
-            ]
+            }
+          ],
+          "Pools": [
+            {
+              "Name": "Bridge Pool",
+              "Latitude": "52.078765",
+              "Location": "outs.clips.squad",
+              "Sequence": "1",
+              "Longitude": "0.17989",
+              "Description": "Shallow cascade into reasonably deep pool going underneath the Ickleton Road bridge."
+            },
+            {
+              "Name": "Bend Pool",
+              "Latitude": "52.077957",
+              "Location": "scribble.noticing.chats",
+              "Sequence": "2",
+              "Longitude": "0.180154",
+              "Description": "Shallow riffle tail with productive nymphing seam."
+            },
+            {
+              "Name": "Footbridge Pool",
+              "Latitude": "52.077687",
+              "Location": "symphonic.silk.bill",
+              "Sequence": "3",
+              "Longitude": "0.181425",
+              "Description": "Deeper bend pool under overhanging trees."
+            }
+          ],
+          "Waypoints": []
         },
         {
           "Beat_Name": "B Beat",
@@ -519,16 +566,285 @@
             {
               "Name": "Ickleton Road",
               "Latitude": "52.07903",
-              "Location": "scorpions.shower.inclines",
+              "Location": "",
               "Longitude": "0.17995",
               "Description": "Roadside parking near Genome Campus."
             },
             {
               "Name": "Duxford-Hinxton Ford",
               "Latitude": "52.08638",
-              "Location": "nerd.pitchers.hers",
+              "Location": "",
               "Longitude": "0.17488",
               "Description": "Roadside near to ford on Hinxton Rd/Duxford Rd"
+            }
+          ],
+          "Pools": [],
+          "Waypoints": [
+            {
+              "W3W": "",
+              "Latitude": "52.0864200",
+              "Sequence": "1",
+              "Longitude": "0.1751100",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0861800",
+              "Sequence": "2",
+              "Longitude": "0.1753300",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0858300",
+              "Sequence": "3",
+              "Longitude": "0.1749400",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0856900",
+              "Sequence": "4",
+              "Longitude": "0.1751500",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0855100",
+              "Sequence": "5",
+              "Longitude": "0.1764000",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0851400",
+              "Sequence": "6",
+              "Longitude": "0.1769100",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0850600",
+              "Sequence": "7",
+              "Longitude": "0.1767800",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0849600",
+              "Sequence": "8",
+              "Longitude": "0.1775100",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0850800",
+              "Sequence": "9",
+              "Longitude": "0.1777800",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0847400",
+              "Sequence": "10",
+              "Longitude": "0.1781800",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0844000",
+              "Sequence": "11",
+              "Longitude": "0.1786200",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0840900",
+              "Sequence": "12",
+              "Longitude": "0.1788700",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0838300",
+              "Sequence": "13",
+              "Longitude": "0.1789100",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0834900",
+              "Sequence": "14",
+              "Longitude": "0.1789200",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0833400",
+              "Sequence": "15",
+              "Longitude": "0.1786300",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0832100",
+              "Sequence": "16",
+              "Longitude": "0.1784300",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0828200",
+              "Sequence": "17",
+              "Longitude": "0.1787700",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0826600",
+              "Sequence": "18",
+              "Longitude": "0.1787400",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0823800",
+              "Sequence": "19",
+              "Longitude": "0.1780600",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0821700",
+              "Sequence": "20",
+              "Longitude": "0.1780700",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0819800",
+              "Sequence": "21",
+              "Longitude": "0.1783600",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0817900",
+              "Sequence": "22",
+              "Longitude": "0.1787800",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0817000",
+              "Sequence": "23",
+              "Longitude": "0.1791800",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0818200",
+              "Sequence": "24",
+              "Longitude": "0.1795800",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0817100",
+              "Sequence": "25",
+              "Longitude": "0.1799200",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0815500",
+              "Sequence": "26",
+              "Longitude": "0.1798300",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0812800",
+              "Sequence": "27",
+              "Longitude": "0.1795300",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0810800",
+              "Sequence": "28",
+              "Longitude": "0.1795100",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0808700",
+              "Sequence": "29",
+              "Longitude": "0.1797900",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0812300",
+              "Sequence": "30",
+              "Longitude": "0.1801200",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0813000",
+              "Sequence": "31",
+              "Longitude": "0.1804500",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0808700",
+              "Sequence": "32",
+              "Longitude": "0.1805100",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0805700",
+              "Sequence": "33",
+              "Longitude": "0.1807200",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0802400",
+              "Sequence": "34",
+              "Longitude": "0.1807600",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0799000",
+              "Sequence": "35",
+              "Longitude": "0.1806100",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0796600",
+              "Sequence": "36",
+              "Longitude": "0.1802500",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0794100",
+              "Sequence": "37",
+              "Longitude": "0.1801400",
+              "Description": ""
+            },
+            {
+              "W3W": "",
+              "Latitude": "52.0791300",
+              "Sequence": "38",
+              "Longitude": "0.1798300",
+              "Description": ""
             }
           ]
         },
@@ -560,7 +876,9 @@
               "Longitude": "0.17441",
               "Description": "Access via gate (code: 0242) from A1301."
             }
-          ]
+          ],
+          "Pools": [],
+          "Waypoints": []
         }
       ]
     },
@@ -595,7 +913,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         },
         {
           "Beat_Name": "Dove Valley Top Beat",
@@ -610,7 +930,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         }
       ]
     },
@@ -645,7 +967,9 @@
           "Beat_Upstream_Longitude": "",
           "Beat_Downstream_Latitude": "",
           "Beat_Downstream_Longitude": "",
-          "Parking_Locations": []
+          "Parking_Locations": [],
+          "Pools": [],
+          "Waypoints": []
         }
       ]
     }
