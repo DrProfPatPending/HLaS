@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fetches the Caddy local root CA cert from a remote HLaS server via SSH
-# and installs it into the macOS System Keychain so that Safari (and other
-# system-level TLS clients) trust the dev server.
+# and installs it into the macOS Login Keychain so that Safari (and other
+# system-level TLS clients) trust the dev server. No sudo required.
 #
 # Usage:
 #   ./trust_caddy_mac.sh [OPTIONS]
@@ -57,22 +57,20 @@ echo "  SHA-256   : $THUMBPRINT"
 echo "  Expires   : $EXPIRY"
 echo ""
 
+LOGIN_KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
+
 # Remove any previously installed copy with the same name to avoid duplicates.
-if sudo security find-certificate -c "$CERT_NAME" /Library/Keychains/System.keychain &>/dev/null; then
-    echo "Removing existing certificate '${CERT_NAME}' from System Keychain..."
-    sudo security delete-certificate -c "$CERT_NAME" /Library/Keychains/System.keychain
+if security find-certificate -c "$CERT_NAME" "$LOGIN_KEYCHAIN" &>/dev/null; then
+    echo "Removing existing certificate '${CERT_NAME}' from Login Keychain..."
+    security delete-certificate -c "$CERT_NAME" "$LOGIN_KEYCHAIN"
 fi
 
-echo "Installing certificate into macOS System Keychain (requires sudo)..."
-sudo security add-trusted-cert \
-    -d \
+echo "Installing certificate into macOS Login Keychain (no sudo required)..."
+security add-trusted-cert \
     -r trustRoot \
-    -k /Library/Keychains/System.keychain \
+    -k "$LOGIN_KEYCHAIN" \
     "$TMP_CERT"
 
 echo ""
-echo "Certificate '${CERT_NAME}' installed and trusted in the System Keychain."
-echo "Safari and other apps that use the macOS TLS stack will now trust https://hlastest"
-echo ""
-echo "NOTE: Open Safari and navigate to https://hlastest to verify."
-echo "      If Safari still shows a warning, quit and relaunch it."
+echo "Certificate '${CERT_NAME}' installed and trusted in the Login Keychain."
+echo "Quit and relaunch Safari, then open https://${SSH_HOST} to verify."
