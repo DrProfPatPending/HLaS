@@ -82,6 +82,16 @@ club_beats = Table(
     UniqueConstraint("club_id", "beat_id", name="uq_club_beats_club_id_beat_id"),
 )
 
+beat_map_rotations = Table(
+    "beat_map_rotations",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("beat_id", BigInteger, ForeignKey("club_beats.id", ondelete="CASCADE"), nullable=False, unique=True),
+    Column("rotation_bearing", Integer, nullable=False, server_default="0"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
 members = Table(
     "members",
     metadata,

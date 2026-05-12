@@ -396,6 +396,7 @@ def create_admin_blueprint(deps):
                     beats = []
                     for row in beat_rows:
                         beat = {
+                            'id': row.id,
                             'Beat_Name': row.beat_name or '',
                             'Beat_ID': row.beat_id or '',
                             'River': row.river or '',

@@ -272,7 +272,7 @@ def normalize_beats(beats_source):
         beat_upstream = str(beat.get('Beat_Upstream', '')).strip()
         beat_downstream = str(beat.get('Beat_Downstream', '')).strip()
 
-        normalized.append({
+        normalized_beat = {
             'Beat_Name': str(beat.get('Beat_Name', '')).strip(),
             'Beat_ID': str(beat.get('Beat_ID', '')).strip(),
             'River': str(beat.get('River', '')).strip(),
@@ -288,7 +288,13 @@ def normalize_beats(beats_source):
             'Parking_Locations': normalize_parking_locations(beat.get('Parking_Locations', [])),
             'Pools': normalize_pools(beat.get('Pools', [])),
             'Waypoints': normalize_waypoints(beat.get('Waypoints', [])),
-        })
+        }
+        
+        # Preserve database id if present (from PostgreSQL)
+        if 'id' in beat and isinstance(beat.get('id'), int):
+            normalized_beat['id'] = beat['id']
+
+        normalized.append(normalized_beat)
 
     return normalized
 

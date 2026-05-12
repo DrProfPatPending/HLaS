@@ -341,6 +341,7 @@ export default {
         const beatUpstream = beat && beat.Beat_Upstream ? beat.Beat_Upstream : '';
         const beatDownstream = beat && beat.Beat_Downstream ? beat.Beat_Downstream : '';
         return {
+          id: beat && beat.id ? beat.id : null,
           Beat_Name: beat && beat.Beat_Name ? beat.Beat_Name : '',
           Beat_ID: beat && beat.Beat_ID ? beat.Beat_ID : '',
           River: beat && beat.River ? beat.River : '',
@@ -626,6 +627,21 @@ export default {
       // Add rotation control
       L.control.rotate({ position: 'topright' }).addTo(this.fishingBeatMapInstance);
     },
+    async loadAndApplyBeatRotation(beatId) {
+      /**Load saved map rotation for a beat and apply it */
+      if (!beatId || !this.fishingBeatMapInstance) return;
+      try {
+        const response = await axios.get(`${API_BASE_URL}/beat/${beatId}/map-rotation`);
+        if (response.data && typeof response.data.rotation_bearing === 'number') {
+          this.fishingBeatMapInstance.setBearing(response.data.rotation_bearing);
+        }
+      } catch (error) {
+        // Rotation fetch failed, continue with default (0°)
+        if (this.fishingBeatMapInstance && this.fishingBeatMapInstance.setBearing) {
+          this.fishingBeatMapInstance.setBearing(0);
+        }
+      }
+    },
     async refreshFishingBeatMap() {
       const selectedBeat = this.selectedFishingBeat;
       if (!selectedBeat) {
@@ -790,6 +806,12 @@ export default {
       this.fishingBeatMapInstance.invalidateSize();
       const bounds = L.latLngBounds(allBoundsPoints);
       this.fishingBeatMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
+      
+      // Load and apply saved map rotation for this beat
+      if (selectedBeat && selectedBeat.id) {
+        await this.loadAndApplyBeatRotation(selectedBeat.id);
+      }
+      
       const poolLabel = `${poolMarkers.length} pool node${poolMarkers.length === 1 ? '' : 's'}`;
       const parkingLabel = `${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}`;
       const waypointLabel = `${waypointMarkers.length} waypoint${waypointMarkers.length === 1 ? '' : 's'}`;

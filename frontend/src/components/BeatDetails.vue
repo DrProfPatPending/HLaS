@@ -621,6 +621,7 @@ export default {
         const beatUpstream = beat && beat.Beat_Upstream ? beat.Beat_Upstream : '';
         const beatDownstream = beat && beat.Beat_Downstream ? beat.Beat_Downstream : '';
         return {
+          id: beat && beat.id ? beat.id : null,
           Beat_Name: beat && beat.Beat_Name ? beat.Beat_Name : '',
           Beat_ID: beat && beat.Beat_ID ? beat.Beat_ID : '',
           River: beat && beat.River ? beat.River : '',
@@ -1574,6 +1575,11 @@ export default {
       this.beatDetailsMapInstance.invalidateSize();
       const bounds = L.latLngBounds(allBoundsPoints);
       this.beatDetailsMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
+      
+      // Load and apply saved map rotation for this beat
+      if (selectedBeat && selectedBeat.id) {
+        await this.loadAndApplyBeatRotation(selectedBeat.id);
+      }
 
       const routeDesc = waypointMarkers.length > 0
         ? `route (${waypointMarkers.length} waypoint${waypointMarkers.length === 1 ? '' : 's'})`
@@ -1599,6 +1605,19 @@ export default {
           this.beatDetailsMapInstance.removeLayer(marker);
         }
       });
+    },
+    async loadAndApplyBeatRotation(beatId) {
+      if (!beatId || !this.beatDetailsMapInstance) return;
+      try {
+        const response = await axios.get(`${API_BASE_URL}/beat/${beatId}/map-rotation`);
+        if (response.data && typeof response.data.rotation_bearing === 'number') {
+          this.beatDetailsMapInstance.setBearing(response.data.rotation_bearing);
+        }
+      } catch (error) {
+        if (this.beatDetailsMapInstance && this.beatDetailsMapInstance.setBearing) {
+          this.beatDetailsMapInstance.setBearing(0);
+        }
+      }
     },
     destroyBeatDetailsMap() {
       this.clearBeatDetailsMapLayers();

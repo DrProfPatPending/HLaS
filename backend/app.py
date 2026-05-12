@@ -855,6 +855,7 @@ from routes import (
     create_role_blueprint,
 )
 from routes.backup_routes import create_backup_routes
+from routes.beat_rotation_routes import create_beat_rotation_blueprint
 
 
 def create_app():
@@ -938,6 +939,8 @@ def create_app():
     app_instance.register_blueprint(create_club_settings_blueprint(route_deps))
     from routes.mini_site_routes import create_mini_site_routes
     app_instance.register_blueprint(create_mini_site_routes(route_deps))
+    from routes.beat_rotation_routes import create_beat_rotation_blueprint
+    app_instance.register_blueprint(create_beat_rotation_blueprint(route_deps))
 
     # Register additional routes that work with app directly
     register_admin_app_users_route(app_instance)
