@@ -144,6 +144,7 @@
                 :class="{
                   'documents-title-cell': column.key === 'Title',
                   'documents-file-cell': column.key === 'File',
+                  'documents-actions-cell': column.key === 'Actions',
                 }"
                 :style="getColumnStyle('home_documents', column.key)"
               >
@@ -155,6 +156,11 @@
                   >
                     {{ doc.title || doc.fileName }}
                   </app-button>
+                </template>
+                <span v-else-if="column.key === 'File'">{{ doc.fileName }}</span>
+                <span v-else-if="column.key === 'Uploaded'">{{ formatNewsDate(doc.createdAt) }}</span>
+                <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
+                <template v-else-if="column.key === 'Actions'">
                   <div class="documents-actions-stack">
                     <app-button type="button" size="sm" class="documents-link-btn" @click="downloadDocument(doc)">Download</app-button>
                     <app-button
@@ -169,9 +175,6 @@
                     </app-button>
                   </div>
                 </template>
-                <span v-else-if="column.key === 'File'">{{ doc.fileName }}</span>
-                <span v-else-if="column.key === 'Uploaded'">{{ formatNewsDate(doc.createdAt) }}</span>
-                <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
               </td>
             </tr>
           </tbody>
@@ -259,6 +262,7 @@ export default {
       const cols = [
         { key: 'Title', label: 'Title' },
         { key: 'Size', label: 'Size' },
+        { key: 'Actions', label: 'Actions' },
       ];
       if (this.VerboseDebug) {
         cols.splice(1, 0, { key: 'File', label: 'File' });
@@ -393,6 +397,22 @@ export default {
       return fallbackColumns.filter(column => this.isColumnVisible(contextKey, column.key));
     },
     getColumnStyle(contextKey, columnKey) {
+      // First check if a width is specified in the widths configuration
+      const configuredWidth = this.fieldOrder?.widths?.[contextKey]?.[columnKey];
+      if (configuredWidth) {
+        const widthStr = String(configuredWidth).trim().toLowerCase();
+        
+        // Handle 'flex' - for now return empty and let CSS handle it
+        // In a future enhancement, this could calculate proportional widths
+        if (widthStr === 'flex' || widthStr === 'auto') {
+          return {};
+        }
+        
+        // Return the width value directly (e.g., '80px', '50%')
+        return { width: widthStr };
+      }
+      
+      // Fall back to minimum_widths if weight is not specified
       const rawMinWidth = this.fieldOrder?.minimum_widths?.[contextKey]?.[columnKey];
       const minWidth = Number(rawMinWidth);
       if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
@@ -714,13 +734,12 @@ export default {
 
 .home-documents-table th.documents-title-cell,
 .home-documents-table td.documents-title-cell {
-  width: 80%;
-  max-width: 80%;
+  text-align: left;
 }
-.home-documents-table th:last-child,
-.home-documents-table td:last-child {
-  width: 20%;
-  max-width: 20%;
+
+.home-documents-table th.documents-actions-cell,
+.home-documents-table td.documents-actions-cell {
+  text-align: center;
 }
 
 .home-documents-table thead th {
@@ -734,6 +753,9 @@ export default {
 
 .documents-actions-cell {
   white-space: normal;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .documents-actions-stack {

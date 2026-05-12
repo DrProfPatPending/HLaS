@@ -40,6 +40,8 @@
             <th>Field</th>
             <th>Display As</th>
             <th>Show Column</th>
+            <th>Min Width (px)</th>
+            <th>Width</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -65,6 +67,25 @@
                 />
                 Show
               </label>
+            </td>
+            <td class="field-order-width-cell">
+              <input
+                type="number"
+                class="admin-input"
+                :value="getMinWidth(fieldName)"
+                placeholder="auto"
+                min="0"
+                @input="setMinWidth(fieldName, $event.target.value)"
+              />
+            </td>
+            <td class="field-order-preferred-width-cell">
+              <input
+                type="text"
+                class="admin-input"
+                :value="getColumnWidth(fieldName)"
+                placeholder="flex"
+                @input="setColumnWidth(fieldName, $event.target.value)"
+              />
             </td>
             <td class="admin-actions-cell">
               <button type="button" :disabled="index === 0" @click="moveToTop(index)">Top</button>
@@ -122,6 +143,14 @@ export default {
     selectedDisplayNames() {
       const displayNames = this.fieldOrder?.display_names?.[this.selectedContext];
       return displayNames && typeof displayNames === 'object' ? displayNames : {};
+    },
+    selectedMinimumWidths() {
+      const widths = this.fieldOrder?.minimum_widths?.[this.selectedContext];
+      return widths && typeof widths === 'object' ? widths : {};
+    },
+    selectedColumnWidths() {
+      const widths = this.fieldOrder?.widths?.[this.selectedContext];
+      return widths && typeof widths === 'object' ? widths : {};
     },
   },
   mounted() {
@@ -189,6 +218,14 @@ export default {
       const configured = this.selectedDisplayNames?.[fieldName];
       return typeof configured === 'string' ? configured : '';
     },
+    getMinWidth(fieldName) {
+      const configured = this.selectedMinimumWidths?.[fieldName];
+      return Number.isFinite(configured) ? configured : '';
+    },
+    getColumnWidth(fieldName) {
+      const configured = this.selectedColumnWidths?.[fieldName];
+      return typeof configured === 'string' ? configured : '';
+    },
     setDisplayName(fieldName, displayName) {
       if (!this.selectedContext || !fieldName) return;
       const nextDisplayNamesForContext = {
@@ -207,6 +244,62 @@ export default {
         display_names: {
           ...(this.fieldOrder?.display_names || {}),
           [this.selectedContext]: nextDisplayNamesForContext,
+        },
+      };
+    },
+    setMinWidth(fieldName, widthValue) {
+      if (!this.selectedContext || !fieldName) return;
+      const nextMinWidthsForContext = {
+        ...(this.fieldOrder?.minimum_widths?.[this.selectedContext] || {}),
+      };
+
+      const value = String(widthValue || '').trim();
+      const numValue = Number(value);
+      
+      if (value === '' || !Number.isFinite(numValue) || numValue <= 0) {
+        delete nextMinWidthsForContext[fieldName];
+      } else {
+        nextMinWidthsForContext[fieldName] = numValue;
+      }
+
+      this.fieldOrder = {
+        ...this.fieldOrder,
+        minimum_widths: {
+          ...(this.fieldOrder?.minimum_widths || {}),
+          [this.selectedContext]: nextMinWidthsForContext,
+        },
+      };
+    },
+    setColumnWidth(fieldName, widthValue) {
+      if (!this.selectedContext || !fieldName) return;
+      const nextColumnWidthsForContext = {
+        ...(this.fieldOrder?.widths?.[this.selectedContext] || {}),
+      };
+
+      const value = String(widthValue || '').trim();
+      
+      // Accept: 'flex', 'auto', or pixel values like '120px', '120', '50%'
+      if (value === '') {
+        delete nextColumnWidthsForContext[fieldName];
+      } else if (value.toLowerCase() === 'flex' || value.toLowerCase() === 'auto') {
+        nextColumnWidthsForContext[fieldName] = value.toLowerCase();
+      } else if (/^\d+%?$/.test(value)) {
+        // Pure number or percentage
+        nextColumnWidthsForContext[fieldName] = /^\d+$/.test(value) ? `${value}px` : value;
+      } else if (/^\d+(px|rem|em|%)$/.test(value)) {
+        // Already has unit
+        nextColumnWidthsForContext[fieldName] = value;
+      } else {
+        // Invalid, remove it
+        delete nextColumnWidthsForContext[fieldName];
+        return;
+      }
+
+      this.fieldOrder = {
+        ...this.fieldOrder,
+        widths: {
+          ...(this.fieldOrder?.widths || {}),
+          [this.selectedContext]: nextColumnWidthsForContext,
         },
       };
     },
@@ -284,5 +377,13 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.field-order-width-cell {
+  width: 120px;
+}
+
+.field-order-preferred-width-cell {
+  width: 130px;
 }
 </style>

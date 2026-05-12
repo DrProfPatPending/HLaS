@@ -18,7 +18,7 @@
       <table class="member-table">
         <thead>
           <tr>
-            <th v-for="field in orderedMemberFields" :key="field">
+            <th v-for="field in orderedMemberFields" :key="field" :style="getColumnStyle('membership_admin', field)">
               <div>
                 <span>{{ getFieldDisplayName(field) }}</span>
                 <span
@@ -48,7 +48,7 @@
         </thead>
         <tbody>
           <tr v-for="member in members" :key="member.id || member.ID || member.Number">
-            <td v-for="field in orderedMemberFields" :key="field">
+            <td v-for="field in orderedMemberFields" :key="field" :style="getColumnStyle('membership_admin', field)">
               <span v-if="field === 'Members_Name' && member[field]">
                 <a href="#" class="member-link" @click.prevent="openMemberEdit(member)">
                   {{ member[field] }}
@@ -214,6 +214,14 @@ export default {
       const configured = fieldOrderConfig.order?.show_columns?.membership_admin;
       return configured && typeof configured === 'object' ? configured : {};
     },
+    membershipMinimumWidths() {
+      const configured = fieldOrderConfig.order?.minimum_widths?.membership_admin;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    membershipWidths() {
+      const configured = fieldOrderConfig.order?.widths?.membership_admin;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
     orderedMemberFields() {
       const configured = fieldOrderConfig.order['membership_admin'];
       if (fieldOrderConfig.loaded && Array.isArray(configured) && configured.length) {
@@ -271,6 +279,27 @@ export default {
         return getExpiryDateStyle(value);
       }
       return {};
+    },
+    getColumnStyle(contextKey, columnKey) {
+      // First check if a width is specified in the widths configuration
+      const configuredWidth = this.membershipWidths?.[columnKey];
+      if (configuredWidth) {
+        const widthStr = String(configuredWidth).trim().toLowerCase();
+        
+        // Handle 'flex' - return empty and let CSS handle it
+        if (widthStr === 'flex' || widthStr === 'auto') {
+          return {};
+        }
+        
+        // Return the width value directly (e.g., '80px', '50%')
+        return { width: widthStr };
+      }
+      
+      // Fall back to minimum_widths if width is not specified
+      const rawMinWidth = this.membershipMinimumWidths?.[columnKey];
+      const minWidth = Number(rawMinWidth);
+      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
+      return { minWidth: `${minWidth}px` };
     },
     getExpiryDateStyle,
     isFieldVisible(field) {

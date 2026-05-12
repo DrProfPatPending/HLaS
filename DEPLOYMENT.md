@@ -224,10 +224,41 @@ Some deployments may include Alembic database schema migrations:
    - If no filters are provided, exports all members for the scoped club
    - Requires `member.club.list`
 
-- **Field Order Display Labels:**
-   - Field-order config now supports `display_names[context][field]`
-   - `Display As` values are editable in Admin Field Order UI and persisted with existing field-order payload
-   - Membership Admin now renders column headers/filter placeholders using `display_names.membership_admin`
+- **Field Order Configuration:**
+   - Admin UI provides comprehensive table column management at `/admin/` → Field Order tab
+   - Each context (e.g., `home_documents`, `fishing_beats`) can be configured independently
+   - Editable properties per column:
+     - **Display As:** Custom header label (blank = use field name)
+     - **Show Column:** Toggle column visibility
+     - **Min Width:** Minimum pixel width constraint (fallback constraint)
+     - **Width:** Explicit width setting or flexible sizing:
+       - Pixel values: `80px` (or just `80`)
+       - Percentages: `50%`
+       - **`flex` or `auto`:** Flexible column that grows to fill remaining space
+       - Blank: Use Min Width or browser default
+   - Width priority: explicit Width > Min Width > browser default
+   - Example use case: set Size column to `80px`, Actions to `120px`, Title to `flex`
+   - Configure via Admin UI: `/admin/field-order`
+   - Configuration structure in `field_order.json`:
+     ```json
+     {
+       "home_documents": ["Title", "Size", "Actions"],
+       "widths": {
+         "home_documents": {
+           "Title": "flex",
+           "Size": "80px",
+           "Actions": "120px"
+         }
+       },
+       "minimum_widths": {
+         "home_documents": {
+           "Title": 180,
+           "Size": 80,
+           "Actions": 120
+         }
+       }
+     }
+     ```
 
 - **Club Mini Site API Endpoints:**
    - `GET /mini-site?club=<SHORT_NAME>` for loading club mini site configuration (authenticated, requires `club.read`)

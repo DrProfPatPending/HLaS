@@ -51,10 +51,10 @@
       <table class="newsletter-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Update</th>
-            <th>Status</th>
+            <th :style="getColumnStyle('news_updates', 'Date')">Date</th>
+            <th :style="getColumnStyle('news_updates', 'Category')">Category</th>
+            <th :style="getColumnStyle('news_updates', 'Update')">Update</th>
+            <th :style="getColumnStyle('news_updates', 'Status')">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -65,10 +65,10 @@
             <td colspan="4">No posts yet.</td>
           </tr>
           <tr v-else v-for="post in newsUpdates" :key="post.id">
-            <td>{{ formatNewsDate(post.date) }}</td>
-            <td>{{ post.category }}</td>
-            <td>{{ post.update }}</td>
-            <td>{{ post.status }}</td>
+            <td :style="getColumnStyle('news_updates', 'Date')">{{ formatNewsDate(post.date) }}</td>
+            <td :style="getColumnStyle('news_updates', 'Category')">{{ post.category }}</td>
+            <td :style="getColumnStyle('news_updates', 'Update')">{{ post.update }}</td>
+            <td :style="getColumnStyle('news_updates', 'Status')">{{ post.status }}</td>
           </tr>
         </tbody>
       </table>
@@ -427,6 +427,14 @@ export default {
       const sample = this.newsletterMembers[0] || {};
       return Object.keys(sample);
     },
+    newsUpdatesMinimumWidths() {
+      const configured = fieldOrderConfig.order?.minimum_widths?.news_updates;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    newsUpdatesWidths() {
+      const configured = fieldOrderConfig.order?.widths?.news_updates;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
   },
   created() {
     loadFieldOrderConfig();
@@ -448,6 +456,27 @@ export default {
     formatNewsDate(value) {
       const formatted = formatConfiguredDate(value, 'Date');
       return formatted || value;
+    },
+    getColumnStyle(contextKey, columnKey) {
+      // First check if a width is specified in the widths configuration
+      const configuredWidth = this.newsUpdatesWidths?.[columnKey];
+      if (configuredWidth) {
+        const widthStr = String(configuredWidth).trim().toLowerCase();
+        
+        // Handle 'flex' - return empty and let CSS handle it
+        if (widthStr === 'flex' || widthStr === 'auto') {
+          return {};
+        }
+        
+        // Return the width value directly (e.g., '80px', '50%')
+        return { width: widthStr };
+      }
+      
+      // Fall back to minimum_widths if width is not specified
+      const rawMinWidth = this.newsUpdatesMinimumWidths?.[columnKey];
+      const minWidth = Number(rawMinWidth);
+      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
+      return { minWidth: `${minWidth}px` };
     },
     fetchNewsUpdates() {
       this.newsUpdatesLoading = true;

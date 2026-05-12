@@ -259,28 +259,54 @@ Permissions:
 
 - Read/export: `member.club.list` (same gate used for Membership Admin table access)
 
-### Field Order `Display As`
+### Field Order Configuration
 
-The Admin Field Order page now supports per-field display label customization.
+The Admin Field Order page provides comprehensive control over table display and column sizing:
 
-Current behavior:
+**Editable fields per column:**
 
-- New `Display As` editable column is shown for each field in each context.
-- `Display As` values are stored in `field_order.display_names[context][field]`.
-- Leaving `Display As` blank falls back to the original field name.
-- As an initial rollout, the Membership Admin table uses `display_names.membership_admin` for:
-   - table column headers
-   - filter input placeholders
+- **Field Order:** Reorder columns using Top/↑/↓/Bottom buttons
+- **Display As:** Custom label for column header (defaults to field name if blank)
+- **Show Column:** Toggle visibility of the column
+- **Min Width (px):** Minimum pixel width constraint (fallback if no explicit width set)
+- **Width:** Fixed width or flexible sizing
+  - Enter pixel value (e.g., `120px` or just `120`)
+  - Enter percentage (e.g., `50%`)
+  - Enter `flex` or `auto` for flexible columns that grow to fill remaining space
+  - Leave blank to use Min Width or default behavior
 
-Backend routes:
+**Width configuration pattern:**
 
-- `GET /admin/field-order`
-- `PUT /admin/field-order`
+The system uses a priority-based approach:
+1. If `Width` is explicitly set → use that value
+2. If `Width` is `flex` → column grows to fill available space
+3. If `Min Width` is set → use as minimum constraint only
+4. Otherwise → use browser default
 
-Persistence behavior:
+**Example configuration** (home_documents table):
+```json
+{
+  "home_documents": ["Title", "Size", "Actions"],
+  "widths": {
+    "home_documents": {
+      "Title": "flex",
+      "Size": "80px",
+      "Actions": "120px"
+    }
+  }
+}
+```
+This creates a layout where:
+- **Title**  column is flexible and takes remaining space
+- **Size** column stays fixed at 80px
+- **Actions** column stays fixed at 120px
 
-- PostgreSQL mode: stored in `app_settings` with `scope='club:<SHORT_NAME>'` and `key='club_settings'`
-- Fallback: `backend/club_settings.json`
+**Persistence:**
+
+- Admin UI: `Admin` tab → `Field Order` button
+- Editable contexts include: `membership_admin`, `fishing_beats`, `beat_details`, `home_news`, `home_documents`
+- Changes are persisted via `/admin/field-order` endpoint
+- Storage: PostgreSQL (`app_settings` with `scope='global'`) or fallback to `backend/field_order.json`
 
 ### Beat Details page
 

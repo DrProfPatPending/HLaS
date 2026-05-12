@@ -20,6 +20,9 @@
   "home_documents": [
     "Title", "File", "Uploaded", "Size", "Actions"
   ],
+  "news_updates": [
+    "Date", "Category", "Update", "Status"
+  ],
   "minimum_widths": {
     "fishing_beats": {
       "Beat_ID": 50,
@@ -42,6 +45,18 @@
       "Uploaded": 120,
       "Size": 80,
       "Actions": 120
+    },
+    "membership_admin": {
+      "Number": 50,
+      "Members_Name": 120,
+      "Phone": 100,
+      "E_Mail": 150
+    },
+    "news_updates": {
+      "Date": 110,
+      "Category": 120,
+      "Update": 260,
+      "Status": 90
     }
   },
   "show_columns": {
@@ -79,6 +94,38 @@
       "Uploaded": true,
       "Size": true,
       "Actions": true
+    },
+    "membership_admin": {
+      "Number": true,
+      "Members_Name": true,
+      "Phone": true,
+      "E_Mail": true,
+      "Member_Type": true,
+      "Paid_Up_2026": true
+    },
+    "news_updates": {
+      "Date": true,
+      "Category": true,
+      "Update": true,
+      "Status": true
+    }
+  },
+  "widths": {
+    "home_documents": {
+      "Title": "flex",
+      "Size": "80px",
+      "Actions": "120px"
+    },
+    "membership_admin": {
+      "Members_Name": "flex",
+      "Number": "80px",
+      "E_Mail": "200px"
+    },
+    "news_updates": {
+      "Update": "flex",
+      "Date": "110px",
+      "Category": "120px",
+      "Status": "90px"
     }
   }
 }

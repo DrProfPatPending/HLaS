@@ -305,6 +305,10 @@ export default {
       const configured = this.fieldOrder?.minimum_widths?.fishing_beats;
       return configured && typeof configured === 'object' ? configured : {};
     },
+    fishingBeatsWidths() {
+      const configured = this.fieldOrder?.widths?.fishing_beats;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
     orderedDetailColumns() {
       const detailColumnMap = {
         Beat_ID: { key: 'Beat_ID', label: 'Beat ID' },
@@ -447,9 +451,20 @@ export default {
       return '50px';
     },
     columnMinWidthStyle(columnKey) {
-      const configuredWidth = this.fishingBeatsMinWidths?.[columnKey];
+      // First check if a width is specified
+      const configuredWidth = this.fishingBeatsWidths?.[columnKey];
+      if (configuredWidth) {
+        const widthStr = String(configuredWidth).trim().toLowerCase();
+        if (widthStr === 'flex' || widthStr === 'auto') {
+          return {};
+        }
+        return { width: widthStr };
+      }
+      
+      // Fall back to minimum_widths
+      const minWidthConfig = this.fishingBeatsMinWidths?.[columnKey];
       return {
-        minWidth: this.normalizeColumnMinWidth(configuredWidth),
+        minWidth: this.normalizeColumnMinWidth(minWidthConfig),
       };
     },
     loadFieldOrder() {
