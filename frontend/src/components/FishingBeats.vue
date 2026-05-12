@@ -203,9 +203,40 @@
         </table>
         <div class="fishing-beat-map-wrap">
           <div ref="fishingBeatMap" class="fishing-beat-map"></div>
+          <div class="fishing-beat-map-controls">
+            <button
+              v-if="fishingBeatWaypointsCount > 0"
+              type="button"
+              class="fishing-beat-waypoint-toggle"
+              @click="toggleFishingBeatWaypoints"
+            >{{ showFishingBeatWaypoints ? 'Hide Waypoints' : 'Show Waypoints' }}</button>
+          </div>
           <div v-if="fishingBeatMapStatus" class="fishing-beat-map-status">
             {{ fishingBeatMapStatus }}
           </div>
+        </div>
+        <div v-if="fishingBeatDebugWaypoints.length > 0" class="fishing-beat-waypoints-debug">
+          <h4>Waypoints (Debug)</h4>
+          <table class="fishing-beat-waypoints-table">
+            <thead>
+              <tr>
+                <th>Seq</th>
+                <th>W3W</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(wp, index) in fishingBeatDebugWaypoints" :key="`waypoint-debug-${index}`">
+                <td>{{ wp.Sequence }}</td>
+                <td>{{ wp.W3W }}</td>
+                <td>{{ wp.Latitude }}</td>
+                <td>{{ wp.Longitude }}</td>
+                <td>{{ wp.Description }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -235,6 +266,10 @@ export default {
       fishingBeatMapLayers: [],
       fishingBeatMapStatus: '',
       fishingBeatMapRequestId: 0,
+      fishingBeatWaypointMarkers: [],
+      showFishingBeatWaypoints: false,
+      fishingBeatWaypointsCount: 0,
+      fishingBeatDebugWaypoints: [],
     };
   },
   computed: {
@@ -325,6 +360,7 @@ export default {
                 }))
             : [],
           Pools: this.normalizePoolsForDisplay(beat && beat.Pools),
+          Waypoints: Array.isArray(beat && beat.Waypoints) ? beat.Waypoints : [],
           Beat_Description: beat && beat.Beat_Description ? beat.Beat_Description : '',
           Detailed_Description: beat && beat.Detailed_Description ? beat.Detailed_Description : '',
         };
@@ -548,7 +584,15 @@ export default {
           this.fishingBeatMapInstance.removeLayer(layer);
         }
       });
+      if (Array.isArray(this.fishingBeatWaypointMarkers)) {
+        this.fishingBeatWaypointMarkers.forEach(marker => {
+          if (marker && this.fishingBeatMapInstance.hasLayer(marker)) {
+            this.fishingBeatMapInstance.removeLayer(marker);
+          }
+        });
+      }
       this.fishingBeatMapLayers = [];
+      this.fishingBeatWaypointMarkers = [];
     },
     ensureFishingBeatMap() {
       if (this.fishingBeatMapInstance) return;
@@ -611,7 +655,6 @@ export default {
         : [];
 
       const poolMarkers = [];
-      const poolRoutePoints = [];
       for (let i = 0; i < sortedPools.length; i += 1) {
         const pool = sortedPools[i];
         const poolCoords = await this.resolveBeatPointCoordinates(
@@ -622,7 +665,6 @@ export default {
         if (!poolCoords) continue;
 
         const poolLatLng = L.latLng(poolCoords.lat, poolCoords.lng);
-        poolRoutePoints.push(poolLatLng);
         allBoundsPoints.push(poolLatLng);
 
         const sequenceLabel = pool?.Sequence || String(i + 1);
@@ -652,10 +694,6 @@ export default {
       const downstreamMarker = L.circleMarker(downstreamLatLng, {
         radius: 7, color: '#d62728', fillColor: '#d62728', fillOpacity: 0.8,
       }).bindPopup('Downstream limit');
-
-      const boundaryLine = L.polyline([downstreamLatLng, ...poolRoutePoints, upstreamLatLng], {
-        color: '#2f2f2f', weight: 3,
-      });
 
       const parkingLayers = [];
       const parkingLocations = Array.isArray(selectedBeat.Parking_Locations)
@@ -689,25 +727,73 @@ export default {
         parkingLayers.push(parkingMarker);
       });
 
+      // Render waypoints
+      const sortedWaypoints = Array.isArray(selectedBeat.Waypoints)
+        ? [...selectedBeat.Waypoints].sort((a, b) => Number.parseInt(a.Sequence, 10) - Number.parseInt(b.Sequence, 10))
+        : [];
+      const waypointMarkers = [];
+      const waypointRouteLatLngs = [];
+      for (let i = 0; i < sortedWaypoints.length; i += 1) {
+        const wp = sortedWaypoints[i];
+        const wpCoords = await this.resolveBeatPointCoordinates(wp?.W3W, wp?.Latitude, wp?.Longitude);
+        if (requestId !== this.fishingBeatMapRequestId) return;
+        if (!wpCoords) continue;
+        const wpLatLng = L.latLng(wpCoords.lat, wpCoords.lng);
+        waypointRouteLatLngs.push(wpLatLng);
+        allBoundsPoints.push(wpLatLng);
+
+        const seqLabel = wp?.Sequence || String(i + 1);
+        let wpPopup = `Waypoint ${seqLabel}`;
+        if (wp?.Description) wpPopup += `<br>${wp.Description}`;
+        waypointMarkers.push(
+          L.circleMarker(wpLatLng, {
+            radius: 4, color: '#888', fillColor: '#bbb', fillOpacity: 0.9, weight: 1,
+          }).bindPopup(wpPopup)
+        );
+      }
+
+      let waypointRoutePolyline = null;
+      if (waypointRouteLatLngs.length >= 2) {
+        waypointRoutePolyline = L.polyline(waypointRouteLatLngs, { color: '#1a6ea0', weight: 3 });
+      }
+
       upstreamMarker.addTo(this.fishingBeatMapInstance);
       downstreamMarker.addTo(this.fishingBeatMapInstance);
-      boundaryLine.addTo(this.fishingBeatMapInstance);
-      this.fishingBeatMapLayers = [upstreamMarker, downstreamMarker, boundaryLine, ...poolMarkers, ...parkingLayers];
+      if (waypointRoutePolyline) waypointRoutePolyline.addTo(this.fishingBeatMapInstance);
+      if (this.showFishingBeatWaypoints) {
+        waypointMarkers.forEach(marker => marker.addTo(this.fishingBeatMapInstance));
+      }
+      this.fishingBeatWaypointMarkers = waypointMarkers;
+      this.fishingBeatWaypointsCount = waypointMarkers.length;
+      this.fishingBeatDebugWaypoints = sortedWaypoints;
+      this.fishingBeatMapLayers = [upstreamMarker, downstreamMarker, waypointRoutePolyline, ...poolMarkers, ...parkingLayers].filter(Boolean);
 
       this.fishingBeatMapInstance.invalidateSize();
       const bounds = L.latLngBounds(allBoundsPoints);
       this.fishingBeatMapInstance.fitBounds(bounds.pad(0.2), { maxZoom: 16 });
       const poolLabel = `${poolMarkers.length} pool node${poolMarkers.length === 1 ? '' : 's'}`;
       const parkingLabel = `${parkingLayers.length} parking marker${parkingLayers.length === 1 ? '' : 's'}`;
-      if (poolMarkers.length && parkingLayers.length) {
-        this.fishingBeatMapStatus = `Showing route limits with ${poolLabel} and ${parkingLabel}.`;
-      } else if (poolMarkers.length) {
-        this.fishingBeatMapStatus = `Showing route limits with ${poolLabel}.`;
-      } else if (parkingLayers.length) {
-        this.fishingBeatMapStatus = `Showing upstream/downstream limits and ${parkingLabel}.`;
-      } else {
-        this.fishingBeatMapStatus = 'Showing upstream and downstream limits.';
+      const waypointLabel = `${waypointMarkers.length} waypoint${waypointMarkers.length === 1 ? '' : 's'}`;
+      let statusMessage = 'Showing';
+      if (waypointMarkers.length) statusMessage += ` route (${waypointLabel})`;
+      if (poolMarkers.length) statusMessage += ` with ${poolLabel}`;
+      if (parkingLayers.length) statusMessage += ` and ${parkingLabel}`;
+      if (!waypointMarkers.length && !poolMarkers.length && !parkingLayers.length) {
+        statusMessage += ' upstream and downstream limits';
       }
+      statusMessage += '.';
+      this.fishingBeatMapStatus = statusMessage;
+    },
+    toggleFishingBeatWaypoints() {
+      this.showFishingBeatWaypoints = !this.showFishingBeatWaypoints;
+      if (!this.fishingBeatMapInstance) return;
+      this.fishingBeatWaypointMarkers.forEach(marker => {
+        if (this.showFishingBeatWaypoints) {
+          marker.addTo(this.fishingBeatMapInstance);
+        } else {
+          this.fishingBeatMapInstance.removeLayer(marker);
+        }
+      });
     },
     destroyFishingBeatMap() {
       this.clearFishingBeatMapLayers();
@@ -759,5 +845,66 @@ export default {
   font-weight: 700;
   font-size: 11px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.fishing-beat-map-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.fishing-beat-waypoint-toggle {
+  padding: 4px 10px;
+  font-size: 10pt;
+  background: #f0f4f8;
+  border: 1px solid #aac;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.fishing-beat-waypoint-toggle:hover {
+  background: #dde8f5;
+}
+
+.fishing-beat-waypoints-debug {
+  margin-top: 12px;
+  padding: 8px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.fishing-beat-waypoints-debug h4 {
+  margin: 0 0 8px 0;
+  font-size: 10pt;
+  color: #666;
+}
+
+.fishing-beat-waypoints-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  background: white;
+}
+
+.fishing-beat-waypoints-table thead {
+  background: #e8e8e8;
+  font-weight: bold;
+}
+
+.fishing-beat-waypoints-table th,
+.fishing-beat-waypoints-table td {
+  border: 1px solid #ddd;
+  padding: 4px 6px;
+  text-align: left;
+}
+
+.fishing-beat-waypoints-table tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.fishing-beat-waypoints-table tbody tr:hover {
+  background: #f0e8ff;
 }
 </style>

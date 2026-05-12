@@ -671,6 +671,123 @@ def _register_infrastructure_hooks(app_instance):
         return response
 
 
+def _register_logos_sync_startup(app_instance):
+    """Register startup hook to sync club logos and backgrounds from filesystem to PostgreSQL.
+    
+    This runs on the first request to ensure PostgreSQL club_logos/backgrounds tables
+    are in sync with the filesystem. Idempotent and only runs if PostgreSQL is enabled.
+    """
+    from db.postgres_backend import is_postgres_writes_enabled
+    import threading
+    
+    # Sync flag to prevent multiple concurrent syncs
+    _logos_sync_done = {'synced': False}
+    
+    @app_instance.before_request
+    def sync_logos_on_first_request():
+        """Sync logos and backgrounds from filesystem to PostgreSQL on first request"""
+        # Skip if already synced
+        if _logos_sync_done['synced']:
+            return
+        
+        # Skip if PostgreSQL writes not enabled
+        if not is_postgres_writes_enabled():
+            return
+        
+        try:
+            from db.postgres_backend import get_postgres_backend
+            from sqlalchemy.sql import text as sql_text
+            
+            # Run sync in background thread to avoid blocking the request
+            def background_sync():
+                try:
+                    backend = get_postgres_backend()
+                    if not backend or not backend.get('engine'):
+                        app_instance.logger.warning('PostgreSQL not available for logo sync')
+                        return
+                    
+                    engine = backend['engine']
+                    clubs_config = load_clubs_config()
+                    club_short_names = {str(club.get('shortName', '')).strip() 
+                                       for club in clubs_config 
+                                       if isinstance(club, dict)}
+                    
+                    logo_dir = CLUB_LOGOS_DIR
+                    if not os.path.exists(logo_dir):
+                        app_instance.logger.warning(f'Logo directory not found: {logo_dir}')
+                        return
+                    
+                    with engine.begin() as conn:
+                        logos_synced = 0
+                        backgrounds_synced = 0
+                        
+                        for short_name in club_short_names:
+                            # Sync logo
+                            logo_path = os.path.join(logo_dir, f'{short_name}.png')
+                            if os.path.isfile(logo_path):
+                                try:
+                                    with open(logo_path, 'rb') as f:
+                                        image_data = f.read()
+                                    mime_type = 'image/png'
+                                    
+                                    # Upsert logo
+                                    conn.execute(sql_text('''
+                                        INSERT INTO club_logos (club_short_name, image_data, mime_type, updated_at)
+                                        VALUES (:club_short_name, :image_data, :mime_type, now())
+                                        ON CONFLICT (club_short_name) DO UPDATE SET
+                                            image_data = EXCLUDED.image_data,
+                                            mime_type = EXCLUDED.mime_type,
+                                            updated_at = now()
+                                    '''), {
+                                        'club_short_name': short_name,
+                                        'image_data': image_data,
+                                        'mime_type': mime_type
+                                    })
+                                    logos_synced += 1
+                                except Exception as e:
+                                    app_instance.logger.warning(f'Error syncing logo for {short_name}: {e}')
+                            
+                            # Sync background
+                            bg_path = os.path.join(logo_dir, f'{short_name}_background.png')
+                            if os.path.isfile(bg_path):
+                                try:
+                                    with open(bg_path, 'rb') as f:
+                                        image_data = f.read()
+                                    mime_type = 'image/png'
+                                    
+                                    # Upsert background
+                                    conn.execute(sql_text('''
+                                        INSERT INTO club_backgrounds (club_short_name, image_data, mime_type, updated_at)
+                                        VALUES (:club_short_name, :image_data, :mime_type, now())
+                                        ON CONFLICT (club_short_name) DO UPDATE SET
+                                            image_data = EXCLUDED.image_data,
+                                            mime_type = EXCLUDED.mime_type,
+                                            updated_at = now()
+                                    '''), {
+                                        'club_short_name': short_name,
+                                        'image_data': image_data,
+                                        'mime_type': mime_type
+                                    })
+                                    backgrounds_synced += 1
+                                except Exception as e:
+                                    app_instance.logger.warning(f'Error syncing background for {short_name}: {e}')
+                        
+                        if logos_synced > 0 or backgrounds_synced > 0:
+                            app_instance.logger.info(f'Logos sync completed: {logos_synced} logos, {backgrounds_synced} backgrounds')
+                except Exception as exc:
+                    app_instance.logger.warning(f'Logos sync error on startup: {exc}')
+                finally:
+                    _logos_sync_done['synced'] = True
+            
+            # Only run if not already done
+            if not _logos_sync_done['synced']:
+                _logos_sync_done['synced'] = True  # Mark done immediately to prevent race
+                sync_thread = threading.Thread(target=background_sync, daemon=True)
+                sync_thread.start()
+        except Exception as exc:
+            app_instance.logger.warning(f'Logos sync setup error: {exc}')
+
+
 def _register_beats_sync_startup(app_instance):
     """Register startup hook to sync beats from clubs.config.json to PostgreSQL.
     
@@ -832,6 +949,9 @@ def create_app():
 
     # Register startup hook to sync beats from JSON to PostgreSQL
     _register_beats_sync_startup(app_instance)
+    
+    # Register startup hook to sync logos and backgrounds from filesystem to PostgreSQL
+    _register_logos_sync_startup(app_instance)
 
     return app_instance
 

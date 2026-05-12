@@ -9,14 +9,13 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            <img :src="logoSrc" :alt="`${loggedInClub} logo`" class="club-logo" @error="onClubLogoError" />
+            <img :src="logoSrc" :alt="`${loggedInClub} logo`" class="club-logo" />
           </a>
           <img
             v-else-if="loggedIn"
             :src="logoSrc"
             :alt="`${loggedInClub} logo`"
             class="club-logo"
-            @error="onClubLogoError"
           />
         </td>
         <td v-if="loggedIn" class="login-info-cell align-left">
@@ -56,9 +55,6 @@ export default {
     logoSrc: () => clubLogoSrc.value,
   },
   methods: {
-    onClubLogoError() {
-      store.clubLogoLoadFailed = true;
-    },
     logout,
   },
 };

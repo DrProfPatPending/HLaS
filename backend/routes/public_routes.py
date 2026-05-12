@@ -1,11 +1,12 @@
 import json
 import mimetypes
 import os
+from io import BytesIO
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import urlopen
 
-from flask import Blueprint, Response, current_app, jsonify, request, send_from_directory
+from flask import Blueprint, Response, current_app, jsonify, request, send_file, send_from_directory
 from sqlalchemy import and_, select
 
 from db_models import club_logos, club_backgrounds
@@ -289,63 +290,107 @@ def create_public_blueprint(deps):
         import logging
         logger = logging.getLogger("club_logo")
         logger.debug(f"Request for club logo: {short_name}")
+        
+        # Fallback path for filesystem logos
+        logo_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'club_logos')
+        if not os.path.exists(logo_dir):
+            logo_dir = os.path.join(os.path.dirname(__file__), '..', 'club_logos')
+        if not os.path.exists(logo_dir):
+            logo_dir = '/app/club_logos'
+        
+        logo_path = os.path.join(logo_dir, f'{short_name}.png')
+        
+        # Try database first, then filesystem
         db_engine = deps.get('db_engine')
         logger.debug(f"db_engine from deps: {db_engine}")
         if db_engine is None:
             db_engine = getattr(current_app, 'db_engine', None)
             logger.debug(f"db_engine from current_app: {db_engine}")
-        if db_engine is None:
-            logger.error("Database engine not available")
-            return jsonify({'error': 'Database engine not available'}), 500
-        try:
-            with db_engine.connect() as conn:
-                stmt = select(
-                    club_logos.c.image_data,
-                    club_logos.c.mime_type
-                ).where(club_logos.c.club_short_name == short_name)
-                logger.debug(f"SQL statement: {stmt}")
-                result = conn.execute(stmt).first()
-                logger.debug(f"Query result: {result}")
-                if not result:
-                    logger.warning(f"Logo not found for club: {short_name}")
-                    return jsonify({'error': 'Logo not found'}), 404
-                image_data, mime_type = result
-                logger.debug(f"image_data type: {type(image_data)}, mime_type: {mime_type}")
-                return Response(image_data, mimetype=mime_type)
-        except Exception as e:
-            logger.exception(f"Exception in club_logo endpoint for club {short_name}: {e}")
-            return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+        
+        # Try database
+        if db_engine is not None:
+            try:
+                with db_engine.connect() as conn:
+                    stmt = select(
+                        club_logos.c.image_data,
+                        club_logos.c.mime_type
+                    ).where(club_logos.c.club_short_name == short_name)
+                    logger.debug(f"SQL statement: {stmt}")
+                    result = conn.execute(stmt).first()
+                    logger.debug(f"Query result: {result}")
+                    if result:
+                        image_data, mime_type = result
+                        logger.debug(f"image_data type: {type(image_data)}, mime_type: {mime_type}")
+                        return send_file(BytesIO(image_data), mimetype=mime_type)
+            except Exception as e:
+                logger.debug(f"Database lookup failed, trying filesystem: {e}")
+        
+        # Fall back to filesystem
+        if os.path.isfile(logo_path):
+            try:
+                with open(logo_path, 'rb') as f:
+                    image_data = f.read()
+                mime_type = 'image/png'
+                logger.debug(f"Loaded logo from filesystem: {logo_path}")
+                return send_file(BytesIO(image_data), mimetype=mime_type)
+            except Exception as e:
+                logger.error(f"Error reading logo file: {e}")
+        
+        logger.warning(f"Logo not found for club: {short_name}")
+        return jsonify({'error': 'Logo not found'}), 404
 
     @bp.route('/club_background/<short_name>', methods=['GET'])
     def club_background(short_name):
         import logging
         logger = logging.getLogger("club_background")
         logger.debug(f"Request for club background: {short_name}")
+        
+        # Fallback path for filesystem backgrounds
+        logo_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'club_logos')
+        if not os.path.exists(logo_dir):
+            logo_dir = os.path.join(os.path.dirname(__file__), '..', 'club_logos')
+        if not os.path.exists(logo_dir):
+            logo_dir = '/app/club_logos'
+        
+        bg_path = os.path.join(logo_dir, f'{short_name}_background.png')
+        
+        # Try database first, then filesystem
         db_engine = deps.get('db_engine')
         logger.debug(f"db_engine from deps: {db_engine}")
         if db_engine is None:
             db_engine = getattr(current_app, 'db_engine', None)
             logger.debug(f"db_engine from current_app: {db_engine}")
-        if db_engine is None:
-            logger.error("Database engine not available")
-            return jsonify({'error': 'Database engine not available'}), 500
-        try:
-            with db_engine.connect() as conn:
-                stmt = select(
-                    club_backgrounds.c.image_data,
-                    club_backgrounds.c.mime_type
-                ).where(club_backgrounds.c.club_short_name == short_name)
-                logger.debug(f"SQL statement: {stmt}")
-                result = conn.execute(stmt).first()
-                logger.debug(f"Query result: {result}")
-                if not result:
-                    logger.warning(f"Background not found for club: {short_name}")
-                    return jsonify({'error': 'Background not found'}), 404
-                image_data, mime_type = result
-                logger.debug(f"image_data type: {type(image_data)}, mime_type: {mime_type}")
-                return Response(image_data, mimetype=mime_type)
-        except Exception as e:
-            logger.exception(f"Exception in club_background endpoint for club {short_name}: {e}")
-            return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+        
+        # Try database
+        if db_engine is not None:
+            try:
+                with db_engine.connect() as conn:
+                    stmt = select(
+                        club_backgrounds.c.image_data,
+                        club_backgrounds.c.mime_type
+                    ).where(club_backgrounds.c.club_short_name == short_name)
+                    logger.debug(f"SQL statement: {stmt}")
+                    result = conn.execute(stmt).first()
+                    logger.debug(f"Query result: {result}")
+                    if result:
+                        image_data, mime_type = result
+                        logger.debug(f"image_data type: {type(image_data)}, mime_type: {mime_type}")
+                        return send_file(BytesIO(image_data), mimetype=mime_type)
+            except Exception as e:
+                logger.debug(f"Database lookup failed, trying filesystem: {e}")
+        
+        # Fall back to filesystem
+        if os.path.isfile(bg_path):
+            try:
+                with open(bg_path, 'rb') as f:
+                    image_data = f.read()
+                mime_type = 'image/png'
+                logger.debug(f"Loaded background from filesystem: {bg_path}")
+                return send_file(BytesIO(image_data), mimetype=mime_type)
+            except Exception as e:
+                logger.error(f"Error reading background file: {e}")
+        
+        logger.warning(f"Background not found for club: {short_name}")
+        return jsonify({'error': 'Background not found'}), 404
 
     return bp

@@ -75,7 +75,6 @@ export const store = reactive({
   // Session identity
   loggedInUsername: '',
   loggedInClub: DEFAULT_LOGIN_CLUB,
-  clubLogoLoadFailed: false,
 
   // Login form
   selectedClub: DEFAULT_LOGIN_CLUB,
@@ -195,18 +194,15 @@ export const clubDetails = computed(() => {
 });
 
 export const clubLogoSrc = computed(() => {
-  if (clubDetails.value.logoUrl && !store.clubLogoLoadFailed) {
+  if (clubDetails.value.logoUrl) {
     if (/^https?:\/\//i.test(clubDetails.value.logoUrl)) {
       return clubDetails.value.logoUrl;
     }
     const url = clubDetails.value.logoUrl;
     return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
   }
-  try {
-    return require(`../logos/${store.loggedInClub}_Logo_50px.png`);
-  } catch {
-    return require('../logos/HLaS.png');
-  }
+  // Return empty string if no logo URL - let frontend handle missing logo gracefully
+  return '';
 });
 
 export const totalPages = computed(() =>
@@ -745,7 +741,6 @@ export function login() {
         setMemberAuthz(res.data.roles, res.data.permissions);
         store.loggedInUsername = store.loginUsername;
         store.loggedInClub = store.selectedClub;
-        store.clubLogoLoadFailed = false;
         store.activeSection = 'home';
         store.currentPage = 1;
         store.accessError = '';
@@ -791,7 +786,6 @@ export function logout() {
   store.loggedInUsername = '';
   applyMemberAuthHeader();
   clearMemberSession();
-  store.clubLogoLoadFailed = false;
   store.activeSection = 'home';
   store.accessError = '';
   store.loginPassword = '';

@@ -564,7 +564,7 @@ export default {
 }
 #app .fishing-beats-layout {
   display: grid;
-  grid-template-columns: 75% 25%;
+  grid-template-columns: 30% 70%;
   align-items: start;
   gap: 12px;
 }
