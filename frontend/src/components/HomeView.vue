@@ -740,6 +740,7 @@ export default {
 .home-documents-table th.documents-actions-cell,
 .home-documents-table td.documents-actions-cell {
   text-align: center;
+  vertical-align: middle;
 }
 
 .home-documents-table thead th {
