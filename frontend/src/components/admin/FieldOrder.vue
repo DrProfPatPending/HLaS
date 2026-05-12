@@ -349,7 +349,7 @@ export default {
 
 <style scoped>
 .field-order-panel {
-  max-width: 900px;
+  max-width: 1400px;
 }
 
 .field-order-table {
