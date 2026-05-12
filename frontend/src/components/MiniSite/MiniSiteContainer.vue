@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import axios from 'axios';
 import { API_BASE_URL } from '../../store.js';
 import MiniSiteDesktop from './MiniSiteDesktop.vue';
@@ -105,6 +105,11 @@ export default {
           `${API_BASE_URL}/club/${props.clubCode}/mini-site`
         );
         miniSiteData.value = response.data;
+
+        // Update page title immediately
+        if (miniSiteData.value.title) {
+          document.title = miniSiteData.value.title;
+        }
 
         // Validate that requested page is enabled
         if (

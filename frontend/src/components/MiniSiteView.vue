@@ -13,6 +13,8 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
+import axios from 'axios';
+import { API_BASE_URL } from '../store.js';
 import MiniSiteContainer from './MiniSite/MiniSiteContainer.vue';
 import LoginView from './LoginView.vue';
 
@@ -26,7 +28,7 @@ export default {
     const clubCode = ref('');
     const isLoginPage = ref(false);
 
-    onMounted(() => {
+    onMounted(async () => {
       // Parse the URL to extract club code and page type
       const pathArray = window.location.pathname.split('/');
       // Expected format: /club/{clubCode}/ or /club/{clubCode}/login/
@@ -39,6 +41,18 @@ export default {
           isLoginPage.value = true;
         } else {
           isLoginPage.value = false;
+          
+          // Fetch mini-site config to get the club title
+          try {
+            const response = await axios.get(
+              `${API_BASE_URL}/club/${clubCode.value}/mini-site`
+            );
+            if (response.data?.title) {
+              document.title = response.data.title;
+            }
+          } catch (error) {
+            console.error('Error fetching mini site config for title:', error);
+          }
         }
       }
     });

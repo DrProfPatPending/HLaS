@@ -99,7 +99,7 @@ def create_public_blueprint(deps):
                     ).first()
                     
                     if mini_site_row is not None:
-                        row_dict = mini_site_row._mapping.copy()
+                        row_dict = dict(mini_site_row._mapping)
                         return jsonify({
                             'id': row_dict.get('id'),
                             'club_id': row_dict.get('club_id'),
