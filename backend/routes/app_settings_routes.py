@@ -8,6 +8,7 @@ APP_SETTINGS_PATH = os.path.join(os.path.dirname(__file__), '../app_settings.jso
 APP_SETTINGS_KEY = 'app_settings'
 DEFAULT_APP_SETTINGS = {
     'dateFormat': 'DD/MM/YY',
+    'defaultClub': None,
 }
 ALLOWED_DATE_FORMATS = [
     'DD/MM/YY',
@@ -51,8 +52,14 @@ def _normalize_app_settings(data):
     date_format = str(raw.get('dateFormat', DEFAULT_APP_SETTINGS['dateFormat'])).strip()
     if not date_format:
         date_format = DEFAULT_APP_SETTINGS['dateFormat']
+    
+    default_club = raw.get('defaultClub')
+    if default_club is not None:
+        default_club = str(default_club).strip() or None
+    
     return {
         'dateFormat': date_format,
+        'defaultClub': default_club,
     }
 
 
@@ -131,6 +138,20 @@ def create_app_settings_blueprint(deps=None):
             return jsonify({'error': 'Admin authentication required'}), 401
         return None
 
+    def get_available_clubs():
+        """Get list of available clubs sorted alphabetically."""
+        try:
+            load_clubs_config_func = deps.get('load_clubs_config')
+            if callable(load_clubs_config_func):
+                clubs = load_clubs_config_func()
+                if isinstance(clubs, list):
+                    # Sort clubs alphabetically by shortName
+                    sorted_clubs = sorted(clubs, key=lambda c: str(c.get('shortName', '')).upper())
+                    return [club.get('shortName') for club in sorted_clubs if club.get('shortName')]
+        except Exception:
+            pass
+        return []
+
     @bp.route('/admin/app-settings', methods=['GET'])
     def get_app_settings():
         auth_error = require_admin()
@@ -138,9 +159,11 @@ def create_app_settings_blueprint(deps=None):
             return auth_error
         try:
             settings = load_app_settings_config(deps)
+            available_clubs = get_available_clubs()
             return jsonify({
                 'settings': settings,
                 'allowedDateFormats': ALLOWED_DATE_FORMATS,
+                'availableClubs': available_clubs,
             })
         except Exception as exc:
             return jsonify({'error': str(exc)}), 500
@@ -157,6 +180,12 @@ def create_app_settings_blueprint(deps=None):
 
         if normalized['dateFormat'] not in ALLOWED_DATE_FORMATS:
             return jsonify({'error': 'Invalid date format option'}), 400
+
+        # Validate defaultClub if not None or empty
+        if normalized['defaultClub']:
+            available_clubs = get_available_clubs()
+            if normalized['defaultClub'] not in available_clubs:
+                return jsonify({'error': f"Invalid default club: {normalized['defaultClub']}. Must be one of: {', '.join(available_clubs)}"}), 400
 
         try:
             save_app_settings_config(normalized, deps)

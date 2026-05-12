@@ -15,6 +15,14 @@
         </select>
       </div>
 
+      <div class="admin-form-row">
+        <label class="admin-form-label" for="default-club-select">Default Login Club</label>
+        <select id="default-club-select" v-model="form.defaultClub" class="admin-select">
+          <option value="">Auto (First Alphabetical)</option>
+          <option v-for="club in availableClubs" :key="club" :value="club">{{ club }}</option>
+        </select>
+      </div>
+
       <div class="admin-inline-controls">
         <button type="button" class="save-btn" :disabled="saving" @click="saveSettings">
           {{ saving ? 'Saving…' : 'Save App Settings' }}
@@ -48,8 +56,10 @@ export default {
       statusMsg: '',
       statusError: false,
       allowedDateFormats: [...FALLBACK_DATE_FORMATS],
+      availableClubs: [],
       form: {
         dateFormat: 'DD/MM/YY',
+        defaultClub: '',
       },
     };
   },
@@ -82,9 +92,15 @@ export default {
             : FALLBACK_DATE_FORMATS;
           this.allowedDateFormats = allowed.length ? allowed : [...FALLBACK_DATE_FORMATS];
 
+          const clubs = Array.isArray(res.data?.availableClubs) ? res.data.availableClubs : [];
+          this.availableClubs = clubs;
+
           const fromApi = String(settings.dateFormat || '').trim();
           const firstOption = this.allowedDateFormats[0] || 'DD/MM/YY';
           this.form.dateFormat = this.allowedDateFormats.includes(fromApi) ? fromApi : firstOption;
+
+          const defaultClub = String(settings.defaultClub || '').trim();
+          this.form.defaultClub = defaultClub;
         })
         .catch(err => {
           this.showStatus(err.response?.data?.error || 'Failed to load app settings', true);
@@ -99,6 +115,7 @@ export default {
       adminPut('/admin/app-settings', {
         settings: {
           dateFormat: this.form.dateFormat,
+          defaultClub: this.form.defaultClub || null,
         },
       })
         .then(() => {

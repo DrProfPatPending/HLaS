@@ -348,6 +348,44 @@ export function loadAppSettings() {
     });
 }
 
+export function resolveDefaultLoginClub(clubs = null) {
+  const clubsList = clubs || (Array.isArray(store.clubs) ? store.clubs : []);
+  
+  // Priority 1: URL-specified club
+  if (URL_PREFERRED_CLUB) {
+    const matchedClub = clubsList.find(
+      club => String(club.shortName || '').toLowerCase() === URL_PREFERRED_CLUB.toLowerCase()
+    );
+    if (matchedClub) {
+      return matchedClub.shortName;
+    }
+  }
+  
+  // Priority 2: Admin-configured default club
+  const configuredDefault = String(store.appSettings?.defaultClub || '').trim();
+  if (configuredDefault) {
+    const matchedClub = clubsList.find(
+      club => club.shortName === configuredDefault
+    );
+    if (matchedClub) {
+      return matchedClub.shortName;
+    }
+  }
+  
+  // Priority 3: First alphabetical club
+  if (clubsList.length > 0) {
+    const sorted = [...clubsList].sort((a, b) => {
+      const aName = String(a.shortName || '').toUpperCase();
+      const bName = String(b.shortName || '').toUpperCase();
+      return aName.localeCompare(bName);
+    });
+    return sorted[0].shortName;
+  }
+  
+  // Fallback to hardcoded default
+  return DEFAULT_LOGIN_CLUB;
+}
+
 export function syncActiveTheme() {
   const activeClub = String(store.loggedIn ? store.loggedInClub : store.selectedClub).trim();
   const normalizedActiveClub = activeClub.toLowerCase();
@@ -658,24 +696,20 @@ export function teardownAuthInterceptor() {
 export function loadClubs() {
   return axios.get(`${API_BASE_URL}/clubs`).then(res => {
     const clubs = Array.isArray(res.data?.clubs) ? res.data.clubs : [];
-    store.clubs = clubs;
+    
+    // Sort clubs alphabetically by shortName
+    const sortedClubs = [...clubs].sort((a, b) => {
+      const aName = String(a.shortName || '').toUpperCase();
+      const bName = String(b.shortName || '').toUpperCase();
+      return aName.localeCompare(bName);
+    });
+    
+    store.clubs = sortedClubs;
 
-    const preferredClub = (URL_PREFERRED_CLUB || '').toLowerCase();
-    if (preferredClub) {
-      const matchedPreferredClub = clubs.find(
-        club => String(club.shortName || '').toLowerCase() === preferredClub
-      );
-      if (matchedPreferredClub) {
-        store.selectedClub = matchedPreferredClub.shortName;
-        syncActiveTheme();
-        return;
-      }
-    }
-
-    const selectedExists = clubs.some(club => club.shortName === store.selectedClub);
-    if (!selectedExists && clubs.length) {
-      store.selectedClub = clubs[0].shortName;
-    }
+    // Resolve the default club considering appSettings and URL preferences
+    const defaultClub = resolveDefaultLoginClub(sortedClubs);
+    store.selectedClub = defaultClub;
+    
     syncActiveTheme();
   }).catch(() => {
     store.clubs = [];
