@@ -23,3 +23,5 @@ hlas_pg*_dump_*.sql
 *.swp
 *.lock
 *.lck
+# Python virtual environments
+backend-venv/
