@@ -46,6 +46,27 @@
     <div v-if="selectedBeat && !isEditing" class="beat-details-map-wrap">
       <div ref="beatDetailsMap" class="beat-details-map"></div>
       <div class="beat-details-map-controls">
+        <div class="rotation-controls">
+          <button
+            type="button"
+            class="rotation-btn"
+            title="Rotate Left"
+            @click="changeBeatDetailsRotation(-15)"
+          >↺</button>
+          <button
+            v-if="currentBeatDetailsBearing !== 0"
+            type="button"
+            class="rotation-btn compass-reset"
+            title="North"
+            @click="resetBeatDetailsNorth"
+          >⬆</button>
+          <button
+            type="button"
+            class="rotation-btn"
+            title="Rotate Right"
+            @click="changeBeatDetailsRotation(15)"
+          >↻</button>
+        </div>
         <button
           v-if="beatDetailsWaypointsCount > 0"
           type="button"
@@ -467,6 +488,7 @@ export default {
       beatDetailsMapLayers: [],
       beatDetailsMapStatus: '',
       beatDetailsMapRequestId: 0,
+      currentBeatDetailsBearing: 0,
       isEditing: false,
       isAddingNewBeat: false,
       isSaving: false,
@@ -1399,18 +1421,13 @@ export default {
       this.beatDetailsMapInstance = L.map(mapElement, {
         zoomControl: true,
         attributionControl: true,
-        rotate: false,
+        rotate: true,
+        bearing: 0,
       }).setView([54.5, -2.5], 6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors',
       }).addTo(this.beatDetailsMapInstance);
-      // Add rotation control after map is ready
-      Promise.resolve().then(() => {
-        if (this.beatDetailsMapInstance && L.control.rotate) {
-          L.control.rotate({ position: 'topleft' }).addTo(this.beatDetailsMapInstance);
-        }
-      });
     },
     async refreshBeatDetailsMap() {
       const selectedBeat = this.selectedBeat;
@@ -1609,6 +1626,17 @@ export default {
           this.beatDetailsMapInstance.removeLayer(marker);
         }
       });
+    },
+    changeBeatDetailsRotation(angle) {
+      if (!this.beatDetailsMapInstance) return;
+      const newBearing = this.currentBeatDetailsBearing + angle;
+      this.currentBeatDetailsBearing = newBearing % 360;
+      this.beatDetailsMapInstance.setBearing(this.currentBeatDetailsBearing);
+    },
+    resetBeatDetailsNorth() {
+      if (!this.beatDetailsMapInstance) return;
+      this.currentBeatDetailsBearing = 0;
+      this.beatDetailsMapInstance.setBearing(0);
     },
     async loadAndApplyBeatRotation(beatId) {
       if (!beatId || !this.beatDetailsMapInstance) return;
@@ -1888,6 +1916,34 @@ export default {
 
 .beat-details-waypoint-toggle:hover {
   background: #dde8f5;
+}
+
+.rotation-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.rotation-btn {
+  padding: 4px 8px;
+  font-size: 12pt;
+  background: #f0f4f8;
+  border: 1px solid #aac;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 32px;
+  text-align: center;
+}
+
+.rotation-btn:hover {
+  background: #dde8f5;
+}
+
+.rotation-btn.compass-reset {
+  background: #ffffcc;
+}
+
+.rotation-btn.compass-reset:hover {
+  background: #ffff99;
 }
 
 .beat-details-map {

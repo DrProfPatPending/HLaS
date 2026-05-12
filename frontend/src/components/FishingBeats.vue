@@ -204,6 +204,27 @@
         <div class="fishing-beat-map-wrap">
           <div ref="fishingBeatMap" class="fishing-beat-map"></div>
           <div class="fishing-beat-map-controls">
+            <div class="rotation-controls">
+              <button
+                type="button"
+                class="rotation-btn"
+                title="Rotate Left"
+                @click="changeFishingBeatRotation(-15)"
+              >↺</button>
+              <button
+                v-if="currentFishingBeatBearing !== 0"
+                type="button"
+                class="rotation-btn compass-reset"
+                title="North"
+                @click="resetFishingBeatNorth"
+              >⬆</button>
+              <button
+                type="button"
+                class="rotation-btn"
+                title="Rotate Right"
+                @click="changeFishingBeatRotation(15)"
+              >↻</button>
+            </div>
             <button
               v-if="fishingBeatWaypointsCount > 0"
               type="button"
@@ -271,6 +292,7 @@ export default {
       showFishingBeatWaypoints: false,
       fishingBeatWaypointsCount: 0,
       fishingBeatDebugWaypoints: [],
+      currentFishingBeatBearing: 0,
     };
   },
   computed: {
@@ -618,18 +640,13 @@ export default {
       this.fishingBeatMapInstance = L.map(mapElement, {
         zoomControl: true,
         attributionControl: true,
-        rotate: false,
+        rotate: true,
+        bearing: 0,
       }).setView([54.5, -2.5], 6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors',
       }).addTo(this.fishingBeatMapInstance);
-      // Add rotation control after map is ready
-      Promise.resolve().then(() => {
-        if (this.fishingBeatMapInstance && L.control.rotate) {
-          L.control.rotate({ position: 'topleft' }).addTo(this.fishingBeatMapInstance);
-        }
-      });
     },
     async loadAndApplyBeatRotation(beatId) {
       /**Load saved map rotation for a beat and apply it */
@@ -840,6 +857,17 @@ export default {
         }
       });
     },
+    changeFishingBeatRotation(angle) {
+      if (!this.fishingBeatMapInstance) return;
+      const newBearing = this.currentFishingBeatBearing + angle;
+      this.currentFishingBeatBearing = newBearing % 360;
+      this.fishingBeatMapInstance.setBearing(this.currentFishingBeatBearing);
+    },
+    resetFishingBeatNorth() {
+      if (!this.fishingBeatMapInstance) return;
+      this.currentFishingBeatBearing = 0;
+      this.fishingBeatMapInstance.setBearing(0);
+    },
     destroyFishingBeatMap() {
       this.clearFishingBeatMapLayers();
       if (this.fishingBeatMapInstance) {
@@ -910,6 +938,34 @@ export default {
 
 .fishing-beat-waypoint-toggle:hover {
   background: #dde8f5;
+}
+
+.rotation-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.rotation-btn {
+  padding: 4px 8px;
+  font-size: 12pt;
+  background: #f0f4f8;
+  border: 1px solid #aac;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 32px;
+  text-align: center;
+}
+
+.rotation-btn:hover {
+  background: #dde8f5;
+}
+
+.rotation-btn.compass-reset {
+  background: #ffffcc;
+}
+
+.rotation-btn.compass-reset:hover {
+  background: #ffff99;
 }
 
 .fishing-beat-waypoints-debug {
