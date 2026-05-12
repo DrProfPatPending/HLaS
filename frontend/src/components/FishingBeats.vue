@@ -248,7 +248,7 @@
 import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-rotate';
+import 'leaflet-rotate/dist/leaflet-rotate.js';
 import { store, clubDetails, API_BASE_URL } from '../store.js';
 import AppButton from './ui/AppButton.vue';
 
@@ -618,14 +618,18 @@ export default {
       this.fishingBeatMapInstance = L.map(mapElement, {
         zoomControl: true,
         attributionControl: true,
-        rotate: true,
+        rotate: false,
       }).setView([54.5, -2.5], 6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors',
       }).addTo(this.fishingBeatMapInstance);
-      // Add rotation control
-      L.control.rotate({ position: 'topright' }).addTo(this.fishingBeatMapInstance);
+      // Add rotation control after map is ready
+      Promise.resolve().then(() => {
+        if (this.fishingBeatMapInstance && L.control.rotate) {
+          L.control.rotate({ position: 'topleft' }).addTo(this.fishingBeatMapInstance);
+        }
+      });
     },
     async loadAndApplyBeatRotation(beatId) {
       /**Load saved map rotation for a beat and apply it */
