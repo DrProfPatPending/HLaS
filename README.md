@@ -41,6 +41,8 @@ HLaS uses a **two-branch deployment model** for stability and safe development:
    - Implemented separate `main` (development) and `production` (VPS deployed) branches
    - VPS deployment scripts updated to pull from `production` branch only
    - Ensures live clubs (CTC, GAAFFS, LADFFA) only run thoroughly tested code
+   - Environment-specific Caddyfile configurations (`Caddyfile.prod` for production, `Caddyfile.dev` for dev)
+   - Build script validation ensures correct SSL/TLS configuration is present before deployment
    - Easy rollback procedure available if issues occur
    - See DEPLOYMENT.md for workflow details
 

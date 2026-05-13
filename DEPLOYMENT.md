@@ -88,11 +88,53 @@ Once changes are tested and verified on `main`, promote them to `production`:
 
 5. **Test in browser**: Visit `https://cambridgetroutclub.org` and verify functionality
 
+### Environment-Specific Configuration Management
+
+**Caddyfile (SSL/TLS Proxy Configuration)**
+
+HLaS uses separate, version-controlled Caddyfile configurations for development and production:
+
+- **`deploy/caddy/Caddyfile.prod`** — Production configuration
+  - Domain: `cambridgetroutclub.org`
+  - TLS: Let's Encrypt automatic certificate management
+  - Used by `docker-compose.prod.yml` on VPS deployments
+
+- **`deploy/caddy/Caddyfile.dev`** — Development configuration
+  - Domain: `hlastest` (local development server)
+  - TLS: Caddy internal CA (self-signed, requires trust installation)
+  - Used by `docker-compose.dev.yml` override on dev/test servers
+
+**How It Works:**
+
+1. **Docker Compose Volume Mounts** explicitly reference environment-specific files:
+   ```yaml
+   # Production (docker-compose.prod.yml)
+   caddy:
+     volumes:
+       - ./deploy/caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+   
+   # Development (docker-compose.dev.yml override)
+   caddy:
+     volumes:
+       - ./deploy/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
+   ```
+
+2. **Build Script Validation** (`hlas_build.sh`) ensures the production Caddyfile exists:
+   ```bash
+   if [ ! -f "deploy/caddy/Caddyfile.prod" ]; then
+       echo "✗ ERROR: Production Caddyfile not found!"
+       exit 1
+   fi
+   ```
+
+This design prevents accidental use of dev configuration in production, even when git rebases pull changes from the main branch. Both Caddyfile configurations are version-controlled in git and protected from overwrites.
+
 ### Deployment Scripts
 
 Two convenience scripts automate the VPS deployment process:
 
 **`hlas_build.sh`** — Full rebuild (backend & frontend)
+- Validates `Caddyfile.prod` exists
 - Checks out `production` branch
 - Pulls latest code
 - Rebuilds backend and frontend containers
@@ -104,7 +146,7 @@ Two convenience scripts automate the VPS deployment process:
 - Rebuilds frontend container only
 - Restarts frontend and caddy
 
-Both scripts automatically pull from the `production` branch, ensuring only tested, promoted code is deployed.
+Both scripts automatically pull from the `production` branch, ensuring only tested, promoted code is deployed. The `hlas_build.sh` script includes validation to ensure the production Caddyfile configuration is present before proceeding.
 
 ### Rollback Procedure
 
@@ -166,9 +208,11 @@ Some deployments may include Alembic database schema migrations:
 2. ✅ **Use descriptive commit messages** so deployment history is clear
 3. ✅ **Keep production deployments within business hours** when you can monitor
 4. ✅ **Document any breaking changes** in commit messages
-5. ❌ **Never force-push to `main`** — this becomes the development timeline  
-6. ❌ **Never hotfix directly on `production`** — always go through `main` first for testing
-7. ❌ **Don't skip database migrations** — they're essential for feature compatibility
+5. ✅ **Keep `Caddyfile.prod` and `Caddyfile.dev` in sync** — version control both files
+6. ❌ **Never force-push to `main`** — this becomes the development timeline  
+7. ❌ **Never hotfix directly on `production`** — always go through `main` first for testing
+8. ❌ **Don't skip database migrations** — they're essential for feature compatibility
+9. ❌ **Don't modify the working directory Caddyfile** — always update the versioned `Caddyfile.prod` or `Caddyfile.dev` files
 
 ---
 

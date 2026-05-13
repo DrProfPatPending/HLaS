@@ -5,6 +5,7 @@ venv/
 dist/
 build/
 .github/
+!.github/copilot-instructions.md
 ID_photos/
 backend/certs/*.pem
 frontend/node_modules/

@@ -20,6 +20,14 @@
 
 ## Last Documentation Update
 May 2026 — updated for:
+- **Caddyfile Configuration Management (May 13, 2026):**
+  - Environment-specific Caddyfile configurations: `Caddyfile.prod` for production, `Caddyfile.dev` for development
+  - Both files version-controlled in git; protected by explicit docker-compose volume mounts
+  - Build script (`hlas_build.sh`) validates `Caddyfile.prod` exists before production deployment
+  - Prevents accidental use of dev configuration in production during git rebases
+  - New documentation: `CADDYFILE_CONFIGURATION.md` with troubleshooting and management guide
+  - Updated `DEPLOYMENT.md` with environment configuration strategy
+  - Updated `README.md` with SSL/TLS configuration notes
 - Beat Details Waypoints: ordered route polyline from waypoints, GPX import, waypoint toggle button
 - Removed old boundary polyline (downstream→pools→upstream) from map
 - New `waypoints` JSONB column in `club_beats` (migration 20260511_0001)
@@ -31,6 +39,46 @@ May 2026 — updated for:
 - April 2026 updates: Mobile responsive navigation, Beat Details restructure, responsive table styling
 - Frontend dependency upgrades: vue 3.5.33, vuetify 4.0.6, vite 8.0.10, axios 1.15.2
 - npm audit security fix: follow-redirects (GHSA-r4q5-vmmm-2653) resolved
+
+## Deployment & Configuration Architecture
+
+### Branch Strategy
+- **`main` branch**: Development and testing environment
+  - Uses `Caddyfile.dev` (localhost with internal TLS)
+  - Local testing via docker-compose.dev.yml override
+  - Safe for experimental changes
+
+- **`production` branch**: Live VPS deployment
+  - Uses `Caddyfile.prod` (cambridgetroutclub.org with Let's Encrypt)
+  - Deployed via hlas_build.sh on VPS
+  - Only receives thoroughly tested, merged changes
+
+### Caddyfile Configuration (CRITICAL)
+**File Structure:**
+```
+deploy/caddy/
+  ├── Caddyfile          (main branch default, synced with Caddyfile.dev)
+  ├── Caddyfile.dev      (development: hlastest + internal TLS)
+  └── Caddyfile.prod     (production: cambridgetroutclub.org + Let's Encrypt)
+```
+
+**Docker Compose Integration:**
+- `docker-compose.prod.yml` mounts: `./deploy/caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro`
+- `docker-compose.dev.yml` override mounts: `./deploy/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro`
+
+**Build Safety:**
+- `hlas_build.sh` validates `Caddyfile.prod` exists before VPS deployment
+- Prevents accidental use of dev config in production
+
+### Deployment Process
+1. Develop/test on `main` branch
+2. Merge thoroughly-tested changes to `production` branch
+3. Run `./hlas_build.sh` on VPS (pulls production, validates config, rebuilds)
+4. Caddy automatically uses correct TLS config via explicit volume mount
+
+**Key Point:** Both Caddyfile files are version-controlled in git and protected from git rebases by explicit docker-compose volume mount paths.
+
+**See:** CADDYFILE_CONFIGURATION.md for detailed troubleshooting and management
 
 ## Execution Guidelines
 PROGRESS TRACKING:
