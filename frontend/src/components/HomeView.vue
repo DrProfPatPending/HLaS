@@ -23,7 +23,7 @@
                 :key="`news-head-${column.key}`"
                 :class="{ 'sortable-header': isSortableColumn('news', column.key) }"
                 :style="getColumnStyle('home_news', column.key)"
-                @click="toggleNewsSort(column.key)"
+                @click.stop="toggleNewsSort(column.key)"
               >
                 {{ column.label }}<span class="sort-indicator">{{ getSortIndicator('news', column.key) }}</span>
               </th>
@@ -131,7 +131,7 @@
                 :key="`docs-head-${column.key}`"
                 :class="{ 'sortable-header': isSortableColumn('documents', column.key) }"
                 :style="getColumnStyle('home_documents', column.key)"
-                @click="toggleDocumentsSort(column.key)"
+                @click.stop="toggleDocumentsSort(column.key)"
               >
                 {{ column.label }}<span class="sort-indicator">{{ getSortIndicator('documents', column.key) }}</span>
               </th>
@@ -297,9 +297,16 @@ export default {
     sortedNewsItems() {
       if (!this.newsSortedBy) return this.newsItems;
       const sorted = [...this.newsItems];
+      const propertyMap = {
+        'Date': 'date',
+        'Category': 'category',
+        'Update': 'update',
+      };
+      const sortProperty = propertyMap[this.newsSortedBy] || this.newsSortedBy.toLowerCase();
+      
       sorted.sort((a, b) => {
-        let aVal = a[this.newsSortedBy];
-        let bVal = b[this.newsSortedBy];
+        let aVal = a[sortProperty];
+        let bVal = b[sortProperty];
         
         if (aVal == null) aVal = '';
         if (bVal == null) bVal = '';
@@ -316,9 +323,17 @@ export default {
     sortedDocuments() {
       if (!this.documentsSortedBy) return this.documents;
       const sorted = [...this.documents];
+      const propertyMap = {
+        'Title': 'title',
+        'File': 'fileName',
+        'Uploaded': 'createdAt',
+        'Size': 'fileSize',
+      };
+      const sortProperty = propertyMap[this.documentsSortedBy] || this.documentsSortedBy.toLowerCase();
+      
       sorted.sort((a, b) => {
-        let aVal = a[this.documentsSortedBy];
-        let bVal = b[this.documentsSortedBy];
+        let aVal = a[sortProperty];
+        let bVal = b[sortProperty];
         
         if (aVal == null) aVal = '';
         if (bVal == null) bVal = '';
@@ -438,13 +453,20 @@ export default {
         ? this.fieldOrder[contextKey]
         : fallbackColumns.map(column => column.key);
 
+      // Filter out Actions from visibility checks - it's always visible
       const ordered = configuredOrder
         .map(key => fallbackMap.get(key))
         .filter(Boolean)
-        .filter(column => this.isColumnVisible(contextKey, column.key));
+        .filter(column => column.key !== 'Actions' && this.isColumnVisible(contextKey, column.key));
+
+      // Always include Actions column at the end, regardless of Field Order settings
+      const actionsColumn = fallbackMap.get('Actions');
+      if (actionsColumn) {
+        ordered.push(actionsColumn);
+      }
 
       if (ordered.length) return ordered;
-      return fallbackColumns.filter(column => this.isColumnVisible(contextKey, column.key));
+      return fallbackColumns.filter(column => column.key !== 'Actions') || [];
     },
     getColumnStyle(contextKey, columnKey) {
       // First check if a width is specified in the widths configuration
@@ -469,6 +491,9 @@ export default {
       return { minWidth: `${minWidth}px` };
     },
     toggleNewsSort(columnKey) {
+      // Don't allow sorting by Actions column
+      if (columnKey === 'Actions') return;
+      
       if (this.newsSortedBy === columnKey) {
         // Toggle direction
         this.newsSortDirection = this.newsSortDirection === 'asc' ? 'desc' : 'asc';
