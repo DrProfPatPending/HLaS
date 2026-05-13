@@ -7,6 +7,14 @@ unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PA
 echo "Pulling latest code from Git"
 git checkout production
 git pull origin production
+
+# Validate and ensure production Caddyfile is in place
+if [ ! -f "deploy/caddy/Caddyfile.prod" ]; then
+    echo "✗ ERROR: Production Caddyfile (deploy/caddy/Caddyfile.prod) not found!"
+    echo "This file should be version-controlled in git. Aborting build."
+    exit 1
+fi
+echo "✓ Production Caddyfile configuration found"
 echo "Build frontend and backend"
 docker compose --env-file .env.prod -f docker-compose.prod.yml build --no-cache backend frontend
 echo "Start postgres"

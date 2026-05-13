@@ -1,20 +1,11 @@
 # Docker Compose override for the hlastest dev server.
-# Documents intent: the dev server uses deploy/caddy/Caddyfile.dev (hlastest +
-# tls internal) instead of the production Caddyfile (cambridgetroutclub.org +
-# Let's Encrypt).
-#
-# NOTE: Docker Compose does NOT replace bind mounts with the same target path
-# when merging override files — the prod volume mount always wins.  The correct
-# way to activate the dev Caddyfile on hlastest is to copy it into place and
-# hot-reload Caddy:
-#
-#   ssh rob@hlastest \
-#     "cp /opt/HLaS/deploy/caddy/Caddyfile.dev /opt/HLaS/deploy/caddy/Caddyfile \
-#      && docker compose -f /opt/HLaS/docker-compose.prod.yml exec caddy \
-#           caddy reload --config /etc/caddy/Caddyfile"
+# Configures the dev server to use deploy/caddy/Caddyfile.dev (hlastest + tls internal)
+# instead of the production Caddyfile (cambridgetroutclub.org + Let's Encrypt).
 #
 # After starting, run trust_caddy_mac.sh on your Mac once to install the
 # Caddy root CA into the macOS System Keychain.
 
 services:
-  caddy: {}
+  caddy:
+    volumes:
+      - ./deploy/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
