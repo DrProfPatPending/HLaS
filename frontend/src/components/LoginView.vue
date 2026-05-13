@@ -173,6 +173,7 @@ export default {
   align-items: center;
   font-weight: normal;
   gap: 6px;
+  white-space: nowrap;
 }
 .remember-me-checkbox {
   margin: 0;

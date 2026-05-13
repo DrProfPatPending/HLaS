@@ -21,9 +21,11 @@
               <th
                 v-for="column in visibleNewsColumns"
                 :key="`news-head-${column.key}`"
+                :class="{ 'sortable-header': isSortableColumn('news', column.key) }"
                 :style="getColumnStyle('home_news', column.key)"
+                @click="toggleNewsSort(column.key)"
               >
-                {{ column.label }}
+                {{ column.label }}<span class="sort-indicator">{{ getSortIndicator('news', column.key) }}</span>
               </th>
             </tr>
           </thead>
@@ -34,7 +36,7 @@
             <tr v-else-if="!newsItems.length">
               <td :colspan="newsColumnCount">No news/updates posted yet.</td>
             </tr>
-            <template v-else v-for="item in newsItems" :key="item.id">
+            <template v-else v-for="item in sortedNewsItems" :key="item.id">
               <!-- Inline edit row -->
               <tr v-if="editingNewsId === item.id" class="news-edit-row">
                 <td :colspan="newsColumnCount">
@@ -70,6 +72,9 @@
                 <td
                   v-for="column in visibleNewsColumns"
                   :key="`news-cell-${item.id}-${column.key}`"
+                  :class="{
+                    'news-actions-cell': column.key === 'Actions',
+                  }"
                   :style="getColumnStyle('home_news', column.key)"
                 >
                   <template v-if="column.key === 'Date'">
@@ -77,9 +82,9 @@
                     <div class="news-date-status"><app-status-badge :status="item.status" /></div>
                   </template>
                   <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
-                  <template v-else-if="column.key === 'Update'">
-                    <span>{{ item.update || item.message }}</span>
-                    <div v-if="canManageNews" class="news-admin-actions">
+                  <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
+                  <template v-else-if="column.key === 'Actions'">
+                    <div v-if="canManageNews" class="news-actions-stack">
                       <app-button type="button" size="sm" class="news-edit-btn" @click="editNewsItem(item)">Edit</app-button>
                       <app-button type="button" size="sm" variant="danger" class="news-delete-btn" :disabled="deleteNewsBusy === item.id" @click="deleteNewsItem(item)">{{ deleteNewsBusy === item.id ? 'Deleting...' : 'Delete' }}</app-button>
                     </div>
@@ -124,9 +129,11 @@
               <th
                 v-for="column in visibleDocumentsColumns"
                 :key="`docs-head-${column.key}`"
+                :class="{ 'sortable-header': isSortableColumn('documents', column.key) }"
                 :style="getColumnStyle('home_documents', column.key)"
+                @click="toggleDocumentsSort(column.key)"
               >
-                {{ column.label }}
+                {{ column.label }}<span class="sort-indicator">{{ getSortIndicator('documents', column.key) }}</span>
               </th>
             </tr>
           </thead>
@@ -137,7 +144,7 @@
             <tr v-else-if="!documents.length">
               <td :colspan="documentsColumnCount">No documents uploaded yet.</td>
             </tr>
-            <tr v-else v-for="doc in documents" :key="doc.id">
+            <tr v-else v-for="doc in sortedDocuments" :key="doc.id">
               <td
                 v-for="column in visibleDocumentsColumns"
                 :key="`docs-cell-${doc.id}-${column.key}`"
@@ -220,6 +227,10 @@ export default {
       editNewsBusy: false,
       editNewsError: '',
       deleteNewsBusy: null,
+      newsSortedBy: null,
+      newsSortDirection: 'asc',
+      documentsSortedBy: null,
+      documentsSortDirection: 'asc',
     };
   },
   computed: {
@@ -255,6 +266,7 @@ export default {
         { key: 'Date', label: 'Date' },
         { key: 'Category', label: 'Category' },
         { key: 'Update', label: 'Update' },
+        { key: 'Actions', label: 'Actions' },
       ];
     },
     documentColumns() {
@@ -281,6 +293,44 @@ export default {
     },
     documentsColumnCount() {
       return this.visibleDocumentsColumns.length || 1;
+    },
+    sortedNewsItems() {
+      if (!this.newsSortedBy) return this.newsItems;
+      const sorted = [...this.newsItems];
+      sorted.sort((a, b) => {
+        let aVal = a[this.newsSortedBy];
+        let bVal = b[this.newsSortedBy];
+        
+        if (aVal == null) aVal = '';
+        if (bVal == null) bVal = '';
+        
+        // Convert to string for alphanumeric comparison
+        const aStr = String(aVal).toLowerCase();
+        const bStr = String(bVal).toLowerCase();
+        
+        const comparison = aStr.localeCompare(bStr, undefined, { numeric: true });
+        return this.newsSortDirection === 'asc' ? comparison : -comparison;
+      });
+      return sorted;
+    },
+    sortedDocuments() {
+      if (!this.documentsSortedBy) return this.documents;
+      const sorted = [...this.documents];
+      sorted.sort((a, b) => {
+        let aVal = a[this.documentsSortedBy];
+        let bVal = b[this.documentsSortedBy];
+        
+        if (aVal == null) aVal = '';
+        if (bVal == null) bVal = '';
+        
+        // Convert to string for alphanumeric comparison
+        const aStr = String(aVal).toLowerCase();
+        const bStr = String(bVal).toLowerCase();
+        
+        const comparison = aStr.localeCompare(bStr, undefined, { numeric: true });
+        return this.documentsSortDirection === 'asc' ? comparison : -comparison;
+      });
+      return sorted;
     },
   },
   methods: {
@@ -417,6 +467,43 @@ export default {
       const minWidth = Number(rawMinWidth);
       if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
       return { minWidth: `${minWidth}px` };
+    },
+    toggleNewsSort(columnKey) {
+      if (this.newsSortedBy === columnKey) {
+        // Toggle direction
+        this.newsSortDirection = this.newsSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Set new sort column
+        this.newsSortedBy = columnKey;
+        this.newsSortDirection = 'asc';
+      }
+    },
+    toggleDocumentsSort(columnKey) {
+      // Don't allow sorting by Actions column
+      if (columnKey === 'Actions') return;
+      
+      if (this.documentsSortedBy === columnKey) {
+        // Toggle direction
+        this.documentsSortDirection = this.documentsSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Set new sort column
+        this.documentsSortedBy = columnKey;
+        this.documentsSortDirection = 'asc';
+      }
+    },
+    getSortIndicator(tableName, columnKey) {
+      if (tableName === 'news') {
+        if (this.newsSortedBy !== columnKey) return '';
+        return this.newsSortDirection === 'asc' ? ' ▲' : ' ▼';
+      } else if (tableName === 'documents') {
+        if (this.documentsSortedBy !== columnKey) return '';
+        return this.documentsSortDirection === 'asc' ? ' ▲' : ' ▼';
+      }
+      return '';
+    },
+    isSortableColumn(tableName, columnKey) {
+      if ((tableName === 'documents' || tableName === 'news') && columnKey === 'Actions') return false;
+      return true;
     },
     fetchDocuments() {
       this.documentsLoading = true;
@@ -600,23 +687,43 @@ export default {
   color: #17324d;
 }
 
+.home-news-table thead th.sortable-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.home-news-table thead th.sortable-header:hover {
+  background: #d4e5f0;
+}
+
+.sort-indicator {
+  font-size: 0.85em;
+  margin-left: 4px;
+}
+
+.home-news-table th.news-actions-cell,
+.home-news-table td.news-actions-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
 .news-date-status {
   margin-top: 6px;
 }
 
-.news-admin-actions {
+.news-actions-stack {
   display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
-  margin-top: 6px;
-  flex-wrap: wrap;
   max-width: 100%;
 }
 
 .news-edit-btn,
 .news-delete-btn {
-  font-size: 6pt;
+  font-size: 8pt;
   line-height: 1.15;
-  padding: 2px 6px;
+  padding: 4px 8px;
 }
 
 .news-edit-row td {
@@ -746,6 +853,15 @@ export default {
 .home-documents-table thead th {
   background: #eaf2f8;
   color: #17324d;
+}
+
+.home-documents-table thead th.sortable-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.home-documents-table thead th.sortable-header:hover {
+  background: #d4e5f0;
 }
 
 .home-documents-table tbody tr:nth-child(even) {
