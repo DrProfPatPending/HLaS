@@ -73,6 +73,28 @@
 	color: #856404;
 }
 
+.hlas-notice-info {
+	background-color: #e3f2fd;
+	border-color: #2196f3;
+	color: #0d47a1;
+}
+
+/* Members Only Message */
+.hlas-members-only {
+	text-align: center;
+	padding: calc(var(--hlas-spacing) * 1.5) var(--hlas-spacing);
+}
+
+.hlas-members-only .hlas-notice-info {
+	text-align: left;
+}
+
+.hlas-members-only .hlas-notice-info p {
+	margin: 0;
+	font-size: 15px;
+	line-height: 1.5;
+}
+
 /* Beat Details */
 .hlas-beat-details-container h3 {
 	margin-top: 0;

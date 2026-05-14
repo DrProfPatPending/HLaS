@@ -53,6 +53,12 @@
 			container.innerHTML = '';
 			container.classList.remove('hlas-loading');
 
+			// Check for members-only response (fallback message)
+			if (data.members_only === true) {
+				this.renderMembersOnlyMessage(container, data);
+				return;
+			}
+
 			if (!data.beats || data.beats.length === 0) {
 				container.innerHTML = '<div class="hlas-notice">No beats found for this club.</div>';
 				return;
@@ -66,6 +72,18 @@
 			} else {
 				this.renderBeatsTable(container, data);
 			}
+		},
+
+		/**
+		 * Render members-only fallback message
+		 */
+		renderMembersOnlyMessage: function(container, data) {
+			var html = '<div class="hlas-beat-details-container hlas-members-only">';
+			html += '<div class="hlas-notice hlas-notice-info">';
+			html += '<p>' + this.escapeHtml(data.message) + '</p>';
+			html += '</div>';
+			html += '</div>';
+			container.innerHTML = html;
 		},
 
 		/**

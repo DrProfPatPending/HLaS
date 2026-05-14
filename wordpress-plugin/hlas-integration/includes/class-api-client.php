@@ -47,8 +47,11 @@ class HLaS_API_Client {
 	/**
 	 * Get beat details for a club
 	 *
+	 * NOTE: This endpoint is members-only. Non-authenticated requests will receive
+	 * a fallback message with club contact information (HTTP 403).
+	 *
 	 * @param string $club Club short name
-	 * @return array|WP_Error Beat details array or error
+	 * @return array|WP_Error Beat details array or fallback message
 	 */
 	public function get_beat_details( $club ) {
 		$cache_key = 'hlas_beat_details_' . sanitize_key( $club );
@@ -60,13 +63,21 @@ class HLaS_API_Client {
 
 		$url = $this->api_url . '/api/headless/beat-details/' . urlencode( $club );
 
+		// Build headers with API authentication
+		$headers = array(
+			'Content-Type' => 'application/json',
+		);
+
+		// Add WordPress API key for authentication if available
+		if ( ! empty( $this->api_key ) ) {
+			$headers['X-WordPress-API-Key'] = $this->api_key;
+		}
+
 		$response = wp_remote_get(
 			$url,
 			array(
 				'timeout' => 10,
-				'headers' => array(
-					'Content-Type' => 'application/json',
-				),
+				'headers' => $headers,
 			)
 		);
 
@@ -75,6 +86,23 @@ class HLaS_API_Client {
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
+		$body        = wp_remote_retrieve_body( $response );
+		$data        = json_decode( $body, true );
+
+		if ( null === $data ) {
+			return new WP_Error( 'hlas_api_error', 'Invalid JSON response from API' );
+		}
+
+		// Handle members-only response (403) - return the fallback message
+		if ( 403 === $status_code ) {
+			// Still cache the fallback response so we don't hammer the API
+			if ( $this->cache_ttl > 0 ) {
+				set_transient( $cache_key, $data, $this->cache_ttl );
+			}
+			return $data;
+		}
+
+		// Handle other non-200 responses as errors
 		if ( 200 !== $status_code ) {
 			return new WP_Error(
 				'hlas_api_error',
@@ -83,14 +111,7 @@ class HLaS_API_Client {
 			);
 		}
 
-		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body, true );
-
-		if ( null === $data ) {
-			return new WP_Error( 'hlas_api_error', 'Invalid JSON response from API' );
-		}
-
-		// Cache the result
+		// Cache the successful result
 		if ( $this->cache_ttl > 0 ) {
 			set_transient( $cache_key, $data, $this->cache_ttl );
 		}

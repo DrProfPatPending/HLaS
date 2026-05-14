@@ -136,9 +136,12 @@ def create_headless_blueprint(deps):
         """
         Get beat details for a club in headless format.
         
+        REQUIRES AUTHENTICATION: This is a members-only endpoint. Non-authenticated
+        requests receive a fallback message with club contact information.
+        
         Response format: Clean JSON with no framework-specific markup.
         
-        Returns:
+        Authenticated response:
             {
                 "club": {"id": 1, "name": "...", "short_name": "..."},
                 "beats": [
@@ -154,17 +157,20 @@ def create_headless_blueprint(deps):
                     }
                 ]
             }
+        
+        Unauthenticated response (members_only flag):
+            {
+                "members_only": true,
+                "club": {"name": "...", "short_name": "..."},
+                "message": "This information is only available to members of <Club Name>. Please contact <admin_email> for any membership enquiries or questions on using the website."
+            }
         """
         # Validate club exists
         valid_clubs = get_valid_club_short_names()
         if club_short_name not in valid_clubs:
             return jsonify({'error': 'Club not found'}), 404
 
-        # Check authentication (optional for public access, required for member-only)
-        auth_context = get_wp_auth_context()
-        member_context = get_member_context_for_club(club_short_name) if auth_context else None
-
-        # Try to get beats from PostgreSQL
+        # Try to get club data from PostgreSQL (needed for authentication check)
         if not is_postgres_reads_enabled():
             return jsonify({
                 'error': 'Beat data unavailable',
@@ -178,7 +184,7 @@ def create_headless_blueprint(deps):
             clubs_table = backend['clubs_table']
             club_beats_table = backend['club_beats_table']
             
-            # Get club data
+            # Get club data (needed for both auth check and response)
             club_row = session.execute(
                 select(clubs_table).where(clubs_table.c.short_name == club_short_name)
             ).first()
@@ -190,7 +196,25 @@ def create_headless_blueprint(deps):
                     'beats': []
                 }), 404
             
-            # Get beats for this club
+            # Check authentication - member-only access
+            auth_context = get_wp_auth_context()
+            member_context = get_member_context_for_club(club_short_name) if auth_context else None
+            
+            is_authenticated = auth_context is not None and member_context is not None
+            
+            # If not authenticated, return members-only fallback message
+            if not is_authenticated:
+                contact_email = club_row.admin_email or 'membership@example.com'
+                return jsonify({
+                    'members_only': True,
+                    'club': {
+                        'name': club_row.full_name,
+                        'short_name': club_row.short_name,
+                    },
+                    'message': f'This information is only available to members of {club_row.full_name}. Please contact {contact_email} for any membership enquiries or questions on using the website.',
+                }), 403
+            
+            # Authenticated: Get beats for this club
             beat_rows = session.execute(
                 select(club_beats_table).where(
                     club_beats_table.c.club_id == club_row.id
