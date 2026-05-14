@@ -992,8 +992,8 @@ export default {
 #app .club-logo {
   display: block;
   margin: 0;
-  max-height: 48px;
-  max-width: 48px;
+  max-height: 70px;
+  max-width: 70px;
 }
 #app {
   max-width: none;
