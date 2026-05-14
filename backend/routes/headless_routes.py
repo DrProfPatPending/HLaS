@@ -75,17 +75,27 @@ def create_headless_blueprint(deps):
         Extract authentication context from WordPress request.
         
         Supports:
-        1. WordPress nonce (X-WordPress-Nonce header)
-        2. WordPress API key (X-WordPress-API-Key header)
+        1. WordPress API key (X-WordPress-API-Key header)
+        2. WordPress nonce (X-WordPress-Nonce header)
         3. HLaS member token (Authorization: Bearer header)
         
         Returns:
             dict with auth mode and user context, or None if unauthenticated
         """
+        # Check for WordPress API key first
+        wp_api_key = request.headers.get('X-WordPress-API-Key', '').strip()
+        if wp_api_key:
+            # Validate API key matches environment variable
+            wordpress_api_key = os.getenv('WORDPRESS_API_KEY', '').strip()
+            if wordpress_api_key and wp_api_key == wordpress_api_key:
+                return {
+                    'mode': 'wordpress_api_key',
+                    'api_key': wp_api_key,
+                }
+        
         # Check for WordPress nonce
         wp_nonce = request.headers.get('X-WordPress-Nonce', '').strip()
         wp_user_id = request.headers.get('X-WP-User-ID', '').strip()
-        wp_api_key = request.headers.get('X-WordPress-API-Key', '').strip()
         
         if wp_nonce and wp_user_id:
 
@@ -198,9 +208,10 @@ def create_headless_blueprint(deps):
             
             # Check authentication - member-only access
             auth_context = get_wp_auth_context()
-            member_context = get_member_context_for_club(club_short_name) if auth_context else None
             
-            is_authenticated = auth_context is not None and member_context is not None
+            # For beat details, API key authentication is sufficient
+            # (no need for member context since we're just showing beat info)
+            is_authenticated = auth_context is not None
             
             # If not authenticated, return members-only fallback message
             if not is_authenticated:
