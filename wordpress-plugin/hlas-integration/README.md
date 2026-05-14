@@ -1,6 +1,6 @@
 # HLaS Integration WordPress Plugin
 
-A WordPress plugin that integrates HLaS (Hunting and Leisure Application System) with your WordPress site, allowing you to embed beat details, catch returns, and member-only content.
+A WordPress plugin that integrates HLaS (Hook Line and Sinker) with your WordPress site, allowing you to embed beat details, catch returns, and member-only content.
 
 ## Features
 

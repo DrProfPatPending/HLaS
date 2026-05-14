@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: HLaS Integration
- * Plugin URI: https://github.com/yourusername/hlas-integration
- * Description: Integrates HLaS (Hunting and Leisure Application System) with WordPress for member-only content
+ * Plugin URI: https://github.com/drprofpatpending/hlas-integration
+ * Description: Integrates HLaS (Hook Line and Sinker) with WordPress for member-only content
  * Version: 1.0.0
- * Author: Development Team
- * Author URI: https://example.com
+ * Author: ScoffySoft -- Dr. Robert Scoffin with teh help of Claude...
+ * Author URI: https://scoffin.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: hlas-integration
