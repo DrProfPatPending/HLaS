@@ -6,6 +6,15 @@ Date: May 14, 2026
 Implementation Time: Full work session  
 Status: **Ready for Testing and Deployment**
 
+### Recent Updates (May 14, 2026)
+
+✅ **Authentication Security Enhancement**
+- Made `GET /api/headless/beat-details/<club>` endpoint protected (members-only)
+- Added fallback messages for non-authenticated access
+- Both beat-details and catch-returns now return HTTP 403 with member-only message for unauthenticated requests
+- Updated WordPress plugin to handle fallback messages gracefully
+- Updated all documentation to reflect authentication requirements
+
 ---
 
 ## What Was Completed
@@ -14,14 +23,16 @@ Status: **Ready for Testing and Deployment**
 
 **New Headless API Endpoints Created:**
 
-1. **GET `/api/headless/beat-details/<club>`** - Public endpoint
+1. **GET `/api/headless/beat-details/<club>`** - Protected endpoint (members-only)
    - Returns clean JSON of fishing beats
-   - No authentication required
+   - Requires authentication (API key via X-WordPress-API-Key header)
+   - Returns fallback message for non-authenticated users: "This information is only available to members of {Club}. Please contact {admin_email} for membership enquiries..."
    - Response includes beat descriptions, coordinates, parking, waypoints
 
-2. **GET `/api/headless/catch-returns/<club>`** - Protected endpoint
+2. **GET `/api/headless/catch-returns/<club>`** - Protected endpoint (members-only)
    - Returns current user's catch history
    - Requires HLaS member token authentication
+   - Returns fallback message for non-authenticated users: "This information is accessible only by members of {Club}, please contact {admin_email} with any issues or enquiries as to how to access the site."
    - Supports pagination (limit, offset)
 
 3. **POST `/api/headless/catch-returns/<club>`** - Protected endpoint
@@ -51,9 +62,9 @@ Status: **Ready for Testing and Deployment**
 **Plugin Features:**
 
 1. **Shortcodes (3 implemented)**
-   - `[hlas-beat-details club="CTC"]` - Display fishing beats
-   - `[hlas-catch-returns club="CTC"]` - Display user's catches
-   - `[hlas-catch-return-form club="CTC"]` - Log new catches
+   - `[hlas-beat-details club="CTC"]` - Display fishing beats (members-only with fallback message)
+   - `[hlas-catch-returns club="CTC"]` - Display user's catches (members-only with fallback message)
+   - `[hlas-catch-return-form club="CTC"]` - Log new catches (members-only)
 
 2. **Responsive Layouts**
    - Beat Details: Table or Grid view

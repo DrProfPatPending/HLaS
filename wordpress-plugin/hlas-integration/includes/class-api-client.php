@@ -122,9 +122,12 @@ class HLaS_API_Client {
 	/**
 	 * Get catch returns for current user
 	 *
+	 * NOTE: This endpoint is members-only. Non-authenticated requests will receive
+	 * a fallback message with club contact information (HTTP 403).
+	 *
 	 * @param string $club  Club short name
 	 * @param array  $args  Query parameters (limit, offset)
-	 * @return array|WP_Error Catch returns array or error
+	 * @return array|WP_Error Catch returns array or fallback message
 	 */
 	public function get_catch_returns( $club, $args = array() ) {
 		if ( ! is_user_logged_in() ) {
@@ -177,6 +180,23 @@ class HLaS_API_Client {
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
+		$body        = wp_remote_retrieve_body( $response );
+		$data        = json_decode( $body, true );
+
+		if ( null === $data ) {
+			return new WP_Error( 'hlas_api_error', 'Invalid JSON response from API' );
+		}
+
+		// Handle members-only response (403) - return the fallback message
+		if ( 403 === $status_code ) {
+			// Still cache the fallback response so we don't hammer the API
+			if ( $this->cache_ttl > 0 ) {
+				set_transient( $cache_key, $data, $this->cache_ttl );
+			}
+			return $data;
+		}
+
+		// Handle other non-200 responses as errors
 		if ( 200 !== $status_code ) {
 			return new WP_Error(
 				'hlas_api_error',
@@ -185,14 +205,7 @@ class HLaS_API_Client {
 			);
 		}
 
-		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body, true );
-
-		if ( null === $data ) {
-			return new WP_Error( 'hlas_api_error', 'Invalid JSON response from API' );
-		}
-
-		// Cache the result
+		// Cache the successful result
 		if ( $this->cache_ttl > 0 ) {
 			set_transient( $cache_key, $data, $this->cache_ttl );
 		}

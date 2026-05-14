@@ -277,13 +277,14 @@ def create_headless_blueprint(deps):
         """
         Get catch returns for the current member in headless format.
         
-        Requires authentication (HLaS token or valid WordPress nonce).
+        REQUIRES AUTHENTICATION: This is a members-only endpoint. Non-authenticated
+        requests receive a fallback message with club contact information.
         
         Query params:
             - limit: max results (default 50, max 200)
             - offset: pagination offset (default 0)
         
-        Returns:
+        Authenticated response:
             {
                 "club": {...},
                 "member": {"id": 1, "name": "..."},
@@ -310,22 +311,75 @@ def create_headless_blueprint(deps):
                     }
                 ]
             }
+        
+        Unauthenticated response (members_only flag):
+            {
+                "members_only": true,
+                "club": {"name": "...", "short_name": "..."},
+                "message": "This information is accessible only by members of <Club>, please contact <admin_email> with any issues or enquiries as to how to access the site."
+            }
         """
         # Validate club exists
         valid_clubs = get_valid_club_short_names()
         if club_short_name not in valid_clubs:
             return jsonify({'error': 'Club not found'}), 404
         
-        # Require authentication
+        # Get club data first (needed for authentication check and fallback message)
+        if not is_postgres_reads_enabled():
+            return jsonify({
+                'error': 'Catch return data unavailable',
+                'club': club_short_name,
+                'returns': []
+            }), 503
+
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            clubs_table = backend['clubs_table']
+            
+            # Get club ID and data
+            club_id = _resolve_postgres_club_id(session, club_short_name)
+            if club_id is None:
+                return jsonify({
+                    'error': 'Club not found',
+                    'club': club_short_name,
+                    'returns': []
+                }), 404
+            
+            club_row = session.execute(
+                select(clubs_table).where(clubs_table.c.id == club_id)
+            ).first()
+        
+        except Exception as exc:
+            logger.error(f'Error fetching club data for {club_short_name}: {exc}')
+            return jsonify({
+                'error': 'Failed to fetch club data',
+                'club': club_short_name,
+                'returns': []
+            }), 500
+        
+        finally:
+            session.close()
+        
+        # Check authentication - member-only access
         auth_context = get_wp_auth_context()
-        if not auth_context:
-            return jsonify({'error': 'Unauthorized - authentication required'}), 401
+        member_context = get_member_context_for_club(club_short_name) if auth_context else None
         
-        # Get member context
-        member_context = get_member_context_for_club(club_short_name)
-        if not member_context:
-            return jsonify({'error': 'User has no member access for this club'}), 403
+        is_authenticated = auth_context is not None and member_context is not None
         
+        # If not authenticated, return members-only fallback message
+        if not is_authenticated:
+            contact_email = club_row.admin_email or 'membership@example.com'
+            return jsonify({
+                'members_only': True,
+                'club': {
+                    'name': club_row.full_name,
+                    'short_name': club_row.short_name,
+                },
+                'message': f'This information is accessible only by members of {club_row.full_name}, please contact {contact_email} with any issues or enquiries as to how to access the site.',
+            }), 403
+        
+        # User is authenticated - proceed with fetching catch returns
         member_id = member_context['member_id']
         
         # Parse pagination params
@@ -339,32 +393,9 @@ def create_headless_blueprint(deps):
         if offset < 0:
             offset = 0
         
-        if not is_postgres_reads_enabled():
-            return jsonify({
-                'error': 'Catch return data unavailable',
-                'club': club_short_name,
-                'returns': []
-            }), 503
-        
-        backend = get_postgres_backend()
         session = backend['session_factory']()
         try:
-            clubs_table = backend['clubs_table']
             catch_returns_table = backend['catch_returns_table']
-            
-            # Get club ID
-            club_id = _resolve_postgres_club_id(session, club_short_name)
-            if club_id is None:
-                return jsonify({
-                    'error': 'Club not found',
-                    'club': club_short_name,
-                    'returns': []
-                }), 404
-            
-            # Get club data
-            club_row = session.execute(
-                select(clubs_table).where(clubs_table.c.id == club_id)
-            ).first()
             
             # Fetch catch returns for this member
             catch_rows = session.execute(

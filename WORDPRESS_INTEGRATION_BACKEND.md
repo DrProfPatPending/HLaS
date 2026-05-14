@@ -8,12 +8,16 @@ The following endpoints are now available for WordPress integration at `/api/hea
 
 #### 1. GET `/api/headless/beat-details/<club_short_name>`
 
-Retrieves beat details for a club in clean, unstyled JSON format.
+Retrieves beat details for a club in clean, unstyled JSON format. This is a members-only endpoint with authentication required.
 
 **Parameters:**
 - `club_short_name` (path): Club abbreviation (e.g., "CTC", "GAAFFS")
 
-**Response Format:**
+**Authentication Required:**
+- X-WordPress-API-Key header (recommended for WordPress plugin), OR
+- HLaS member token (Authorization: Bearer)
+
+**Authenticated Response Format (200 OK):**
 ```json
 {
   "club": {
@@ -48,17 +52,35 @@ Retrieves beat details for a club in clean, unstyled JSON format.
 }
 ```
 
-**Usage Example:**
+**Non-Authenticated Response Format (403 Forbidden):**
+```json
+{
+  "members_only": true,
+  "club": {
+    "name": "Club Taylor Club",
+    "short_name": "CTC"
+  },
+  "message": "This information is only available to members of Club Taylor Club. Please contact admin@example.com for any membership enquiries or questions on using the website."
+}
+```
+
+**Usage Example (with API Key):**
 ```bash
 curl -X GET "https://api.hlas.local/api/headless/beat-details/CTC" \
-  -H "Accept: application/json"
+  -H "X-WordPress-API-Key: your-api-key"
+```
+
+**Usage Example (with Bearer Token):**
+```bash
+curl -X GET "https://api.hlas.local/api/headless/beat-details/CTC" \
+  -H "Authorization: Bearer <jwt_token>"
 ```
 
 ---
 
 #### 2. GET `/api/headless/catch-returns/<club_short_name>`
 
-Retrieves catch returns for the authenticated member.
+Retrieves catch returns for the authenticated member. This is a members-only endpoint with authentication required.
 
 **Parameters:**
 - `club_short_name` (path): Club abbreviation
@@ -67,9 +89,9 @@ Retrieves catch returns for the authenticated member.
 
 **Authentication Required:**
 - HLaS member token (Authorization: Bearer), OR
-- WordPress nonce + API key
+- WordPress API key (X-WordPress-API-Key)
 
-**Response Format:**
+**Authenticated Response Format (200 OK):**
 ```json
 {
   "club": {
@@ -107,6 +129,18 @@ Retrieves catch returns for the authenticated member.
       "created_at": "2026-05-14T10:30:00"
     }
   ]
+}
+```
+
+**Non-Authenticated Response Format (403 Forbidden):**
+```json
+{
+  "members_only": true,
+  "club": {
+    "name": "Club Taylor Club",
+    "short_name": "CTC"
+  },
+  "message": "This information is accessible only by members of Club Taylor Club, please contact admin@example.com with any issues or enquiries as to how to access the site."
 }
 ```
 

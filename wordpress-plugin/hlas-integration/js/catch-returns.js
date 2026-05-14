@@ -53,6 +53,12 @@
 			container.innerHTML = '';
 			container.classList.remove('hlas-loading');
 
+			// Check for members-only response (fallback message)
+			if (data.members_only === true) {
+				this.renderMembersOnlyMessage(container, data);
+				return;
+			}
+
 			if (!data.returns || data.returns.length === 0) {
 				container.innerHTML = '<div class="hlas-notice">No catch returns recorded yet.</div>';
 				return;
@@ -65,6 +71,18 @@
 			} else {
 				this.renderTable(container, data);
 			}
+		},
+
+		/**
+		 * Render members-only fallback message
+		 */
+		renderMembersOnlyMessage: function(container, data) {
+			var html = '<div class="hlas-catch-returns-container hlas-members-only">';
+			html += '<div class="hlas-notice hlas-notice-info">';
+			html += '<p>' + this.escapeHtml(data.message) + '</p>';
+			html += '</div>';
+			html += '</div>';
+			container.innerHTML = html;
 		},
 
 		/**

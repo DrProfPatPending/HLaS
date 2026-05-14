@@ -89,6 +89,8 @@ Display fishing beat information for a club:
 [hlas-beat-details club="GAAFFS" style="grid"]
 ```
 
+**Note:** This is a members-only shortcode. The API key must be configured in WordPress settings for the shortcode to work. Non-authenticated requests will display a message: "This information is only available to members of {Club}. Please contact {admin_email} for membership enquiries or questions on using the website."
+
 #### Catch Returns List
 Display recent catch returns for the logged-in user:
 
@@ -107,7 +109,7 @@ Display recent catch returns for the logged-in user:
 [hlas-catch-returns club="CTC" limit="5" style="timeline"]
 ```
 
-**Note:** Requires user to be logged in and authenticated with HLaS
+**Note:** Requires user to be logged in and authenticated with HLaS. Non-authenticated users will see a message: "This information is accessible only by members of {Club}, please contact {admin_email} with any issues or enquiries as to how to access the site."
 
 #### Catch Return Form
 Display a form for users to log new fishing sessions:
@@ -185,6 +187,20 @@ Add this to your theme's `style.css` or via Elementor Custom CSS:
 - WordPress user account linking to HLaS members
 - Single sign-on between WordPress and HLaS
 - Role-based access control
+
+## Members-Only Fallback Messages
+
+Both the **Beat Details** and **Catch Returns** shortcodes require authentication to display sensitive member information. When a user attempts to access these features without proper authentication, they will see a friendly fallback message instead.
+
+### Beat Details Fallback
+Non-authenticated users will see:
+> "This information is only available to members of {Club Name}. Please contact {admin_email} for any membership enquiries or questions on using the website."
+
+### Catch Returns Fallback
+Non-authenticated users will see:
+> "This information is accessible only by members of {Club Name}, please contact {admin_email} with any issues or enquiries as to how to access the site."
+
+The admin email is automatically retrieved from the HLaS backend's club configuration, so no manual configuration is needed on the WordPress side.
 
 ## Troubleshooting
 

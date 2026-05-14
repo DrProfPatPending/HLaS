@@ -80,15 +80,16 @@ This document outlines the complete implementation of HLaS integration with Word
 ### API Endpoints
 
 #### 1. GET `/api/headless/beat-details/<club>`
-**Public endpoint - no authentication required**
+**Protected endpoint - members-only (authentication required)**
 
-Returns clean JSON of fishing beats for a club.
+Returns clean JSON of fishing beats for a club. Non-authenticated requests receive a fallback message with club contact information.
 
 ```bash
-curl -X GET "https://api.hlas.local/api/headless/beat-details/CTC"
+curl -X GET "https://api.hlas.local/api/headless/beat-details/CTC" \
+  -H "X-WordPress-API-Key: <api_key>"
 ```
 
-Response:
+**Authenticated Response (200):**
 ```json
 {
   "club": {
@@ -117,16 +118,16 @@ Response:
 ```
 
 #### 2. GET `/api/headless/catch-returns/<club>`
-**Protected endpoint - authentication required**
+**Protected endpoint - members-only (authentication required)**
 
-Returns current user's catch returns for a club.
+Returns current user's catch returns for a club. Non-authenticated requests receive a fallback message with club contact information.
 
 ```bash
 curl -X GET "https://api.hlas.local/api/headless/catch-returns/CTC?limit=10&offset=0" \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-Response:
+**Authenticated Response (200):**
 ```json
 {
   "club": {...},
@@ -154,6 +155,30 @@ Response:
       "created_at": "2026-05-14T10:30:00"
     }
   ]
+}
+```
+
+**Non-Authenticated Response for Beat-Details (403):**
+```json
+{
+  "members_only": true,
+  "club": {
+    "name": "Club Taylor Club",
+    "short_name": "CTC"
+  },
+  "message": "This information is only available to members of Club Taylor Club. Please contact admin@example.com for any membership enquiries or questions on using the website."
+}
+```
+
+**Non-Authenticated Response for Catch-Returns (403):**
+```json
+{
+  "members_only": true,
+  "club": {
+    "name": "Club Taylor Club",
+    "short_name": "CTC"
+  },
+  "message": "This information is accessible only by members of Club Taylor Club, please contact admin@example.com with any issues or enquiries as to how to access the site."
 }
 ```
 
@@ -290,14 +315,16 @@ export WORDPRESS_DOMAIN="https://your-wordpress-site.com"
 ### Frontend Features
 
 **Beat Details Display:**
-- Public shortcode (no auth required)
+- Protected shortcode (requires authentication via API key)
+- Displays fallback message for non-members: "This information is only available to members of {Club}. Please contact {admin_email} for membership enquiries or questions on using the website."
 - Table layout: Shows all beat information in structured table
 - Grid layout: Card-based responsive design
-- Automatically fetches from headless API
+- Automatically fetches from headless API with API key
 - Handles errors gracefully
 
 **Catch Returns Display:**
 - Protected shortcode (requires authentication)
+- Displays fallback message for non-members: "This information is accessible only by members of {Club}, please contact {admin_email} with any issues or enquiries as to how to access the site."
 - Table layout: Compact view of recent catches
 - Timeline layout: Card-based chronological view
 - Pagination support
