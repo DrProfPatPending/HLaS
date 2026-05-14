@@ -1,0 +1,81 @@
+/**
+ * HLaS Integration Admin Styles
+ * 
+ * Styling for the WordPress admin settings page
+ * 
+ * @package HLaS_Integration
+ * @since 1.0.0
+ */
+
+.hlas-settings-page {
+	max-width: 800px;
+}
+
+.hlas-settings-page h1 {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+.hlas-settings-page form {
+	background: white;
+	padding: 20px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin-bottom: 20px;
+}
+
+.hlas-settings-page .form-table {
+	width: 100%;
+	margin-bottom: 20px;
+}
+
+.hlas-settings-page .form-table th {
+	text-align: left;
+	padding: 10px 0;
+	font-weight: 600;
+}
+
+.hlas-settings-page .form-table td {
+	padding: 10px 0;
+}
+
+.hlas-settings-page input[type="text"],
+.hlas-settings-page input[type="password"],
+.hlas-settings-page input[type="number"],
+.hlas-settings-page select {
+	padding: 8px 12px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.hlas-settings-page input[type="checkbox"] {
+	margin-right: 8px;
+}
+
+.hlas-settings-page .description {
+	display: block;
+	margin-top: 5px;
+	color: #666;
+	font-size: 12px;
+}
+
+.hlas-settings-page .card {
+	background: white;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.hlas-settings-page .card h2 {
+	margin-top: 0;
+}
+
+.hlas-settings-page .card p {
+	margin: 10px 0;
+}
+
+.hlas-settings-page .card strong {
+	font-weight: 600;
+	color: #0073aa;
+}

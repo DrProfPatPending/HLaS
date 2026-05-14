@@ -849,6 +849,7 @@ from routes import (
     create_admin_user_blueprint,
     create_club_settings_blueprint,
     create_document_blueprint,
+    create_headless_blueprint,
     create_member_blueprint,
     create_newsletter_blueprint,
     create_public_blueprint,
@@ -932,6 +933,7 @@ def create_app():
     app_instance.register_blueprint(create_admin_blueprint(route_deps))
     app_instance.register_blueprint(create_admin_user_blueprint(route_deps))
     app_instance.register_blueprint(create_role_blueprint(route_deps))
+    app_instance.register_blueprint(create_headless_blueprint(route_deps))
     from routes.field_order_routes import create_field_order_blueprint
     app_instance.register_blueprint(create_field_order_blueprint(route_deps))
     from routes.app_settings_routes import create_app_settings_blueprint

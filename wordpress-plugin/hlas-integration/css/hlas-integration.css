@@ -1,0 +1,339 @@
+/**
+ * HLaS Integration Frontend Styles
+ * 
+ * Base styling for HLaS components
+ * These styles use CSS custom properties for easy overriding by WordPress themes
+ * 
+ * @package HLaS_Integration
+ * @since 1.0.0
+ */
+
+/* CSS Custom Properties (can be overridden by theme) */
+:root {
+	--hlas-primary-color: #0073aa;
+	--hlas-secondary-color: #f0f0f0;
+	--hlas-text-color: #333;
+	--hlas-border-color: #ddd;
+	--hlas-error-color: #d32f2f;
+	--hlas-success-color: #388e3c;
+	--hlas-spacing: 16px;
+	--hlas-border-radius: 4px;
+}
+
+/* Common Styles */
+.hlas-loading {
+	text-align: center;
+	padding: var(--hlas-spacing);
+}
+
+.hlas-loading .spinner {
+	display: inline-block;
+	width: 40px;
+	height: 40px;
+	border: 4px solid var(--hlas-secondary-color);
+	border-top-color: var(--hlas-primary-color);
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
+
+.hlas-error-message {
+	background-color: #ffebee;
+	color: var(--hlas-error-color);
+	border-left: 4px solid var(--hlas-error-color);
+	padding: var(--hlas-spacing);
+	margin: var(--hlas-spacing) 0;
+	border-radius: var(--hlas-border-radius);
+}
+
+.hlas-success-message {
+	background-color: #e8f5e9;
+	color: var(--hlas-success-color);
+	border-left: 4px solid var(--hlas-success-color);
+	padding: var(--hlas-spacing);
+	margin: var(--hlas-spacing) 0;
+	border-radius: var(--hlas-border-radius);
+}
+
+.hlas-notice {
+	background-color: var(--hlas-secondary-color);
+	color: var(--hlas-text-color);
+	border: 1px solid var(--hlas-border-color);
+	padding: var(--hlas-spacing);
+	margin: var(--hlas-spacing) 0;
+	border-radius: var(--hlas-border-radius);
+}
+
+.hlas-notice-warning {
+	background-color: #fff3cd;
+	border-color: #ffc107;
+	color: #856404;
+}
+
+/* Beat Details */
+.hlas-beat-details-container h3 {
+	margin-top: 0;
+	color: var(--hlas-text-color);
+	border-bottom: 2px solid var(--hlas-border-color);
+	padding-bottom: var(--hlas-spacing);
+}
+
+.hlas-beats-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: var(--hlas-spacing) 0;
+}
+
+.hlas-beats-table th,
+.hlas-beats-table td {
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--hlas-border-color);
+}
+
+.hlas-beats-table th {
+	background-color: var(--hlas-secondary-color);
+	font-weight: 600;
+	color: var(--hlas-text-color);
+}
+
+.hlas-beats-table tbody tr:hover {
+	background-color: rgba(0, 115, 170, 0.05);
+}
+
+/* Beat Details Grid */
+.hlas-beats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: var(--hlas-spacing);
+	margin: var(--hlas-spacing) 0;
+}
+
+.hlas-beat-card {
+	border: 1px solid var(--hlas-border-color);
+	padding: var(--hlas-spacing);
+	border-radius: var(--hlas-border-radius);
+	background-color: #fff;
+	transition: box-shadow 0.2s ease;
+}
+
+.hlas-beat-card:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hlas-beat-card h4 {
+	margin-top: 0;
+	color: var(--hlas-primary-color);
+}
+
+.hlas-beat-card p {
+	margin: 8px 0;
+	color: var(--hlas-text-color);
+}
+
+/* Catch Returns */
+.hlas-catch-returns-container h3 {
+	margin-top: 0;
+	color: var(--hlas-text-color);
+	border-bottom: 2px solid var(--hlas-border-color);
+	padding-bottom: var(--hlas-spacing);
+}
+
+.hlas-catch-returns-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: var(--hlas-spacing) 0;
+	font-size: 14px;
+}
+
+.hlas-catch-returns-table th,
+.hlas-catch-returns-table td {
+	padding: 10px 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--hlas-border-color);
+}
+
+.hlas-catch-returns-table th {
+	background-color: var(--hlas-secondary-color);
+	font-weight: 600;
+	color: var(--hlas-text-color);
+}
+
+.hlas-catch-returns-table tbody tr:hover {
+	background-color: rgba(0, 115, 170, 0.05);
+}
+
+/* Catch Returns Timeline */
+.hlas-catch-returns-timeline h3 {
+	margin-top: 0;
+	color: var(--hlas-text-color);
+}
+
+.hlas-return-card {
+	display: flex;
+	gap: var(--hlas-spacing);
+	margin: var(--hlas-spacing) 0;
+	padding: var(--hlas-spacing);
+	border: 1px solid var(--hlas-border-color);
+	border-radius: var(--hlas-border-radius);
+	background-color: #fff;
+}
+
+.hlas-return-card .return-date {
+	min-width: 80px;
+	font-weight: 600;
+	color: var(--hlas-primary-color);
+}
+
+.hlas-return-card h4 {
+	margin: 0 0 8px 0;
+	color: var(--hlas-text-color);
+}
+
+.hlas-return-card p {
+	margin: 4px 0;
+	color: var(--hlas-text-color);
+}
+
+/* Catch Return Form */
+.hlas-catch-return-form-wrapper {
+	margin: var(--hlas-spacing) 0;
+}
+
+.hlas-catch-return-form fieldset {
+	border: 1px solid var(--hlas-border-color);
+	border-radius: var(--hlas-border-radius);
+	padding: var(--hlas-spacing);
+	margin: var(--hlas-spacing) 0;
+}
+
+.hlas-catch-return-form legend {
+	padding: 0 8px;
+	font-weight: 600;
+	color: var(--hlas-text-color);
+}
+
+.hlas-form,
+.hlas-catch-return-form {
+	max-width: 600px;
+}
+
+.form-group {
+	margin-bottom: var(--hlas-spacing);
+}
+
+.form-row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	gap: var(--hlas-spacing);
+	margin-bottom: var(--hlas-spacing);
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: 500;
+	color: var(--hlas-text-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="date"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid var(--hlas-border-color);
+	border-radius: var(--hlas-border-radius);
+	font-family: inherit;
+	font-size: inherit;
+	color: var(--hlas-text-color);
+	box-sizing: border-box;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="password"]:focus,
+.form-group input[type="date"]:focus,
+.form-group input[type="number"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+	outline: none;
+	border-color: var(--hlas-primary-color);
+	box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.1);
+}
+
+.form-group textarea {
+	resize: vertical;
+	min-height: 100px;
+}
+
+.form-actions {
+	margin-top: calc(var(--hlas-spacing) * 1.5);
+}
+
+.btn {
+	display: inline-block;
+	padding: 10px 20px;
+	background-color: var(--hlas-primary-color);
+	color: white;
+	border: none;
+	border-radius: var(--hlas-border-radius);
+	cursor: pointer;
+	font-weight: 500;
+	transition: background-color 0.2s ease;
+}
+
+.btn:hover {
+	background-color: darken(#0073aa, 10%);
+}
+
+.btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.btn-primary {
+	background-color: var(--hlas-primary-color);
+}
+
+.required {
+	color: var(--hlas-error-color);
+}
+
+/* Fish Count Grid */
+.fish-count-row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: var(--hlas-spacing);
+	margin-bottom: var(--hlas-spacing);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	.hlas-beats-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.hlas-catch-returns-table {
+		font-size: 12px;
+	}
+
+	.hlas-catch-returns-table th,
+	.hlas-catch-returns-table td {
+		padding: 8px;
+	}
+
+	.hlas-return-card {
+		flex-direction: column;
+	}
+
+	.form-row {
+		grid-template-columns: 1fr;
+	}
+}

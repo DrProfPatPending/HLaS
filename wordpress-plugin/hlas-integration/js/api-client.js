@@ -1,0 +1,210 @@
+/**
+ * HLaS API Client
+ * 
+ * Handles communication with HLaS backend API from the browser
+ * 
+ * @package HLaS_Integration
+ * @since 1.0.0
+ */
+
+(function(window) {
+	'use strict';
+
+	/**
+	 * HLaS API Client class
+	 */
+	function HLasApiClient(config) {
+		this.config = config || {};
+		this.apiUrl = config.apiUrl || 'https://api.example.com';
+		this.apiKey = config.apiKey || '';
+		this.nonce = config.nonce || '';
+		this.userId = config.userId || 0;
+		this.debug = config.debug || false;
+		this.token = localStorage.getItem('hlas_auth_token') || '';
+	}
+
+	/**
+	 * Log debug messages
+	 */
+	HLasApiClient.prototype.log = function(message, data) {
+		if (this.debug && window.console) {
+			console.log('[HLaS] ' + message, data || '');
+		}
+	};
+
+	/**
+	 * Handle API errors
+	 */
+	HLasApiClient.prototype.handleError = function(error) {
+		this.log('API Error:', error);
+		
+		if (error.response) {
+			if (error.response.status === 401) {
+				// Authentication error
+				return {
+					error: 'Unauthorized - please log in with HLaS',
+					status: 401
+				};
+			} else if (error.response.status === 403) {
+				// Permission error
+				return {
+					error: 'You do not have permission to access this content',
+					status: 403
+				};
+			} else if (error.response.status === 404) {
+				// Not found
+				return {
+					error: 'Resource not found',
+					status: 404
+				};
+			} else {
+				return {
+					error: 'API Error: ' + error.response.status,
+					status: error.response.status
+				};
+			}
+		}
+		
+		return {
+			error: error.message || 'Unknown error',
+			status: 0
+		};
+	};
+
+	/**
+	 * Fetch beat details for a club
+	 */
+	HLasApiClient.prototype.getBeatDetails = function(club) {
+		var self = this;
+		var url = this.apiUrl + '/api/headless/beat-details/' + encodeURIComponent(club);
+
+		this.log('Fetching beat details from: ' + url);
+
+		return fetch(url, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json'
+			}
+		})
+		.then(function(response) {
+			if (!response.ok) {
+				throw {
+					message: 'HTTP ' + response.status,
+					response: response
+				};
+			}
+			return response.json();
+		})
+		.catch(function(error) {
+			return self.handleError(error);
+		});
+	};
+
+	/**
+	 * Fetch catch returns for current user
+	 */
+	HLasApiClient.prototype.getCatchReturns = function(club, limit, offset) {
+		var self = this;
+		limit = limit || 50;
+		offset = offset || 0;
+
+		var url = this.apiUrl + '/api/headless/catch-returns/' + encodeURIComponent(club);
+		url += '?limit=' + encodeURIComponent(limit) + '&offset=' + encodeURIComponent(offset);
+
+		this.log('Fetching catch returns from: ' + url);
+
+		var headers = {
+			'Content-Type': 'application/json',
+			'Accept': 'application/json'
+		};
+
+		// Add authentication
+		if (this.token) {
+			headers['Authorization'] = 'Bearer ' + this.token;
+		}
+
+		return fetch(url, {
+			method: 'GET',
+			headers: headers
+		})
+		.then(function(response) {
+			if (!response.ok) {
+				throw {
+					message: 'HTTP ' + response.status,
+					response: response
+				};
+			}
+			return response.json();
+		})
+		.catch(function(error) {
+			return self.handleError(error);
+		});
+	};
+
+	/**
+	 * Create a new catch return
+	 */
+	HLasApiClient.prototype.createCatchReturn = function(club, data) {
+		var self = this;
+		var url = this.apiUrl + '/api/headless/catch-returns/' + encodeURIComponent(club);
+
+		this.log('Creating catch return at: ' + url, data);
+
+		var headers = {
+			'Content-Type': 'application/json',
+			'Accept': 'application/json'
+		};
+
+		// Add authentication
+		if (this.token) {
+			headers['Authorization'] = 'Bearer ' + this.token;
+		}
+
+		return fetch(url, {
+			method: 'POST',
+			headers: headers,
+			body: JSON.stringify(data)
+		})
+		.then(function(response) {
+			if (response.status !== 201 && response.status !== 200) {
+				throw {
+					message: 'HTTP ' + response.status,
+					response: response
+				};
+			}
+			return response.json();
+		})
+		.catch(function(error) {
+			return self.handleError(error);
+		});
+	};
+
+	/**
+	 * Set authentication token
+	 */
+	HLasApiClient.prototype.setAuthToken = function(token) {
+		this.token = token;
+		if (token) {
+			localStorage.setItem('hlas_auth_token', token);
+		} else {
+			localStorage.removeItem('hlas_auth_token');
+		}
+	};
+
+	/**
+	 * Get authentication token
+	 */
+	HLasApiClient.prototype.getAuthToken = function() {
+		return this.token;
+	};
+
+	// Export to window
+	window.HLasApiClient = HLasApiClient;
+
+	// Create global instance if config is available
+	if (typeof window.hlasConfig !== 'undefined') {
+		window.hlasClient = new HLasApiClient(window.hlasConfig);
+	}
+
+})(window);
