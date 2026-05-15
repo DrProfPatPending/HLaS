@@ -149,8 +149,26 @@ class HLaS_Integration_Auth {
 			return false;
 		}
 
-		$auth_token = get_user_meta( get_current_user_id(), 'hlas_auth_token', true );
+		$auth_token = self::get_user_auth_token( get_current_user_id() );
 		return ! empty( $auth_token );
+	}
+
+	/**
+	 * Get HLaS auth token for a user
+	 *
+	 * @param int|null $user_id WordPress user ID (defaults to current user)
+	 * @return string
+	 */
+	public static function get_user_auth_token( $user_id = null ) {
+		if ( null === $user_id ) {
+			if ( ! is_user_logged_in() ) {
+				return '';
+			}
+			$user_id = get_current_user_id();
+		}
+
+		$token = get_user_meta( $user_id, 'hlas_auth_token', true );
+		return is_string( $token ) ? trim( $token ) : '';
 	}
 
 	/**

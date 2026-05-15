@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'HLAS_PLUGIN_FILE', __FILE__ );
 define( 'HLAS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HLAS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'HLAS_PLUGIN_VERSION', '1.0.1' );
+define( 'HLAS_PLUGIN_VERSION', '1.0.2' );
 
 /**
  * Include required files
@@ -125,6 +125,7 @@ class HLaS_Integration {
 		add_action( 'wp_ajax_hlas_beat_details', array( $this, 'ajax_beat_details' ) );
 		add_action( 'wp_ajax_nopriv_hlas_catch_returns', array( $this, 'ajax_catch_returns' ) );
 		add_action( 'wp_ajax_hlas_catch_returns', array( $this, 'ajax_catch_returns' ) );
+		add_action( 'wp_ajax_hlas_create_catch_return', array( $this, 'ajax_create_catch_return' ) );
 	}
 
 	/**
@@ -398,6 +399,7 @@ class HLaS_Integration {
 
 		$club = isset( $_POST['club'] ) ? sanitize_text_field( $_POST['club'] ) : '';
 		$limit = isset( $_POST['limit'] ) ? intval( $_POST['limit'] ) : 10;
+		$offset = isset( $_POST['offset'] ) ? intval( $_POST['offset'] ) : 0;
 
 		if ( ! $club ) {
 			wp_send_json_error( array( 'message' => 'Club is required' ) );
@@ -411,8 +413,15 @@ class HLaS_Integration {
 		}
 
 		$url = rtrim( $api_url, '/' ) . '/api/headless/catch-returns/' . urlencode( $club );
+		$query = array();
 		if ( $limit ) {
-			$url .= '?limit=' . intval( $limit );
+			$query['limit'] = intval( $limit );
+		}
+		if ( $offset > 0 ) {
+			$query['offset'] = intval( $offset );
+		}
+		if ( ! empty( $query ) ) {
+			$url .= '?' . http_build_query( $query );
 		}
 
 		$response = wp_remote_get(
@@ -432,6 +441,74 @@ class HLaS_Integration {
 
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
+
+		if ( null === $data ) {
+			wp_send_json_error( array( 'message' => 'Invalid API response' ) );
+		}
+
+		wp_send_json_success( $data );
+	}
+
+	/**
+	 * AJAX handler for creating catch returns
+	 */
+	public function ajax_create_catch_return() {
+		check_ajax_referer( get_option( 'hlas_nonce_action', 'hlas_integration' ), 'nonce' );
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => 'You must be logged in' ), 401 );
+		}
+
+		if ( ! HLaS_Integration_Auth::is_hlas_authenticated() ) {
+			wp_send_json_error( array( 'message' => 'You must be authenticated with HLaS' ), 401 );
+		}
+
+		$club = isset( $_POST['club'] ) ? sanitize_text_field( $_POST['club'] ) : '';
+		$payload_raw = isset( $_POST['payload'] ) ? wp_unslash( $_POST['payload'] ) : '';
+
+		if ( ! $club || ! $payload_raw ) {
+			wp_send_json_error( array( 'message' => 'Club and payload are required' ) );
+		}
+
+		$payload = json_decode( $payload_raw, true );
+		if ( ! is_array( $payload ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid payload format' ) );
+		}
+
+		$api_url = get_option( 'hlas_api_url' );
+		$token = HLaS_Integration_Auth::get_user_auth_token( get_current_user_id() );
+
+		if ( ! $api_url || ! $token ) {
+			wp_send_json_error( array( 'message' => 'API not configured or user not authenticated' ) );
+		}
+
+		$url = rtrim( $api_url, '/' ) . '/api/headless/catch-returns/' . urlencode( $club );
+
+		$response = wp_remote_post(
+			$url,
+			array(
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Accept' => 'application/json',
+					'Content-Type' => 'application/json',
+				),
+				'body' => wp_json_encode( $payload ),
+				'timeout' => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			wp_send_json_error( array( 'message' => 'API request failed: ' . $response->get_error_message() ) );
+		}
+
+		$status = wp_remote_retrieve_response_code( $response );
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( $status < 200 || $status >= 300 ) {
+			$message = is_array( $data ) && isset( $data['error'] ) ? $data['error'] : 'Failed to create catch return';
+			wp_send_json_error( array( 'message' => $message ), $status );
+		}
 
 		if ( null === $data ) {
 			wp_send_json_error( array( 'message' => 'Invalid API response' ) );

@@ -179,24 +179,19 @@
 	 */
 	HLasApiClient.prototype.createCatchReturn = function(club, data) {
 		var self = this;
-		var url = this.apiUrl + '/api/headless/catch-returns/' + encodeURIComponent(club);
 
-		this.log('Creating catch return at: ' + url, data);
+		this.log('Creating catch return for club: ' + club, data);
 
-		var headers = {
-			'Content-Type': 'application/json',
-			'Accept': 'application/json'
-		};
+		var form = new FormData();
+		form.append('action', 'hlas_create_catch_return');
+		form.append('club', club);
+		form.append('payload', JSON.stringify(data));
+		form.append('nonce', this.nonce);
 
-		// Add authentication
-		if (this.token) {
-			headers['Authorization'] = 'Bearer ' + this.token;
-		}
-
-		return fetch(url, {
+		return fetch(this.getAjaxUrl(), {
 			method: 'POST',
-			headers: headers,
-			body: JSON.stringify(data)
+			body: form,
+			credentials: 'same-origin'
 		})
 		.then(function(response) {
 			if (response.status !== 201 && response.status !== 200) {
@@ -206,6 +201,9 @@
 				};
 			}
 			return response.json();
+		})
+		.then(function(payload) {
+			return self.normalizeWpAjaxResponse(payload);
 		})
 		.catch(function(error) {
 			return self.handleError(error);
