@@ -262,7 +262,8 @@ class HLaS_Integration {
 	 */
 	public function enqueue_frontend_assets() {
 		// Only enqueue on pages that might use HLaS shortcodes
-		if ( ! is_admin() && has_shortcode( get_post()->post_content, array( 'hlas-beat-details', 'hlas-catch-returns', 'hlas-catch-return-form' ) ) ) {
+		$post = get_post();
+		if ( $post && ! is_admin() && ( has_shortcode( $post->post_content, 'hlas-beat-details' ) || has_shortcode( $post->post_content, 'hlas-catch-returns' ) || has_shortcode( $post->post_content, 'hlas-catch-return-form' ) ) ) {
 			// Enqueue API client
 			wp_enqueue_script(
 				'hlas-api-client',
