@@ -119,6 +119,12 @@ class HLaS_Integration {
 		// Initialize authentication
 		$auth = new HLaS_Integration_Auth();
 		$auth->init();
+
+		// Register AJAX proxy endpoints
+		add_action( 'wp_ajax_nopriv_hlas_beat_details', array( $this, 'ajax_beat_details' ) );
+		add_action( 'wp_ajax_hlas_beat_details', array( $this, 'ajax_beat_details' ) );
+		add_action( 'wp_ajax_nopriv_hlas_catch_returns', array( $this, 'ajax_catch_returns' ) );
+		add_action( 'wp_ajax_hlas_catch_returns', array( $this, 'ajax_catch_returns' ) );
 	}
 
 	/**
@@ -329,6 +335,109 @@ class HLaS_Integration {
 			array(),
 			HLAS_PLUGIN_VERSION
 		);
+	}
+
+	/**
+	 * AJAX handler for beat details
+	 */
+	public function ajax_beat_details() {
+		check_ajax_referer( get_option( 'hlas_nonce_action', 'hlas_integration' ), 'nonce' );
+
+		$club = isset( $_POST['club'] ) ? sanitize_text_field( $_POST['club'] ) : '';
+		if ( ! $club ) {
+			wp_send_json_error( array( 'message' => 'Club is required' ) );
+		}
+
+		$api_url = get_option( 'hlas_api_url' );
+		$api_key = get_option( 'hlas_api_key' );
+
+		if ( ! $api_url ) {
+			wp_send_json_error( array( 'message' => 'API URL not configured' ) );
+		}
+
+		$url = rtrim( $api_url, '/' ) . '/api/headless/beat-details/' . urlencode( $club );
+
+		$response = wp_remote_get(
+			$url,
+			array(
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $api_key,
+					'Accept' => 'application/json',
+				),
+				'timeout' => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			wp_send_json_error( array( 'message' => 'API request failed: ' . $response->get_error_message() ) );
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( null === $data ) {
+			wp_send_json_error( array( 'message' => 'Invalid API response' ) );
+		}
+
+		wp_send_json_success( $data );
+	}
+
+	/**
+	 * AJAX handler for catch returns
+	 */
+	public function ajax_catch_returns() {
+		check_ajax_referer( get_option( 'hlas_nonce_action', 'hlas_integration' ), 'nonce' );
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => 'You must be logged in' ), 401 );
+		}
+
+		if ( ! HLaS_Integration_Auth::is_hlas_authenticated() ) {
+			wp_send_json_error( array( 'message' => 'You must be authenticated with HLaS' ), 401 );
+		}
+
+		$club = isset( $_POST['club'] ) ? sanitize_text_field( $_POST['club'] ) : '';
+		$limit = isset( $_POST['limit'] ) ? intval( $_POST['limit'] ) : 10;
+
+		if ( ! $club ) {
+			wp_send_json_error( array( 'message' => 'Club is required' ) );
+		}
+
+		$api_url = get_option( 'hlas_api_url' );
+		$token = HLaS_Integration_Auth::get_user_auth_token( get_current_user_id() );
+
+		if ( ! $api_url || ! $token ) {
+			wp_send_json_error( array( 'message' => 'API not configured or user not authenticated' ) );
+		}
+
+		$url = rtrim( $api_url, '/' ) . '/api/headless/catch-returns/' . urlencode( $club );
+		if ( $limit ) {
+			$url .= '?limit=' . intval( $limit );
+		}
+
+		$response = wp_remote_get(
+			$url,
+			array(
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Accept' => 'application/json',
+				),
+				'timeout' => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			wp_send_json_error( array( 'message' => 'API request failed: ' . $response->get_error_message() ) );
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( null === $data ) {
+			wp_send_json_error( array( 'message' => 'Invalid API response' ) );
+		}
+
+		wp_send_json_success( $data );
 	}
 }
 

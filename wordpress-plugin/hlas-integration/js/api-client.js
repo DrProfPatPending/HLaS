@@ -24,6 +24,18 @@
 	}
 
 	/**
+	 * Get WordPress AJAX URL
+	 */
+	HLasApiClient.prototype.getAjaxUrl = function() {
+		// WordPress exposes ajaxurl globally in footer
+		if (typeof window.ajaxurl !== 'undefined') {
+			return window.ajaxurl;
+		}
+		// If not available, construct it
+		return window.location.origin + '/wp-admin/admin-ajax.php';
+	};
+
+	/**
 	 * Log debug messages
 	 */
 	HLasApiClient.prototype.log = function(message, data) {
@@ -76,16 +88,19 @@
 	 */
 	HLasApiClient.prototype.getBeatDetails = function(club) {
 		var self = this;
-		var url = this.apiUrl + '/api/headless/beat-details/' + encodeURIComponent(club);
+		
+		// Use WordPress admin-ajax.php as proxy
+		var data = new FormData();
+		data.append('action', 'hlas_beat_details');
+		data.append('club', club);
+		data.append('nonce', this.nonce);
 
-		this.log('Fetching beat details from: ' + url);
+		this.log('Fetching beat details for club: ' + club);
 
-		return fetch(url, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json'
-			}
+		return fetch(this.getAjaxUrl(), {
+			method: 'POST',
+			body: data,
+			credentials: 'same-origin'
 		})
 		.then(function(response) {
 			if (!response.ok) {
@@ -109,24 +124,20 @@
 		limit = limit || 50;
 		offset = offset || 0;
 
-		var url = this.apiUrl + '/api/headless/catch-returns/' + encodeURIComponent(club);
-		url += '?limit=' + encodeURIComponent(limit) + '&offset=' + encodeURIComponent(offset);
+		// Use WordPress admin-ajax.php as proxy
+		var data = new FormData();
+		data.append('action', 'hlas_catch_returns');
+		data.append('club', club);
+		data.append('limit', limit);
+		data.append('offset', offset);
+		data.append('nonce', this.nonce);
 
-		this.log('Fetching catch returns from: ' + url);
+		this.log('Fetching catch returns for club: ' + club);
 
-		var headers = {
-			'Content-Type': 'application/json',
-			'Accept': 'application/json'
-		};
-
-		// Add authentication
-		if (this.token) {
-			headers['Authorization'] = 'Bearer ' + this.token;
-		}
-
-		return fetch(url, {
-			method: 'GET',
-			headers: headers
+		return fetch(this.getAjaxUrl(), {
+			method: 'POST',
+			body: data,
+			credentials: 'same-origin'
 		})
 		.then(function(response) {
 			if (!response.ok) {
