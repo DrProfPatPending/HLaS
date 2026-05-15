@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'HLAS_PLUGIN_FILE', __FILE__ );
 define( 'HLAS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HLAS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'HLAS_PLUGIN_VERSION', '1.0.2' );
+define( 'HLAS_PLUGIN_VERSION', '1.0.3' );
 
 /**
  * Include required files
@@ -393,10 +393,6 @@ class HLaS_Integration {
 			wp_send_json_error( array( 'message' => 'You must be logged in' ), 401 );
 		}
 
-		if ( ! HLaS_Integration_Auth::is_hlas_authenticated() ) {
-			wp_send_json_error( array( 'message' => 'You must be authenticated with HLaS' ), 401 );
-		}
-
 		$club = isset( $_POST['club'] ) ? sanitize_text_field( $_POST['club'] ) : '';
 		$limit = isset( $_POST['limit'] ) ? intval( $_POST['limit'] ) : 10;
 		$offset = isset( $_POST['offset'] ) ? intval( $_POST['offset'] ) : 0;
@@ -406,10 +402,16 @@ class HLaS_Integration {
 		}
 
 		$api_url = get_option( 'hlas_api_url' );
+		$wp_api_key = get_option( 'hlas_api_key' );
 		$token = HLaS_Integration_Auth::get_user_auth_token( get_current_user_id() );
+		$member_id = HLaS_Integration_Auth::get_current_member_id();
 
-		if ( ! $api_url || ! $token ) {
-			wp_send_json_error( array( 'message' => 'API not configured or user not authenticated' ) );
+		if ( ! $api_url ) {
+			wp_send_json_error( array( 'message' => 'API URL not configured' ) );
+		}
+
+		if ( ! $token && ! $member_id ) {
+			wp_send_json_error( array( 'message' => 'You must be authenticated with HLaS (token or member mapping required)' ), 401 );
 		}
 
 		$url = rtrim( $api_url, '/' ) . '/api/headless/catch-returns/' . urlencode( $club );
@@ -428,7 +430,10 @@ class HLaS_Integration {
 			$url,
 			array(
 				'headers' => array(
-					'Authorization' => 'Bearer ' . $token,
+					'Authorization' => $token ? 'Bearer ' . $token : '',
+					'X-WordPress-API-Key' => $wp_api_key ? $wp_api_key : '',
+					'X-WP-User-ID' => strval( get_current_user_id() ),
+					'X-HLAS-Member-ID' => $member_id ? strval( $member_id ) : '',
 					'Accept' => 'application/json',
 				),
 				'timeout' => 30,
@@ -459,10 +464,6 @@ class HLaS_Integration {
 			wp_send_json_error( array( 'message' => 'You must be logged in' ), 401 );
 		}
 
-		if ( ! HLaS_Integration_Auth::is_hlas_authenticated() ) {
-			wp_send_json_error( array( 'message' => 'You must be authenticated with HLaS' ), 401 );
-		}
-
 		$club = isset( $_POST['club'] ) ? sanitize_text_field( $_POST['club'] ) : '';
 		$payload_raw = isset( $_POST['payload'] ) ? wp_unslash( $_POST['payload'] ) : '';
 
@@ -476,10 +477,16 @@ class HLaS_Integration {
 		}
 
 		$api_url = get_option( 'hlas_api_url' );
+		$wp_api_key = get_option( 'hlas_api_key' );
 		$token = HLaS_Integration_Auth::get_user_auth_token( get_current_user_id() );
+		$member_id = HLaS_Integration_Auth::get_current_member_id();
 
-		if ( ! $api_url || ! $token ) {
-			wp_send_json_error( array( 'message' => 'API not configured or user not authenticated' ) );
+		if ( ! $api_url ) {
+			wp_send_json_error( array( 'message' => 'API URL not configured' ) );
+		}
+
+		if ( ! $token && ! $member_id ) {
+			wp_send_json_error( array( 'message' => 'You must be authenticated with HLaS (token or member mapping required)' ), 401 );
 		}
 
 		$url = rtrim( $api_url, '/' ) . '/api/headless/catch-returns/' . urlencode( $club );
@@ -488,7 +495,10 @@ class HLaS_Integration {
 			$url,
 			array(
 				'headers' => array(
-					'Authorization' => 'Bearer ' . $token,
+					'Authorization' => $token ? 'Bearer ' . $token : '',
+					'X-WordPress-API-Key' => $wp_api_key ? $wp_api_key : '',
+					'X-WP-User-ID' => strval( get_current_user_id() ),
+					'X-HLAS-Member-ID' => $member_id ? strval( $member_id ) : '',
 					'Accept' => 'application/json',
 					'Content-Type' => 'application/json',
 				),

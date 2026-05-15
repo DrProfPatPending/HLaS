@@ -150,7 +150,8 @@ class HLaS_Integration_Auth {
 		}
 
 		$auth_token = self::get_user_auth_token( get_current_user_id() );
-		return ! empty( $auth_token );
+		$member_id = self::get_current_member_id();
+		return ! empty( $auth_token ) || ! empty( $member_id );
 	}
 
 	/**

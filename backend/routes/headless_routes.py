@@ -132,6 +132,19 @@ def create_headless_blueprint(deps):
                 'club': club_short_name,
                 'user_type': 'hlas_member',
             }
+
+        # Fallback: WordPress-provided member mapping (trusted only with valid WP API key)
+        auth_context = get_wp_auth_context()
+        if auth_context and auth_context.get('mode') == 'wordpress_api_key':
+            wp_user_id = request.headers.get('X-WP-User-ID', '').strip()
+            wp_member_id = request.headers.get('X-HLAS-Member-ID', '').strip()
+            if wp_user_id.isdigit() and wp_member_id.isdigit():
+                return {
+                    'member_id': int(wp_member_id),
+                    'club': club_short_name,
+                    'user_type': 'wordpress_mapped_member',
+                    'wp_user_id': int(wp_user_id),
+                }
         
         # TODO: Map WordPress user to HLaS member
         # For now, WordPress requests are treated as public/limited access
