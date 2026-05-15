@@ -124,7 +124,7 @@ services:
         }
     volumes:
       - wordpress_data:/var/www/html
-      - ./wordpress-plugin/hlas-integration:/var/www/html/wp-content/plugins/hlas-integration:ro
+      - ./wordpress-plugin/hlas-integration:/var/www/html/wp-content/plugins/hlas-integration
     restart: unless-stopped
 
   wordpress-web:
