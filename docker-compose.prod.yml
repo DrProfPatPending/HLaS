@@ -112,11 +112,11 @@ services:
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
       WORDPRESS_TABLE_PREFIX: wp_
       WORDPRESS_CONFIG_EXTRA: |
-        define('WP_HOME', 'https://wordpress.hlastest');
-        define('WP_SITEURL', 'https://wordpress.hlastest');
+        define('WP_HOME', 'https://wordpress.cambridgetroutclub.org');
+        define('WP_SITEURL', 'https://wordpress.cambridgetroutclub.org');
         if (!empty($$_SERVER['HTTP_X_FORWARDED_PROTO'])) {
           $$_SERVER['HTTPS'] = $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? 'on' : 'off';
-        } elseif (strpos($$_SERVER['HTTP_HOST'] ?? '', 'wordpress.hlastest') !== false) {
+        } elseif (strpos($$_SERVER['HTTP_HOST'] ?? '', 'wordpress.cambridgetroutclub.org') !== false) {
           $$_SERVER['HTTPS'] = 'on';
         }
         if (!empty($$_SERVER['HTTP_X_FORWARDED_FOR'])) {

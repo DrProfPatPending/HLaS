@@ -9,3 +9,9 @@ cambridgetroutclub.org {
         reverse_proxy frontend:80
     }
 }
+
+wordpress.cambridgetroutclub.org {
+    encode zstd gzip
+
+    reverse_proxy wordpress-web:80
+}
