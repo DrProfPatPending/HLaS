@@ -94,7 +94,7 @@ services:
       retries: 5
 
   wordpress:
-    image: wordpress:6.5-php8.3-fpm-alpine
+    image: wordpress:6.9-php8.3-fpm-alpine
     depends_on:
       wordpress-db:
         condition: service_healthy
@@ -107,16 +107,13 @@ services:
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_HOME', 'https://wordpress.hlastest');
         define('WP_SITEURL', 'https://wordpress.hlastest');
-        define('FORCE_SSL_ADMIN', true);
-        define('FORCE_SSL_LOGIN', true);
-        define('WP_PROXY_DISABLE', false);
-        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+        if (!empty($$_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+          $$_SERVER['HTTPS'] = $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? 'on' : 'off';
+        } elseif (strpos($$_SERVER['HTTP_HOST'] ?? '', 'wordpress.hlastest') !== false) {
           $$_SERVER['HTTPS'] = 'on';
-          $$_SERVER['SERVER_PORT'] = 443;
         }
-        if (isset($$_SERVER['HTTP_X_FORWARDED_HOST'])) {
-          $$_SERVER['HTTP_HOST'] = $$_SERVER['HTTP_X_FORWARDED_HOST'];
-          $$_SERVER['SERVER_NAME'] = $$_SERVER['HTTP_X_FORWARDED_HOST'];
+        if (!empty($$_SERVER['HTTP_X_FORWARDED_FOR'])) {
+          $$_SERVER['REMOTE_ADDR'] = explode(',', $$_SERVER['HTTP_X_FORWARDED_FOR'])[0];
         }
     volumes:
       - wordpress_data:/var/www/html
