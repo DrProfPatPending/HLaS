@@ -22,6 +22,14 @@ STALE_ENV_VARS=(
   LOG_LEVEL
 )
 
+REQUIRED_WORDPRESS_ENV_VARS=(
+  WORDPRESS_DB_HOST
+  WORDPRESS_DB_NAME
+  WORDPRESS_DB_ROOT_PASSWORD
+  WORDPRESS_DB_USER
+  WORDPRESS_DB_PASSWORD
+)
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -85,6 +93,17 @@ sanitize_shell_env() {
   done
 }
 
+check_wordpress_env() {
+  local var_name value
+
+  for var_name in "${REQUIRED_WORDPRESS_ENV_VARS[@]}"; do
+    value="$(grep -E "^${var_name}=" "$ENV_FILE" | tail -n1 | cut -d'=' -f2-)"
+    [[ -n "${value:-}" ]] || fail "${var_name} missing or empty in ${ENV_FILE}"
+  done
+
+  log "WordPress database env vars verified"
+}
+
 check_git_branch() {
   local current_branch
   current_branch="$(git -C "$ROOT_DIR" branch --show-current)"
@@ -132,6 +151,7 @@ run_verify() {
   require_file "$ENV_FILE"
   sanitize_shell_env
   check_git_branch
+  check_wordpress_env
   check_env_tags
   check_compose_resolution
   log "Verification complete"

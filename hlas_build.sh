@@ -6,6 +6,28 @@ cd /opt/hlas
 echo "Rebuilding latest HLaS from Github sources"
 
 unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB HLAS_USE_POSTGRES_READS LOG_LEVEL
+
+require_env_vars() {
+    local env_file="$1"
+    shift
+
+    local var_name value
+    for var_name in "$@"; do
+        value="$(grep -E "^${var_name}=" "$env_file" | tail -n1 | cut -d'=' -f2-)"
+        if [ -z "${value:-}" ]; then
+            echo "✗ ERROR: Required environment variable '${var_name}' is missing or empty in ${env_file}" >&2
+            exit 1
+        fi
+    done
+}
+
+require_env_vars ".env.prod" \
+    WORDPRESS_DB_HOST \
+    WORDPRESS_DB_NAME \
+    WORDPRESS_DB_ROOT_PASSWORD \
+    WORDPRESS_DB_USER \
+    WORDPRESS_DB_PASSWORD
+
 echo "Pulling latest code from Git"
 git checkout production
 git pull origin production
