@@ -6,10 +6,10 @@
     <!-- Main header content -->
     <div class="header-content">
       <!-- Logo and Club Name -->
-      <div class="logo-name-group">
+      <div v-if="loggedIn" class="logo-name-group">
         <div class="logo-wrapper">
           <a
-            v-if="loggedIn && websiteUrl"
+            v-if="websiteUrl"
             :href="websiteUrl"
             target="_blank"
             rel="noopener noreferrer"
@@ -17,7 +17,7 @@
             <img :src="logoSrc" :alt="`${loggedInClub} logo`" class="club-logo" />
           </a>
           <img
-            v-else-if="loggedIn"
+            v-else
             :src="logoSrc"
             :alt="`${loggedInClub} logo`"
             class="club-logo"
