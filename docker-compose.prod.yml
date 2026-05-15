@@ -77,6 +77,67 @@ services:
       - caddy_config:/config
     restart: unless-stopped
 
+  wordpress-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_ROOT_PASSWORD: ${WORDPRESS_DB_ROOT_PASSWORD:-wordpress}
+      MYSQL_USER: ${WORDPRESS_DB_USER:-wordpress}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+    volumes:
+      - wordpress_db_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  wordpress:
+    image: wordpress:6.5-php8.3-fpm-alpine
+    depends_on:
+      wordpress-db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://wordpress.hlastest');
+        define('WP_SITEURL', 'https://wordpress.hlastest');
+        define('FORCE_SSL_ADMIN', true);
+        define('FORCE_SSL_LOGIN', true);
+        define('WP_PROXY_DISABLE', false);
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+          $$_SERVER['HTTPS'] = 'on';
+          $$_SERVER['SERVER_PORT'] = 443;
+        }
+        if (isset($$_SERVER['HTTP_X_FORWARDED_HOST'])) {
+          $$_SERVER['HTTP_HOST'] = $$_SERVER['HTTP_X_FORWARDED_HOST'];
+          $$_SERVER['SERVER_NAME'] = $$_SERVER['HTTP_X_FORWARDED_HOST'];
+        }
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./wordpress-plugin/hlas-integration:/var/www/html/wp-content/plugins/hlas-integration:ro
+    restart: unless-stopped
+
+  wordpress-web:
+    image: nginx:alpine
+    depends_on:
+      - wordpress
+    volumes:
+      - wordpress_data:/var/www/html:ro
+      - ./deploy/nginx/wordpress.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/wp-json/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
   postgres_data:
     external: true
@@ -84,3 +145,5 @@ volumes:
   hlas_data:
   caddy_data:
   caddy_config:
+  wordpress_data:
+  wordpress_db_data:

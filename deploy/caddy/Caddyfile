@@ -16,3 +16,15 @@ hlastest {
         reverse_proxy frontend:80
     }
 }
+
+wordpress.hlastest {
+    tls internal
+
+    encode zstd gzip
+
+    reverse_proxy wordpress-web:80 {
+        header_up X-Forwarded-For {http.request.remote.host}
+        header_up X-Forwarded-Proto {http.request.proto}
+        header_up Host {http.request.host}
+    }
+}
