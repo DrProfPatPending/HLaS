@@ -28,6 +28,82 @@ class HLaS_Integration_Auth {
 
 		// Enqueue auth scripts
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_auth_scripts' ) );
+
+		// User profile mapping fields
+		add_action( 'show_user_profile', array( $this, 'render_user_profile_fields' ) );
+		add_action( 'edit_user_profile', array( $this, 'render_user_profile_fields' ) );
+		add_action( 'personal_options_update', array( $this, 'save_user_profile_fields' ) );
+		add_action( 'edit_user_profile_update', array( $this, 'save_user_profile_fields' ) );
+	}
+
+	/**
+	 * Render HLaS mapping fields in WP user profile
+	 *
+	 * @param WP_User $user User object.
+	 */
+	public function render_user_profile_fields( $user ) {
+		if ( ! current_user_can( 'edit_user', $user->ID ) ) {
+			return;
+		}
+
+		$member_id = get_user_meta( $user->ID, 'hlas_member_id', true );
+		$club_short_name = get_user_meta( $user->ID, 'hlas_club_short_name', true );
+		?>
+		<h2><?php esc_html_e( 'HLaS Integration', 'hlas-integration' ); ?></h2>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th><label for="hlas_member_id"><?php esc_html_e( 'HLaS Member ID', 'hlas-integration' ); ?></label></th>
+				<td>
+					<input type="number" min="1" step="1" name="hlas_member_id" id="hlas_member_id" value="<?php echo esc_attr( $member_id ); ?>" class="regular-text" />
+					<p class="description"><?php esc_html_e( 'Numeric member ID used by HLaS for catch returns and catch submission. Leave blank to remove mapping.', 'hlas-integration' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="hlas_club_short_name"><?php esc_html_e( 'HLaS Club Short Name', 'hlas-integration' ); ?></label></th>
+				<td>
+					<input type="text" maxlength="20" name="hlas_club_short_name" id="hlas_club_short_name" value="<?php echo esc_attr( $club_short_name ); ?>" class="regular-text" />
+					<p class="description"><?php esc_html_e( 'Optional default club short name for testing (for example CTC). Leave blank to remove mapping.', 'hlas-integration' ); ?></p>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Save HLaS mapping fields from WP user profile
+	 *
+	 * @param int $user_id User ID.
+	 */
+	public function save_user_profile_fields( $user_id ) {
+		if ( ! current_user_can( 'edit_user', $user_id ) ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['hlas_member_id'] ) && ! isset( $_POST['hlas_club_short_name'] ) ) {
+			return;
+		}
+
+		if ( isset( $_POST['hlas_member_id'] ) ) {
+			$member_id_raw = sanitize_text_field( wp_unslash( $_POST['hlas_member_id'] ) );
+			if ( '' === $member_id_raw ) {
+				delete_user_meta( $user_id, 'hlas_member_id' );
+			} else {
+				$member_id = absint( $member_id_raw );
+				if ( $member_id > 0 ) {
+					update_user_meta( $user_id, 'hlas_member_id', $member_id );
+				}
+			}
+		}
+
+		if ( isset( $_POST['hlas_club_short_name'] ) ) {
+			$club_short_name_raw = sanitize_text_field( wp_unslash( $_POST['hlas_club_short_name'] ) );
+			$club_short_name = strtoupper( preg_replace( '/[^A-Za-z0-9_-]/', '', $club_short_name_raw ) );
+			if ( '' === $club_short_name ) {
+				delete_user_meta( $user_id, 'hlas_club_short_name' );
+			} else {
+				update_user_meta( $user_id, 'hlas_club_short_name', $club_short_name );
+			}
+		}
 	}
 
 	/**
@@ -183,5 +259,19 @@ class HLaS_Integration_Auth {
 		}
 
 		return get_user_meta( get_current_user_id(), 'hlas_member_id', true );
+	}
+
+	/**
+	 * Get current user's default HLaS club short name
+	 *
+	 * @return string
+	 */
+	public static function get_current_club_short_name() {
+		if ( ! is_user_logged_in() ) {
+			return '';
+		}
+
+		$club_short_name = get_user_meta( get_current_user_id(), 'hlas_club_short_name', true );
+		return is_string( $club_short_name ) ? trim( strtoupper( $club_short_name ) ) : '';
 	}
 }

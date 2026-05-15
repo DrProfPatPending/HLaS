@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'HLAS_PLUGIN_FILE', __FILE__ );
 define( 'HLAS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HLAS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'HLAS_PLUGIN_VERSION', '1.0.3' );
+define( 'HLAS_PLUGIN_VERSION', '1.0.4' );
 
 /**
  * Include required files
