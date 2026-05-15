@@ -84,6 +84,21 @@
 	};
 
 	/**
+	 * Normalize WordPress AJAX responses
+	 */
+	HLasApiClient.prototype.normalizeWpAjaxResponse = function(payload) {
+		if (payload && typeof payload.success !== 'undefined') {
+			if (payload.success) {
+				return payload.data;
+			}
+			return {
+				error: (payload.data && payload.data.message) ? payload.data.message : 'Request failed'
+			};
+		}
+		return payload;
+	};
+
+	/**
 	 * Fetch beat details for a club
 	 */
 	HLasApiClient.prototype.getBeatDetails = function(club) {
@@ -110,6 +125,9 @@
 				};
 			}
 			return response.json();
+		})
+		.then(function(payload) {
+			return self.normalizeWpAjaxResponse(payload);
 		})
 		.catch(function(error) {
 			return self.handleError(error);
@@ -147,6 +165,9 @@
 				};
 			}
 			return response.json();
+		})
+		.then(function(payload) {
+			return self.normalizeWpAjaxResponse(payload);
 		})
 		.catch(function(error) {
 			return self.handleError(error);
