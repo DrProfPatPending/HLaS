@@ -93,12 +93,12 @@ done
 echo "✓ All required services are running"
 
 echo "Checking backend health endpoint"
-retry_check "Backend health endpoint OK" "curl -fsS http://127.0.0.1:5050/clubs" 30 3 || exit 1
+retry_check "Backend health endpoint OK" "curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs" 30 3 || exit 1
 
 echo "Checking frontend health endpoint via caddy"
-retry_check "Frontend/caddy endpoint OK" "curl -kfsS https://127.0.0.1/" 30 3 || exit 1
+retry_check "Frontend/caddy endpoint OK" "curl --connect-timeout 5 --max-time 10 -kfsS --resolve cambridgetroutclub.org:443:127.0.0.1 https://cambridgetroutclub.org/" 30 3 || exit 1
 
-echo "Checking WordPress endpoint via caddy"
-retry_check "WordPress endpoint OK" "curl -kfsS https://wordpress.cambridgetroutclub.org/" 30 3 || exit 1
+echo "Checking WordPress/Nginx health endpoint"
+retry_check "WordPress/Nginx endpoint OK" "docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1
 
 echo "✓ Build and health checks complete"
