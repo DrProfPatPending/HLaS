@@ -133,7 +133,8 @@ services:
       wordpress:
         condition: service_started
     volumes:
-      - wordpress_data:/var/www/html:ro
+      - wordpress_data:/var/www/html
+      - ./wordpress-plugin/hlas-integration:/var/www/html/wp-content/plugins/hlas-integration:ro
       - ./deploy/nginx/wordpress.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
     healthcheck:
