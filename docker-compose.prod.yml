@@ -95,6 +95,7 @@ services:
 
   wordpress:
     image: wordpress:6.9-php8.3-fpm-alpine
+    container_name: hlas-wordpress
     depends_on:
       wordpress-db:
         condition: service_healthy
@@ -117,7 +118,6 @@ services:
         }
     volumes:
       - wordpress_data:/var/www/html
-      - wordpress_socket:/var/run/php-fpm
       - ./wordpress-plugin/hlas-integration:/var/www/html/wp-content/plugins/hlas-integration:ro
     restart: unless-stopped
 
@@ -127,7 +127,6 @@ services:
       - wordpress
     volumes:
       - wordpress_data:/var/www/html:ro
-      - wordpress_socket:/var/run/php-fpm:ro
       - ./deploy/nginx/wordpress.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
     healthcheck:
@@ -146,4 +145,3 @@ volumes:
   caddy_config:
   wordpress_data:
   wordpress_db_data:
-  wordpress_socket:
