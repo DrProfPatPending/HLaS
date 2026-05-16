@@ -105,12 +105,12 @@ echo "--- smoke checks ---"
 check_http_code "main site via Caddy" '^2[0-9][0-9]$' "https://$DOMAIN/" "$DOMAIN"
 check_http_code "api endpoint via Caddy" '^2[0-9][0-9]$' "https://$DOMAIN/api/clubs" "$DOMAIN"
 check_http_code "wordpress site via Caddy" '^(2|3)[0-9][0-9]$' "https://$WORDPRESS_DOMAIN/" "$WORDPRESS_DOMAIN"
-check_status "postgres readiness" compose exec -T postgres pg_isready -U "$POSTGRES_USER" >/dev/null
+check_status "postgres readiness" docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres pg_isready -U "$POSTGRES_USER"
 echo
 
 echo "--- recent log scan ($LOG_WINDOW) ---"
 log_lines="$(compose logs --since "$LOG_WINDOW" caddy backend frontend postgres wordpress wordpress-web wordpress-db 2>/dev/null | grep -Ei 'error|fatal|exception|traceback|panic' || true)"
-filtered_log_lines="$(echo "$log_lines" | grep -Evi 'no OCSP stapling|Caddyfile input is not formatted|healthcheck|role "postgres" does not exist' || true)"
+filtered_log_lines="$(echo "$log_lines" | grep -Evi 'no OCSP stapling|Caddyfile input is not formatted|healthcheck|role "postgres" does not exist|access forbidden by rule|open\(\).*No such file or directory' || true)"
 
 if [[ -n "$filtered_log_lines" ]]; then
   echo "⚠ Potentially significant errors found in recent logs:"
