@@ -29,7 +29,65 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'HLAS_PLUGIN_FILE', __FILE__ );
 define( 'HLAS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HLAS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'HLAS_PLUGIN_VERSION', '1.0.4' );
+define( 'HLAS_PLUGIN_VERSION', '1.0.5' );
+
+if ( ! function_exists( 'hlas_integration_parse_club_from_request' ) ) {
+	/**
+	 * Resolve club short code from request path/query.
+	 *
+	 * Supported patterns:
+	 * - /club/GAAFFS/
+	 * - ?club=GAAFFS
+	 *
+	 * @return string Club short code or empty string.
+	 */
+	function hlas_integration_parse_club_from_request() {
+		$club = '';
+
+		if ( function_exists( 'get_query_var' ) ) {
+			$query_var_club = (string) get_query_var( 'hlas_club' );
+			if ( '' !== $query_var_club ) {
+				$club = sanitize_text_field( $query_var_club );
+			}
+		}
+
+		if ( '' === $club && isset( $_GET['club'] ) ) {
+			$club = sanitize_text_field( wp_unslash( $_GET['club'] ) );
+		}
+
+		if ( '' === $club && isset( $_SERVER['REQUEST_URI'] ) ) {
+			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+			$path        = wp_parse_url( $request_uri, PHP_URL_PATH );
+
+			if ( is_string( $path ) && preg_match( '#/club/([A-Za-z0-9_-]+)#i', $path, $matches ) ) {
+				$club = $matches[1];
+			}
+		}
+
+		$club = strtoupper( trim( (string) $club ) );
+
+		return preg_replace( '/[^A-Z0-9_-]/', '', $club );
+	}
+}
+
+if ( ! function_exists( 'hlas_integration_get_current_club' ) ) {
+	/**
+	 * Get effective club for current request.
+	 *
+	 * @return string Club short code.
+	 */
+	function hlas_integration_get_current_club() {
+		$resolved = hlas_integration_parse_club_from_request();
+		if ( '' !== $resolved ) {
+			return $resolved;
+		}
+
+		$default_club = strtoupper( trim( (string) get_option( 'hlas_default_club', 'CTC' ) ) );
+		$default_club = preg_replace( '/[^A-Z0-9_-]/', '', $default_club );
+
+		return '' !== $default_club ? $default_club : 'CTC';
+	}
+}
 
 /**
  * Include required files
@@ -68,11 +126,15 @@ class HLaS_Integration {
 	 */
 	private function __construct() {
 		// Hook into WordPress
+		add_action( 'init', array( $this, 'register_dynamic_club_route' ) );
+		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_filter( 'body_class', array( $this, 'add_club_body_class' ) );
+		add_action( 'wp_head', array( $this, 'output_club_theme_tokens' ) );
 
 		// Register activation/deactivation hooks
 		register_activation_hook( HLAS_PLUGIN_FILE, array( $this, 'activate' ) );
@@ -83,6 +145,8 @@ class HLaS_Integration {
 	 * Plugin activation hook
 	 */
 	public function activate() {
+		$this->register_dynamic_club_route();
+
 		// Create plugin options with defaults
 		if ( ! get_option( 'hlas_api_url' ) ) {
 			update_option( 'hlas_api_url', 'https://api.example.com' );
@@ -93,6 +157,12 @@ class HLaS_Integration {
 		if ( ! get_option( 'hlas_nonce_action' ) ) {
 			update_option( 'hlas_nonce_action', 'hlas_integration' );
 		}
+		if ( ! get_option( 'hlas_default_club' ) ) {
+			update_option( 'hlas_default_club', 'CTC' );
+		}
+		if ( ! get_option( 'hlas_club_theme_map' ) ) {
+			update_option( 'hlas_club_theme_map', '{}' );
+		}
 
 		flush_rewrite_rules();
 	}
@@ -102,6 +172,30 @@ class HLaS_Integration {
 	 */
 	public function deactivate() {
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Register query vars used by this plugin.
+	 *
+	 * @param array $vars Existing query vars.
+	 * @return array
+	 */
+	public function register_query_vars( $vars ) {
+		$vars[] = 'hlas_club';
+		return $vars;
+	}
+
+	/**
+	 * Register dynamic landing route for /club/{code}.
+	 *
+	 * This maps to the WordPress page with slug `club`.
+	 */
+	public function register_dynamic_club_route() {
+		add_rewrite_rule(
+			'^club/([A-Za-z0-9_-]+)/?$',
+			'index.php?pagename=club&hlas_club=$matches[1]',
+			'top'
+		);
 	}
 
 	/**
@@ -152,6 +246,8 @@ class HLaS_Integration {
 		register_setting( 'hlas_integration_settings', 'hlas_enable_debug' );
 		register_setting( 'hlas_integration_settings', 'hlas_cache_ttl' );
 		register_setting( 'hlas_integration_settings', 'hlas_nonce_action' );
+		register_setting( 'hlas_integration_settings', 'hlas_default_club', array( $this, 'sanitize_default_club' ) );
+		register_setting( 'hlas_integration_settings', 'hlas_club_theme_map', array( $this, 'sanitize_club_theme_map' ) );
 
 		add_settings_section(
 			'hlas_api_settings',
@@ -191,6 +287,22 @@ class HLaS_Integration {
 			'hlas_integration_settings',
 			'hlas_api_settings'
 		);
+
+		add_settings_field(
+			'hlas_default_club',
+			'Default Club Code',
+			array( $this, 'render_default_club_field' ),
+			'hlas_integration_settings',
+			'hlas_api_settings'
+		);
+
+		add_settings_field(
+			'hlas_club_theme_map',
+			'Club Theme Map (JSON)',
+			array( $this, 'render_club_theme_map_field' ),
+			'hlas_integration_settings',
+			'hlas_api_settings'
+		);
 	}
 
 	/**
@@ -208,13 +320,13 @@ class HLaS_Integration {
 
 			<div class="card" style="margin-top: 20px;">
 				<h2><?php esc_html_e( 'Available Shortcodes', 'hlas-integration' ); ?></h2>
-				<p><strong>[hlas-beat-details club="CTC"]</strong></p>
-				<p><?php esc_html_e( 'Displays beat details for the specified club', 'hlas-integration' ); ?></p>
+				<p><strong>[hlas-beat-details]</strong> or <strong>[hlas-beat-details club="CTC"]</strong></p>
+				<p><?php esc_html_e( 'If club is omitted, the plugin resolves it from /club/{CODE} in the URL (or falls back to Default Club Code).', 'hlas-integration' ); ?></p>
 
-				<p><strong>[hlas-catch-returns club="CTC" limit="10"]</strong></p>
+				<p><strong>[hlas-catch-returns limit="10"]</strong></p>
 				<p><?php esc_html_e( 'Displays recent catch returns for the current user (requires authentication)', 'hlas-integration' ); ?></p>
 
-				<p><strong>[hlas-catch-return-form club="CTC"]</strong></p>
+				<p><strong>[hlas-catch-return-form]</strong></p>
 				<p><?php esc_html_e( 'Displays a form to log a new catch return (requires authentication)', 'hlas-integration' ); ?></p>
 			</div>
 		</div>
@@ -262,6 +374,156 @@ class HLaS_Integration {
 		$value = esc_attr( get_option( 'hlas_cache_ttl', 3600 ) );
 		echo '<input type="number" name="hlas_cache_ttl" value="' . $value . '" min="0" max="86400">';
 		echo '<p class="description">How long to cache API responses (0 = disabled)</p>';
+	}
+
+	/**
+	 * Sanitize default club code.
+	 *
+	 * @param string $value Raw option value.
+	 * @return string
+	 */
+	public function sanitize_default_club( $value ) {
+		$value = strtoupper( trim( (string) sanitize_text_field( $value ) ) );
+		$value = preg_replace( '/[^A-Z0-9_-]/', '', $value );
+
+		return '' !== $value ? $value : 'CTC';
+	}
+
+	/**
+	 * Sanitize theme map JSON.
+	 *
+	 * @param string $value Raw option value.
+	 * @return string
+	 */
+	public function sanitize_club_theme_map( $value ) {
+		$value   = trim( (string) $value );
+		$decoded = json_decode( $value, true );
+
+		if ( ! is_array( $decoded ) ) {
+			add_settings_error( 'hlas_club_theme_map', 'hlas_club_theme_map_invalid', 'Club Theme Map must be valid JSON.', 'error' );
+			return get_option( 'hlas_club_theme_map', '{}' );
+		}
+
+		return wp_json_encode( $decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+	}
+
+	/**
+	 * Render default club field
+	 */
+	public function render_default_club_field() {
+		$value = esc_attr( get_option( 'hlas_default_club', 'CTC' ) );
+		echo '<input type="text" name="hlas_default_club" value="' . $value . '" style="width: 180px;" maxlength="16">';
+		echo '<p class="description">Used when no <code>/club/{CODE}</code> is present in the URL.</p>';
+	}
+
+	/**
+	 * Render club theme map JSON field
+	 */
+	public function render_club_theme_map_field() {
+		$value = get_option( 'hlas_club_theme_map', '{}' );
+		echo '<textarea name="hlas_club_theme_map" rows="10" cols="80" style="font-family: monospace; width: 100%; max-width: 900px;">' . esc_textarea( $value ) . '</textarea>';
+		echo '<p class="description">Optional per-club tokens keyed by club code. Supported keys: primary_color, secondary_color, text_color, border_color, error_color, success_color, logo_url, hero_image_url.</p>';
+	}
+
+	/**
+	 * Resolve sanitized per-club theme config.
+	 *
+	 * @param string $club Club short code.
+	 * @return array
+	 */
+	private function get_theme_tokens_for_club( $club ) {
+		$raw_map = get_option( 'hlas_club_theme_map', '{}' );
+		$decoded = json_decode( (string) $raw_map, true );
+
+		if ( ! is_array( $decoded ) ) {
+			return array();
+		}
+
+		$club_key = strtoupper( sanitize_text_field( $club ) );
+		if ( ! isset( $decoded[ $club_key ] ) || ! is_array( $decoded[ $club_key ] ) ) {
+			return array();
+		}
+
+		$allowed = array(
+			'primary_color'   => '--hlas-primary-color',
+			'secondary_color' => '--hlas-secondary-color',
+			'text_color'      => '--hlas-text-color',
+			'border_color'    => '--hlas-border-color',
+			'error_color'     => '--hlas-error-color',
+			'success_color'   => '--hlas-success-color',
+		);
+
+		$tokens = array();
+		foreach ( $allowed as $json_key => $css_var ) {
+			if ( ! empty( $decoded[ $club_key ][ $json_key ] ) ) {
+				$color = sanitize_hex_color( $decoded[ $club_key ][ $json_key ] );
+				if ( $color ) {
+					$tokens[ $css_var ] = $color;
+				}
+			}
+		}
+
+		if ( ! empty( $decoded[ $club_key ]['logo_url'] ) ) {
+			$logo_url = esc_url_raw( $decoded[ $club_key ]['logo_url'] );
+			if ( $logo_url ) {
+				$tokens['--hlas-club-logo-url'] = "url('" . esc_url( $logo_url ) . "')";
+			}
+		}
+
+		if ( ! empty( $decoded[ $club_key ]['hero_image_url'] ) ) {
+			$hero_url = esc_url_raw( $decoded[ $club_key ]['hero_image_url'] );
+			if ( $hero_url ) {
+				$tokens['--hlas-club-hero-url'] = "url('" . esc_url( $hero_url ) . "')";
+			}
+		}
+
+		return $tokens;
+	}
+
+	/**
+	 * Add current club code as body class.
+	 *
+	 * @param array $classes Existing classes.
+	 * @return array
+	 */
+	public function add_club_body_class( $classes ) {
+		if ( is_admin() ) {
+			return $classes;
+		}
+
+		$club = hlas_integration_get_current_club();
+		if ( '' !== $club ) {
+			$classes[] = 'hlas-club-' . strtolower( sanitize_html_class( $club ) );
+		}
+
+		return $classes;
+	}
+
+	/**
+	 * Output per-club CSS token overrides.
+	 */
+	public function output_club_theme_tokens() {
+		if ( is_admin() ) {
+			return;
+		}
+
+		$club   = hlas_integration_get_current_club();
+		$tokens = $this->get_theme_tokens_for_club( $club );
+		if ( empty( $tokens ) ) {
+			return;
+		}
+
+		$selector = 'body.hlas-club-' . strtolower( sanitize_html_class( $club ) );
+		$lines    = array();
+		foreach ( $tokens as $css_var => $css_value ) {
+			$lines[] = $css_var . ': ' . $css_value . ';';
+		}
+
+		echo "\n<style id=\"hlas-club-theme-tokens\">\n";
+		echo $selector . " {\n";
+		echo implode( "\n", $lines ) . "\n";
+		echo "}\n";
+		echo "</style>\n";
 	}
 
 	/**

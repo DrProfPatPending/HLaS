@@ -15,6 +15,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 class HLaS_Shortcodes {
 
 	/**
+	 * Resolve shortcode club with precedence:
+	 * explicit shortcode attr > URL club context > default club option.
+	 *
+	 * @param string $club_attr Raw shortcode club attribute.
+	 * @return string
+	 */
+	private function resolve_shortcode_club( $club_attr ) {
+		$club_attr = strtoupper( trim( (string) sanitize_text_field( $club_attr ) ) );
+		$club_attr = preg_replace( '/[^A-Z0-9_-]/', '', $club_attr );
+
+		if ( '' !== $club_attr ) {
+			return $club_attr;
+		}
+
+		if ( function_exists( 'hlas_integration_get_current_club' ) ) {
+			return hlas_integration_get_current_club();
+		}
+
+		return 'CTC';
+	}
+
+	/**
 	 * Register all shortcodes
 	 */
 	public function register_shortcodes() {
@@ -35,14 +57,14 @@ class HLaS_Shortcodes {
 	public function beat_details_shortcode( $atts, $content = '' ) {
 		$atts = shortcode_atts(
 			array(
-				'club'  => 'CTC',
+				'club'  => '',
 				'style' => 'table', // table or grid
 			),
 			$atts,
 			'hlas-beat-details'
 		);
 
-		$club = sanitize_text_field( $atts['club'] );
+		$club = $this->resolve_shortcode_club( $atts['club'] );
 		$style = sanitize_text_field( $atts['style'] );
 
 		// Create container with data attributes
@@ -88,7 +110,7 @@ class HLaS_Shortcodes {
 	public function catch_returns_shortcode( $atts, $content = '' ) {
 		$atts = shortcode_atts(
 			array(
-				'club'  => 'CTC',
+				'club'  => '',
 				'limit' => '10',
 				'style' => 'table', // table or timeline
 			),
@@ -96,7 +118,7 @@ class HLaS_Shortcodes {
 			'hlas-catch-returns'
 		);
 
-		$club = sanitize_text_field( $atts['club'] );
+		$club = $this->resolve_shortcode_club( $atts['club'] );
 		$limit = intval( $atts['limit'] );
 		$limit = max( 1, min( $limit, 100 ) ); // Ensure between 1 and 100
 		$style = sanitize_text_field( $atts['style'] );
@@ -156,13 +178,13 @@ class HLaS_Shortcodes {
 	public function catch_return_form_shortcode( $atts, $content = '' ) {
 		$atts = shortcode_atts(
 			array(
-				'club' => 'CTC',
+				'club' => '',
 			),
 			$atts,
 			'hlas-catch-return-form'
 		);
 
-		$club = sanitize_text_field( $atts['club'] );
+		$club = $this->resolve_shortcode_club( $atts['club'] );
 
 		// Check authentication
 		if ( ! is_user_logged_in() ) {

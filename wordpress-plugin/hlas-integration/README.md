@@ -59,6 +59,73 @@ A WordPress plugin that integrates HLaS (Hook Line and Sinker) with your WordPre
 - Default: 3600 seconds (1 hour)
 - Recommended: 3600 for production, 0 for development
 
+**Default Club Code**
+- Club code used when URL does not include `/club/{CODE}`
+- Example: `CTC`
+
+**Club Theme Map (JSON)**
+- Optional per-club visual tokens and assets, keyed by club code
+- Supported keys per club: `primary_color`, `secondary_color`, `text_color`, `border_color`, `error_color`, `success_color`, `logo_url`, `hero_image_url`
+- Applied as CSS custom properties on `body.hlas-club-{code}`
+
+Example:
+
+```json
+{
+	"CTC": {
+		"primary_color": "#1a5490",
+		"secondary_color": "#f5f5f5",
+		"logo_url": "https://example.com/assets/ctc-logo.png"
+	},
+	"GAAFFS": {
+		"primary_color": "#2d6a4f",
+		"secondary_color": "#edf6f1",
+		"hero_image_url": "https://example.com/assets/gaaffs-hero.jpg"
+	}
+}
+```
+
+### Ready-to-paste Club Theme Map
+
+Paste this directly into **HLaS Settings → Club Theme Map (JSON)**:
+
+```json
+{
+	"CTC": {
+		"primary_color": "#1a5490",
+		"secondary_color": "#f2f7fc",
+		"text_color": "#1f2933",
+		"border_color": "#cfd8e3",
+		"error_color": "#b42318",
+		"success_color": "#2e7d32",
+		"logo_url": "https://wordpress.hlastest/wp-content/uploads/club-logos/ctc-logo.png",
+		"hero_image_url": "https://wordpress.hlastest/wp-content/uploads/club-heroes/ctc-hero.jpg"
+	},
+	"GAAFFS": {
+		"primary_color": "#1f6f43",
+		"secondary_color": "#edf8f1",
+		"text_color": "#1f2933",
+		"border_color": "#c9e3d3",
+		"error_color": "#b42318",
+		"success_color": "#2e7d32",
+		"logo_url": "https://wordpress.hlastest/wp-content/uploads/club-logos/gaaffs-logo.png",
+		"hero_image_url": "https://wordpress.hlastest/wp-content/uploads/club-heroes/gaaffs-hero.jpg"
+	},
+	"LADFFA": {
+		"primary_color": "#7a1f3d",
+		"secondary_color": "#fbf0f4",
+		"text_color": "#1f2933",
+		"border_color": "#e9c8d3",
+		"error_color": "#b42318",
+		"success_color": "#2e7d32",
+		"logo_url": "https://wordpress.hlastest/wp-content/uploads/club-logos/ladffa-logo.png",
+		"hero_image_url": "https://wordpress.hlastest/wp-content/uploads/club-heroes/ladffa-hero.jpg"
+	}
+}
+```
+
+If your media URLs differ, keep the same JSON structure and only replace `logo_url` and `hero_image_url` values.
+
 ### Environment Variable Setup
 
 On your HLaS backend server, ensure these environment variables are set:
@@ -70,18 +137,42 @@ export WORDPRESS_API_KEY="your-shared-secret-key"
 
 ## Usage
 
+### Single Dynamic Club Landing Page
+
+The plugin now supports a single dynamic landing route:
+
+- `https://wordpress.hlastest/club/CTC/`
+- `https://wordpress.hlastest/club/GAAFFS/`
+
+Setup:
+
+1. Create one WordPress page with slug `club` (title can be anything, e.g. "Club Landing").
+2. Add HLaS shortcodes to that page (you can omit `club="..."` to use URL club context).
+3. Go to **Settings → Permalinks** and click **Save Changes** once to refresh rewrite rules.
+
+Route behavior:
+
+- `/club/{CODE}/` is routed to the single `club` page.
+- `{CODE}` is exposed to the plugin as club context and used for shortcode data + theme tokens.
+- Explicit shortcode `club="..."` still overrides URL context when provided.
+
 ### Shortcodes
 
 #### Beat Details
 Display fishing beat information for a club:
 
 ```
-[hlas-beat-details club="CTC"]
+[hlas-beat-details]
 ```
 
 **Attributes:**
-- `club` (required): Club abbreviation (e.g., "CTC", "GAAFFS")
+- `club` (optional): Club abbreviation (e.g., "CTC", "GAAFFS")
 - `style` (optional): Display style - "table" (default) or "grid"
+
+If `club` is omitted, the plugin resolves club in this order:
+1. `club` query parameter (`?club=GAAFFS`)
+2. URL path segment (`/club/GAAFFS/...`)
+3. `Default Club Code` setting
 
 **Examples:**
 ```
@@ -95,11 +186,11 @@ Display fishing beat information for a club:
 Display recent catch returns for the logged-in user:
 
 ```
-[hlas-catch-returns club="CTC"]
+[hlas-catch-returns]
 ```
 
 **Attributes:**
-- `club` (required): Club abbreviation
+- `club` (optional): Club abbreviation
 - `limit` (optional): Number of results to display (default: 10, max: 100)
 - `style` (optional): Display style - "table" (default) or "timeline"
 
@@ -115,11 +206,11 @@ Display recent catch returns for the logged-in user:
 Display a form for users to log new fishing sessions:
 
 ```
-[hlas-catch-return-form club="CTC"]
+[hlas-catch-return-form]
 ```
 
 **Attributes:**
-- `club` (required): Club abbreviation
+- `club` (optional): Club abbreviation
 
 **Example:**
 ```

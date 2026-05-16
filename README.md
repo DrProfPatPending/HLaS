@@ -680,6 +680,55 @@ Without this override, Caddy will repeatedly fail ACME challenges for `cambridge
 
 Dev URLs: `https://hlastest` and `https://wordpress.hlastest`
 
+For URL-path-based multi-club WordPress styling (Phase 1), paste this into **WordPress Admin → HLaS Settings → Club Theme Map (JSON)**:
+
+```json
+{
+   "CTC": {
+      "primary_color": "#1a5490",
+      "secondary_color": "#f2f7fc",
+      "text_color": "#1f2933",
+      "border_color": "#cfd8e3",
+      "error_color": "#b42318",
+      "success_color": "#2e7d32",
+      "logo_url": "https://wordpress.hlastest/wp-content/uploads/club-logos/ctc-logo.png",
+      "hero_image_url": "https://wordpress.hlastest/wp-content/uploads/club-heroes/ctc-hero.jpg"
+   },
+   "GAAFFS": {
+      "primary_color": "#1f6f43",
+      "secondary_color": "#edf8f1",
+      "text_color": "#1f2933",
+      "border_color": "#c9e3d3",
+      "error_color": "#b42318",
+      "success_color": "#2e7d32",
+      "logo_url": "https://wordpress.hlastest/wp-content/uploads/club-logos/gaaffs-logo.png",
+      "hero_image_url": "https://wordpress.hlastest/wp-content/uploads/club-heroes/gaaffs-hero.jpg"
+   },
+   "LADFFA": {
+      "primary_color": "#7a1f3d",
+      "secondary_color": "#fbf0f4",
+      "text_color": "#1f2933",
+      "border_color": "#e9c8d3",
+      "error_color": "#b42318",
+      "success_color": "#2e7d32",
+      "logo_url": "https://wordpress.hlastest/wp-content/uploads/club-logos/ladffa-logo.png",
+      "hero_image_url": "https://wordpress.hlastest/wp-content/uploads/club-heroes/ladffa-hero.jpg"
+   }
+}
+```
+
+Keep the structure and replace only `logo_url`/`hero_image_url` if your media paths differ.
+
+First test URL: `https://wordpress.hlastest/club/GAAFFS/` (swap `GAAFFS` for `CTC` or `LADFFA` to verify club-specific styling and assets).
+
+Single dynamic landing page setup (WordPress):
+
+1. Create one WordPress page with slug `club`.
+2. Add HLaS shortcodes to that page (club attribute optional).
+3. In WordPress Admin, go to **Settings → Permalinks** and click **Save Changes** once.
+
+After that, requests like `https://wordpress.hlastest/club/CTC/` and `https://wordpress.hlastest/club/GAAFFS/` are served by the same WordPress page, with club context resolved from the URL.
+
 Quick runtime verification for the dev stack:
 
 ```bash
