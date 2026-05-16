@@ -678,6 +678,17 @@ docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml up -d
 
 Without this override, Caddy will repeatedly fail ACME challenges for `cambridgetroutclub.org` and the HTTPS handshake for `hlastest` will be rejected entirely.
 
+Quick runtime verification for the dev stack:
+
+```bash
+./health_check_dev.sh
+```
+
+This script runs:
+- `docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml ps`
+- recent logs for core services
+- smoke checks for `http://localhost`, `https://hlastest`, and backend `/clubs`
+
 ```bash
 # Run with defaults (rob@hlastest, /opt/HLaS)
 ./trust_caddy_mac.sh
