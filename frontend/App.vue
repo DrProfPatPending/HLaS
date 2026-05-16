@@ -1,6 +1,6 @@
 <template>
   <v-app id="app">
-    <app-header />
+    <app-header v-if="loggedIn" />
     <login-view v-if="!loggedIn" />
     <div v-else class="app-member-shell">
       <div
