@@ -9,6 +9,10 @@ from core.common import LEGACY_TO_POSTGRES_MEMBER_COLUMNS
 
 _postgres_cache = {}
 
+# Transaction-scoped advisory lock used to serialize one-time global-user bootstrap
+# work across concurrent app workers/processes during startup.
+GLOBAL_USER_BOOTSTRAP_LOCK_KEY = 2026051601
+
 
 def is_postgres_reads_enabled():
     flag_value = os.getenv('HLAS_USE_POSTGRES_READS', os.getenv('USE_POSTGRES_READS', '')).strip().lower()
@@ -302,6 +306,13 @@ def ensure_postgres_global_user_tables(engine):
         ),
     ]
     with engine.begin() as conn:
+        # Multiple Gunicorn workers may call this bootstrap path concurrently during
+        # startup. Serialize the DDL/seed sequence so the seed CTE cannot deadlock
+        # while creating/linking `app_users` and `member_user_links` rows.
+        conn.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {'lock_key': GLOBAL_USER_BOOTSTRAP_LOCK_KEY},
+        )
         for stmt in statements:
             conn.execute(stmt)
 
