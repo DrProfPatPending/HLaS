@@ -669,7 +669,7 @@ When using the Docker/Caddy-based dev server (`hlastest`), Caddy generates its o
 
 #### Starting the dev stack on hlastest
 
-The dev server uses `docker-compose.dev.yml` as a Compose override. This swaps the Caddy configuration from the production Caddyfile (which tries Let's Encrypt) to [deploy/caddy/Caddyfile.dev](deploy/caddy/Caddyfile.dev), which uses Caddy's internal (local) CA and responds to the `hlastest` hostname:
+The dev server uses `docker-compose.dev.yml` as a Compose override. This swaps the Caddy configuration from the production Caddyfile (which tries Let's Encrypt) to [deploy/caddy/Caddyfile.dev](deploy/caddy/Caddyfile.dev), which uses Caddy's internal (local) CA and responds to the `hlastest` and `wordpress.hlastest` hostnames. The same override also sets WordPress `WP_HOME` and `WP_SITEURL` to `https://wordpress.hlastest` for local testing.
 
 ```bash
 # On hlastest — start or restart with the dev override
@@ -677,6 +677,8 @@ docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml up -d
 ```
 
 Without this override, Caddy will repeatedly fail ACME challenges for `cambridgetroutclub.org` and the HTTPS handshake for `hlastest` will be rejected entirely.
+
+Dev URLs: `https://hlastest` and `https://wordpress.hlastest`
 
 Quick runtime verification for the dev stack:
 
@@ -687,7 +689,7 @@ Quick runtime verification for the dev stack:
 This script runs:
 - `docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml ps`
 - recent logs for core services
-- smoke checks for `http://localhost`, `https://hlastest`, and backend `/clubs`
+- smoke checks for `http://localhost`, `https://hlastest`, `https://wordpress.hlastest`, and backend `/clubs`
 
 ```bash
 # Run with defaults (rob@hlastest, /opt/HLaS)

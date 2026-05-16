@@ -9,3 +9,17 @@ services:
   caddy:
     volumes:
       - ./deploy/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
+
+  wordpress:
+    environment:
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://wordpress.hlastest');
+        define('WP_SITEURL', 'https://wordpress.hlastest');
+        if (!empty($$_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+          $$_SERVER['HTTPS'] = $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? 'on' : 'off';
+        } elseif (strpos($$_SERVER['HTTP_HOST'] ?? '', 'wordpress.hlastest') !== false) {
+          $$_SERVER['HTTPS'] = 'on';
+        }
+        if (!empty($$_SERVER['HTTP_X_FORWARDED_FOR'])) {
+          $$_SERVER['REMOTE_ADDR'] = explode(',', $$_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+        }

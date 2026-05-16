@@ -1,10 +1,3 @@
-/* Status badge in News and Updates table */
-.home-news-table .app-status-badge {
-  font-size: 8pt;
-}
-  .home-news-table .app-status-badge {
-    font-size: 6pt;
-  }
 <template>
   <div class="home-container">
     <div class="home-page-header" v-if="VerboseDebug">
@@ -744,11 +737,11 @@ export default {
   max-width: 100%;
 }
 
-.news-edit-btn,
-.news-delete-btn {
-  font-size: 8pt;
+.home-news-table :deep(.news-edit-btn.app-button.is-sm),
+.home-news-table :deep(.news-delete-btn.app-button.is-sm) {
+  font-size: 6pt;
   line-height: 1.15;
-  padding: 4px 8px;
+  padding: 2px 2px;
 }
 
 .news-edit-row td {
@@ -915,8 +908,8 @@ export default {
   word-break: break-word;
 }
 
-.documents-link-btn,
-.documents-delete-btn {
+.home-documents-table :deep(.documents-link-btn.app-button.is-sm),
+.home-documents-table :deep(.documents-delete-btn.app-button.is-sm) {
   font-size: 8pt;
   line-height: 1.15;
   padding: 4px 8px;
@@ -967,16 +960,20 @@ export default {
     font-size: 8pt;
   }
 
+  .home-news-table :deep(.app-status-badge) {
+    font-size: 6pt;
+  }
+
   .home-news-table .app-status-badge,
-  .documents-link-btn,
-  .documents-delete-btn {
+  .home-documents-table :deep(.documents-link-btn.app-button.is-sm),
+  .home-documents-table :deep(.documents-delete-btn.app-button.is-sm) {
     font-size: 6pt;
     padding: 2px 5px;
     line-height: 1.1;
   }
 
-  .news-edit-btn,
-  .news-delete-btn {
+  .home-news-table :deep(.news-edit-btn.app-button.is-sm),
+  .home-news-table :deep(.news-delete-btn.app-button.is-sm) {
     font-size: 6pt;
     padding: 2px 5px;
     line-height: 1.1;
