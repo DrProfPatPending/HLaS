@@ -14,6 +14,14 @@ HLaS uses a **two-branch deployment model** for stability and safe development:
 2. Promote tested changes to `production` via `git merge main`
 3. VPS deployment scripts (`hlas_build.sh`, `rebuild_frontend.sh`) automatically pull from `production`
 
+Production runtime verification command:
+
+```bash
+./health_check_prod.sh
+```
+
+This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/API/WordPress), PostgreSQL readiness using `POSTGRES_USER` from `.env.prod`, and a recent log scan.
+
 **See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions, rollback procedures, and best practices.**
 
 ## Current Application Highlights
