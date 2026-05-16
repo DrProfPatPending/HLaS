@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/drprofpatpending/hlas-integration
  * Description: Integrates HLaS (Hook Line and Sinker) with WordPress for member-only content
  * Version: 1.0.0
- * Author: ScoffySoft -- Dr. Robert Scoffin with teh help of Claude...
+ * Author: ScoffySoft -- Dr. Robert Scoffin with the help of Claude...
  * Author URI: https://scoffin.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
