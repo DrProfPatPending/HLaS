@@ -158,6 +158,29 @@ Route behavior:
 
 ### Shortcodes
 
+#### Club Name
+Display the current club code dynamically. This is perfect for page titles, headings, or anywhere you want the active club name to show up:
+
+```
+[hlas-club-name]
+```
+
+**Attributes:**
+- None required
+
+**Examples:**
+```
+[hlas-club-name]              <!-- Outputs: CTC, GAAFFS, or LADFFA -->
+```
+
+**How it works:**
+- On `https://wordpress.hlastest/club/CTC/` → outputs `CTC`
+- On `https://wordpress.hlastest/club/GAAFFS/` → outputs `GAAFFS`
+- Falls back to `Default Club Code` setting if no URL context is available
+
+**Use on your page title:**
+This shortcode is perfect for replacing that static "club" text. Instead of manually editing the page title each time, use this shortcode to automatically display whichever club the user is viewing.
+
 #### Beat Details
 Display fishing beat information for a club:
 

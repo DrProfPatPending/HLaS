@@ -1,0 +1,86 @@
+CONNECTED(00000003)
+---
+Certificate chain
+ 0 s:
+   i:CN=Caddy Local Authority - ECC Intermediate
+   a:PKEY: EC, (prime256v1); sigalg: ecdsa-with-SHA256
+   v:NotBefore: May 17 09:11:28 2026 GMT; NotAfter: May 17 21:11:28 2026 GMT
+-----BEGIN CERTIFICATE-----
+MIIBvTCCAWKgAwIBAgIQDxac5dH6MjX5mqQ1xvLjfjAKBggqhkjOPQQDAjAzMTEw
+LwYDVQQDEyhDYWRkeSBMb2NhbCBBdXRob3JpdHkgLSBFQ0MgSW50ZXJtZWRpYXRl
+MB4XDTI2MDUxNzA5MTEyOFoXDTI2MDUxNzIxMTEyOFowADBZMBMGByqGSM49AgEG
+CCqGSM49AwEHA0IABLAU785jrhZLo+NWCN5Ci4BYI2uWJ7YsrGweewduY/q1EnHd
+6G5SRWkVoh/reU3QxhsUNAoAFze8BvcDxe2Ei9OjgYowgYcwDgYDVR0PAQH/BAQD
+AgeAMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQU4cz/
+nyBMbv1WO1Mu6CXyNtYzoiYwHwYDVR0jBBgwFoAU9oh+7AjOdJHpdi/qHLK8k7Yh
+RlQwFgYDVR0RAQH/BAwwCoIIaGxhc3Rlc3QwCgYIKoZIzj0EAwIDSQAwRgIhAM05
+8Y57pnchGa2iVQAp+vSroiuwfVpxwuLfNPr/CqX9AiEA+/+ApcPcUydrdiC18Qa9
+YtCZiPXavhtG+7tnyEbG52o=
+-----END CERTIFICATE-----
+ 1 s:CN=Caddy Local Authority - ECC Intermediate
+   i:CN=Caddy Local Authority - 2026 ECC Root
+   a:PKEY: EC, (prime256v1); sigalg: ecdsa-with-SHA256
+   v:NotBefore: May 15 21:33:38 2026 GMT; NotAfter: May 22 21:33:38 2026 GMT
+-----BEGIN CERTIFICATE-----
+MIIByTCCAW6gAwIBAgIRAN0P5EGitrwV/F0OmkKSAnswCgYIKoZIzj0EAwIwMDEu
+MCwGA1UEAxMlQ2FkZHkgTG9jYWwgQXV0aG9yaXR5IC0gMjAyNiBFQ0MgUm9vdDAe
+Fw0yNjA1MTUyMTMzMzhaFw0yNjA1MjIyMTMzMzhaMDMxMTAvBgNVBAMTKENhZGR5
+IExvY2FsIEF1dGhvcml0eSAtIEVDQyBJbnRlcm1lZGlhdGUwWTATBgcqhkjOPQIB
+BggqhkjOPQMBBwNCAARIrBfNcpuT/enSVLIQOAXVLzP5A2fKVZfZAA8l8kIpNmN3
+hXf8CpDdQP0sUVE1AJ16BJrt1++1+vMmm4/2U5ZDo2YwZDAOBgNVHQ8BAf8EBAMC
+AQYwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQU9oh+7AjOdJHpdi/qHLK8
+k7YhRlQwHwYDVR0jBBgwFoAUJifUoLqaZx+F5Tc6ElllFPtRGO8wCgYIKoZIzj0E
+AwIDSQAwRgIhANY72D+HFAAytGI26BA7hS7PWdK2MQxywKCS4bbUgJXPAiEA32la
+kiqP7eneZJ6PElBPI1ZZz+gkYlfE7hIRIqOY4jY=
+-----END CERTIFICATE-----
+---
+Server certificate
+subject=
+issuer=CN=Caddy Local Authority - ECC Intermediate
+---
+No client certificate CA names sent
+Peer signing digest: SHA256
+Peer signature type: ecdsa_secp256r1_sha256
+Peer Temp Key: X25519, 253 bits
+---
+SSL handshake has read 1269 bytes and written 1614 bytes
+Verification: OK
+---
+New, TLSv1.3, Cipher is TLS_AES_128_GCM_SHA256
+Protocol: TLSv1.3
+Server public key is 256 bit
+This TLS version forbids renegotiation.
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+Early data was not sent
+Verify return code: 0 (ok)
+---
+---
+Post-Handshake New Session Ticket arrived:
+SSL-Session:
+    Protocol  : TLSv1.3
+    Cipher    : TLS_AES_128_GCM_SHA256
+    Session-ID: 9889022E8B92F5F0CB224B132B52A4D21B17E3BD46E29A0EE38DF02DC9090B2B
+    Session-ID-ctx: 
+    Resumption PSK: 802C7C6F3FA483C49608E33019133CA77A12D2AC964389E0E288B5153675F9CB
+    PSK identity: None
+    PSK identity hint: None
+    SRP username: None
+    TLS session ticket lifetime hint: 604800 (seconds)
+    TLS session ticket:
+    0000 - bb 72 69 b6 ff 94 d4 ec-12 ae f1 45 01 cc b6 06   .ri........E....
+    0010 - 6c ab 64 09 99 9d 31 71-de de ae b4 c2 ec f4 35   l.d...1q.......5
+    0020 - 64 19 cf 2f 7b e8 38 a1-11 63 e4 1b 06 d6 33 1e   d../{.8..c....3.
+    0030 - 66 90 88 60 a4 27 dc ae-c3 eb cf 19 4c c5 68 b8   f..`.'......L.h.
+    0040 - 15 f1 e7 46 b1 73 54 8a-0a 02 88 60 23 38 06 45   ...F.sT....`#8.E
+    0050 - ec c2 98 6c ab cd 07 0e-c9 e3 c8 81 42 0a ca 36   ...l........B..6
+    0060 - af 7f 39 94 9a e9 f0 15-f9                        ..9......
+
+    Start Time: 1779010035
+    Timeout   : 7200 (sec)
+    Verify return code: 0 (ok)
+    Extended master secret: no
+    Max Early Data: 0
+---
+read R BLOCK

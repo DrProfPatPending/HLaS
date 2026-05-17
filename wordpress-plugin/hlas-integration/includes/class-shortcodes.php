@@ -40,9 +40,40 @@ class HLaS_Shortcodes {
 	 * Register all shortcodes
 	 */
 	public function register_shortcodes() {
+		add_shortcode( 'hlas-club-name', array( $this, 'club_name_shortcode' ) );
 		add_shortcode( 'hlas-beat-details', array( $this, 'beat_details_shortcode' ) );
 		add_shortcode( 'hlas-catch-returns', array( $this, 'catch_returns_shortcode' ) );
 		add_shortcode( 'hlas-catch-return-form', array( $this, 'catch_return_form_shortcode' ) );
+	}
+
+	/**
+	 * Club Name Shortcode - Displays the current club code dynamically
+	 *
+	 * Usage: [hlas-club-name]
+	 *        [hlas-club-name format="full"] (not yet supported)
+	 *
+	 * @param array  $atts Shortcode attributes
+	 * @param string $content Enclosed content
+	 * @return string Club code or empty string
+	 */
+	public function club_name_shortcode( $atts, $content = '' ) {
+		$atts = shortcode_atts(
+			array(
+				'format' => 'code', // 'code' for short code (e.g., CTC) or 'full' for friendly name
+			),
+			$atts,
+			'hlas-club-name'
+		);
+
+		$club = $this->resolve_shortcode_club( '' );
+		$format = sanitize_text_field( $atts['format'] );
+
+		if ( 'full' === $format ) {
+			// Future: add friendly club name mapping here
+			return esc_html( $club );
+		}
+
+		return esc_html( $club );
 	}
 
 	/**
