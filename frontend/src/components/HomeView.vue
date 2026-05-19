@@ -78,8 +78,8 @@
                   <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
                   <template v-else-if="column.key === 'Actions'">
                     <div v-if="canManageNews" class="news-actions-stack">
-                      <app-button type="button" size="sm" class="news-edit-btn" @click="editNewsItem(item)">Edit</app-button>
-                      <app-button type="button" size="sm" variant="danger" class="news-delete-btn" :disabled="deleteNewsBusy === item.id" @click="deleteNewsItem(item)">{{ deleteNewsBusy === item.id ? 'Deleting...' : 'Delete' }}</app-button>
+                      <app-button type="button" size="sm" class="news-edit-btn news-action-btn" inherit-style @click="editNewsItem(item)">Edit</app-button>
+                      <app-button type="button" size="sm" class="news-delete-btn news-action-btn news-action-btn-delete" inherit-style :disabled="deleteNewsBusy === item.id" @click="deleteNewsItem(item)">{{ deleteNewsBusy === item.id ? 'Deleting...' : 'Delete' }}</app-button>
                     </div>
                   </template>
                 </td>
@@ -162,13 +162,13 @@
                 <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
                 <template v-else-if="column.key === 'Actions'">
                   <div class="documents-actions-stack">
-                    <app-button type="button" size="sm" class="documents-link-btn" @click="downloadDocument(doc)">Download</app-button>
+                    <app-button type="button" size="sm" class="documents-link-btn documents-action-btn" inherit-style @click="downloadDocument(doc)">Download</app-button>
                     <app-button
                       v-if="canManageDocuments"
                       type="button"
                       size="sm"
-                      variant="danger"
-                      class="documents-delete-btn"
+                      class="documents-delete-btn documents-action-btn documents-action-btn-delete"
+                      inherit-style
                       @click="deleteDocument(doc)"
                     >
                       Delete
@@ -833,9 +833,56 @@ export default {
 }
 
 .documents-input {
-  border: 1px solid #d7dce2;
-  border-radius: 8px;
-  padding: 8px;
+  border: 1px solid #9ab0c6;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: #ffffff;
+  color: #17324d;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+}
+
+.documents-input::placeholder {
+  color: #56748f;
+}
+
+.documents-input[type="file"] {
+  padding: 4px 6px;
+}
+
+.documents-input[type="file"]::file-selector-button,
+.documents-input[type="file"]::-webkit-file-upload-button {
+  border: 1px solid #9ab0c6;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #f7f9fc 0%, #e3ebf3 100%);
+  color: #17324d;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
+  line-height: 1.1;
+  padding: 2px 6px;
+  margin-right: 8px;
+}
+
+.documents-upload-button {
+  margin-left: 0;
+}
+
+.documents-upload-form :deep(.documents-upload-button.app-button) {
+  border: 1px solid #9ab0c6 !important;
+  border-radius: 6px !important;
+  background: linear-gradient(180deg, #f7f9fc 0%, #e3ebf3 100%) !important;
+  color: #17324d !important;
+  font-size: 8pt !important;
+  line-height: 1.1 !important;
+  padding: 2px 8px !important;
+  min-height: 22px !important;
+  height: 22px !important;
+}
+
+.documents-upload-form :deep(.documents-upload-button.app-button .v-btn__content) {
+  color: #17324d !important;
+  font-size: 8pt !important;
+  line-height: 1.1 !important;
 }
 
 .documents-delete-btn {
@@ -916,8 +963,33 @@ export default {
 }
 
 .documents-title-link {
+  display: inline-flex;
+  width: 100%;
+  max-width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: 400;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   max-width: 100%;
   color: var(--app-color-link) !important;
+}
+
+.documents-title-link :deep(.v-btn__content) {
+  display: inline;
+  width: 100%;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit;
+  line-height: 1.2;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: left;
 }
 
 .documents-title-link:hover,
@@ -953,6 +1025,16 @@ export default {
     grid-template-columns: 1fr;
   }
 
+  .documents-input {
+    font-size: 8pt;
+  }
+
+  .documents-input[type="file"]::file-selector-button,
+  .documents-input[type="file"]::-webkit-file-upload-button {
+    font-size: 8pt;
+    padding: 2px 5px;
+  }
+
   .home-news-table th,
   .home-news-table td,
   .home-documents-table th,
@@ -967,16 +1049,64 @@ export default {
   .home-news-table .app-status-badge,
   .home-documents-table :deep(.documents-link-btn.app-button.is-sm),
   .home-documents-table :deep(.documents-delete-btn.app-button.is-sm) {
-    font-size: 6pt;
-    padding: 2px 5px;
+    font-size: 8pt !important;
+    padding: 2px 5px !important;
     line-height: 1.1;
+    min-height: 20px !important;
+    height: 20px !important;
+  }
+
+  .home-documents-table :deep(.documents-link-btn.app-button.is-sm .v-btn__content),
+  .home-documents-table :deep(.documents-delete-btn.app-button.is-sm .v-btn__content) {
+    font-size: 8pt !important;
+    line-height: 1.1 !important;
   }
 
   .home-news-table :deep(.news-edit-btn.app-button.is-sm),
   .home-news-table :deep(.news-delete-btn.app-button.is-sm) {
-    font-size: 6pt;
-    padding: 2px 5px;
+    font-size: 8pt !important;
+    padding: 2px 5px !important;
     line-height: 1.1;
+    min-height: 20px !important;
+    height: 20px !important;
+  }
+
+  .home-news-table :deep(.news-edit-btn.app-button.is-sm .v-btn__content),
+  .home-news-table :deep(.news-delete-btn.app-button.is-sm .v-btn__content) {
+    font-size: 8pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .home-news-table :deep(.news-action-btn.app-button),
+  .home-documents-table :deep(.documents-action-btn.app-button) {
+    border: 1px solid #9ab0c6 !important;
+    border-radius: 6px !important;
+    background: linear-gradient(180deg, #f7f9fc 0%, #e3ebf3 100%) !important;
+    color: #17324d !important;
+    font-size: 8pt !important;
+    line-height: 1.1 !important;
+    padding: 2px 6px !important;
+    min-height: 20px !important;
+    height: 20px !important;
+  }
+
+  .home-news-table :deep(.news-action-btn.app-button .v-btn__content),
+  .home-documents-table :deep(.documents-action-btn.app-button .v-btn__content) {
+    color: #17324d !important;
+    font-size: 8pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .home-news-table :deep(.news-action-btn-delete.app-button),
+  .home-documents-table :deep(.documents-action-btn-delete.app-button) {
+    border-color: #c7a5ab !important;
+    background: linear-gradient(180deg, #fff6f7 0%, #f6e4e7 100%) !important;
+    color: #7a2633 !important;
+  }
+
+  .home-news-table :deep(.news-action-btn-delete.app-button .v-btn__content),
+  .home-documents-table :deep(.documents-action-btn-delete.app-button .v-btn__content) {
+    color: #7a2633 !important;
   }
 
   .news-admin-actions {

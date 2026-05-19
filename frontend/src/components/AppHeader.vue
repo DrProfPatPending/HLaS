@@ -193,8 +193,12 @@ export default {
 
 /* Responsive design for tablets */
 @media (max-width: 768px) {
+  .header-accent-bar {
+    height: 6px;
+  }
+
   .header-content {
-    padding: 6px 8px;
+    padding: 4px 8px;
   }
 
   .logo-name-group {
@@ -224,10 +228,15 @@ export default {
 
 /* Responsive design for mobile */
 @media (max-width: 480px) {
+  .header-accent-bar {
+    height: 4px;
+  }
+
   .header-content {
+    position: relative;
     flex-direction: column;
     align-items: flex-start;
-    padding: 6px 8px;
+    padding: 4px 8px;
     gap: 8px;
   }
 
@@ -257,6 +266,13 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+
+  .logout-button {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    margin: 0;
   }
 
   .login-info {

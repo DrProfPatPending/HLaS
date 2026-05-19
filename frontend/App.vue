@@ -1310,37 +1310,47 @@ export default {
 }
 
 @media (max-width: 768px) {
+  #app {
+    padding: 0 0 8px;
+    min-height: 100dvh;
+  }
+
+  #app .v-application,
+  #app .v-application__wrap {
+    min-height: 100dvh;
+  }
+
   #app .app-member-shell {
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: 20px;
-    padding: 8px 0 26px;
+    gap: 12px;
+    padding: 4px 8px 14px;
   }
 
   #app .app-member-sidebar-group {
     width: 100%;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     flex-direction: column;
-    align-items: center;
-    gap: 14px;
+    align-items: stretch;
+    gap: 10px;
   }
 
   #app .app-member-sidebar-card {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    width: 80vw;
-    padding: 16px 8px;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 8px;
   }
 
   #app .app-member-subnav-card {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    width: 80vw;
-    padding: 16px 8px;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 8px;
   }
 
   #app .app-member-sidebar-title {
@@ -1363,13 +1373,12 @@ export default {
 
   #app .app-member-content {
     width: 100%;
-    display: flex;
-    justify-content: center;
+    display: block;
   }
 
   #app .mobile-home-greeting {
-    width: 80vw;
-    margin: 0 auto !important;
+    width: 100%;
+    margin: 0 !important;
   }
 
   #app .home-container,
@@ -1381,7 +1390,7 @@ export default {
   #app .catch-return-container,
   #app .membership-admin-container,
   #app .club-settings-container {
-    width: 80vw;
+    width: 100%;
   }
 }
 
