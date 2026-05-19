@@ -1,6 +1,6 @@
 <template>
   <div class="my-club-container">
-    <h2>My Club</h2>
+    <h2>{{ activeTabTitle }}</h2>
 
     <div v-if="loading" class="my-club-status">Loading your member information…</div>
     <div v-else-if="error" class="error-msg">{{ error }}</div>
@@ -8,7 +8,7 @@
     <div v-else>
       <div class="member-edit-top-row">
         <div class="member-edit-actions member-edit-actions-top">
-          <app-button v-if="!isEditing" type="button" inherit-style @click="startEdit">Edit Member Details</app-button>
+          <app-button v-if="!isEditing" type="button" class="my-club-edit-btn" inherit-style @click="startEdit">Edit Member Details</app-button>
           <template v-else>
             <app-button type="button" class="save-btn" inherit-style @click="saveEdit">Update Member</app-button>
             <app-button type="button" inherit-style @click="cancelEdit">Cancel</app-button>
@@ -109,6 +109,7 @@ import axios from 'axios';
 import AppButton from './ui/AppButton.vue';
 import {
   store,
+  MY_CLUB_TABS,
   formatFieldName,
   fieldOrderConfig,
   loadFieldOrderConfig,
@@ -238,6 +239,11 @@ export default {
     },
     activeTabFields() {
       return this.groupedFields[store.myClubActiveTab] || [];
+    },
+    activeTabTitle() {
+      const activeTabId = store.myClubActiveTab;
+      const matchedTab = MY_CLUB_TABS.find(tab => tab.id === activeTabId);
+      return matchedTab?.label || 'My Club';
     },
     showUsernameSection() {
       return store.myClubActiveTab === 'security' && this.editData.username !== undefined;
@@ -431,6 +437,21 @@ export default {
 .my-club-container {
   max-width: 900px;
   margin: 0 auto;
+}
+
+.my-club-container h2 {
+  margin: 0 0 12px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  font-weight: 700;
+  color: #17324d;
+}
+
+.my-club-container :deep(.my-club-edit-btn.app-button) {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt !important;
+  line-height: 1.2;
+  padding: 4px 8px !important;
 }
 
 .my-club-password-inline-error {

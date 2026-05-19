@@ -391,27 +391,28 @@ export default {
 #app .app-member-subnav-button {
   width: 100%;
   min-width: 168px;
-  padding: 11px 12px;
-  border: 1px solid #9ab0c6;
+  padding: 6px 10px;
+  border: 1px solid #2d5f8b;
   border-radius: 8px;
-  background: linear-gradient(180deg, #f7f9fc 0%, #e3ebf3 100%);
-  color: #17324d;
+  background: linear-gradient(180deg, #4b86b4 0%, #2d5f8b 100%);
+  color: #fff;
   font-family: Helvetica, Arial, sans-serif;
-  font-size: 10pt;
+  font-size: 8pt;
   font-weight: 600;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 #app .app-member-subnav-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(45, 95, 139, 0.18);
-  background: linear-gradient(180deg, #ffffff 0%, #eaf1f8 100%);
+  box-shadow: 0 5px 14px rgba(45, 95, 139, 0.24);
+  background: linear-gradient(180deg, #5a97c7 0%, #2f6c9c 100%);
 }
 #app .app-member-subnav-button.is-active {
   border-color: #17324d;
   background: linear-gradient(180deg, #2f6c9c 0%, #17324d 100%);
-  color: #ffffff;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 #app .app-member-content {
   min-width: 0;
@@ -1367,8 +1368,8 @@ export default {
   #app .app-member-subnav-button {
     width: 100%;
     min-width: 0;
-    padding: 10px 8px;
-    font-size: 9pt;
+    padding: 5px 6px;
+    font-size: 7pt;
   }
 
   #app .app-member-content {
