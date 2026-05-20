@@ -45,6 +45,7 @@
                 v-else
                 v-model="editData.username"
                 class="member-detail-input"
+                :disabled="isReadOnlyField('username')"
               />
             </td>
           </tr>
@@ -147,6 +148,17 @@ export default {
     myClubShowColumns() {
       const configured = fieldOrderConfig.order?.show_columns?.my_club;
       return configured && typeof configured === 'object' ? configured : {};
+    },
+    myClubReadOnlyColumns() {
+      const configured = fieldOrderConfig.order?.read_only?.my_club;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    hasAdminRole() {
+      const normalizedRoles = (Array.isArray(store.memberRoles) ? store.memberRoles : [])
+        .map(role => String(role || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+      return normalizedRoles.includes('clubadmin')
+        || normalizedRoles.includes('appadmin')
+        || normalizedRoles.includes('appowner');
     },
     orderedFields() {
       // Use backend field order if loaded, else fallback to previous logic
@@ -303,7 +315,25 @@ export default {
       this.photoVisible = false;
     },
     isReadOnlyField(field) {
-      return field === 'ID' || field === 'id';
+      if (field === 'ID' || field === 'id') {
+        return true;
+      }
+      if (this.hasAdminRole) {
+        return false;
+      }
+      return this.myClubReadOnlyColumns?.[field] === true;
+    },
+    removeReadOnlyFieldsFromPayload(payload) {
+      if (!payload || this.hasAdminRole) {
+        return payload;
+      }
+      const sanitized = { ...payload };
+      Object.entries(this.myClubReadOnlyColumns || {}).forEach(([fieldName, isReadOnly]) => {
+        if (isReadOnly) {
+          delete sanitized[fieldName];
+        }
+      });
+      return sanitized;
     },
     formatValue(value) {
       if (value === null || value === undefined || value === '') return '-';
@@ -401,7 +431,7 @@ export default {
         }
       }
 
-      const payload = { ...this.editData, club: this.loggedInClub };
+      const payload = this.removeReadOnlyFieldsFromPayload({ ...this.editData, club: this.loggedInClub });
       delete payload.ID;
       delete payload.id;
       if (this.newPassword) {

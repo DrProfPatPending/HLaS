@@ -278,6 +278,7 @@ The Admin Field Order page provides comprehensive control over table display and
 - **Field Order:** Reorder columns using Top/↑/↓/Bottom buttons
 - **Display As:** Custom label for column header (defaults to field name if blank)
 - **Show Column:** Toggle visibility of the column
+- **Read Only:** Prevent non-admin users from editing that field in editable contexts
 - **Min Width (px):** Minimum pixel width constraint (fallback if no explicit width set)
 - **Width:** Fixed width or flexible sizing
   - Enter pixel value (e.g., `120px` or just `120`)
@@ -317,6 +318,15 @@ This creates a layout where:
 - Editable contexts include: `membership_admin`, `fishing_beats`, `beat_details`, `home_news`, `home_documents`
 - Changes are persisted via `/admin/field-order` endpoint
 - Storage: PostgreSQL (`app_settings` with `scope='global'`) or fallback to `backend/field_order.json`
+- `read_only` is stored inside the same JSON payload (`app_settings.value`), so no SQL schema migration is required
+- Load/save paths normalize `read_only` across JSON + PostgreSQL to keep both sources consistent during sync/fallback
+
+**Read-only behavior:**
+
+- Applies to all Field Order contexts that have editable controls: `my_club`, `membership_admin`, `beat_details`, `home_news`, `home_documents`, `news_updates`
+- Non-admin users cannot edit fields marked read-only
+- Admin-role users (`club_admin`, `app_admin`, `app_owner`) can still edit read-only fields as an override
+- UI disables read-only inputs, and update payloads are sanitized to prevent bypassing via client-side requests
 
 ### Beat Details page
 
@@ -360,6 +370,12 @@ This project is a web application for managing the membership of a fishing club.
 - `frontend/` - Vue.js app
 - `Utilities/` - reusable SQL and operational helper assets
 - `.github/copilot-instructions.md` - Workspace instructions
+
+## Local checks
+
+- Run backend unit/integration checks with:
+   - `make check`
+- This runs the backend tests under `backend/tests` (using `backend-venv` when available).
 
 ## Setup Instructions
 

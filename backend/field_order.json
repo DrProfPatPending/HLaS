@@ -110,6 +110,15 @@
       "Status": true
     }
   },
+  "read_only": {
+    "my_club": {},
+    "membership_admin": {},
+    "fishing_beats": {},
+    "beat_details": {},
+    "home_news": {},
+    "home_documents": {},
+    "news_updates": {}
+  },
   "widths": {
     "home_documents": {
       "Title": "flex",
