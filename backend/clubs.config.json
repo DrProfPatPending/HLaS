@@ -467,12 +467,23 @@
         {
           "name": "Paul Kittson",
           "email": "chairman@gaaffs.org",
-          "mobile": "07717 111111",
+          "mobile": "07714 288055",
           "role": "Chairman"
+        },
+        {
+          "name": "Chris Moses",
+          "email": "secretary@gaaffs.org",
+          "mobile": "07778 480741",
+          "role": "Secretary"
         }
       ],
-      "whatsappGroups": "",
-      "socialMedia": []
+      "whatsappGroups": "https://chat.whatsapp.com/BF4QHqauVFpGjoGJH64r4T",
+      "socialMedia": [
+        {
+          "platform": "socials",
+          "url": "https://socials.com/gaaffs/"
+        }
+      ]
     },
     {
       "fullName": "Cambridge Trout Club",
@@ -1394,7 +1405,12 @@
         }
       ],
       "whatsappGroups": "https://chat.whatsapp.com/FCAMNxPu2RFDQJWjMLWReR?mode=gi_t",
-      "socialMedia": []
+      "socialMedia": [
+        {
+          "platform": "socials",
+          "url": "https://socials.com/ctc/"
+        }
+      ]
     },
     {
       "fullName": "Leek and District Fly Fishing Association",
@@ -1458,7 +1474,12 @@
         }
       ],
       "whatsappGroups": "",
-      "socialMedia": []
+      "socialMedia": [
+        {
+          "platform": "socials",
+          "url": "https://socials.com/ladffa/"
+        }
+      ]
     },
     {
       "fullName": "Test Fishing",
@@ -1505,7 +1526,12 @@
         }
       ],
       "whatsappGroups": "",
-      "socialMedia": []
+      "socialMedia": [
+        {
+          "platform": "socials",
+          "url": "https://socials.com/test/"
+        }
+      ]
     }
   ]
 }
