@@ -20,4 +20,4 @@ clean-venv:
 	rm -rf $(VENV_DIR)
 
 test: venv
-	$(VENV_PYTHON) -m unittest discover -s tests -p "test_*.py"
+	$(VENV_PYTHON) -m unittest discover -t . -s tests -p "test_*.py"

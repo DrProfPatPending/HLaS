@@ -35,9 +35,53 @@ def _merge_field_order_defaults(defaults, loaded):
     return merged
 
 
+def _normalize_field_order_config(loaded, defaults=None):
+    defaults = defaults if isinstance(defaults, dict) else {}
+    merged = _merge_field_order_defaults(defaults, loaded if isinstance(loaded, dict) else {})
+
+    read_only = merged.get('read_only')
+    if not isinstance(read_only, dict):
+        read_only = {}
+
+    per_context_setting_keys = {
+        'minimum_widths',
+        'show_columns',
+        'display_names',
+        'read_only',
+        'widths',
+    }
+
+    context_candidates = set()
+    for key, value in merged.items():
+        if key in per_context_setting_keys:
+            continue
+        if isinstance(value, list):
+            context_candidates.add(key)
+
+    for setting_key in per_context_setting_keys:
+        setting_map = merged.get(setting_key)
+        if isinstance(setting_map, dict):
+            context_candidates.update(setting_map.keys())
+
+    normalized_read_only = {}
+    for context_key in context_candidates:
+        raw_context = read_only.get(context_key)
+        if not isinstance(raw_context, dict):
+            normalized_read_only[context_key] = {}
+            continue
+        normalized_read_only[context_key] = {
+            field_name: bool(is_read_only)
+            for field_name, is_read_only in raw_context.items()
+            if isinstance(field_name, str)
+        }
+
+    merged['read_only'] = normalized_read_only
+    return merged
+
+
 def load_field_order_config(deps=None):
     deps = deps or {}
-    default_config = _load_field_order_from_json()
+    default_config = _normalize_field_order_config(_load_field_order_from_json())
     is_postgres_reads_enabled = deps.get('is_postgres_reads_enabled')
     get_postgres_backend = deps.get('get_postgres_backend')
 
@@ -57,7 +101,7 @@ def load_field_order_config(deps=None):
 
             loaded = row[0] if row else None
             if isinstance(loaded, dict) and loaded:
-                return _merge_field_order_defaults(default_config, loaded)
+                return _normalize_field_order_config(loaded, default_config)
         except Exception:
             pass
 
@@ -66,7 +110,9 @@ def load_field_order_config(deps=None):
 
 def save_field_order_config(data, deps=None):
     deps = deps or {}
-    _save_field_order_to_json(data)
+    default_config = _normalize_field_order_config(_load_field_order_from_json())
+    normalized_data = _normalize_field_order_config(data, default_config)
+    _save_field_order_to_json(normalized_data)
 
     is_postgres_writes_enabled = deps.get('is_postgres_writes_enabled')
     get_postgres_backend = deps.get('get_postgres_backend')
@@ -86,11 +132,11 @@ def save_field_order_config(data, deps=None):
                 session.execute(
                     app_settings_table.update()
                     .where(app_settings_table.c.id == existing[0])
-                    .values(value=data)
+                    .values(value=normalized_data)
                 )
             else:
                 session.execute(
-                    app_settings_table.insert().values(scope='global', key='field_order', value=data)
+                    app_settings_table.insert().values(scope='global', key='field_order', value=normalized_data)
                 )
             session.commit()
         except Exception:
