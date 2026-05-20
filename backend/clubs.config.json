@@ -456,7 +456,17 @@
           "Pools": [],
           "Waypoints": []
         }
-      ]
+      ],
+      "officers": [
+        {
+          "name": "Rob Scoffin",
+          "email": "rob@scoffin.com",
+          "mobile": "07717 154707",
+          "role": "Treasurer"
+        }
+      ],
+      "whatsappGroups": "",
+      "socialMedia": []
     },
     {
       "fullName": "Cambridge Trout Club",
@@ -1356,7 +1366,17 @@
             }
           ]
         }
-      ]
+      ],
+      "officers": [
+        {
+          "name": "Rob Scoffin",
+          "email": "rob@scoffin.com",
+          "mobile": "07717 154707",
+          "role": "Treasurer"
+        }
+      ],
+      "whatsappGroups": "",
+      "socialMedia": []
     },
     {
       "fullName": "Leek and District Fly Fishing Association",
@@ -1410,7 +1430,17 @@
           "Pools": [],
           "Waypoints": []
         }
-      ]
+      ],
+      "officers": [
+        {
+          "name": "Rob Scoffin",
+          "email": "rob@scoffin.com",
+          "mobile": "07717 154707",
+          "role": "Treasurer"
+        }
+      ],
+      "whatsappGroups": "",
+      "socialMedia": []
     },
     {
       "fullName": "Test Fishing",
@@ -1447,7 +1477,17 @@
           "Pools": [],
           "Waypoints": []
         }
-      ]
+      ],
+      "officers": [
+        {
+          "name": "Rob Scoffin",
+          "email": "rob@scoffin.com",
+          "mobile": "07717 154707",
+          "role": "Treasurer"
+        }
+      ],
+      "whatsappGroups": "",
+      "socialMedia": []
     }
   ]
 }
