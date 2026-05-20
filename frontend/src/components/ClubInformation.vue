@@ -466,7 +466,8 @@ export default {
 }
 
 .officers-table {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   border-collapse: collapse;
   font-size: 10pt;
   margin-bottom: 8px;
