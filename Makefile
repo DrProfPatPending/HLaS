@@ -5,7 +5,7 @@ BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 
 PROD_ENV := .env.prod
-DEV_ENV  := .env
+DEV_ENV  := .env.dev
 PROD_COMPOSE := docker-compose.prod.yml
 DEV_COMPOSE := docker-compose.dev.yml
 

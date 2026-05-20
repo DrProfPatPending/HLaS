@@ -8,25 +8,30 @@
 services:
   postgres:
     env_file:
-      - .env
+      - path: .env.dev
+        required: false
 
   backend:
     env_file:
-      - .env
+      - path: .env.dev
+        required: false
 
   caddy:
     env_file:
-      - .env
+      - path: .env.dev
+        required: false
     volumes:
       - ./deploy/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
 
   wordpress-db:
     env_file:
-      - .env
+      - path: .env.dev
+        required: false
 
   wordpress:
     env_file:
-      - .env
+      - path: .env.dev
+        required: false
     environment:
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_HOME', 'https://wordpress.hlastest');
