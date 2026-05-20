@@ -30,7 +30,8 @@ require_env_vars ".env.prod" \
 
 echo "Pulling latest code from Git"
 git checkout production
-git pull origin production
+git fetch origin
+git reset --hard origin/production
 
 # Validate and ensure production Caddyfile is in place
 if [ ! -f "deploy/caddy/Caddyfile.prod" ]; then
