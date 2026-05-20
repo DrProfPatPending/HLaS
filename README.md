@@ -377,6 +377,31 @@ This project is a web application for managing the membership of a fishing club.
    - `make check`
 - This runs the backend tests under `backend/tests` (using `backend-venv` when available).
 
+## Makefile workflow (master + components)
+
+The repository now uses a master Makefile at the root and component Makefiles in:
+
+- `backend/Makefile`
+- `frontend/Makefile`
+
+Recommended entry points:
+
+- `make development` → dev overlay cycle (`build + up + health`)
+- `make production` → production cycle (`build + up + health`)
+- `make check` → backend checks/tests
+- `make help` → list all available targets
+
+Environment-specific compose helpers:
+
+- Dev overlay: `make dev-up`, `make dev-down`, `make dev-health`, `make dev-logs`, `make dev-ps`
+- Production: `make prod-up`, `make prod-down`, `make prod-health`, `make prod-logs`, `make prod-ps`
+
+iOS on macOS:
+
+- Run the simulator build with a custom destination name if needed:
+   - `make ios-sim IOS_SIMULATOR="iPhone 16 Pro"`
+- The default simulator destination is `iPhone 16 Pro`.
+
 ## Field Order sync
 
 - Sync live PostgreSQL `field_order` settings into JSON fallback with:

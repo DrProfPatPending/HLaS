@@ -1,47 +1,101 @@
-# Makefile for building iOS app with Capacitor/Vue
-# Usage:
-#   make ios-sim      # Build for iOS Simulator
-#   make ios-release  # Build for TestFlight/release (requires signing config)
+SHELL := /bin/bash
 
-FRONTEND_DIR=frontend
-IOS_DIR=$(FRONTEND_DIR)/ios
-SCHEME=App
-CONFIG=Release
-BACKEND_DIR=backend
-BACKEND_VENV_PYTHON=backend-venv/bin/python
+ROOT_DIR := .
+BACKEND_DIR := backend
+FRONTEND_DIR := frontend
 
-.PHONY: ios-sim ios-release clean backend-test check sync-field-order-from-db
+PROD_ENV := .env.prod
+PROD_COMPOSE := docker-compose.prod.yml
+DEV_COMPOSE := docker-compose.dev.yml
 
-# Build for iOS Simulator (no code signing required)
-ios-sim:
-	cd $(FRONTEND_DIR) && npm install
-	cd $(FRONTEND_DIR) && npm run build
-	cd $(FRONTEND_DIR) && npx cap sync ios
-	cd $(IOS_DIR) && xcodebuild -scheme $(SCHEME) -configuration $(CONFIG) -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build
+DC_PROD := docker compose --env-file $(PROD_ENV) -f $(PROD_COMPOSE)
+DC_DEV := docker compose --env-file $(PROD_ENV) -f $(PROD_COMPOSE) -f $(DEV_COMPOSE)
 
-# Build for TestFlight/release (requires signing config in Xcode project)
-ios-release:
-	cd $(FRONTEND_DIR) && npm install
-	cd $(FRONTEND_DIR) && npm run build
-	cd $(FRONTEND_DIR) && npx cap sync ios
-	cd $(IOS_DIR) && xcodebuild -scheme $(SCHEME) -configuration $(CONFIG) -archivePath $(IOS_DIR)/build/App.xcarchive archive
-	cd $(IOS_DIR) && xcodebuild -exportArchive -archivePath $(IOS_DIR)/build/App.xcarchive -exportOptionsPlist $(IOS_DIR)/ExportOptions.plist -exportPath $(IOS_DIR)/build
+.PHONY: help \
+	backend-test frontend-build check \
+	dev-build dev-up dev-down dev-ps dev-logs dev-health \
+	prod-build prod-up prod-down prod-ps prod-logs prod-health \
+	development production \
+	sync-field-order-from-db \
+	ios-sim ios-release clean
 
-# Clean build artifacts
-clean:
-	rm -rf $(IOS_DIR)/build
+help:
+	@echo "HLaS master Makefile"
+	@echo ""
+	@echo "Component targets:"
+	@echo "  make backend-test              Run backend tests"
+	@echo "  make frontend-build            Build frontend"
+	@echo "  make check                     Run local check workflow"
+	@echo ""
+	@echo "Environment targets:"
+	@echo "  make development               Dev overlay cycle (build+up+health)"
+	@echo "  make production                Prod cycle (build+up+health)"
+	@echo "  make dev-up|dev-down|dev-health|dev-logs|dev-ps"
+	@echo "  make prod-up|prod-down|prod-health|prod-logs|prod-ps"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  make sync-field-order-from-db  Sync field_order from live Postgres to JSON"
+	@echo ""
+	@echo "iOS:"
+	@echo "  make ios-sim | ios-release | clean"
+	@echo "  make ios-sim IOS_SIMULATOR=\"iPhone 16 Pro\""
 
-# Run backend unit/integration tests (uses project venv when available)
 backend-test:
-	@if [ -x "$(BACKEND_VENV_PYTHON)" ]; then \
-		cd $(BACKEND_DIR) && ../$(BACKEND_VENV_PYTHON) -m unittest discover -s tests -p "test_*.py"; \
-	else \
-		cd $(BACKEND_DIR) && python -m unittest discover -s tests -p "test_*.py"; \
-	fi
+	$(MAKE) -C $(BACKEND_DIR) test
 
-# General local check workflow
+frontend-build:
+	$(MAKE) -C $(FRONTEND_DIR) build
+
 check: backend-test
 
-# Sync running PostgreSQL field_order settings into backend/field_order.json
+dev-build:
+	$(DC_DEV) build backend frontend
+
+dev-up:
+	$(DC_DEV) up -d
+
+dev-down:
+	$(DC_DEV) down
+
+dev-ps:
+	$(DC_DEV) ps
+
+dev-logs:
+	$(DC_DEV) logs --tail=150
+
+dev-health:
+	./health_check_dev.sh
+
+prod-build:
+	$(DC_PROD) build backend frontend
+
+prod-up:
+	$(DC_PROD) up -d
+
+prod-down:
+	$(DC_PROD) down
+
+prod-ps:
+	$(DC_PROD) ps
+
+prod-logs:
+	$(DC_PROD) logs --tail=150
+
+prod-health:
+	./health_check_prod.sh
+
+development: dev-build dev-up dev-health
+
+production: prod-build prod-up prod-health
+
 sync-field-order-from-db:
 	./sync_field_order_postgres_to_json.sh
+
+ios-sim:
+	$(MAKE) -C $(FRONTEND_DIR) ios-sim IOS_SIMULATOR="$(IOS_SIMULATOR)"
+
+ios-release:
+	$(MAKE) -C $(FRONTEND_DIR) ios-release
+
+clean:
+	$(MAKE) -C $(FRONTEND_DIR) clean
