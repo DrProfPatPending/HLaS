@@ -9,10 +9,10 @@ VENV_MARKER := $(VENV_DIR)/.installed
 venv:
 	@if [ ! -f "$(VENV_MARKER)" ]; then \
 		echo "Creating backend venv..."; \
-		rm -rf $(VENV_DIR); \
-		python3 -m venv $(VENV_DIR); \
-		$(VENV_DIR)/bin/pip install --upgrade pip; \
-		$(VENV_DIR)/bin/pip install -r requirements.txt; \
+		rm -rf $(VENV_DIR) && \
+		python3 -m venv $(VENV_DIR) && \
+		$(VENV_DIR)/bin/pip install --upgrade pip && \
+		$(VENV_DIR)/bin/pip install -r requirements.txt && \
 		touch $(VENV_MARKER); \
 	fi
 
