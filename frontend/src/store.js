@@ -700,23 +700,45 @@ export function teardownAuthInterceptor() {
 // Club loading
 // ---------------------------------------------------------------------------
 export function loadClubs() {
-  return axios.get(`${API_BASE_URL}/clubs`).then(res => {
-    const clubs = Array.isArray(res.data?.clubs) ? res.data.clubs : [];
-    
-    // Sort clubs alphabetically by shortName
+  const normalizeAndApplyClubs = clubs => {
     const sortedClubs = [...clubs].sort((a, b) => {
       const aName = String(a.shortName || '').toUpperCase();
       const bName = String(b.shortName || '').toUpperCase();
       return aName.localeCompare(bName);
     });
-    
-    store.clubs = sortedClubs;
 
-    // Resolve the default club considering appSettings and URL preferences
-    const defaultClub = resolveDefaultLoginClub(sortedClubs);
-    store.selectedClub = defaultClub;
-    
+    store.clubs = sortedClubs;
+    store.selectedClub = resolveDefaultLoginClub(sortedClubs);
     syncActiveTheme();
+  };
+
+  const tryFallbackApiRoute = async () => {
+    const normalizedBase = String(API_BASE_URL || '').trim().replace(/\/+$/, '');
+    if (/\/api$/i.test(normalizedBase)) {
+      return [];
+    }
+    const fallbackResponse = await axios.get(`${normalizedBase}/api/clubs`);
+    return Array.isArray(fallbackResponse.data?.clubs) ? fallbackResponse.data.clubs : [];
+  };
+
+  return axios.get(`${API_BASE_URL}/clubs`).then(async res => {
+    const primaryClubs = Array.isArray(res.data?.clubs) ? res.data.clubs : null;
+    if (primaryClubs !== null) {
+      normalizeAndApplyClubs(primaryClubs);
+      return;
+    }
+
+    const contentType = String(res.headers?.['content-type'] || '').toLowerCase();
+    if (contentType.includes('text/html')) {
+      try {
+        const fallbackClubs = await tryFallbackApiRoute();
+        normalizeAndApplyClubs(fallbackClubs);
+        return;
+      } catch {
+      }
+    }
+
+    normalizeAndApplyClubs([]);
   }).catch(() => {
     store.clubs = [];
     syncActiveTheme();
