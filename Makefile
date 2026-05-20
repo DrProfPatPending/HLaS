@@ -16,8 +16,9 @@ DC_DEV := docker compose --env-file $(DEV_ENV) -f $(PROD_COMPOSE) -f $(DEV_COMPO
 	backend-test frontend-build check \
 	dev-build dev-up dev-down dev-ps dev-logs dev-health \
 	prod-build prod-up prod-down prod-ps prod-logs prod-health \
-	development production \
+	development dev-rebuild production \
 	sync-field-order-from-db \
+	docker-prune \
 	ios-sim ios-release clean
 
 help:
@@ -30,6 +31,8 @@ help:
 	@echo ""
 	@echo "Environment targets:"
 	@echo "  make development               Dev overlay cycle (build+up+health)"
+	@echo "  make dev-rebuild               Rebuild containers and restart (no tests)"
+	@echo "  make docker-prune              Remove stopped containers, unused images and build cache"
 	@echo "  make production                Prod cycle (build+up+health)"
 	@echo "  make dev-up|dev-down|dev-health|dev-logs|dev-ps"
 	@echo "  make prod-up|prod-down|prod-health|prod-logs|prod-ps"
@@ -86,6 +89,11 @@ prod-health:
 	./health_check_prod.sh
 
 development: check frontend-build dev-build dev-up dev-health
+
+dev-rebuild: dev-build dev-up dev-health
+
+docker-prune:
+	docker system prune -f
 
 production: prod-build prod-up prod-health
 

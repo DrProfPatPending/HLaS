@@ -179,6 +179,9 @@ export const clubDetails = computed(() => {
       adminEmail: '',
       description: 'Global admin context',
       logoUrl: '',
+      whatsappGroups: '',
+      socialMedia: [],
+      officers: [],
       beats: [],
     };
   }
@@ -189,6 +192,9 @@ export const clubDetails = computed(() => {
     adminEmail: matchedClub.adminEmail || '',
     description: matchedClub.description || '',
     logoUrl: matchedClub.logoUrl || '',
+    whatsappGroups: matchedClub.whatsappGroups || '',
+    socialMedia: Array.isArray(matchedClub.socialMedia) ? matchedClub.socialMedia : [],
+    officers: Array.isArray(matchedClub.officers) ? matchedClub.officers : [],
     beats: Array.isArray(matchedClub.beats) ? matchedClub.beats : [],
   };
 });

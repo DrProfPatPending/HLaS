@@ -206,6 +206,9 @@ def create_admin_blueprint(deps):
             'websiteUrl': str(data.get('websiteUrl', '')).strip(),
             'adminEmail': str(data.get('adminEmail', '')).strip(),
             'logoUrl': logo_url,
+            'whatsappGroups': '',
+            'socialMedia': [],
+            'officers': [],
             'beats': [],
             'smtp': {
                 'host': '',
@@ -240,6 +243,9 @@ def create_admin_blueprint(deps):
                     'websiteUrl': str(data.get('websiteUrl', club.get('websiteUrl', ''))).strip(),
                     'adminEmail': str(data.get('adminEmail', club.get('adminEmail', ''))).strip(),
                     'logoUrl': str(data.get('logoUrl', club.get('logoUrl', ''))).strip(),
+                    'whatsappGroups': str(data.get('whatsappGroups', club.get('whatsappGroups', ''))).strip(),
+                    'socialMedia': data.get('socialMedia', club.get('socialMedia', [])) if isinstance(data.get('socialMedia', club.get('socialMedia', [])), list) else [],
+                    'officers': data.get('officers', club.get('officers', [])) if isinstance(data.get('officers', club.get('officers', [])), list) else [],
                     'beats': normalize_beats(data.get('beats', club.get('beats', []))),
                     'smtp': {
                         'host': str(raw_smtp.get('host', existing_smtp.get('host', ''))).strip(),

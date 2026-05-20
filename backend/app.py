@@ -327,6 +327,9 @@ def _load_clubs_config_from_postgres():
             'websiteUrl': row.website_url or '',
             'adminEmail': row.admin_email or '',
             'logoUrl': row.logo_url or '',
+            'whatsappGroups': row.whatsapp_groups or '',
+            'socialMedia': row.social_media if isinstance(row.social_media, list) else [],
+            'officers': row.officers if isinstance(row.officers, list) else [],
             'beats': normalize_beats(beats_by_club_id.get(row.id, [])),
             'smtp': {
                 'host': getattr(smtp_row, 'host', '') or '',
@@ -487,6 +490,9 @@ def save_clubs_config(clubs):
                 'website_url': str(club.get('websiteUrl', '')).strip(),
                 'admin_email': str(club.get('adminEmail', '')).strip(),
                 'logo_url': str(club.get('logoUrl', '')).strip(),
+                'whatsapp_groups': str(club.get('whatsappGroups', '')).strip(),
+                'social_media': club.get('socialMedia', []) if isinstance(club.get('socialMedia'), list) else [],
+                'officers': club.get('officers', []) if isinstance(club.get('officers'), list) else [],
                 'is_active': True,
             }
 

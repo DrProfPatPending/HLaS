@@ -142,7 +142,7 @@
       <img src="./logos/HLaS.png" alt="HLaS logo" class="app-footer-logo" />
       <span>(c) 2026 - ScoffySoft</span>
       <span class="app-footer-separator">|</span>
-      <a href="mailto: robbie.scoff@gmail.com">Contact Us</a>
+      <a :href="`mailto:robbie.scoff@gmail.com?subject=${encodeURIComponent(clubShortName + ' - HLaS App Enquiry')}`">Contact Us</a>
     </footer>
   </v-app>
 </template>

@@ -278,12 +278,15 @@ export default {
     clubNewsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} News and Updates`,
     clubDocumentsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} Documents`,
     newsColumns() {
-      return [
+      const cols = [
         { key: 'Date', label: 'Date' },
         { key: 'Category', label: 'Category' },
         { key: 'Update', label: 'Update' },
-        { key: 'Actions', label: 'Actions' },
       ];
+      if (this.canManageNewsActions) {
+        cols.push({ key: 'Actions', label: 'Actions' });
+      }
+      return cols;
     },
     documentColumns() {
       // Only show File and Uploaded columns if VerboseDebug is true
@@ -976,12 +979,19 @@ export default {
   table-layout: fixed;
 }
 
-.home-documents-table th,
+.home-documents-table th {
+  padding: 10px 12px;
+  border: 1px solid #d7dce2;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 10pt;
+}
+
 .home-documents-table td {
   padding: 10px 12px;
   border: 1px solid #d7dce2;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
   font-size: 10pt;
 }
 
@@ -1016,9 +1026,6 @@ export default {
 
 .documents-actions-cell {
   white-space: normal;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .documents-actions-stack {
