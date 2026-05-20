@@ -36,13 +36,13 @@
                   <div class="news-edit-form">
                     <div class="news-edit-fields">
                       <label class="news-edit-label">Date
-                        <input v-model="editNewsForm.date" type="date" class="news-edit-input" />
+                        <input v-model="editNewsForm.date" type="date" class="news-edit-input" :disabled="isHomeNewsFieldReadOnly('Date')" />
                       </label>
                       <label class="news-edit-label">Category
-                        <input v-model="editNewsForm.category" type="text" class="news-edit-input" placeholder="Category" />
+                        <input v-model="editNewsForm.category" type="text" class="news-edit-input" placeholder="Category" :disabled="isHomeNewsFieldReadOnly('Category')" />
                       </label>
                       <label class="news-edit-label">Status
-                        <select v-model="editNewsForm.status" class="news-edit-input">
+                        <select v-model="editNewsForm.status" class="news-edit-input" :disabled="isHomeNewsFieldReadOnly('Status')">
                           <option value="Draft">Draft</option>
                           <option value="Published">Published</option>
                           <option value="Archived">Archived</option>
@@ -50,7 +50,7 @@
                       </label>
                     </div>
                     <label class="news-edit-label news-edit-update-label">Update
-                      <textarea v-model="editNewsForm.update" rows="3" class="news-edit-textarea" />
+                      <textarea v-model="editNewsForm.update" rows="3" class="news-edit-textarea" :disabled="isHomeNewsFieldReadOnly('Update')" />
                     </label>
                     <p v-if="editNewsError" class="news-edit-error">{{ editNewsError }}</p>
                     <div class="news-edit-actions">
@@ -77,9 +77,9 @@
                   <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
                   <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
                   <template v-else-if="column.key === 'Actions'">
-                    <div v-if="canManageNews" class="news-actions-stack">
-                      <app-button type="button" size="sm" class="news-edit-btn" @click="editNewsItem(item)">Edit</app-button>
-                      <app-button type="button" size="sm" variant="danger" class="news-delete-btn" :disabled="deleteNewsBusy === item.id" @click="deleteNewsItem(item)">{{ deleteNewsBusy === item.id ? 'Deleting...' : 'Delete' }}</app-button>
+                    <div v-if="canManageNewsActions" class="news-actions-stack">
+                      <app-button type="button" size="sm" class="news-edit-btn news-action-btn" inherit-style @click="editNewsItem(item)">Edit</app-button>
+                      <app-button type="button" size="sm" class="news-delete-btn news-action-btn news-action-btn-delete" inherit-style :disabled="deleteNewsBusy === item.id" @click="deleteNewsItem(item)">{{ deleteNewsBusy === item.id ? 'Deleting...' : 'Delete' }}</app-button>
                     </div>
                   </template>
                 </td>
@@ -100,15 +100,17 @@
               type="text"
               placeholder="Document title (optional)"
               class="documents-input"
+              :disabled="isHomeDocumentsFieldReadOnly('Title')"
             />
             <input
               type="file"
               accept=".pdf,.xls,.xlsx,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               class="documents-input"
               @change="onFileSelected"
+              :disabled="isHomeDocumentsFieldReadOnly('File')"
             />
           </div>
-          <app-button type="submit" :disabled="uploadBusy" class="documents-upload-button">
+          <app-button type="submit" :disabled="uploadBusy || isDocumentUploadReadOnly" class="documents-upload-button">
             {{ uploadBusy ? 'Uploading...' : 'Upload Document' }}
           </app-button>
         </form>
@@ -162,13 +164,13 @@
                 <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
                 <template v-else-if="column.key === 'Actions'">
                   <div class="documents-actions-stack">
-                    <app-button type="button" size="sm" class="documents-link-btn" @click="downloadDocument(doc)">Download</app-button>
+                    <app-button type="button" size="sm" class="documents-link-btn documents-action-btn" inherit-style @click="downloadDocument(doc)">Download</app-button>
                     <app-button
-                      v-if="canManageDocuments"
+                      v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
                       type="button"
                       size="sm"
-                      variant="danger"
-                      class="documents-delete-btn"
+                      class="documents-delete-btn documents-action-btn documents-action-btn-delete"
+                      inherit-style
                       @click="deleteDocument(doc)"
                     >
                       Delete
@@ -233,6 +235,27 @@ export default {
     accessError: () => store.accessError,
     canManageDocuments: () => store.memberPermissions.includes('document.club.manage'),
     canManageNews: () => canAccessNewsletters.value,
+    hasAdminRole() {
+      const normalizedRoles = (Array.isArray(store.memberRoles) ? store.memberRoles : [])
+        .map(role => String(role || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+      return normalizedRoles.includes('clubadmin')
+        || normalizedRoles.includes('appadmin')
+        || normalizedRoles.includes('appowner');
+    },
+    homeNewsReadOnlyColumns() {
+      const configured = this.fieldOrder?.read_only?.home_news;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    homeDocumentsReadOnlyColumns() {
+      const configured = this.fieldOrder?.read_only?.home_documents;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    canManageNewsActions() {
+      return this.canManageNews && !this.isHomeNewsFieldReadOnly('Actions');
+    },
+    isDocumentUploadReadOnly() {
+      return this.isHomeDocumentsFieldReadOnly('Title') || this.isHomeDocumentsFieldReadOnly('File');
+    },
     greetingFirstName() {
       const user = this.loggedInUser || {};
       const candidates = [
@@ -342,6 +365,42 @@ export default {
     },
   },
   methods: {
+    isHomeNewsFieldReadOnly(fieldName) {
+      if (this.hasAdminRole) {
+        return false;
+      }
+      return this.homeNewsReadOnlyColumns?.[fieldName] === true;
+    },
+    isHomeDocumentsFieldReadOnly(fieldName) {
+      if (this.hasAdminRole) {
+        return false;
+      }
+      return this.homeDocumentsReadOnlyColumns?.[fieldName] === true;
+    },
+    sanitizeHomeNewsPayload(basePayload, sourceItem) {
+      if (this.hasAdminRole) {
+        return basePayload;
+      }
+      const sanitized = { ...basePayload };
+      const source = sourceItem || {};
+      const fieldMap = {
+        Date: 'date',
+        Category: 'category',
+        Update: 'update',
+        Status: 'status',
+      };
+      Object.entries(fieldMap).forEach(([columnKey, payloadKey]) => {
+        if (!this.isHomeNewsFieldReadOnly(columnKey)) {
+          return;
+        }
+        if (payloadKey === 'update') {
+          sanitized[payloadKey] = source.update || source.message || '';
+          return;
+        }
+        sanitized[payloadKey] = source[payloadKey] || '';
+      });
+      return sanitized;
+    },
     formatNewsDate(value) {
       const formatted = formatConfiguredDate(value, 'Date');
       return formatted || value;
@@ -354,6 +413,9 @@ export default {
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     },
     editNewsItem(item) {
+      if (!this.canManageNewsActions) {
+        return;
+      }
       this.editingNewsId = item.id;
       this.editNewsForm = {
         date: item.date || '',
@@ -370,13 +432,14 @@ export default {
     saveNewsEdit(item) {
       this.editNewsBusy = true;
       this.editNewsError = '';
-      return axios.put(`${API_BASE_URL}/news-updates/${item.id}`, {
+      const payload = this.sanitizeHomeNewsPayload({
         club: this.loggedInClub,
         date: this.editNewsForm.date,
         category: this.editNewsForm.category,
         update: this.editNewsForm.update,
         status: this.editNewsForm.status,
-      }).then(() => {
+      }, item);
+      return axios.put(`${API_BASE_URL}/news-updates/${item.id}`, payload).then(() => {
         this.editingNewsId = null;
         this.fetchNewsUpdates();
       }).catch((err) => {
@@ -386,6 +449,9 @@ export default {
       });
     },
     deleteNewsItem(item) {
+      if (!this.canManageNewsActions) {
+        return Promise.resolve();
+      }
       if (!window.confirm(`Delete this news post?`)) return Promise.resolve();
       this.deleteNewsBusy = item.id;
       return axios.delete(`${API_BASE_URL}/news-updates/${item.id}`, {
@@ -538,11 +604,22 @@ export default {
       });
     },
     onFileSelected(event) {
+      if (this.isHomeDocumentsFieldReadOnly('File')) {
+        this.uploadError = 'File uploads are read-only for your role.';
+        if (event?.target) {
+          event.target.value = '';
+        }
+        return;
+      }
       const file = event?.target?.files?.[0] || null;
       this.uploadFile = file;
     },
     uploadDocument() {
       this.uploadError = '';
+      if (this.isDocumentUploadReadOnly) {
+        this.uploadError = 'Document upload fields are read-only for your role.';
+        return Promise.resolve();
+      }
       if (!this.uploadFile) {
         this.uploadError = 'Please choose a file to upload.';
         return Promise.resolve();
@@ -614,6 +691,10 @@ export default {
     },
     deleteDocument(doc) {
       this.documentsError = '';
+      if (this.isHomeDocumentsFieldReadOnly('Actions')) {
+        this.documentsError = 'Document actions are read-only for your role.';
+        return Promise.resolve();
+      }
       if (!window.confirm(`Delete document "${doc.fileName}"?`)) {
         return Promise.resolve();
       }
@@ -833,9 +914,56 @@ export default {
 }
 
 .documents-input {
-  border: 1px solid #d7dce2;
-  border-radius: 8px;
-  padding: 8px;
+  border: 1px solid #9ab0c6;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: #ffffff;
+  color: #17324d;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+}
+
+.documents-input::placeholder {
+  color: #56748f;
+}
+
+.documents-input[type="file"] {
+  padding: 4px 6px;
+}
+
+.documents-input[type="file"]::file-selector-button,
+.documents-input[type="file"]::-webkit-file-upload-button {
+  border: 1px solid #9ab0c6;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #f7f9fc 0%, #e3ebf3 100%);
+  color: #17324d;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt;
+  line-height: 1.1;
+  padding: 2px 6px;
+  margin-right: 8px;
+}
+
+.documents-upload-button {
+  margin-left: 0;
+}
+
+.documents-upload-form :deep(.documents-upload-button.app-button) {
+  border: 1px solid #9ab0c6 !important;
+  border-radius: 6px !important;
+  background: linear-gradient(180deg, #f7f9fc 0%, #e3ebf3 100%) !important;
+  color: #17324d !important;
+  font-size: 8pt !important;
+  line-height: 1.1 !important;
+  padding: 2px 8px !important;
+  min-height: 22px !important;
+  height: 22px !important;
+}
+
+.documents-upload-form :deep(.documents-upload-button.app-button .v-btn__content) {
+  color: #17324d !important;
+  font-size: 8pt !important;
+  line-height: 1.1 !important;
 }
 
 .documents-delete-btn {
@@ -916,8 +1044,33 @@ export default {
 }
 
 .documents-title-link {
+  display: inline-flex;
+  width: 100%;
+  max-width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: 400;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   max-width: 100%;
   color: var(--app-color-link) !important;
+}
+
+.documents-title-link :deep(.v-btn__content) {
+  display: inline;
+  width: 100%;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit;
+  line-height: 1.2;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: left;
 }
 
 .documents-title-link:hover,
@@ -953,6 +1106,16 @@ export default {
     grid-template-columns: 1fr;
   }
 
+  .documents-input {
+    font-size: 8pt;
+  }
+
+  .documents-input[type="file"]::file-selector-button,
+  .documents-input[type="file"]::-webkit-file-upload-button {
+    font-size: 8pt;
+    padding: 2px 5px;
+  }
+
   .home-news-table th,
   .home-news-table td,
   .home-documents-table th,
@@ -967,16 +1130,64 @@ export default {
   .home-news-table .app-status-badge,
   .home-documents-table :deep(.documents-link-btn.app-button.is-sm),
   .home-documents-table :deep(.documents-delete-btn.app-button.is-sm) {
-    font-size: 6pt;
-    padding: 2px 5px;
+    font-size: 8pt !important;
+    padding: 2px 5px !important;
     line-height: 1.1;
+    min-height: 20px !important;
+    height: 20px !important;
+  }
+
+  .home-documents-table :deep(.documents-link-btn.app-button.is-sm .v-btn__content),
+  .home-documents-table :deep(.documents-delete-btn.app-button.is-sm .v-btn__content) {
+    font-size: 8pt !important;
+    line-height: 1.1 !important;
   }
 
   .home-news-table :deep(.news-edit-btn.app-button.is-sm),
   .home-news-table :deep(.news-delete-btn.app-button.is-sm) {
-    font-size: 6pt;
-    padding: 2px 5px;
+    font-size: 8pt !important;
+    padding: 2px 5px !important;
     line-height: 1.1;
+    min-height: 20px !important;
+    height: 20px !important;
+  }
+
+  .home-news-table :deep(.news-edit-btn.app-button.is-sm .v-btn__content),
+  .home-news-table :deep(.news-delete-btn.app-button.is-sm .v-btn__content) {
+    font-size: 8pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .home-news-table :deep(.news-action-btn.app-button),
+  .home-documents-table :deep(.documents-action-btn.app-button) {
+    border: 1px solid #9ab0c6 !important;
+    border-radius: 6px !important;
+    background: linear-gradient(180deg, #f7f9fc 0%, #e3ebf3 100%) !important;
+    color: #17324d !important;
+    font-size: 8pt !important;
+    line-height: 1.1 !important;
+    padding: 2px 6px !important;
+    min-height: 20px !important;
+    height: 20px !important;
+  }
+
+  .home-news-table :deep(.news-action-btn.app-button .v-btn__content),
+  .home-documents-table :deep(.documents-action-btn.app-button .v-btn__content) {
+    color: #17324d !important;
+    font-size: 8pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .home-news-table :deep(.news-action-btn-delete.app-button),
+  .home-documents-table :deep(.documents-action-btn-delete.app-button) {
+    border-color: #c7a5ab !important;
+    background: linear-gradient(180deg, #fff6f7 0%, #f6e4e7 100%) !important;
+    color: #7a2633 !important;
+  }
+
+  .home-news-table :deep(.news-action-btn-delete.app-button .v-btn__content),
+  .home-documents-table :deep(.documents-action-btn-delete.app-button .v-btn__content) {
+    color: #7a2633 !important;
   }
 
   .news-admin-actions {

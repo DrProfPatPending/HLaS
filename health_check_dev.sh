@@ -27,7 +27,11 @@ check_http_code() {
   fi
 
   local code
-  code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "${curl_args[@]}" "$url" || true)"
+  if (( ${#curl_args[@]} )); then
+    code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "${curl_args[@]}" "$url" || true)"
+  else
+    code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "$url" || true)"
+  fi
 
   if [[ " $expected_codes " == *" $code "* ]]; then
     green "✓ ${description}: ${code}"

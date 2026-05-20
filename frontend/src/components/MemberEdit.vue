@@ -39,7 +39,11 @@
         <tr v-if="editMemberData.username !== undefined">
           <td>{{ formatFieldName('username') }}</td>
           <td>
-            <input v-model="editMemberData.username" class="member-detail-input" />
+            <input
+              v-model="editMemberData.username"
+              class="member-detail-input"
+              :disabled="isReadOnlyField('username')"
+            />
           </td>
         </tr>
         <tr>
@@ -66,14 +70,14 @@
               v-if="isDateOfBirthField(key)"
               type="date"
               :value="dateInputValue(editMemberData[key])"
-              :disabled="key === 'ID' || key === 'id'"
+                :disabled="isReadOnlyField(key)"
               class="member-detail-input"
               @input="editMemberData[key] = $event.target.value"
             />
             <input
               v-else
               v-model="editMemberData[key]"
-              :disabled="key === 'ID' || key === 'id'"
+                :disabled="isReadOnlyField(key)"
               class="member-detail-input"
             />
           </td>
@@ -97,18 +101,20 @@
 </template>
 
 <script>
+import axios from 'axios';
 import AppButton from './ui/AppButton.vue';
 import {
+  API_BASE_URL,
   store,
   editMemberPositionLabel,
   hasPreviousEditMember,
   hasNextEditMember,
   navigateEditMember,
-  updateMember,
   cancelEdit,
   formatFieldName,
   fieldOrderConfig,
   loadFieldOrderConfig,
+  fetchMembers,
   isDateOfBirthField,
   normalizeDateInputValue,
 } from '../store.js';
@@ -156,6 +162,17 @@ export default {
       const keys = Object.keys(this.editMemberData || {});
       return keys.filter(k => k !== 'username' && k !== 'password');
     },
+    membershipReadOnlyColumns() {
+      const configured = fieldOrderConfig.order?.read_only?.membership_admin;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    hasAdminRole() {
+      const normalizedRoles = (Array.isArray(store.memberRoles) ? store.memberRoles : [])
+        .map(role => String(role || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+      return normalizedRoles.includes('clubadmin')
+        || normalizedRoles.includes('appadmin')
+        || normalizedRoles.includes('appowner');
+    },
     memberPhotoName() {
       return this.editMemberData.Photo_Path || '';
     },
@@ -171,11 +188,64 @@ export default {
   },
   methods: {
     navigateEditMember,
-    updateMember,
     cancelEdit,
     formatFieldName,
     isDateOfBirthField,
     dateInputValue: normalizeDateInputValue,
+    isReadOnlyField(field) {
+      if (field === 'ID' || field === 'id') {
+        return true;
+      }
+      if (this.hasAdminRole) {
+        return false;
+      }
+      return this.membershipReadOnlyColumns?.[field] === true;
+    },
+    stripReadOnlyFields(payload) {
+      if (!payload || this.hasAdminRole) {
+        return payload;
+      }
+      const sanitized = { ...payload };
+      Object.entries(this.membershipReadOnlyColumns || {}).forEach(([fieldName, isReadOnly]) => {
+        if (isReadOnly) {
+          delete sanitized[fieldName];
+        }
+      });
+      return sanitized;
+    },
+    updateMember() {
+      if (store.newPassword || store.confirmPassword) {
+        if (store.newPassword !== store.confirmPassword) {
+          store.passwordError = 'Passwords do not match';
+          return;
+        }
+        if (store.newPassword.length === 0) {
+          store.passwordError = 'Password cannot be empty';
+          return;
+        }
+      }
+      store.passwordError = '';
+
+      const memberData = this.stripReadOnlyFields({ ...(store.editMemberData || {}), club: store.loggedInClub });
+      if (store.newPassword) {
+        memberData.password = store.newPassword;
+      }
+
+      axios.put(`${API_BASE_URL}/members/${store.editMemberId}`, memberData).then(() => {
+        fetchMembers();
+        store.activeSection = 'membership-admin';
+        store.editMemberData = {};
+        store.editMemberId = null;
+        store.newPassword = '';
+        store.confirmPassword = '';
+        store.passwordError = '';
+      }).catch(err => {
+        store.passwordError =
+          err.response && err.response.data && err.response.data.error
+            ? err.response.data.error
+            : 'Update failed';
+      });
+    },
     hideMemberPhoto() {
       this.photoVisible = false;
     },

@@ -20,7 +20,12 @@ target_metadata = metadata
 
 
 def get_url() -> str:
-    return os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    if url.startswith('postgresql://') and 'psycopg' not in url:
+        url = url.replace('postgresql://', 'postgresql+psycopg://')
+    elif url.startswith('postgres://') and 'psycopg' not in url:
+        url = url.replace('postgres://', 'postgresql+psycopg://')
+    return url
 
 
 def run_migrations_offline() -> None:
