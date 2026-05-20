@@ -460,9 +460,15 @@
       "officers": [
         {
           "name": "Rob Scoffin",
-          "email": "rob@scoffin.com",
+          "email": "treasurer@gaaffs.org",
           "mobile": "07717 154707",
           "role": "Treasurer"
+        },
+        {
+          "name": "Paul Kittson",
+          "email": "chairman@gaaffs.org",
+          "mobile": "07717 111111",
+          "role": "Chairman"
         }
       ],
       "whatsappGroups": "",
@@ -973,15 +979,15 @@
           "Beat_Downstream": "///sneezing.questions.greet",
           "Beat_Description": "Upper C beat connects to B beat at Hinxton Mill.",
           "Detailed_Description": "Non-contiguous with the lower C beat portion, divided by a no fishing section through Duxford village.",
-          "Beat_Upstream_Latitude": "",
-          "Beat_Upstream_Longitude": "",
-          "Beat_Downstream_Latitude": "",
-          "Beat_Downstream_Longitude": "",
+          "Beat_Upstream_Latitude": "52.08506",
+          "Beat_Upstream_Longitude": "0.17751",
+          "Beat_Downstream_Latitude": "52.08982",
+          "Beat_Downstream_Longitude": "0.16937",
           "Parking_Locations": [
             {
               "Name": "Hinxton Road Ford",
               "Latitude": "52.08642",
-              "Location": "",
+              "Location": "///erupts.warblers.fools",
               "Longitude": "0.17511",
               "Description": "Park on roadside near to the ford."
             }
@@ -1172,7 +1178,7 @@
           "Position": "4",
           "Beat_Upstream": "///sweetly.chainsaw.fools",
           "Beat_Downstream": "///upper.travels.professes",
-          "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water.",
+          "Beat_Description": "Lower section of C beat from the railway line downstream to the A505. Some lovely pools and long glides, the central section is very wadable, with the upstream end being accessible after skipping a deep pool with a fallen willow. The downstream end is deep and slow as the river goes through a small wood - can be a tough wade.",
           "Detailed_Description": "Bottom of the CTC section, some lovely fishing in the middle section - at the bottom it gets deep and a bit 'canalised' through the woods - some big fish in there, but hard to access...",
           "Beat_Upstream_Latitude": "52.09662",
           "Beat_Upstream_Longitude": "0.16495",
@@ -1369,13 +1375,25 @@
       ],
       "officers": [
         {
+          "name": "John Gandy",
+          "email": "chairman@cambridgetroutclub.org",
+          "mobile": "07717 111111",
+          "role": "Chairman"
+        },
+        {
           "name": "Rob Scoffin",
-          "email": "rob@scoffin.com",
+          "email": "treasurer@cambridgetroutclub.org",
           "mobile": "07717 154707",
           "role": "Treasurer"
+        },
+        {
+          "name": "Richard Bowes",
+          "email": "secretary@cambridgetroutclub.org",
+          "mobile": "07717 111111",
+          "role": "Secretary"
         }
       ],
-      "whatsappGroups": "",
+      "whatsappGroups": "https://chat.whatsapp.com/FCAMNxPu2RFDQJWjMLWReR?mode=gi_t",
       "socialMedia": []
     },
     {
