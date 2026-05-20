@@ -281,7 +281,7 @@ export default {
   data() {
     return {
       fieldOrder: {},
-      sortKey: 'Beat_ID',
+      sortKey: 'Position',
       sortDirection: 'asc',
       selectedFishingBeatKey: '',
       fishingBeatMapInstance: null,
@@ -399,6 +399,25 @@ export default {
       const sortKey = this.sortKey;
       const sortDirection = this.sortDirection === 'desc' ? -1 : 1;
       return beats.sort((leftBeat, rightBeat) => {
+        if (sortKey === 'Position') {
+          const leftRaw = String(leftBeat?.Position ?? '').trim();
+          const rightRaw = String(rightBeat?.Position ?? '').trim();
+          const leftIsNumeric = /^\d+$/.test(leftRaw);
+          const rightIsNumeric = /^\d+$/.test(rightRaw);
+
+          if (leftIsNumeric && rightIsNumeric) {
+            const leftNumber = Number.parseInt(leftRaw, 10);
+            const rightNumber = Number.parseInt(rightRaw, 10);
+            if (leftNumber !== rightNumber) {
+              return (leftNumber - rightNumber) * sortDirection;
+            }
+          } else if (leftIsNumeric !== rightIsNumeric) {
+            return leftIsNumeric ? -1 : 1;
+          } else if (leftRaw.toLowerCase() !== rightRaw.toLowerCase()) {
+            return leftRaw.toLowerCase().localeCompare(rightRaw.toLowerCase()) * sortDirection;
+          }
+        }
+
         const leftValue = this.normalizeSortValue(leftBeat?.[sortKey]);
         const rightValue = this.normalizeSortValue(rightBeat?.[sortKey]);
 
@@ -413,7 +432,7 @@ export default {
       });
     },
     selectedFishingBeat() {
-      const beats = this.clubBeats;
+      const beats = this.sortedClubBeats;
       if (!beats.length) return null;
       return beats.find(b => this.beatKey(b) === this.selectedFishingBeatKey) || beats[0];
     },
@@ -425,8 +444,8 @@ export default {
   },
   created() {
     this.loadFieldOrder();
-    if (this.clubBeats.length) {
-      this.selectedFishingBeatKey = this.beatKey(this.clubBeats[0]);
+    if (this.sortedClubBeats.length) {
+      this.selectedFishingBeatKey = this.beatKey(this.sortedClubBeats[0]);
     }
   },
   mounted() {

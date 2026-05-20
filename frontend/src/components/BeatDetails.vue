@@ -692,11 +692,36 @@ export default {
         };
       });
       return mappedBeats.sort((leftBeat, rightBeat) => {
-        const leftLabel = this.formatBeatOptionLabel(leftBeat).toLowerCase();
-        const rightLabel = this.formatBeatOptionLabel(rightBeat).toLowerCase();
-        if (leftLabel < rightLabel) return -1;
-        if (leftLabel > rightLabel) return 1;
-        return 0;
+        const leftPositionRaw = String(leftBeat?.Position || '').trim();
+        const rightPositionRaw = String(rightBeat?.Position || '').trim();
+        const leftPositionIsNumeric = /^\d+$/.test(leftPositionRaw);
+        const rightPositionIsNumeric = /^\d+$/.test(rightPositionRaw);
+
+        if (leftPositionIsNumeric && rightPositionIsNumeric) {
+          const leftPosition = Number.parseInt(leftPositionRaw, 10);
+          const rightPosition = Number.parseInt(rightPositionRaw, 10);
+          if (leftPosition !== rightPosition) {
+            return leftPosition - rightPosition;
+          }
+        } else if (leftPositionIsNumeric !== rightPositionIsNumeric) {
+          return leftPositionIsNumeric ? -1 : 1;
+        } else {
+          const leftPositionText = leftPositionRaw.toLowerCase();
+          const rightPositionText = rightPositionRaw.toLowerCase();
+          if (leftPositionText !== rightPositionText) {
+            return leftPositionText.localeCompare(rightPositionText);
+          }
+        }
+
+        const leftName = String(leftBeat?.Beat_Name || '').toLowerCase();
+        const rightName = String(rightBeat?.Beat_Name || '').toLowerCase();
+        if (leftName !== rightName) {
+          return leftName.localeCompare(rightName);
+        }
+
+        const leftId = String(leftBeat?.Beat_ID || '').toLowerCase();
+        const rightId = String(rightBeat?.Beat_ID || '').toLowerCase();
+        return leftId.localeCompare(rightId);
       });
     },
     selectedBeat() {
@@ -1333,10 +1358,8 @@ export default {
       return `${beatId}-${beatName}`;
     },
     formatBeatOptionLabel(beat) {
-      const beatId = beat && beat.Beat_ID ? String(beat.Beat_ID).trim() : '';
       const beatName = beat && beat.Beat_Name ? String(beat.Beat_Name).trim() : '';
-      if (beatId && beatName) return `${beatId} - ${beatName}`;
-      return beatId || beatName || 'Unnamed Beat';
+      return beatName || 'Unnamed Beat';
     },
     parseWhat3Words(rawValue) {
       if (typeof rawValue !== 'string') return null;
