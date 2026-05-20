@@ -5,11 +5,12 @@ BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 
 PROD_ENV := .env.prod
+DEV_ENV  := .env.dev
 PROD_COMPOSE := docker-compose.prod.yml
 DEV_COMPOSE := docker-compose.dev.yml
 
 DC_PROD := docker compose --env-file $(PROD_ENV) -f $(PROD_COMPOSE)
-DC_DEV := docker compose --env-file $(PROD_ENV) -f $(PROD_COMPOSE) -f $(DEV_COMPOSE)
+DC_DEV := docker compose --env-file $(DEV_ENV) -f $(PROD_COMPOSE) -f $(DEV_COMPOSE)
 
 .PHONY: help \
 	backend-test frontend-build check \
@@ -84,7 +85,7 @@ prod-logs:
 prod-health:
 	./health_check_prod.sh
 
-development: dev-build dev-up dev-health
+development: check frontend-build dev-build dev-up dev-health
 
 production: prod-build prod-up prod-health
 

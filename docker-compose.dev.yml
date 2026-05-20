@@ -6,11 +6,32 @@
 # Caddy root CA into the macOS System Keychain.
 
 services:
+  postgres:
+    env_file:
+      - path: .env.dev
+        required: false
+
+  backend:
+    env_file:
+      - path: .env.dev
+        required: false
+
   caddy:
+    env_file:
+      - path: .env.dev
+        required: false
     volumes:
       - ./deploy/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
 
+  wordpress-db:
+    env_file:
+      - path: .env.dev
+        required: false
+
   wordpress:
+    env_file:
+      - path: .env.dev
+        required: false
     environment:
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_HOME', 'https://wordpress.hlastest');
@@ -23,3 +44,8 @@ services:
         if (!empty($$_SERVER['HTTP_X_FORWARDED_FOR'])) {
           $$_SERVER['REMOTE_ADDR'] = explode(',', $$_SERVER['HTTP_X_FORWARDED_FOR'])[0];
         }
+
+# Override external volume with a local managed volume for dev
+volumes:
+  postgres_data:
+    external: false
