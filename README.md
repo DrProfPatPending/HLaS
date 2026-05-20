@@ -377,6 +377,13 @@ This project is a web application for managing the membership of a fishing club.
    - `make check`
 - This runs the backend tests under `backend/tests` (using `backend-venv` when available).
 
+## Field Order sync
+
+- Sync live PostgreSQL `field_order` settings into JSON fallback with:
+   - `make sync-field-order-from-db`
+- Script used by this target:
+   - `./sync_field_order_postgres_to_json.sh [ENV_FILE] [COMPOSE_FILE] [OUTPUT_FILE]`
+
 ## Setup Instructions
 
 ### Backend

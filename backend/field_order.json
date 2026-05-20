@@ -1,140 +1,394 @@
 {
-  "default": [
-    "Number", "Members_Name", "Title", "First_Name", "Last_Name", "Photo_Path", "Preferred_Name", "First_Names", "Paused", "Resigned", "Member_Type", "Subs_Expected", "Subs_paid", "Join_Fee", "Paid_Up_2026", "Photo_Received", "In_WhatsApp", "In_FB", "Date_of_Birth", "Age", "New_Member_2026", "Paid_up_Card_Sent", "CR2023", "CR2024", "CR2025", "Details_Confirmed_2026", "Full_Address", "Address_-_Street_Address", "Address_-_Address_Line_2", "Address_-_City", "County", "Address_-_State/Prov/Region", "Address_-_ZIP/Postal", "Address_-_Country", "Phone", "Mobile", "E_Mail", "EA_Licence", "Licence_Exp", "Car_Reg", "ID", "username", "password"
-  ],
-  "my_club": [
-    "Number", "Members_Name", "Title", "First_Name", "Last_Name", "Photo_Path", "Preferred_Name", "First_Names", "Paused", "Resigned", "Member_Type", "Subs_Expected", "Subs_paid", "Join_Fee", "Paid_Up_2026", "Photo_Received", "In_WhatsApp", "In_FB", "Date_of_Birth", "Age", "New_Member_2026", "Paid_up_Card_Sent", "CR2023", "CR2024", "CR2025", "Details_Confirmed_2026", "Full_Address", "Address_-_Street_Address", "Address_-_Address_Line_2", "Address_-_City", "County", "Address_-_State/Prov/Region", "Address_-_ZIP/Postal", "Address_-_Country", "Phone", "Mobile", "E_Mail", "EA_Licence", "Licence_Exp", "Car_Reg", "ID", "username", "password"
-  ],
-  "membership_admin": [
-    "Number", "Members_Name", "Title", "First_Name", "Last_Name", "Photo_Path", "Preferred_Name", "First_Names", "Paused", "Resigned", "Member_Type", "Subs_Expected", "Subs_paid", "Join_Fee", "Paid_Up_2026", "Photo_Received", "In_WhatsApp", "In_FB", "Date_of_Birth", "Age", "New_Member_2026", "Paid_up_Card_Sent", "CR2023", "CR2024", "CR2025", "Details_Confirmed_2026", "Full_Address", "Address_-_Street_Address", "Address_-_Address_Line_2", "Address_-_City", "County", "Address_-_State/Prov/Region", "Address_-_ZIP/Postal", "Address_-_Country", "Phone", "Mobile", "E_Mail", "EA_Licence", "Licence_Exp", "Car_Reg", "ID", "username", "password"
-  ],
-  "fishing_beats": [
-    "Beat_ID", "Beat_Name", "River", "Beat_Upstream", "Beat_Downstream", "Beat_Description", "Position"
-  ],
-  "beat_details": [
-    "Beat_ID", "Beat_Name", "River", "Position", "Beat_Upstream", "Beat_Downstream", "Beat_Description", "Detailed_Description", "Beat_Upstream_Coords", "Beat_Downstream_Coords", "Parking_Locations"
-  ],
-  "home_news": [
-    "Date", "Category", "Update", "Status"
-  ],
-  "home_documents": [
-    "Title", "File", "Uploaded", "Size", "Actions"
-  ],
-  "news_updates": [
-    "Date", "Category", "Update", "Status"
-  ],
-  "minimum_widths": {
-    "fishing_beats": {
-      "Beat_ID": 50,
-      "Beat_Name": 50,
-      "River": 50,
-      "Beat_Upstream": 50,
-      "Beat_Downstream": 50,
-      "Beat_Description": 50,
-      "Position": 50
-    },
-    "home_news": {
-      "Date": 110,
-      "Category": 120,
-      "Update": 260,
-      "Status": 90
-    },
-    "home_documents": {
-      "Title": 180,
-      "File": 260,
-      "Uploaded": 120,
-      "Size": 80,
-      "Actions": 120
-    },
-    "membership_admin": {
-      "Number": 50,
-      "Members_Name": 120,
-      "Phone": 100,
-      "E_Mail": 150
-    },
-    "news_updates": {
-      "Date": 110,
-      "Category": 120,
-      "Update": 260,
-      "Status": 90
-    }
-  },
-  "show_columns": {
-    "fishing_beats": {
-      "Beat_ID": true,
-      "Beat_Name": true,
-      "River": true,
-      "Beat_Upstream": true,
-      "Beat_Downstream": true,
-      "Beat_Description": true,
-      "Position": false
-    },
-    "beat_details": {
-      "Beat_ID": true,
-      "Beat_Name": true,
-      "River": true,
-      "Position": true,
-      "Beat_Upstream": true,
-      "Beat_Downstream": true,
-      "Beat_Description": true,
-      "Detailed_Description": true,
-      "Beat_Upstream_Coords": true,
-      "Beat_Downstream_Coords": true,
-      "Parking_Locations": true
-    },
-    "home_news": {
-      "Date": true,
-      "Category": true,
-      "Update": true,
-      "Status": true
-    },
-    "home_documents": {
-      "Title": true,
-      "File": true,
-      "Uploaded": true,
-      "Size": true,
-      "Actions": true
-    },
-    "membership_admin": {
-      "Number": true,
-      "Members_Name": true,
-      "Phone": true,
-      "E_Mail": true,
-      "Member_Type": true,
-      "Paid_Up_2026": true
-    },
-    "news_updates": {
-      "Date": true,
-      "Category": true,
-      "Update": true,
-      "Status": true
-    }
-  },
-  "read_only": {
-    "my_club": {},
-    "membership_admin": {},
-    "fishing_beats": {},
-    "beat_details": {},
-    "home_news": {},
-    "home_documents": {},
-    "news_updates": {}
-  },
   "widths": {
+    "news_updates": {
+      "Date": "110px",
+      "Status": "90px",
+      "Update": "flex",
+      "Category": "120px"
+    },
     "home_documents": {
-      "Title": "flex",
       "Size": "80px",
+      "Title": "flex",
       "Actions": "120px"
     },
     "membership_admin": {
-      "Members_Name": "flex",
+      "E_Mail": "200px",
       "Number": "80px",
-      "E_Mail": "200px"
+      "Members_Name": "flex"
+    }
+  },
+  "default": [
+    "Number",
+    "Members_Name",
+    "Title",
+    "First_Name",
+    "Last_Name",
+    "Photo_Path",
+    "Preferred_Name",
+    "First_Names",
+    "Paused",
+    "Resigned",
+    "Member_Type",
+    "Subs_Expected",
+    "Subs_paid",
+    "Join_Fee",
+    "Paid_Up_2026",
+    "Photo_Received",
+    "In_WhatsApp",
+    "In_FB",
+    "Date_of_Birth",
+    "Age",
+    "New_Member_2026",
+    "Paid_up_Card_Sent",
+    "CR2023",
+    "CR2024",
+    "CR2025",
+    "Details_Confirmed_2026",
+    "Full_Address",
+    "Address_-_Street_Address",
+    "Address_-_Address_Line_2",
+    "Address_-_City",
+    "County",
+    "Address_-_State/Prov/Region",
+    "Address_-_ZIP/Postal",
+    "Address_-_Country",
+    "Phone",
+    "Mobile",
+    "E_Mail",
+    "EA_Licence",
+    "Licence_Exp",
+    "Car_Reg",
+    "ID",
+    "username",
+    "password"
+  ],
+  "my_club": [
+    "Number",
+    "Members_Name",
+    "Title",
+    "First_Name",
+    "Last_Name",
+    "Photo_Path",
+    "Preferred_Name",
+    "First_Names",
+    "Paused",
+    "Resigned",
+    "Member_Type",
+    "Subs_Expected",
+    "Subs_paid",
+    "Join_Fee",
+    "Paid_Up_2026",
+    "Photo_Received",
+    "In_WhatsApp",
+    "In_FB",
+    "Date_of_Birth",
+    "Age",
+    "New_Member_2026",
+    "Paid_up_Card_Sent",
+    "CR2023",
+    "CR2024",
+    "CR2025",
+    "Details_Confirmed_2026",
+    "Full_Address",
+    "Address_-_Street_Address",
+    "Address_-_Address_Line_2",
+    "Address_-_City",
+    "County",
+    "Address_-_State/Prov/Region",
+    "Address_-_ZIP/Postal",
+    "Address_-_Country",
+    "Phone",
+    "Mobile",
+    "E_Mail",
+    "EA_Licence",
+    "Licence_Exp",
+    "Car_Reg",
+    "ID",
+    "username",
+    "password"
+  ],
+  "home_news": [
+    "Update",
+    "Category",
+    "Date",
+    "Status"
+  ],
+  "read_only": {
+    "default": {},
+    "my_club": {
+      "ID": true,
+      "Age": true,
+      "CR2023": true,
+      "CR2024": true,
+      "CR2025": true,
+      "Number": true,
+      "Paused": true,
+      "Join_Fee": true,
+      "Resigned": true,
+      "username": true,
+      "Subs_paid": true,
+      "Photo_Path": true,
+      "Member_Type": true,
+      "Paid_Up_2026": true,
+      "Subs_Expected": true,
+      "Photo_Received": true,
+      "New_Member_2026": true,
+      "Paid_up_Card_Sent": true,
+      "Details_Confirmed_2026": true
+    },
+    "home_news": {
+      "Date": true,
+      "Status": true,
+      "Update": true,
+      "Category": true
+    },
+    "beat_details": {},
+    "news_updates": {},
+    "fishing_beats": {},
+    "home_documents": {
+      "File": true,
+      "Size": true,
+      "Title": true,
+      "Actions": true,
+      "Uploaded": true
+    },
+    "membership_admin": {}
+  },
+  "beat_details": [
+    "Beat_ID",
+    "Beat_Name",
+    "River",
+    "Position",
+    "Beat_Upstream",
+    "Beat_Downstream",
+    "Beat_Description",
+    "Detailed_Description",
+    "Beat_Upstream_Coords",
+    "Beat_Downstream_Coords",
+    "Parking_Locations"
+  ],
+  "news_updates": [
+    "Date",
+    "Category",
+    "Update",
+    "Status"
+  ],
+  "show_columns": {
+    "my_club": {
+      "ID": false,
+      "Age": true,
+      "In_FB": false,
+      "Title": false,
+      "CR2023": false,
+      "CR2024": false,
+      "CR2025": false,
+      "County": false,
+      "Paused": false,
+      "Join_Fee": false,
+      "Resigned": false,
+      "Last_Name": false,
+      "Subs_paid": false,
+      "First_Name": false,
+      "Photo_Path": false,
+      "First_Names": false,
+      "Paid_Up_2026": false,
+      "Subs_Expected": false,
+      "Address_-_City": false,
+      "Photo_Received": false,
+      "Preferred_Name": false,
+      "New_Member_2026": false,
+      "Address_-_Country": false,
+      "Paid_up_Card_Sent": false,
+      "Address_-_ZIP/Postal": false,
+      "Details_Confirmed_2026": false,
+      "Address_-_Address_Line_2": false,
+      "Address_-_Street_Address": false,
+      "Address_-_State/Prov/Region": false
+    },
+    "home_news": {
+      "Date": true,
+      "Status": false,
+      "Update": true,
+      "Category": true
+    },
+    "beat_details": {
+      "River": true,
+      "Beat_ID": true,
+      "Position": false,
+      "Beat_Name": true,
+      "Beat_Upstream": true,
+      "Beat_Downstream": true,
+      "Beat_Description": true,
+      "Parking_Locations": true,
+      "Beat_Upstream_Coords": false,
+      "Detailed_Description": true,
+      "Beat_Downstream_Coords": false
     },
     "news_updates": {
-      "Update": "flex",
-      "Date": "110px",
-      "Category": "120px",
-      "Status": "90px"
+      "Date": true,
+      "Status": false,
+      "Update": true,
+      "Category": true
+    },
+    "fishing_beats": {
+      "River": true,
+      "Beat_ID": false,
+      "Position": false,
+      "Beat_Name": true,
+      "Beat_Upstream": false,
+      "Beat_Downstream": false,
+      "Beat_Description": true
+    },
+    "home_documents": {
+      "File": false,
+      "Size": true,
+      "Title": true,
+      "Actions": true,
+      "Uploaded": false
+    },
+    "membership_admin": {
+      "ID": false,
+      "In_FB": false,
+      "Phone": false,
+      "Title": false,
+      "CR2023": false,
+      "CR2024": false,
+      "CR2025": false,
+      "County": false,
+      "E_Mail": true,
+      "Number": false,
+      "Join_Fee": false,
+      "password": false,
+      "Last_Name": false,
+      "Subs_paid": false,
+      "EA_Licence": false,
+      "First_Name": false,
+      "Photo_Path": false,
+      "First_Names": false,
+      "In_WhatsApp": false,
+      "Licence_Exp": false,
+      "Member_Type": true,
+      "Members_Name": true,
+      "Paid_Up_2026": true,
+      "Subs_Expected": false,
+      "Address_-_City": false,
+      "Photo_Received": false,
+      "Preferred_Name": false,
+      "Address_-_Country": false,
+      "Paid_up_Card_Sent": false,
+      "Address_-_ZIP/Postal": false,
+      "Details_Confirmed_2026": false,
+      "Address_-_Address_Line_2": false,
+      "Address_-_Street_Address": false,
+      "Address_-_State/Prov/Region": false
     }
-  }
+  },
+  "display_names": {
+    "membership_admin": {
+      "Number": "#",
+      "username": "Username",
+      "Last_Name": "Surname",
+      "First_Name": "First Name",
+      "Member_Type": "Membership Type",
+      "Full_Address": "Address",
+      "Members_Name": "Member"
+    }
+  },
+  "fishing_beats": [
+    "Beat_ID",
+    "River",
+    "Beat_Name",
+    "Beat_Upstream",
+    "Beat_Downstream",
+    "Beat_Description",
+    "Position"
+  ],
+  "home_documents": [
+    "Title",
+    "File",
+    "Uploaded",
+    "Size",
+    "Actions"
+  ],
+  "minimum_widths": {
+    "home_news": {
+      "Date": 110,
+      "Status": 90,
+      "Update": 260,
+      "Category": 120
+    },
+    "news_updates": {
+      "Date": 110,
+      "Status": 90,
+      "Update": 260,
+      "Category": 120
+    },
+    "fishing_beats": {
+      "River": 50,
+      "Beat_ID": 50,
+      "Position": 50,
+      "Beat_Name": 50,
+      "Beat_Upstream": 50,
+      "Beat_Downstream": 50,
+      "Beat_Description": 50
+    },
+    "home_documents": {
+      "File": 260,
+      "Size": 80,
+      "Title": 180,
+      "Actions": 120,
+      "Uploaded": 120
+    },
+    "membership_admin": {
+      "Phone": 100,
+      "E_Mail": 150,
+      "Number": 50,
+      "Members_Name": 120
+    }
+  },
+  "membership_admin": [
+    "Members_Name",
+    "Mobile",
+    "E_Mail",
+    "Number",
+    "username",
+    "Member_Type",
+    "Title",
+    "Full_Address",
+    "First_Name",
+    "Last_Name",
+    "Photo_Path",
+    "Preferred_Name",
+    "First_Names",
+    "Paused",
+    "Resigned",
+    "Subs_Expected",
+    "Subs_paid",
+    "Join_Fee",
+    "Paid_Up_2026",
+    "Photo_Received",
+    "In_WhatsApp",
+    "In_FB",
+    "Paid_up_Card_Sent",
+    "CR2023",
+    "CR2024",
+    "CR2025",
+    "Details_Confirmed_2026",
+    "Address_-_Street_Address",
+    "Address_-_Address_Line_2",
+    "Address_-_City",
+    "County",
+    "Address_-_State/Prov/Region",
+    "Address_-_ZIP/Postal",
+    "Address_-_Country",
+    "Phone",
+    "EA_Licence",
+    "Licence_Exp",
+    "Car_Reg",
+    "ID",
+    "password",
+    "Date_of_Birth",
+    "Age",
+    "New_Member_2026"
+  ]
 }

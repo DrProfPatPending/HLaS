@@ -10,7 +10,7 @@ CONFIG=Release
 BACKEND_DIR=backend
 BACKEND_VENV_PYTHON=backend-venv/bin/python
 
-.PHONY: ios-sim ios-release clean backend-test check
+.PHONY: ios-sim ios-release clean backend-test check sync-field-order-from-db
 
 # Build for iOS Simulator (no code signing required)
 ios-sim:
@@ -41,3 +41,7 @@ backend-test:
 
 # General local check workflow
 check: backend-test
+
+# Sync running PostgreSQL field_order settings into backend/field_order.json
+sync-field-order-from-db:
+	./sync_field_order_postgres_to_json.sh
