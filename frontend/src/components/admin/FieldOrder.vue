@@ -40,6 +40,7 @@
             <th>Field</th>
             <th>Display As</th>
             <th>Show Column</th>
+            <th>Read Only</th>
             <th>Min Width (px)</th>
             <th>Width</th>
             <th>Actions</th>
@@ -66,6 +67,16 @@
                   @change="setFieldVisible(fieldName, $event.target.checked)"
                 />
                 Show
+              </label>
+            </td>
+            <td class="field-order-readonly-cell">
+              <label class="field-order-show-toggle">
+                <input
+                  type="checkbox"
+                  :checked="isFieldReadOnly(fieldName)"
+                  @change="setFieldReadOnly(fieldName, $event.target.checked)"
+                />
+                Read Only
               </label>
             </td>
             <td class="field-order-width-cell">
@@ -144,6 +155,10 @@ export default {
       const displayNames = this.fieldOrder?.display_names?.[this.selectedContext];
       return displayNames && typeof displayNames === 'object' ? displayNames : {};
     },
+    selectedReadOnlyColumns() {
+      const readOnlyColumns = this.fieldOrder?.read_only?.[this.selectedContext];
+      return readOnlyColumns && typeof readOnlyColumns === 'object' ? readOnlyColumns : {};
+    },
     selectedMinimumWidths() {
       const widths = this.fieldOrder?.minimum_widths?.[this.selectedContext];
       return widths && typeof widths === 'object' ? widths : {};
@@ -200,6 +215,10 @@ export default {
       const configured = this.selectedShowColumns?.[fieldName];
       return configured !== false;
     },
+    isFieldReadOnly(fieldName) {
+      const configured = this.selectedReadOnlyColumns?.[fieldName];
+      return configured === true;
+    },
     setFieldVisible(fieldName, isVisible) {
       if (!this.selectedContext || !fieldName) return;
       const nextShowColumns = {
@@ -212,6 +231,26 @@ export default {
       this.fieldOrder = {
         ...this.fieldOrder,
         show_columns: nextShowColumns,
+      };
+    },
+    setFieldReadOnly(fieldName, isReadOnly) {
+      if (!this.selectedContext || !fieldName) return;
+      const nextReadOnlyForContext = {
+        ...(this.fieldOrder?.read_only?.[this.selectedContext] || {}),
+      };
+
+      if (isReadOnly) {
+        nextReadOnlyForContext[fieldName] = true;
+      } else {
+        delete nextReadOnlyForContext[fieldName];
+      }
+
+      this.fieldOrder = {
+        ...this.fieldOrder,
+        read_only: {
+          ...(this.fieldOrder?.read_only || {}),
+          [this.selectedContext]: nextReadOnlyForContext,
+        },
       };
     },
     getDisplayName(fieldName) {
@@ -366,6 +405,10 @@ export default {
 }
 
 .field-order-show-cell {
+  white-space: nowrap;
+}
+
+.field-order-readonly-cell {
   white-space: nowrap;
 }
 

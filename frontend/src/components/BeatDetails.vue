@@ -83,55 +83,56 @@
       <tbody>
         <tr>
           <th>Beat ID</th>
-          <td><input v-model="editForm.Beat_ID" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Beat_ID" class="beat-details-input" :disabled="isReadOnlyField('Beat_ID')" /></td>
         </tr>
         <tr>
           <th>Beat Name</th>
-          <td><input v-model="editForm.Beat_Name" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Beat_Name" class="beat-details-input" :disabled="isReadOnlyField('Beat_Name')" /></td>
         </tr>
         <tr>
           <th>River</th>
-          <td><input v-model="editForm.River" class="beat-details-input" /></td>
+          <td><input v-model="editForm.River" class="beat-details-input" :disabled="isReadOnlyField('River')" /></td>
         </tr>
         <tr>
           <th>Position</th>
-          <td><input v-model="editForm.Position" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Position" class="beat-details-input" :disabled="isReadOnlyField('Position')" /></td>
         </tr>
         <tr>
           <th>Beat Upstream</th>
-          <td><input v-model="editForm.Beat_Upstream" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Beat_Upstream" class="beat-details-input" :disabled="isReadOnlyField('Beat_Upstream')" /></td>
         </tr>
         <tr>
           <th>Beat Downstream</th>
-          <td><input v-model="editForm.Beat_Downstream" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Beat_Downstream" class="beat-details-input" :disabled="isReadOnlyField('Beat_Downstream')" /></td>
         </tr>
         <tr>
           <th>Upstream Latitude</th>
-          <td><input v-model="editForm.Beat_Upstream_Latitude" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Beat_Upstream_Latitude" class="beat-details-input" :disabled="isReadOnlyField('Beat_Upstream_Coords')" /></td>
         </tr>
         <tr>
           <th>Upstream Longitude</th>
-          <td><input v-model="editForm.Beat_Upstream_Longitude" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Beat_Upstream_Longitude" class="beat-details-input" :disabled="isReadOnlyField('Beat_Upstream_Coords')" /></td>
         </tr>
         <tr>
           <th>Downstream Latitude</th>
-          <td><input v-model="editForm.Beat_Downstream_Latitude" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Beat_Downstream_Latitude" class="beat-details-input" :disabled="isReadOnlyField('Beat_Downstream_Coords')" /></td>
         </tr>
         <tr>
           <th>Downstream Longitude</th>
-          <td><input v-model="editForm.Beat_Downstream_Longitude" class="beat-details-input" /></td>
+          <td><input v-model="editForm.Beat_Downstream_Longitude" class="beat-details-input" :disabled="isReadOnlyField('Beat_Downstream_Coords')" /></td>
         </tr>
         <tr>
           <th>Beat Description</th>
-          <td><textarea v-model="editForm.Beat_Description" class="beat-details-textarea" rows="3"></textarea></td>
+          <td><textarea v-model="editForm.Beat_Description" class="beat-details-textarea" rows="3" :disabled="isReadOnlyField('Beat_Description')"></textarea></td>
         </tr>
         <tr>
           <th>Detailed Description</th>
-          <td><textarea v-model="editForm.Detailed_Description" class="beat-details-textarea" rows="4"></textarea></td>
+          <td><textarea v-model="editForm.Detailed_Description" class="beat-details-textarea" rows="4" :disabled="isReadOnlyField('Detailed_Description')"></textarea></td>
         </tr>
         <tr>
           <th>Parking Locations</th>
           <td>
+            <fieldset class="beat-details-editor-fieldset" :disabled="isReadOnlyField('Parking_Locations')">
             <div class="beat-details-parking-editor">
               <div
                 v-for="(parking, parkingIndex) in editForm.Parking_Locations"
@@ -183,11 +184,13 @@
 
               <app-button type="button" inherit-style @click="addParkingLocationRow">Add Parking Location</app-button>
             </div>
+            </fieldset>
           </td>
         </tr>
         <tr>
           <th>Pools</th>
           <td>
+            <fieldset class="beat-details-editor-fieldset" :disabled="isReadOnlyField('Pools')">
             <div class="beat-details-pools-editor">
               <div
                 v-for="(pool, poolIndex) in editForm.Pools"
@@ -244,11 +247,13 @@
 
               <app-button type="button" inherit-style @click="addPoolRow">Add Pool</app-button>
             </div>
+            </fieldset>
           </td>
         </tr>
         <tr>
           <th>Waypoints</th>
           <td>
+            <fieldset class="beat-details-editor-fieldset" :disabled="isReadOnlyField('Waypoints')">
             <div class="beat-details-waypoints-editor">
               <div
                 v-for="(waypoint, waypointIndex) in editForm.Waypoints"
@@ -306,6 +311,7 @@
                 </label>
               </div>
             </div>
+            </fieldset>
           </td>
         </tr>
       </tbody>
@@ -541,6 +547,17 @@ export default {
     hasLocationValidationErrors() {
       return this.hasParkingValidationErrors || this.hasPoolValidationErrors;
     },
+    beatDetailsReadOnlyColumns() {
+      const configured = this.fieldOrder?.read_only?.beat_details;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    hasAdminRole() {
+      const normalizedRoles = (Array.isArray(store.memberRoles) ? store.memberRoles : [])
+        .map(role => String(role || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+      return normalizedRoles.includes('clubadmin')
+        || normalizedRoles.includes('appadmin')
+        || normalizedRoles.includes('appowner');
+    },
     detailLabelMap() {
       const defaultLabels = {
         Beat_ID: 'Beat ID',
@@ -713,6 +730,27 @@ export default {
     this.destroyBeatDetailsMap();
   },
   methods: {
+    isReadOnlyField(fieldKey) {
+      if (this.hasAdminRole) {
+        return false;
+      }
+      return this.beatDetailsReadOnlyColumns?.[fieldKey] === true;
+    },
+    applyReadOnlyFieldConstraints(updatedBeat, existingBeat) {
+      if (this.hasAdminRole || !updatedBeat || typeof updatedBeat !== 'object') {
+        return updatedBeat;
+      }
+      const constrained = { ...updatedBeat };
+      Object.entries(this.beatDetailsReadOnlyColumns || {}).forEach(([fieldName, isReadOnly]) => {
+        if (!isReadOnly) {
+          return;
+        }
+        if (existingBeat && Object.prototype.hasOwnProperty.call(existingBeat, fieldName)) {
+          constrained[fieldName] = existingBeat[fieldName];
+        }
+      });
+      return constrained;
+    },
     syncLocalBeats() {
       const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
       this.localBeats = beats.map(beat => this.normalizeBeatRecord(beat));
@@ -1249,8 +1287,9 @@ export default {
         this.beatEditError = 'Could not find the selected beat to save.';
         return;
       }
-      updatedBeats[targetIndex] = updatedBeat;
-      const nextKey = this.beatKey(updatedBeat);
+      const existingBeat = updatedBeats[targetIndex];
+      updatedBeats[targetIndex] = this.applyReadOnlyFieldConstraints(updatedBeat, existingBeat);
+      const nextKey = this.beatKey(updatedBeats[targetIndex]);
 
       this.persistBeats(updatedBeats, 'Beat details updated.', nextKey);
     },
@@ -1916,6 +1955,13 @@ export default {
 
 .beat-details-waypoint-toggle:hover {
   background: #dde8f5;
+}
+
+.beat-details-editor-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 
 .rotation-controls {

@@ -192,6 +192,46 @@ python3 backend/backup_cli.py status                   # Overall status
 
 ---
 
+## WordPress Quick Backup
+
+Use this helper to capture WordPress content before deploy/rebuild (MySQL + `wp-content`):
+
+```bash
+./backup_wordpress.sh
+```
+
+Default output location:
+
+```bash
+./backups/wordpress/wp_backup_<timestamp>/
+```
+
+Contents:
+- `wordpress_db.sql.gz` (WordPress MySQL dump)
+- `wp-content.tar.gz` (themes/plugins/uploads and related content)
+- `backup_meta.txt` and `SHA256SUMS`
+
+Optional arguments:
+
+```bash
+./backup_wordpress.sh --output-root /data/backups/wordpress
+./backup_wordpress.sh --compose-file docker-compose.prod.yml --env-file .env.prod
+```
+
+Restore from a backup directory:
+
+```bash
+./restore_wordpress.sh --backup-dir ./backups/wordpress/wp_backup_<timestamp>
+```
+
+Force restore (non-interactive):
+
+```bash
+./restore_wordpress.sh --backup-dir ./backups/wordpress/wp_backup_<timestamp> --force
+```
+
+---
+
 ## Backup Sizes & Time Estimates
 
 Typical values (will vary based on data):

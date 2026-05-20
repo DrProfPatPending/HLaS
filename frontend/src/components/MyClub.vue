@@ -1,6 +1,6 @@
 <template>
   <div class="my-club-container">
-    <h2>My Club</h2>
+    <h2>{{ activeTabTitle }}</h2>
 
     <div v-if="loading" class="my-club-status">Loading your member information…</div>
     <div v-else-if="error" class="error-msg">{{ error }}</div>
@@ -8,7 +8,7 @@
     <div v-else>
       <div class="member-edit-top-row">
         <div class="member-edit-actions member-edit-actions-top">
-          <app-button v-if="!isEditing" type="button" inherit-style @click="startEdit">Edit Member Details</app-button>
+          <app-button v-if="!isEditing" type="button" class="my-club-edit-btn" inherit-style @click="startEdit">Edit Member Details</app-button>
           <template v-else>
             <app-button type="button" class="save-btn" inherit-style @click="saveEdit">Update Member</app-button>
             <app-button type="button" inherit-style @click="cancelEdit">Cancel</app-button>
@@ -45,6 +45,7 @@
                 v-else
                 v-model="editData.username"
                 class="member-detail-input"
+                :disabled="isReadOnlyField('username')"
               />
             </td>
           </tr>
@@ -109,6 +110,7 @@ import axios from 'axios';
 import AppButton from './ui/AppButton.vue';
 import {
   store,
+  MY_CLUB_TABS,
   formatFieldName,
   fieldOrderConfig,
   loadFieldOrderConfig,
@@ -146,6 +148,17 @@ export default {
     myClubShowColumns() {
       const configured = fieldOrderConfig.order?.show_columns?.my_club;
       return configured && typeof configured === 'object' ? configured : {};
+    },
+    myClubReadOnlyColumns() {
+      const configured = fieldOrderConfig.order?.read_only?.my_club;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    hasAdminRole() {
+      const normalizedRoles = (Array.isArray(store.memberRoles) ? store.memberRoles : [])
+        .map(role => String(role || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+      return normalizedRoles.includes('clubadmin')
+        || normalizedRoles.includes('appadmin')
+        || normalizedRoles.includes('appowner');
     },
     orderedFields() {
       // Use backend field order if loaded, else fallback to previous logic
@@ -239,6 +252,11 @@ export default {
     activeTabFields() {
       return this.groupedFields[store.myClubActiveTab] || [];
     },
+    activeTabTitle() {
+      const activeTabId = store.myClubActiveTab;
+      const matchedTab = MY_CLUB_TABS.find(tab => tab.id === activeTabId);
+      return matchedTab?.label || 'My Club';
+    },
     showUsernameSection() {
       return store.myClubActiveTab === 'security' && this.editData.username !== undefined;
     },
@@ -297,7 +315,25 @@ export default {
       this.photoVisible = false;
     },
     isReadOnlyField(field) {
-      return field === 'ID' || field === 'id';
+      if (field === 'ID' || field === 'id') {
+        return true;
+      }
+      if (this.hasAdminRole) {
+        return false;
+      }
+      return this.myClubReadOnlyColumns?.[field] === true;
+    },
+    removeReadOnlyFieldsFromPayload(payload) {
+      if (!payload || this.hasAdminRole) {
+        return payload;
+      }
+      const sanitized = { ...payload };
+      Object.entries(this.myClubReadOnlyColumns || {}).forEach(([fieldName, isReadOnly]) => {
+        if (isReadOnly) {
+          delete sanitized[fieldName];
+        }
+      });
+      return sanitized;
     },
     formatValue(value) {
       if (value === null || value === undefined || value === '') return '-';
@@ -395,7 +431,7 @@ export default {
         }
       }
 
-      const payload = { ...this.editData, club: this.loggedInClub };
+      const payload = this.removeReadOnlyFieldsFromPayload({ ...this.editData, club: this.loggedInClub });
       delete payload.ID;
       delete payload.id;
       if (this.newPassword) {
@@ -431,6 +467,21 @@ export default {
 .my-club-container {
   max-width: 900px;
   margin: 0 auto;
+}
+
+.my-club-container h2 {
+  margin: 0 0 12px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  font-weight: 700;
+  color: #17324d;
+}
+
+.my-club-container :deep(.my-club-edit-btn.app-button) {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 8pt !important;
+  line-height: 1.2;
+  padding: 4px 8px !important;
 }
 
 .my-club-password-inline-error {

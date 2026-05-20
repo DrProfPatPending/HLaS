@@ -9,15 +9,15 @@
         <div class="news-updates-post-top-row">
           <label>
             <span>Date *</span>
-            <input v-model="newsPostForm.date" type="date" required />
+            <input v-model="newsPostForm.date" type="date" required :disabled="isNewsUpdatesFieldReadOnly('Date')" />
           </label>
           <label>
             <span>Category</span>
-            <input v-model="newsPostForm.category" type="text" maxlength="80" placeholder="e.g. Club Notice" />
+            <input v-model="newsPostForm.category" type="text" maxlength="80" placeholder="e.g. Club Notice" :disabled="isNewsUpdatesFieldReadOnly('Category')" />
           </label>
           <label>
             <span>Status</span>
-            <select v-model="newsPostForm.status">
+            <select v-model="newsPostForm.status" :disabled="isNewsUpdatesFieldReadOnly('Status')">
               <option value="Published">Published</option>
               <option value="Draft">Draft</option>
               <option value="Planned">Planned</option>
@@ -33,10 +33,11 @@
             maxlength="500"
             placeholder="Write the update to display on the Home page table"
             required
+            :disabled="isNewsUpdatesFieldReadOnly('Update')"
           ></textarea>
         </label>
         <div class="news-updates-post-actions">
-          <app-button type="submit" :disabled="newsPostBusy" inherit-style>
+          <app-button type="submit" :disabled="newsPostBusy || isNewsUpdatesCreateReadOnly" inherit-style>
             {{ newsPostBusy ? 'Posting…' : 'Post Update' }}
           </app-button>
           <app-button type="button" :disabled="newsPostBusy" inherit-style @click="fetchNewsUpdates">Refresh Posts</app-button>
@@ -435,6 +436,23 @@ export default {
       const configured = fieldOrderConfig.order?.widths?.news_updates;
       return configured && typeof configured === 'object' ? configured : {};
     },
+    hasAdminRole() {
+      const normalizedRoles = (Array.isArray(store.memberRoles) ? store.memberRoles : [])
+        .map(role => String(role || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+      return normalizedRoles.includes('clubadmin')
+        || normalizedRoles.includes('appadmin')
+        || normalizedRoles.includes('appowner');
+    },
+    newsUpdatesReadOnlyColumns() {
+      const configured = fieldOrderConfig.order?.read_only?.news_updates;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    isNewsUpdatesCreateReadOnly() {
+      return this.isNewsUpdatesFieldReadOnly('Date')
+        || this.isNewsUpdatesFieldReadOnly('Category')
+        || this.isNewsUpdatesFieldReadOnly('Update')
+        || this.isNewsUpdatesFieldReadOnly('Status');
+    },
   },
   created() {
     loadFieldOrderConfig();
@@ -446,6 +464,12 @@ export default {
   },
   methods: {
     memberIdentity,
+    isNewsUpdatesFieldReadOnly(fieldName) {
+      if (this.hasAdminRole) {
+        return false;
+      }
+      return this.newsUpdatesReadOnlyColumns?.[fieldName] === true;
+    },
     init() {
       this.newsletterCurrentPage = 1;
       this.newsletterPrepareMessage = '';
@@ -499,6 +523,11 @@ export default {
     createNewsUpdatePost() {
       this.newsPostStatus = '';
       this.newsPostError = '';
+
+      if (this.isNewsUpdatesCreateReadOnly) {
+        this.newsPostError = 'News update fields are read-only for your role.';
+        return;
+      }
 
       const payload = {
         club: store.loggedInClub,
