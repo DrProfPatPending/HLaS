@@ -93,36 +93,39 @@
       <table class="officers-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Mobile</th>
-            <th>Committee Role</th>
-            <th v-if="isEditing">Actions</th>
+            <th v-for="col in officersVisibleColumns" :key="col" :style="getOfficerColumnStyle(col)">
+              {{ getOfficerColumnLabel(col) }}
+            </th>
+            <th v-if="isEditing" class="officer-actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="!editForm.officers.length && !isEditing">
-            <td colspan="4" class="officers-empty">No officers or committee members listed.</td>
+            <td :colspan="officersVisibleColumns.length" class="officers-empty">No officers or committee members listed.</td>
           </tr>
           <template v-for="(officer, idx) in editForm.officers" :key="idx">
             <tr v-if="isEditing && editingOfficerIdx === idx" class="officer-edit-row">
-              <td><input v-model="officerEditBuf.name" type="text" class="club-information-input" placeholder="Name" /></td>
-              <td><input v-model="officerEditBuf.email" type="email" class="club-information-input" placeholder="email@club.org" /></td>
-              <td><input v-model="officerEditBuf.mobile" type="text" class="club-information-input" placeholder="+44 7xxx" /></td>
-              <td><input v-model="officerEditBuf.role" type="text" class="club-information-input" placeholder="e.g. Chairman" /></td>
+              <td v-for="col in officersVisibleColumns" :key="col">
+                <input
+                  v-model="officerEditBuf[col]"
+                  :type="col === 'email' ? 'email' : 'text'"
+                  class="club-information-input"
+                  :placeholder="getOfficerColumnLabel(col)"
+                />
+              </td>
               <td class="officer-actions-cell">
                 <app-button type="button" size="sm" inherit-style @click="saveOfficerRow(idx)">Save</app-button>
                 <app-button type="button" size="sm" inherit-style @click="cancelOfficerEdit">Cancel</app-button>
               </td>
             </tr>
             <tr v-else>
-              <td>{{ officer.name }}</td>
-              <td>
-                <a v-if="officer.email" :href="`mailto:${officer.email}`">{{ officer.email }}</a>
-                <span v-else>-</span>
+              <td v-for="col in officersVisibleColumns" :key="col">
+                <template v-if="col === 'email'">
+                  <a v-if="officer.email" :href="`mailto:${officer.email}`">{{ officer.email }}</a>
+                  <span v-else>-</span>
+                </template>
+                <template v-else>{{ officer[col] || '-' }}</template>
               </td>
-              <td>{{ officer.mobile || '-' }}</td>
-              <td>{{ officer.role }}</td>
               <td v-if="isEditing" class="officer-actions-cell">
                 <app-button type="button" size="sm" inherit-style @click="editOfficerRow(idx)">Edit</app-button>
                 <app-button type="button" size="sm" inherit-style @click="deleteOfficerRow(idx)">Delete</app-button>
@@ -131,10 +134,14 @@
           </template>
           <!-- New officer input row -->
           <tr v-if="isEditing && editingOfficerIdx === -1" class="officer-edit-row">
-            <td><input v-model="officerEditBuf.name" type="text" class="club-information-input" placeholder="Name" /></td>
-            <td><input v-model="officerEditBuf.email" type="email" class="club-information-input" placeholder="email@club.org" /></td>
-            <td><input v-model="officerEditBuf.mobile" type="text" class="club-information-input" placeholder="+44 7xxx" /></td>
-            <td><input v-model="officerEditBuf.role" type="text" class="club-information-input" placeholder="e.g. Chairman" /></td>
+            <td v-for="col in officersVisibleColumns" :key="col">
+              <input
+                v-model="officerEditBuf[col]"
+                :type="col === 'email' ? 'email' : 'text'"
+                class="club-information-input"
+                :placeholder="getOfficerColumnLabel(col)"
+              />
+            </td>
             <td class="officer-actions-cell">
               <app-button type="button" size="sm" inherit-style @click="saveNewOfficerRow">Add</app-button>
               <app-button type="button" size="sm" inherit-style @click="cancelOfficerEdit">Cancel</app-button>
@@ -152,7 +159,7 @@
 
 <script>
 import axios from 'axios';
-import { store, clubDetails, API_BASE_URL, loadClubs } from '../store.js';
+import { store, clubDetails, API_BASE_URL, loadClubs, fieldOrderConfig, loadFieldOrderConfig } from '../store.js';
 import AppButton from './ui/AppButton.vue';
 
 export default {
@@ -183,9 +190,26 @@ export default {
       const roles = Array.isArray(store.memberRoles) ? store.memberRoles : [];
       return roles.includes('club_admin') || roles.includes('app_admin') || roles.includes('app_owner');
     },
+    officersFieldOrder() {
+      const configured = fieldOrderConfig.order?.club_information_officers;
+      return Array.isArray(configured) && configured.length
+        ? configured
+        : ['name', 'email', 'mobile', 'role'];
+    },
+    officersShowColumns() {
+      const configured = fieldOrderConfig.order?.show_columns?.club_information_officers;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    officersVisibleColumns() {
+      return this.officersFieldOrder.filter(col => this.officersShowColumns[col] !== false);
+    },
+    officersDisplayNames() {
+      const configured = fieldOrderConfig.order?.display_names?.club_information_officers;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
   },
   mounted() {
-    this.resetEditForm();
+    loadFieldOrderConfig().finally(() => this.resetEditForm());
   },
   watch: {
     clubDetails: {
@@ -304,6 +328,21 @@ export default {
     },
     goHome() {
       store.activeSection = 'home';
+    },
+    getOfficerColumnStyle(col) {
+      const configuredWidth = fieldOrderConfig.order?.widths?.club_information_officers?.[col];
+      if (configuredWidth) {
+        const w = String(configuredWidth).trim().toLowerCase();
+        if (w === 'flex' || w === 'auto') return {};
+        return { width: w };
+      }
+      const rawMin = fieldOrderConfig.order?.minimum_widths?.club_information_officers?.[col];
+      const minWidth = Number(rawMin);
+      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
+      return { minWidth: `${minWidth}px` };
+    },
+    getOfficerColumnLabel(col) {
+      return this.officersDisplayNames[col] || col.charAt(0).toUpperCase() + col.slice(1);
     },
   },
 };

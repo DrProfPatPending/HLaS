@@ -1,5 +1,11 @@
 {
   "widths": {
+    "club_information_officers": {
+      "name": "flex",
+      "email": "flex",
+      "mobile": "120px",
+      "role": "150px"
+    },
     "news_updates": {
       "Date": "110px",
       "Status": "90px",
@@ -174,6 +180,12 @@
     "Status"
   ],
   "show_columns": {
+    "club_information_officers": {
+      "name": true,
+      "email": true,
+      "mobile": true,
+      "role": true
+    },
     "my_club": {
       "ID": false,
       "Age": true,
@@ -284,6 +296,12 @@
     }
   },
   "display_names": {
+    "club_information_officers": {
+      "name": "Name",
+      "email": "Email",
+      "mobile": "Mobile",
+      "role": "Committee Role"
+    },
     "membership_admin": {
       "Number": "#",
       "username": "Username",
@@ -294,6 +312,12 @@
       "Members_Name": "Member"
     }
   },
+  "club_information_officers": [
+    "name",
+    "email",
+    "mobile",
+    "role"
+  ],
   "fishing_beats": [
     "Beat_ID",
     "River",
@@ -311,6 +335,12 @@
     "Actions"
   ],
   "minimum_widths": {
+    "club_information_officers": {
+      "name": 100,
+      "email": 120,
+      "mobile": 100,
+      "role": 120
+    },
     "home_news": {
       "Date": 110,
       "Status": 90,
