@@ -5,7 +5,7 @@
     
     <!-- Main header content -->
     <div class="header-content">
-      <!-- Logo and Club Name -->
+      <!-- Logo and Club Name + User info stacked below -->
       <div class="logo-name-group">
         <div class="logo-wrapper">
           <a
@@ -34,20 +34,20 @@
             {{ clubDetails.fullName }}
           </a>
           <div v-else class="club-name">{{ clubDetails.fullName }}</div>
+          <div v-if="loggedIn" class="login-info">
+            <div class="login-info-line">{{ loggedInUsername }}</div>
+            <div class="login-info-line">
+              <span v-if="hasAdminRole" class="login-info-admin">Admin</span><span v-else class="login-info-normal">Member</span>
+            </div>
+          </div>
         </div>
       </div>
       
       <!-- Spacer to push right section to the right -->
       <div class="header-spacer"></div>
       
-      <!-- User Info and Logout together on the right -->
+      <!-- Logout button top-right -->
       <div v-if="loggedIn" class="right-section">
-        <div class="login-info">
-          <div class="login-info-line">{{ loggedInUsername }}</div>
-          <div class="login-info-line">
-            <span v-if="hasAdminRole" class="login-info-admin">Admin</span><span v-else class="login-info-normal">Member</span>
-          </div>
-        </div>
         <app-button type="button" class="logout-button" inherit-style @click="logout">Log Out</app-button>
       </div>
     </div>
@@ -94,17 +94,17 @@ export default {
 }
 
 .header-accent-bar {
-  height: 10px;
+  height: 6px;
   width: 100%;
   transition: background-color 0.3s ease;
 }
 
 .header-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
   gap: 12px;
-  padding: 8px 8px;
+  padding: 4px 8px;
   box-sizing: border-box;
 }
 
@@ -114,19 +114,20 @@ export default {
 
 .right-section {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .login-info {
-  text-align: right;
+  text-align: left;
+  margin-top: 2px;
 }
 
 .logo-name-group {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   flex-shrink: 0;
 }
@@ -138,10 +139,10 @@ export default {
 .club-logo {
   display: block;
   margin: 0;
-  max-height: 70px;
-  max-width: 70px;
-  height: 70px;
-  width: 70px;
+  max-height: 56px;
+  max-width: 56px;
+  height: 56px;
+  width: 56px;
   object-fit: contain;
 }
 
@@ -153,7 +154,7 @@ export default {
 .club-name {
   display: block;
   font-family: Helvetica, Arial, sans-serif;
-  font-size: 16pt;
+  font-size: 14pt;
   font-weight: 700;
   color: #17324d;
   line-height: 1.3;
@@ -234,7 +235,7 @@ export default {
 
   .header-content {
     position: relative;
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
     padding: 4px 8px;
     gap: 8px;
@@ -262,22 +263,10 @@ export default {
   }
 
   .right-section {
-    width: 100%;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 6px;
-  }
-
-  .logout-button {
-    position: absolute;
-    top: 4px;
-    right: 8px;
-    margin: 0;
-  }
-
-  .login-info {
-    text-align: left;
-    width: 100%;
+    flex-shrink: 0;
   }
 
   .login-info-line {

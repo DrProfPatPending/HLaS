@@ -296,7 +296,7 @@ export default {
   align-items: start;
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 20px 26px;
+  padding: 0 12px 16px;
 }
 #app .app-member-sidebar-group {
   display: flex;
