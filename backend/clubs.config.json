@@ -461,8 +461,8 @@
     {
       "fullName": "Cambridge Trout Club",
       "shortName": "CTC",
-      "description": "CTC has access to c. 5 miles of the River Cam in Cambridgeshire. Fishing for Brown Trout.",
-      "websiteUrl": "https://scoffin.com/",
+      "description": "CTC has access to c. 2.5 miles of the River Cam in Cambridgeshire. Fishing for Brown Trout. The beats run from the A505 at Whittleesford at the downstream end to the limit of the Genome Campus land in Hinxton at the upstream end. The fishing is divided into 3 beats, albeit the lowest beat (C Beat) is further sub-divded as it is non-contiguous, there being a section inthe village of Duxford which is not accessible for club members to fish.",
+      "websiteUrl": "https://cambridgetroutclub.org/club/CTC/",
       "adminEmail": "committee@cambridgetroutclub.org",
       "smtp": {
         "host": "",
