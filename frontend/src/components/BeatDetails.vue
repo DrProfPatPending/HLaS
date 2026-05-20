@@ -678,6 +678,7 @@ export default {
                 .filter(loc => loc && typeof loc === 'object')
                 .map(loc => ({
                   Name: loc && loc.Name ? loc.Name : '',
+                  Location: loc && loc.Location ? loc.Location : '',
                   Location_W3W: this.parseWhat3Words(loc && loc.Location ? loc.Location : ''),
                   Description: loc && loc.Description ? loc.Description : '',
                   Latitude: loc && loc.Latitude ? loc.Latitude : '',
