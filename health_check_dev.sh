@@ -13,7 +13,7 @@ green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
 yellow() { printf '\033[1;33m%s\033[0m\n' "$1"; }
 
 dc() {
-  docker compose "${COMPOSE_FILES[@]}" "$@"
+  docker compose --env-file .env.dev "${COMPOSE_FILES[@]}" "$@"
 }
 
 check_http_code() {

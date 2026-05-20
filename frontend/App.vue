@@ -289,6 +289,13 @@ export default {
 </script>
 
 <style>
+/* Neutralise Vuetify layout offsets – we manage our own header spacing */
+.v-application,
+.v-application__wrap {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 #app .app-member-shell {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1000,7 +1007,7 @@ export default {
   max-width: none;
   width: 100%;
   margin: 0;
-  padding: 56px 12px 12px 12px;
+  padding: 0;
   font-family: Arial, sans-serif;
 }
 #app .app-footer {
