@@ -6,6 +6,7 @@ DIRECTORY="${DIRECTORY:-/opt/hlas}"
 VERBOSE=0
 USE_REMOTE=1
 NO_CACHE=1
+RUN_CLEAN=0
 
 usage() {
     cat <<EOF
@@ -20,6 +21,7 @@ Options:
     -r, --remote              Build from origin/<target> (default)
   -f, --full                Full rebuild: pass --no-cache to docker build (default)
   -Q, --quick               Quick rebuild: use Docker layer cache (faster for dev)
+  -c, --clean               Run 'docker system prune -f' after successful build
   -q, --quiet               Suppress command output (default)
   -v, --verbose             Show command output
   -h, --help                Show this help message
@@ -30,6 +32,7 @@ Examples:
     $0 --target development --directory /opt/HLaS --local
   $0 -t production -v
   $0 --target development --quick --local  # fast dev rebuild using cache
+  $0 --target production --clean           # deploy and prune dangling images
 EOF
 }
 
@@ -57,6 +60,10 @@ while (($#)); do
             ;;
         -Q|--quick)
             NO_CACHE=0
+            shift
+            ;;
+        -c|--clean)
+            RUN_CLEAN=1
             shift
             ;;
         -l|--local)
@@ -264,3 +271,9 @@ echo "Checking WordPress/Nginx health endpoint"
 retry_check "WordPress/Nginx endpoint OK" "compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1
 
 echo "✓ Build and health checks complete"
+
+if [ "$RUN_CLEAN" -eq 1 ]; then
+    echo "Pruning unused Docker objects (docker system prune -f)..."
+    run_step "  Removing dangling images and unused resources..." docker system prune -f
+    echo "✓ Docker system clean complete"
+fi
