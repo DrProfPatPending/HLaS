@@ -4,6 +4,7 @@ set -euo pipefail
 TARGET="${TARGET:-production}"
 DIRECTORY="${DIRECTORY:-/opt/hlas}"
 VERBOSE=0
+USE_REMOTE=1
 
 usage() {
     cat <<EOF
@@ -14,6 +15,8 @@ Options:
                             Examples: production, development, main
   -d, --directory <dir>     Deployment directory (default: /opt/hlas)
                             Example: /opt/HLaS
+    -l, --local               Build from local working tree (skip git reset)
+    -r, --remote              Build from origin/<target> (default)
   -q, --quiet               Suppress command output (default)
   -v, --verbose             Show command output
   -h, --help                Show this help message
@@ -21,6 +24,7 @@ Options:
 Examples:
   $0
   $0 --target development --directory /opt/HLaS
+    $0 --target development --directory /opt/HLaS --local
   $0 -t production -v
 EOF
 }
@@ -42,6 +46,14 @@ while (($#)); do
             fi
             DIRECTORY="$2"
             shift 2
+            ;;
+        -l|--local)
+            USE_REMOTE=0
+            shift
+            ;;
+        -r|--remote)
+            USE_REMOTE=1
+            shift
             ;;
         -q|--quiet)
             VERBOSE=0
@@ -146,10 +158,14 @@ require_env_vars "$ENV_FILE" \
     WORDPRESS_DB_USER \
     WORDPRESS_DB_PASSWORD
 
-echo "Pulling latest code from Git (branch: $BRANCH_NAME)"
-run_step "  Checking out branch '$BRANCH_NAME'..." git checkout "$BRANCH_NAME"
-run_step "  Fetching from origin..." git fetch origin
-run_step "  Resetting to origin/$BRANCH_NAME..." git reset --hard "origin/$BRANCH_NAME"
+if [ "$USE_REMOTE" -eq 1 ]; then
+    echo "Pulling latest code from Git (branch: $BRANCH_NAME)"
+    run_step "  Checking out branch '$BRANCH_NAME'..." git checkout "$BRANCH_NAME"
+    run_step "  Fetching from origin..." git fetch origin
+    run_step "  Resetting to origin/$BRANCH_NAME..." git reset --hard "origin/$BRANCH_NAME"
+else
+    echo "Using local working tree (no git checkout/fetch/reset)"
+fi
 
 if [ ! -f "$CADDYFILE" ]; then
     echo "✗ ERROR: Caddyfile ($CADDYFILE) not found!"
