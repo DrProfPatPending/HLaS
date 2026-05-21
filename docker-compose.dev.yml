@@ -48,4 +48,5 @@ services:
 # Override external volume with a local managed volume for dev
 volumes:
   postgres_data:
-    external: false
+    external: true
+    name: hlas_postgres_data
