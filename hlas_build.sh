@@ -7,6 +7,7 @@ VERBOSE=0
 USE_REMOTE=1
 NO_CACHE=1
 RUN_CLEAN=0
+SKIP_HEALTH=0
 
 usage() {
     cat <<EOF
@@ -22,6 +23,7 @@ Options:
   -f, --full                Full rebuild: pass --no-cache to docker build (default)
   -Q, --quick               Quick rebuild: use Docker layer cache (faster for dev)
   -c, --clean               Run 'docker system prune -f' after successful build
+  -n, --nohealth            Skip post-start health checks
   -q, --quiet               Suppress command output (default)
   -v, --verbose             Show command output
   -h, --help                Show this help message
@@ -64,6 +66,10 @@ while (($#)); do
             ;;
         -c|--clean)
             RUN_CLEAN=1
+            shift
+            ;;
+        -n|--nohealth)
+            SKIP_HEALTH=1
             shift
             ;;
         -l|--local)
@@ -249,28 +255,32 @@ retry_check() {
     return 1
 }
 
-required_services=(postgres backend frontend wordpress-db wordpress wordpress-web caddy)
+if [ "$SKIP_HEALTH" -eq 1 ]; then
+    echo "⚠ Health checks skipped (--nohealth)"
+else
+    required_services=(postgres backend frontend wordpress-db wordpress wordpress-web caddy)
 
-for service in "${required_services[@]}"; do
-    if ! compose ps --services --filter "status=running" | grep -q "^${service}$"; then
-        echo "✗ ERROR: Service '${service}' is not running"
-        compose ps
-        exit 1
-    fi
-done
+    for service in "${required_services[@]}"; do
+        if ! compose ps --services --filter "status=running" | grep -q "^${service}$"; then
+            echo "✗ ERROR: Service '${service}' is not running"
+            compose ps
+            exit 1
+        fi
+    done
 
-echo "✓ All required services are running"
+    echo "✓ All required services are running"
 
-echo "Checking backend health endpoint"
-retry_check "Backend health endpoint OK" "curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs" 30 3 || exit 1
+    echo "Checking backend health endpoint"
+    retry_check "Backend health endpoint OK" "curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs" 30 3 || exit 1
 
-echo "Checking frontend health endpoint via caddy"
-retry_check "Frontend/caddy endpoint OK" "curl --connect-timeout 5 --max-time 10 -kfsS --resolve ${HEALTH_HOST}:443:127.0.0.1 https://${HEALTH_HOST}/" 30 3 || exit 1
+    echo "Checking frontend health endpoint via caddy"
+    retry_check "Frontend/caddy endpoint OK" "curl --connect-timeout 5 --max-time 10 -kfsS --resolve ${HEALTH_HOST}:443:127.0.0.1 https://${HEALTH_HOST}/" 30 3 || exit 1
 
-echo "Checking WordPress/Nginx health endpoint"
-retry_check "WordPress/Nginx endpoint OK" "compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1
+    echo "Checking WordPress/Nginx health endpoint"
+    retry_check "WordPress/Nginx endpoint OK" "compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1
+fi
 
-echo "✓ Build and health checks complete"
+echo "✓ Build complete"
 
 if [ "$RUN_CLEAN" -eq 1 ]; then
     echo "Pruning unused Docker objects (docker system prune -f)..."
