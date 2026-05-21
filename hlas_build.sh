@@ -5,6 +5,7 @@ TARGET="${TARGET:-production}"
 DIRECTORY="${DIRECTORY:-/opt/hlas}"
 VERBOSE=0
 USE_REMOTE=1
+NO_CACHE=1
 
 usage() {
     cat <<EOF
@@ -17,6 +18,8 @@ Options:
                             Example: /opt/HLaS
     -l, --local               Build from local working tree (skip git reset)
     -r, --remote              Build from origin/<target> (default)
+  -f, --full                Full rebuild: pass --no-cache to docker build (default)
+  -Q, --quick               Quick rebuild: use Docker layer cache (faster for dev)
   -q, --quiet               Suppress command output (default)
   -v, --verbose             Show command output
   -h, --help                Show this help message
@@ -26,6 +29,7 @@ Examples:
   $0 --target development --directory /opt/HLaS
     $0 --target development --directory /opt/HLaS --local
   $0 -t production -v
+  $0 --target development --quick --local  # fast dev rebuild using cache
 EOF
 }
 
@@ -46,6 +50,14 @@ while (($#)); do
             fi
             DIRECTORY="$2"
             shift 2
+            ;;
+        -f|--full)
+            NO_CACHE=1
+            shift
+            ;;
+        -Q|--quick)
+            NO_CACHE=0
+            shift
             ;;
         -l|--local)
             USE_REMOTE=0
@@ -184,7 +196,13 @@ else
 fi
 
 echo "Build frontend and backend images"
-run_step "  Building backend and frontend images..." compose build --no-cache backend frontend
+if [ "$NO_CACHE" -eq 1 ]; then
+    echo "  (--no-cache: full rebuild, ignoring Docker layer cache)"
+    run_step "  Building backend and frontend images..." compose build --no-cache backend frontend
+else
+    echo "  (--quick: using Docker layer cache for faster rebuild)"
+    run_step "  Building backend and frontend images..." compose build backend frontend
+fi
 
 echo "Start databases (Postgres + WordPress MySQL)"
 run_step "  Starting postgres and wordpress-db..." compose up -d postgres wordpress-db
