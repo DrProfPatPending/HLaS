@@ -134,11 +134,44 @@ This design prevents accidental use of dev configuration in production, even whe
 Two convenience scripts automate the VPS deployment process:
 
 **`hlas_build.sh`** — Full rebuild (backend & frontend)
-- Validates `Caddyfile.prod` exists
-- Checks out `production` branch
-- Pulls latest code
-- Rebuilds backend and frontend containers
-- Restarts all services via docker-compose
+
+Supports a rich set of options for flexible deployment and iterative development:
+
+| Option | Short | Default | Description |
+|---|---|---|---|
+| `--target <branch>` | `-t` | `production` | Branch/target to deploy (`production`, `development`, `main`) |
+| `--directory <dir>` | `-d` | `/opt/hlas` | Repository directory on the host |
+| `--remote` | `-r` | ✓ | Pull from `origin/<branch>` before building (default) |
+| `--local` | `-l` | | Skip git fetch/reset — build from local working tree |
+| `--full` | `-f` | ✓ | Pass `--no-cache` to `docker compose build` (full layer rebuild, default) |
+| `--quick` | `-Q` | | Omit `--no-cache` — reuse Docker layer cache for faster rebuilds |
+| `--nohealth` | `-n` | | Skip post-start health checks |
+| `--clean` | `-c` | | Run `docker system prune -f` after a successful build |
+| `--verbose` | `-v` | | Show full command output |
+| `--quiet` | `-q` | ✓ | Suppress command output (default) |
+
+Examples:
+```bash
+# Standard production deploy (full rebuild, health checks, no prune)
+./hlas_build.sh
+
+# Production deploy with layer cache cleanup after success
+./hlas_build.sh --target production --clean
+
+# Fast iterative dev rebuild from local working tree
+./hlas_build.sh --target development --local --quick
+
+# Dev rebuild, skip health checks, clean up dangling images when done
+./hlas_build.sh --target development --local --quick --nohealth --clean
+
+# Verbose production deploy
+./hlas_build.sh --target production --verbose
+```
+
+The script also:
+- Validates `Caddyfile.prod` exists before a production deploy
+- Runs the clubs split-config preflight check (`make clubs-check` or `python backend/build_clubs_config.py --check`)
+- Runs `docker system prune -f` only on success when `--clean` is given — a failed deploy never auto-prunes
 
 **`rebuild_frontend.sh`** — Frontend-only rebuild
 - Checks out `production` branch  
@@ -146,7 +179,7 @@ Two convenience scripts automate the VPS deployment process:
 - Rebuilds frontend container only
 - Restarts frontend and caddy
 
-Both scripts automatically pull from the `production` branch, ensuring only tested, promoted code is deployed. The `hlas_build.sh` script includes validation to ensure the production Caddyfile configuration is present before proceeding.
+Both scripts target the `production` branch by default, ensuring only tested, promoted code is deployed.
 
 ### Rollback Procedure
 

@@ -19,7 +19,21 @@
 	Keep this file free of stale comment blocks.
 
 ## Last Documentation Update
-May 2026 — updated for:
+May 21, 2026 — updated for:
+- **Build Script Enhancements (May 21, 2026):**
+  - `--full` / `-f` (default): `--no-cache` full Docker layer rebuild
+  - `--quick` / `-Q`: use Docker layer cache for fast iterative dev rebuilds
+  - `--clean` / `-c`: `docker system prune -f` after successful build only
+  - `--nohealth` / `-n`: skip post-start health endpoint checks
+  - Full options table and examples added to DEPLOYMENT.md
+- **Age Field Calculated at Runtime (May 21, 2026):**
+  - `Age` field in Personal Info and Membership Admin derived from `Date_of_Birth` at display time
+  - `calculateAgeFromDOB()` and `isAgeField()` utilities added to `store.js`
+  - Falls back to stored value when DOB is absent
+- **Split Club Config Tooling (May 2026):**
+  - `build_clubs_config.py`, `scaffold_club_layout.py`, `backend/clubs/` tree committed to all branches
+  - `sync_beats_postgres_to_json.py` rewritten with `--mode aggregate|split|both`
+  - Makefile targets: `clubs-build`, `clubs-check`, `clubs-scaffold-copy`
 - **Caddyfile Configuration Management (May 13, 2026):**
   - Environment-specific Caddyfile configurations: `Caddyfile.prod` for production, `Caddyfile.dev` for development
   - Both files version-controlled in git; protected by explicit docker-compose volume mounts

@@ -35,6 +35,29 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
+- **Build Script Enhancements (May 2026):**
+   - `hlas_build.sh` now accepts a comprehensive set of CLI options:
+   - `--full` / `-f` (default): passes `--no-cache` to `docker compose build` — full layer rebuild, safe for production deploys
+   - `--quick` / `-Q`: omits `--no-cache`, reusing Docker layer cache for significantly faster iterative dev rebuilds
+   - `--clean` / `-c`: runs `docker system prune -f` after a successful build to remove dangling images; only fires on success
+   - `--nohealth` / `-n`: skips the post-start health checks; useful for CI or restricted network environments
+   - `--local` / `-l`: skip `git fetch/reset` and build from the local working tree
+   - `--target` / `-t`, `--directory` / `-d`, `--verbose` / `-v`, `--quiet` / `-q` also available
+   - See DEPLOYMENT.md for a full options table and examples
+
+- **Age Field Calculated at Runtime (May 2026):**
+   - The `Age` field in **Personal Info** (My Club page) and **Membership Admin** is now a dynamic, calculated value derived from the member's `Date_of_Birth` and the current date
+   - No manual updates to the `Age` column are needed; the displayed value is always accurate
+   - Whole-year birthday logic correctly adjusts if the birthday has not yet occurred this year
+   - Falls back gracefully to the stored `Age` value if `Date_of_Birth` is absent
+
+- **Split Club Config Tooling (May 2026):**
+   - `backend/build_clubs_config.py`: validates and assembles aggregate `clubs.config.json` from per-club source files
+   - `backend/scaffold_club_layout.py`: scaffolds the `backend/clubs/<CLUB>/` directory layout from aggregate config
+   - `backend/sync_beats_postgres_to_json.py`: rewritten with `--mode aggregate|split|both` and lazy SQLAlchemy import
+   - `Makefile` targets: `clubs-build`, `clubs-check`, `clubs-scaffold-copy`
+   - `backend/clubs/` tree with `CTC`, `GAAFFS`, `LADFFA`, `TEST` layouts and `manifest.json` committed to all branches
+
 - **Beat Details Route Waypoints (May 2026):**
    - Beats now support an ordered `Waypoints` list (sequence, W3W stub, lat/lon, description).
    - The map draws a route polyline through waypoints instead of the old straight-line boundary.
