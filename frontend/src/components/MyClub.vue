@@ -115,6 +115,8 @@ import {
   fieldOrderConfig,
   loadFieldOrderConfig,
   isDateOfBirthField,
+  isAgeField,
+  calculateAgeFromDOB,
   formatConfiguredDate,
   normalizeDateInputValue,
 } from '../store.js';
@@ -287,6 +289,8 @@ export default {
   methods: {
     formatFieldName,
     isDateOfBirthField,
+    isAgeField,
+    calculateAgeFromDOB,
     dateInputValue: normalizeDateInputValue,
     isFieldVisible(field) {
       const configured = this.myClubShowColumns?.[field];
@@ -340,6 +344,11 @@ export default {
       return String(value);
     },
     formatMemberFieldValue(field, value) {
+      if (this.isAgeField(field)) {
+        const dob = this.memberData?.Date_of_Birth;
+        const calculated = calculateAgeFromDOB(dob);
+        return calculated !== '' ? calculated : this.formatValue(value);
+      }
       const formatted = formatConfiguredDate(value, field);
       if (formatted !== value) {
         return formatted || '-';

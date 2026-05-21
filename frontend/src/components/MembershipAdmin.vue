@@ -62,6 +62,9 @@
               <span v-else-if="field === 'E_Mail' && member[field]">
                 <a :href="`mailto:${member[field]}`">{{ member[field] }}</a>
               </span>
+              <span v-else-if="isAgeField(field)">
+                {{ calculateAgeFromMember(member) }}
+              </span>
               <span v-else :style="getMemberFieldStyle(field, member[field])">
                 {{ formatMemberFieldValue(field, member[field]) }}
               </span>
@@ -124,7 +127,7 @@
         <tbody>
           <tr v-for="(value, key) in lookupResult" :key="key">
             <td>{{ key }}</td>
-            <td>{{ formatMemberFieldValue(key, value) }}</td>
+            <td>{{ isAgeField(key) ? calculateAgeFromMember(lookupResult) : formatMemberFieldValue(key, value) }}</td>
           </tr>
         </tbody>
       </table>
@@ -157,6 +160,8 @@ import {
   formatConfiguredDate,
   getExpiryDateStyle,
   isDateOfBirthField,
+  isAgeField,
+  calculateAgeFromDOB,
   normalizeDateInputValue,
 } from '../store.js';
 
@@ -260,7 +265,14 @@ export default {
       openMemberForEdit(member);
     },
     isDateOfBirthField,
+    isAgeField,
+    calculateAgeFromDOB,
     dateInputValue: normalizeDateInputValue,
+    calculateAgeFromMember(member) {
+      const dob = member?.Date_of_Birth;
+      const calculated = calculateAgeFromDOB(dob);
+      return calculated !== '' ? calculated : (member?.Age ?? '');
+    },
     formatMemberFieldValue(field, value) {
       if (value === null || value === undefined || value === '') {
         return value;

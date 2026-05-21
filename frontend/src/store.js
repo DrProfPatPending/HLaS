@@ -417,6 +417,22 @@ export function isDateOfBirthField(field) {
   return normalized === 'dob' || normalized.includes('dateofbirth');
 }
 
+export function isAgeField(field) {
+  const normalized = String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return normalized === 'age';
+}
+
+export function calculateAgeFromDOB(dob) {
+  if (!dob) return '';
+  const birth = new Date(dob);
+  if (isNaN(birth.getTime())) return '';
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age >= 0 ? String(age) : '';
+}
+
 export function normalizeDateInputValue(value) {
   const raw = String(value || '').trim();
   if (!raw) {
