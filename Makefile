@@ -17,6 +17,7 @@ DC_DEV := docker compose --env-file $(DEV_ENV) -f $(PROD_COMPOSE) -f $(DEV_COMPO
 	dev-build dev-up dev-down dev-ps dev-logs dev-health \
 	prod-build prod-up prod-down prod-ps prod-logs prod-health \
 	development dev-rebuild production \
+	clubs-build clubs-check clubs-scaffold-copy \
 	sync-field-order-from-db \
 	docker-prune \
 	ios-sim ios-release clean
@@ -38,6 +39,9 @@ help:
 	@echo "  make prod-up|prod-down|prod-health|prod-logs|prod-ps"
 	@echo ""
 	@echo "Utilities:"
+	@echo "  make clubs-build              Build clubs.config.json from split club sources"
+	@echo "  make clubs-check              Validate split club sources via manifest"
+	@echo "  make clubs-scaffold-copy      Scaffold split folders + copy logos/backgrounds/photos"
 	@echo "  make sync-field-order-from-db  Sync field_order from live Postgres to JSON"
 	@echo ""
 	@echo "iOS:"
@@ -96,6 +100,15 @@ docker-prune:
 	docker system prune -f
 
 production: prod-build prod-up prod-health
+
+clubs-build:
+	python backend/build_clubs_config.py
+
+clubs-check:
+	python backend/build_clubs_config.py --check
+
+clubs-scaffold-copy:
+	python backend/scaffold_club_layout.py --copy-logos --copy-backgrounds --copy-member-photos
 
 sync-field-order-from-db:
 	./sync_field_order_postgres_to_json.sh

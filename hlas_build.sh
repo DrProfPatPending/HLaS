@@ -1,11 +1,79 @@
 #!/bin/bash
 set -euo pipefail
 
-# Move to the appropriate directory
-cd /opt/hlas
-echo "Rebuilding latest HLaS from Github sources"
+TARGET="${TARGET:-production}"
+DIRECTORY="${DIRECTORY:-/opt/hlas}"
+VERBOSE=0
 
-unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB HLAS_USE_POSTGRES_READS LOG_LEVEL
+usage() {
+    cat <<EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  -t, --target <target>     Deployment target/branch (default: production)
+                            Examples: production, development, main
+  -d, --directory <dir>     Deployment directory (default: /opt/hlas)
+                            Example: /opt/HLaS
+  -q, --quiet               Suppress command output (default)
+  -v, --verbose             Show command output
+  -h, --help                Show this help message
+
+Examples:
+  $0
+  $0 --target development --directory /opt/HLaS
+  $0 -t production -v
+EOF
+}
+
+while (($#)); do
+    case "$1" in
+        -t|--target)
+            if [ $# -lt 2 ]; then
+                echo "✗ ERROR: Missing value for $1" >&2
+                exit 1
+            fi
+            TARGET="$2"
+            shift 2
+            ;;
+        -d|--directory)
+            if [ $# -lt 2 ]; then
+                echo "✗ ERROR: Missing value for $1" >&2
+                exit 1
+            fi
+            DIRECTORY="$2"
+            shift 2
+            ;;
+        -q|--quiet)
+            VERBOSE=0
+            shift
+            ;;
+        -v|--verbose)
+            VERBOSE=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "✗ ERROR: Unknown option '$1'" >&2
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+run_step() {
+    local description="$1"
+    shift
+
+    echo "$description"
+    if [ "$VERBOSE" -eq 1 ]; then
+        "$@"
+    else
+        "$@" >/dev/null 2>&1
+    fi
+}
 
 require_env_vars() {
     local env_file="$1"
@@ -21,42 +89,101 @@ require_env_vars() {
     done
 }
 
-require_env_vars ".env.prod" \
+if [ ! -d "$DIRECTORY" ]; then
+    echo "✗ ERROR: Directory '$DIRECTORY' not found" >&2
+    exit 1
+fi
+
+cd "$DIRECTORY"
+echo "Rebuilding latest HLaS from Github sources (directory: $DIRECTORY, target: $TARGET)"
+
+unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB HLAS_USE_POSTGRES_READS LOG_LEVEL
+
+case "$TARGET" in
+    production|prod)
+        BRANCH_NAME="production"
+        ENV_FILE=".env.prod"
+        COMPOSE_FILES=("-f" "docker-compose.prod.yml")
+        CADDYFILE="deploy/caddy/Caddyfile.prod"
+        HEALTH_HOST="cambridgetroutclub.org"
+        ;;
+    development|dev)
+        BRANCH_NAME="development"
+        ENV_FILE=".env.dev"
+        COMPOSE_FILES=("-f" "docker-compose.prod.yml" "-f" "docker-compose.dev.yml")
+        CADDYFILE="deploy/caddy/Caddyfile.dev"
+        HEALTH_HOST="hlastest"
+        ;;
+    main)
+        BRANCH_NAME="main"
+        ENV_FILE=".env.dev"
+        COMPOSE_FILES=("-f" "docker-compose.prod.yml" "-f" "docker-compose.dev.yml")
+        CADDYFILE="deploy/caddy/Caddyfile.dev"
+        HEALTH_HOST="hlastest"
+        ;;
+    *)
+        BRANCH_NAME="$TARGET"
+        ENV_FILE=".env.dev"
+        COMPOSE_FILES=("-f" "docker-compose.prod.yml" "-f" "docker-compose.dev.yml")
+        CADDYFILE="deploy/caddy/Caddyfile.dev"
+        HEALTH_HOST="hlastest"
+        ;;
+esac
+
+compose() {
+    docker compose --env-file "$ENV_FILE" "${COMPOSE_FILES[@]}" "$@"
+}
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "✗ ERROR: Environment file '$ENV_FILE' not found" >&2
+    exit 1
+fi
+
+require_env_vars "$ENV_FILE" \
     WORDPRESS_DB_HOST \
     WORDPRESS_DB_NAME \
     WORDPRESS_DB_ROOT_PASSWORD \
     WORDPRESS_DB_USER \
     WORDPRESS_DB_PASSWORD
 
-echo "Pulling latest code from Git"
-git checkout production
-git fetch origin
-git reset --hard origin/production
+echo "Pulling latest code from Git (branch: $BRANCH_NAME)"
+run_step "  Checking out branch '$BRANCH_NAME'..." git checkout "$BRANCH_NAME"
+run_step "  Fetching from origin..." git fetch origin
+run_step "  Resetting to origin/$BRANCH_NAME..." git reset --hard "origin/$BRANCH_NAME"
 
-# Validate and ensure production Caddyfile is in place
-if [ ! -f "deploy/caddy/Caddyfile.prod" ]; then
-    echo "✗ ERROR: Production Caddyfile (deploy/caddy/Caddyfile.prod) not found!"
+if [ ! -f "$CADDYFILE" ]; then
+    echo "✗ ERROR: Caddyfile ($CADDYFILE) not found!"
     echo "This file should be version-controlled in git. Aborting build."
     exit 1
 fi
-echo "✓ Production Caddyfile configuration found"
+echo "✓ Caddyfile configuration found: $CADDYFILE"
+
+echo "Validating club source manifest"
+if make -n clubs-check >/dev/null 2>&1; then
+    run_step "  Running make clubs-check..." make clubs-check
+elif [ -f "backend/build_clubs_config.py" ]; then
+    run_step "  Running python backend/build_clubs_config.py --check..." python backend/build_clubs_config.py --check
+else
+    echo "⚠ clubs-check skipped: split config tooling is not present on branch '$BRANCH_NAME'"
+fi
+
 echo "Build frontend and backend images"
-docker compose --env-file .env.prod -f docker-compose.prod.yml build --no-cache backend frontend
+run_step "  Building backend and frontend images..." compose build --no-cache backend frontend
 
 echo "Start databases (Postgres + WordPress MySQL)"
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d postgres wordpress-db
+run_step "  Starting postgres and wordpress-db..." compose up -d postgres wordpress-db
 
 echo "Start backend and frontend"
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d backend frontend
+run_step "  Starting backend and frontend..." compose up -d backend frontend
 
 echo "Start WordPress services"
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d wordpress wordpress-web
+run_step "  Starting wordpress and wordpress-web..." compose up -d wordpress wordpress-web
 
 echo "Start caddy"
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d caddy
+run_step "  Starting caddy..." compose up -d caddy
 
 echo "Check running processes"
-docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+compose ps
 
 echo "Running post-start health checks"
 
@@ -84,9 +211,9 @@ retry_check() {
 required_services=(postgres backend frontend wordpress-db wordpress wordpress-web caddy)
 
 for service in "${required_services[@]}"; do
-    if ! docker compose --env-file .env.prod -f docker-compose.prod.yml ps --services --filter "status=running" | grep -q "^${service}$"; then
+    if ! compose ps --services --filter "status=running" | grep -q "^${service}$"; then
         echo "✗ ERROR: Service '${service}' is not running"
-        docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+        compose ps
         exit 1
     fi
 done
@@ -97,9 +224,9 @@ echo "Checking backend health endpoint"
 retry_check "Backend health endpoint OK" "curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs" 30 3 || exit 1
 
 echo "Checking frontend health endpoint via caddy"
-retry_check "Frontend/caddy endpoint OK" "curl --connect-timeout 5 --max-time 10 -kfsS --resolve cambridgetroutclub.org:443:127.0.0.1 https://cambridgetroutclub.org/" 30 3 || exit 1
+retry_check "Frontend/caddy endpoint OK" "curl --connect-timeout 5 --max-time 10 -kfsS --resolve ${HEALTH_HOST}:443:127.0.0.1 https://${HEALTH_HOST}/" 30 3 || exit 1
 
 echo "Checking WordPress/Nginx health endpoint"
-retry_check "WordPress/Nginx endpoint OK" "docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1
+retry_check "WordPress/Nginx endpoint OK" "compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1
 
 echo "✓ Build and health checks complete"
