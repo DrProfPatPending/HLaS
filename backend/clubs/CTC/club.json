@@ -1,0 +1,931 @@
+{
+  "fullName": "Cambridge Trout Club",
+  "shortName": "CTC",
+  "description": "CTC has access to c. 5 miles of the River Cam in Cambridgeshire. Fishing for Brown Trout.",
+  "websiteUrl": "https://scoffin.com/",
+  "adminEmail": "committee@cambridgetroutclub.org",
+  "smtp": {
+    "host": "",
+    "port": 587,
+    "username": "",
+    "password": "",
+    "fromEmail": "committee@cambridgetroutclub.org",
+    "fromName": "CTC Newsletter",
+    "useSsl": false,
+    "useTls": true
+  },
+  "logoUrl": "/club_logo/CTC",
+  "cssVariables": {
+    "--app-color-bg-canvas": "#f5f2f9",
+    "--app-color-bg-surface": "#ffffff",
+    "--app-color-bg-subtle": "#f8f5fc",
+    "--app-color-bg-muted": "#eee7f7",
+    "--app-color-bg-highlight": "#f2ecfb",
+    "--app-color-text-primary": "#2f1f48",
+    "--app-color-text-secondary": "#4b3a68",
+    "--app-color-text-muted": "#62537f",
+    "--app-color-link": "#5b3f9e",
+    "--app-color-border-soft": "#d8cdea",
+    "--app-color-border-default": "#c8b9df",
+    "--app-color-state-brand": "#6441a8",
+    "--app-color-state-brand-border": "#4f3286",
+    "--app-color-state-success": "#2d8a5a",
+    "--app-color-state-danger": "#b42318",
+    "--app-badge-bg-draft": "#f8ebff",
+    "--app-badge-text-draft": "#6a2f93",
+    "--app-badge-bg-planned": "#ece6ff",
+    "--app-badge-text-planned": "#4f3a99",
+    "--app-badge-bg-positive": "#e6f7ef",
+    "--app-badge-text-positive": "#1e6f4a"
+  },
+  "beats": [
+    {
+      "Beat_Name": "A Beat",
+      "Beat_ID": "A",
+      "River": "Cam",
+      "Position": "1",
+      "Beat_Upstream": "///tablets.loudly.sues",
+      "Beat_Downstream": "///stuck.fits.subtitle",
+      "Beat_Description": "Classic chalkstream style glide with weed beds and dry-fly opportunities.",
+      "Detailed_Description": "A beat runs through the grounds of the EMBL / Hinxton Hall / Genome Campus. The upper limit for CTC is the railway bridge at the south end of the campus, and the downstream limit is the road bridge (Ickleton Road) which is just at the northern boundary of the campus. Parking on the road close to the bridge, before the level crossing.",
+      "Beat_Upstream_Latitude": "52.07322",
+      "Beat_Upstream_Longitude": "0.18369",
+      "Beat_Downstream_Latitude": "52.07880",
+      "Beat_Downstream_Longitude": "0.17998",
+      "Parking_Locations": [
+        {
+          "Name": "Ickleton Road Bridge",
+          "Latitude": "52.07909",
+          "Location": "",
+          "Longitude": "0.18030",
+          "Description": "Roadside parking near bridge"
+        }
+      ],
+      "Pools": [
+        {
+          "Name": "Bridge Pool",
+          "Latitude": "52.078765",
+          "Location": "outs.clips.squad",
+          "Sequence": "1",
+          "Longitude": "0.17989",
+          "Description": "Shallow cascade into reasonably deep pool going underneath the Ickleton Road bridge."
+        },
+        {
+          "Name": "Bend Pool",
+          "Latitude": "52.077957",
+          "Location": "scribble.noticing.chats",
+          "Sequence": "2",
+          "Longitude": "0.180154",
+          "Description": "Shallow riffle tail with productive nymphing seam."
+        },
+        {
+          "Name": "Footbridge Pool",
+          "Latitude": "52.077687",
+          "Location": "symphonic.silk.bill",
+          "Sequence": "3",
+          "Longitude": "0.181425",
+          "Description": "Deeper bend pool under overhanging trees."
+        }
+      ],
+      "Waypoints": [
+        {
+          "W3W": "",
+          "Latitude": "52.0789200",
+          "Sequence": "1",
+          "Longitude": "0.1798800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0782100",
+          "Sequence": "2",
+          "Longitude": "0.1802200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0779800",
+          "Sequence": "3",
+          "Longitude": "0.1801900",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0778600",
+          "Sequence": "4",
+          "Longitude": "0.1804700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0777300",
+          "Sequence": "5",
+          "Longitude": "0.1808500",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0777400",
+          "Sequence": "6",
+          "Longitude": "0.1814000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0776400",
+          "Sequence": "7",
+          "Longitude": "0.1815100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0769700",
+          "Sequence": "8",
+          "Longitude": "0.1820500",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0767800",
+          "Sequence": "9",
+          "Longitude": "0.1820900",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0766800",
+          "Sequence": "10",
+          "Longitude": "0.1822000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0767000",
+          "Sequence": "11",
+          "Longitude": "0.1829700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0765800",
+          "Sequence": "12",
+          "Longitude": "0.1836600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0767600",
+          "Sequence": "13",
+          "Longitude": "0.1842900",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0766900",
+          "Sequence": "14",
+          "Longitude": "0.1845400",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0765000",
+          "Sequence": "15",
+          "Longitude": "0.1848300",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0760500",
+          "Sequence": "16",
+          "Longitude": "0.1852000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0755800",
+          "Sequence": "17",
+          "Longitude": "0.1856600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0752500",
+          "Sequence": "18",
+          "Longitude": "0.1855900",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0750300",
+          "Sequence": "19",
+          "Longitude": "0.1856100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0747200",
+          "Sequence": "20",
+          "Longitude": "0.1857800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0745100",
+          "Sequence": "21",
+          "Longitude": "0.1857700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0743000",
+          "Sequence": "22",
+          "Longitude": "0.1854700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0741700",
+          "Sequence": "23",
+          "Longitude": "0.1849700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0740700",
+          "Sequence": "24",
+          "Longitude": "0.1846800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0737000",
+          "Sequence": "25",
+          "Longitude": "0.1844600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0735600",
+          "Sequence": "26",
+          "Longitude": "0.1844600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0734000",
+          "Sequence": "27",
+          "Longitude": "0.1838000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0732500",
+          "Sequence": "28",
+          "Longitude": "0.1836500",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0732200",
+          "Sequence": "29",
+          "Longitude": "0.1835000",
+          "Description": ""
+        }
+      ]
+    },
+    {
+      "Beat_Name": "B Beat",
+      "Beat_ID": "B",
+      "River": "Cam",
+      "Position": "2",
+      "Beat_Upstream": "///fells.burn.bulbs",
+      "Beat_Downstream": "///spindles.moped.mentioned",
+      "Beat_Description": "Tree-lined bends with deeper pools and productive nymphing water.",
+      "Detailed_Description": "Middle section of the CTC waters on the Cam. From the road bridge on the Ickleton Road, down to the ford, and further to where the fishing stops (railway line).",
+      "Beat_Upstream_Latitude": "52.07903",
+      "Beat_Upstream_Longitude": "0.17979",
+      "Beat_Downstream_Latitude": "52.085099",
+      "Beat_Downstream_Longitude": "0.177797",
+      "Parking_Locations": [
+        {
+          "Name": "Ickleton Road",
+          "Latitude": "52.07903",
+          "Location": "",
+          "Longitude": "0.17995",
+          "Description": "Roadside parking near Genome Campus."
+        },
+        {
+          "Name": "Duxford-Hinxton Ford",
+          "Latitude": "52.08638",
+          "Location": "",
+          "Longitude": "0.17488",
+          "Description": "Roadside near to ford on Hinxton Rd/Duxford Rd"
+        }
+      ],
+      "Pools": [],
+      "Waypoints": [
+        {
+          "W3W": "",
+          "Latitude": "52.0851800",
+          "Sequence": "1",
+          "Longitude": "0.1777400",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0846300",
+          "Sequence": "2",
+          "Longitude": "0.1782700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0843200",
+          "Sequence": "3",
+          "Longitude": "0.1786800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0839300",
+          "Sequence": "4",
+          "Longitude": "0.1789300",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0834300",
+          "Sequence": "5",
+          "Longitude": "0.1788800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0832400",
+          "Sequence": "6",
+          "Longitude": "0.1784000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0828400",
+          "Sequence": "7",
+          "Longitude": "0.1788000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0826800",
+          "Sequence": "8",
+          "Longitude": "0.1787200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0823500",
+          "Sequence": "9",
+          "Longitude": "0.1780100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0821200",
+          "Sequence": "10",
+          "Longitude": "0.1780900",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0817000",
+          "Sequence": "11",
+          "Longitude": "0.1790600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0818300",
+          "Sequence": "12",
+          "Longitude": "0.1796000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0816700",
+          "Sequence": "13",
+          "Longitude": "0.1799800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0812800",
+          "Sequence": "14",
+          "Longitude": "0.1794800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0808600",
+          "Sequence": "15",
+          "Longitude": "0.1797200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0809000",
+          "Sequence": "16",
+          "Longitude": "0.1799000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0813100",
+          "Sequence": "17",
+          "Longitude": "0.1802300",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0813000",
+          "Sequence": "18",
+          "Longitude": "0.1804100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0811600",
+          "Sequence": "19",
+          "Longitude": "0.1805200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0807600",
+          "Sequence": "20",
+          "Longitude": "0.1805800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0802200",
+          "Sequence": "21",
+          "Longitude": "0.1807700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0798800",
+          "Sequence": "22",
+          "Longitude": "0.1806100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0797700",
+          "Sequence": "23",
+          "Longitude": "0.1804700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0790900",
+          "Sequence": "24",
+          "Longitude": "0.1798400",
+          "Description": ""
+        }
+      ]
+    },
+    {
+      "Beat_Name": "C Beat Upper",
+      "Beat_ID": "C-Upper",
+      "River": "Cam",
+      "Position": "3",
+      "Beat_Upstream": "///agreeable.wizard.hushed",
+      "Beat_Downstream": "///sneezing.questions.greet",
+      "Beat_Description": "Upper C beat connects to B beat at Hinxton Mill.",
+      "Detailed_Description": "Non-contiguous with the lower C beat portion, divided by a no fishing section through Duxford village.",
+      "Beat_Upstream_Latitude": "52.08506",
+      "Beat_Upstream_Longitude": "0.17751",
+      "Beat_Downstream_Latitude": "52.08982",
+      "Beat_Downstream_Longitude": "0.16937",
+      "Parking_Locations": [
+        {
+          "Name": "Hinxton Road Ford",
+          "Latitude": "52.08642",
+          "Location": "erupts.warblers.fools",
+          "Longitude": "0.17511",
+          "Description": "Park on roadside near to the ford."
+        }
+      ],
+      "Pools": [],
+      "Waypoints": [
+        {
+          "W3W": "",
+          "Latitude": "52.0898200",
+          "Sequence": "1",
+          "Longitude": "0.1693700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0897800",
+          "Sequence": "2",
+          "Longitude": "0.1699400",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0896000",
+          "Sequence": "3",
+          "Longitude": "0.1702800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0892600",
+          "Sequence": "4",
+          "Longitude": "0.1705800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0889600",
+          "Sequence": "5",
+          "Longitude": "0.1705600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0888200",
+          "Sequence": "6",
+          "Longitude": "0.1706200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0884800",
+          "Sequence": "7",
+          "Longitude": "0.1718600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0884700",
+          "Sequence": "8",
+          "Longitude": "0.1724800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0881800",
+          "Sequence": "9",
+          "Longitude": "0.1735100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0885900",
+          "Sequence": "10",
+          "Longitude": "0.1743300",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0885000",
+          "Sequence": "11",
+          "Longitude": "0.1744800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0879700",
+          "Sequence": "12",
+          "Longitude": "0.1744100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0876600",
+          "Sequence": "13",
+          "Longitude": "0.1746000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0871300",
+          "Sequence": "14",
+          "Longitude": "0.1753200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0870700",
+          "Sequence": "15",
+          "Longitude": "0.1752700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0868100",
+          "Sequence": "16",
+          "Longitude": "0.1747800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0865000",
+          "Sequence": "17",
+          "Longitude": "0.1749800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0861800",
+          "Sequence": "18",
+          "Longitude": "0.1753300",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0858800",
+          "Sequence": "19",
+          "Longitude": "0.1749700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0857400",
+          "Sequence": "20",
+          "Longitude": "0.1750000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0855400",
+          "Sequence": "21",
+          "Longitude": "0.1760000",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0855400",
+          "Sequence": "22",
+          "Longitude": "0.1762800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0852300",
+          "Sequence": "23",
+          "Longitude": "0.1767800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0851100",
+          "Sequence": "24",
+          "Longitude": "0.1770200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0850600",
+          "Sequence": "25",
+          "Longitude": "0.1775100",
+          "Description": ""
+        }
+      ]
+    },
+    {
+      "Beat_Name": "C Beat Lower",
+      "Beat_ID": "C-Lower",
+      "River": "Cam",
+      "Position": "4",
+      "Beat_Upstream": "///sweetly.chainsaw.fools",
+      "Beat_Downstream": "///upper.travels.professes",
+      "Beat_Description": "Lower section of C beat from the railway line downstream to the A505. Some lovely pools and long glides, the central section is very wadable, with the upstream end being accessible after skipping a deep pool with a fallen willow. The downstream end is deep and slow as the river goes through a small wood - can be a tough wade.",
+      "Detailed_Description": "Bottom of the CTC section, some lovely fishing in the middle section - at the bottom it gets deep and a bit 'canalised' through the woods - some big fish in there, but hard to access...",
+      "Beat_Upstream_Latitude": "52.09662",
+      "Beat_Upstream_Longitude": "0.16495",
+      "Beat_Downstream_Latitude": "52.10358",
+      "Beat_Downstream_Longitude": "0.16939",
+      "Parking_Locations": [
+        {
+          "Name": "Station Road",
+          "Latitude": "52.10421",
+          "Location": "",
+          "Longitude": "0.16894",
+          "Description": "Roadside parking at bottom of C beat."
+        },
+        {
+          "Name": "Middle of C Beat",
+          "Latitude": "52.09834",
+          "Location": "",
+          "Longitude": "0.17441",
+          "Description": "Access via gate (code: 0242) from A1301."
+        }
+      ],
+      "Pools": [],
+      "Waypoints": [
+        {
+          "W3W": "",
+          "Latitude": "52.1037200",
+          "Sequence": "1",
+          "Longitude": "0.1693600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1032700",
+          "Sequence": "2",
+          "Longitude": "0.1684700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1029300",
+          "Sequence": "3",
+          "Longitude": "0.1674700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1027600",
+          "Sequence": "4",
+          "Longitude": "0.1665500",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1025900",
+          "Sequence": "5",
+          "Longitude": "0.1660600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1023300",
+          "Sequence": "6",
+          "Longitude": "0.1659400",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1017900",
+          "Sequence": "7",
+          "Longitude": "0.1662200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1016000",
+          "Sequence": "8",
+          "Longitude": "0.1662100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1011700",
+          "Sequence": "9",
+          "Longitude": "0.1653100",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1006900",
+          "Sequence": "10",
+          "Longitude": "0.1654200",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1006600",
+          "Sequence": "11",
+          "Longitude": "0.1660600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1006800",
+          "Sequence": "12",
+          "Longitude": "0.1665600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.1001800",
+          "Sequence": "13",
+          "Longitude": "0.1668900",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0997300",
+          "Sequence": "14",
+          "Longitude": "0.1667600",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0991300",
+          "Sequence": "15",
+          "Longitude": "0.1665500",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0983900",
+          "Sequence": "16",
+          "Longitude": "0.1659800",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0982200",
+          "Sequence": "17",
+          "Longitude": "0.1661400",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0979400",
+          "Sequence": "18",
+          "Longitude": "0.1663500",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0978600",
+          "Sequence": "19",
+          "Longitude": "0.1660900",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0979400",
+          "Sequence": "20",
+          "Longitude": "0.1654900",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0977900",
+          "Sequence": "21",
+          "Longitude": "0.1650700",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0971900",
+          "Sequence": "22",
+          "Longitude": "0.1652400",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0969200",
+          "Sequence": "23",
+          "Longitude": "0.1651300",
+          "Description": ""
+        },
+        {
+          "W3W": "",
+          "Latitude": "52.0966300",
+          "Sequence": "24",
+          "Longitude": "0.1648300",
+          "Description": ""
+        }
+      ]
+    }
+  ],
+  "officers": [
+    {
+      "name": "John Gandy",
+      "role": "Chairman",
+      "email": "chairman@cambridgetroutclub.org",
+      "mobile": "07717 111111"
+    },
+    {
+      "name": "Rob Scoffin",
+      "role": "Treasurer",
+      "email": "treasurer@cambridgetroutclub.org",
+      "mobile": "07717 154707"
+    },
+    {
+      "name": "Richard Bowes",
+      "role": "Secretary",
+      "email": "secretary@cambridgetroutclub.org",
+      "mobile": "07717 111111"
+    }
+  ],
+  "whatsappGroups": "https://chat.whatsapp.com/FCAMNxPu2RFDQJWjMLWReR?mode=gi_t",
+  "socialMedia": [
+    {
+      "url": "https://www.facebook.com/rscoffin/",
+      "platform": "Facebook"
+    },
+    {
+      "url": "https://socials.com/ctc/",
+      "platform": "socials"
+    }
+  ]
+}

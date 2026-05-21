@@ -1,0 +1,69 @@
+{
+  "fullName": "Leek and District Fly Fishing Association",
+  "shortName": "LADFFA",
+  "description": "LADFFA has access to c. 10 miles of the River Dove in Staffordshire. Fishing for Grayling and Brown Trout.",
+  "websiteUrl": "https://ladffa.com/",
+  "adminEmail": "admin@ladffa.com",
+  "smtp": {
+    "host": "",
+    "port": 587,
+    "username": "",
+    "password": "",
+    "fromEmail": "admin@ladffa.com",
+    "fromName": "LADFFA Newsletter",
+    "useSsl": false,
+    "useTls": true
+  },
+  "logoUrl": "/club_logo/LADFFA",
+  "beats": [
+    {
+      "Beat_Name": "Dove Valley Top Beat",
+      "Beat_ID": "LADFFA-DOV-01",
+      "River": "Dove",
+      "Position": "1",
+      "Beat_Upstream": "///ilam.rock.pool",
+      "Beat_Downstream": "///dovedale.bridge.river",
+      "Beat_Description": "Fast pocket water with short glides and reliable summer evening rises.",
+      "Detailed_Description": "",
+      "Beat_Upstream_Latitude": "",
+      "Beat_Upstream_Longitude": "",
+      "Beat_Downstream_Latitude": "",
+      "Beat_Downstream_Longitude": "",
+      "Parking_Locations": [],
+      "Pools": [],
+      "Waypoints": []
+    },
+    {
+      "Beat_Name": "Dove Valley Lower Beat",
+      "Beat_ID": "LADFFA-DOV-02",
+      "River": "Dove",
+      "Position": "2",
+      "Beat_Upstream": "///dovedale.bridge.river",
+      "Beat_Downstream": "///thorpe.weir.river",
+      "Beat_Description": "Longer pools and broken runs with strong grayling potential in colder months.",
+      "Detailed_Description": "",
+      "Beat_Upstream_Latitude": "",
+      "Beat_Upstream_Longitude": "",
+      "Beat_Downstream_Latitude": "",
+      "Beat_Downstream_Longitude": "",
+      "Parking_Locations": [],
+      "Pools": [],
+      "Waypoints": []
+    }
+  ],
+  "officers": [
+    {
+      "name": "Rob Scoffin",
+      "role": "Treasurer",
+      "email": "rob@scoffin.com",
+      "mobile": "07717 154707"
+    }
+  ],
+  "whatsappGroups": "",
+  "socialMedia": [
+    {
+      "url": "https://socials.com/ladffa/",
+      "platform": "socials"
+    }
+  ]
+}
