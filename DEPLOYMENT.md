@@ -247,7 +247,60 @@ Some deployments may include Alembic database schema migrations:
 8. ❌ **Don't skip database migrations** — they're essential for feature compatibility
 9. ❌ **Don't modify the working directory Caddyfile** — always update the versioned `Caddyfile.prod` or `Caddyfile.dev` files
 
+### Specialized / Single-Club Deployments
+
+For multi-version deployments where different clubs need unique codebases, use **Option 3: Config-as-Code Separation**.
+
+**Concept:**
+
+- Load clubs configuration from an external file path (environment variable)
+- Maintain a custom branch (e.g., `ctc-production`) with specialized themes/configs
+- Merge core code updates from `development`/`production` without config conflicts
+
+**Implementation:**
+
+The backend respects `HLAS_CLUBS_CONFIG_PATH` environment variable to load clubs config from anywhere:
+
+```python
+# backend/app.py
+CLUBS_CONFIG_PATH = os.getenv('HLAS_CLUBS_CONFIG_PATH', os.path.join(APP_DATA_DIR, 'clubs.config.json'))
+```
+
+**Example: Cambridge Trout Club (CTC)**
+
+The `ctc-production` branch demonstrates this approach:
+
+```bash
+# VPS setup
+cd /opt/hlas
+git checkout ctc-production
+
+# Create external config (not in git)
+cp clubs.config.ctc.example.json clubs.config.ctc.json
+# Edit to match your CTC setup
+
+# Set environment variable in .env.ctc
+export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
+
+# Deploy as usual
+./hlas_build.sh --target ctc-production
+```
+
+**Benefits:**
+
+- ✅ Core code updates merge cleanly (no config conflicts)
+- ✅ Club-specific configs in external files (not git-managed or ignored)
+- ✅ Backward compatible (defaults to `backend/clubs.config.json`)
+- ✅ Supports theme customizations, feature flags, SMTP settings on the branch
+
+**See Also:**
+
+- [CTC_SETUP.md](CTC_SETUP.md) — Detailed CTC-production branch maintenance guide
+- `.env.ctc.example` — Environment template with `HLAS_CLUBS_CONFIG_PATH`
+- `clubs.config.ctc.example.json` — Example single-club config
+
 ---
+
 
 ## Backend Changes
 
