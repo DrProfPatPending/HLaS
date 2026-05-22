@@ -147,7 +147,7 @@ APP_DATA_DIR = os.getenv('HLAS_DATA_DIR', DB_DIR)
 
 
 SERVER_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'server.config.json')
-CLUBS_CONFIG_PATH = os.path.join(APP_DATA_DIR, 'clubs.config.json')
+CLUBS_CONFIG_PATH = os.getenv('HLAS_CLUBS_CONFIG_PATH', os.path.join(APP_DATA_DIR, 'clubs.config.json'))
 CLUB_LOGOS_DIR = os.path.join(APP_DATA_DIR, 'club_logos')
 CLUB_DB_TEMPLATE_PATH = os.path.join(DB_DIR, 'template.db')
 
@@ -229,9 +229,11 @@ def _load_clubs_config_from_json():
     default_clubs = _default_clubs_config()
 
     if not os.path.exists(CLUBS_CONFIG_PATH):
+        app.logger.info(f'Clubs config file not found at {CLUBS_CONFIG_PATH}, using defaults')
         return default_clubs
 
     try:
+        app.logger.info(f'Loading clubs config from {CLUBS_CONFIG_PATH}')
         with open(CLUBS_CONFIG_PATH, 'r', encoding='utf-8') as config_file:
             loaded_config = json.load(config_file)
     except (OSError, json.JSONDecodeError):
