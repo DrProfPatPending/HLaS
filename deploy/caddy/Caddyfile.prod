@@ -1,4 +1,4 @@
-cambridgetroutclub.org {
+anglerconnect.cloud {
     encode zstd gzip
 
     handle_path /api/* {
@@ -10,7 +10,7 @@ cambridgetroutclub.org {
     }
 }
 
-wordpress.cambridgetroutclub.org {
+wordpress.anglerconnect.cloud {
     encode zstd gzip
 
     reverse_proxy wordpress-web:80
