@@ -100,6 +100,15 @@ while (($#)); do
     esac
 done
 
+if command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+else
+    echo "✗ ERROR: Neither 'python' nor 'python3' was found in PATH" >&2
+    exit 1
+fi
+
 run_step() {
     local description="$1"
     shift
@@ -203,7 +212,7 @@ echo "Validating club source manifest"
 if make -n clubs-check >/dev/null 2>&1; then
     run_step "  Running make clubs-check..." make clubs-check
 elif [ -f "backend/build_clubs_config.py" ]; then
-    run_step "  Running python backend/build_clubs_config.py --check..." python backend/build_clubs_config.py --check
+    run_step "  Running $PYTHON_BIN backend/build_clubs_config.py --check..." "$PYTHON_BIN" backend/build_clubs_config.py --check
 else
     echo "⚠ clubs-check skipped: split config tooling is not present on branch '$BRANCH_NAME'"
 fi
