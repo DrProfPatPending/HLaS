@@ -39,7 +39,7 @@ DOMAIN="$(read_env_var DOMAIN)"
 POSTGRES_USER="$(read_env_var POSTGRES_USER)"
 WORDPRESS_DOMAIN="$(read_env_var WORDPRESS_DOMAIN)"
 
-DOMAIN="${DOMAIN:-cambridgetroutclub.org}"
+DOMAIN="${DOMAIN:-anglerconnect.cloud}"
 POSTGRES_USER="${POSTGRES_USER:-hlas}"
 WORDPRESS_DOMAIN="${WORDPRESS_DOMAIN:-wordpress.$DOMAIN}"
 
