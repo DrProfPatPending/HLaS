@@ -1,0 +1,36 @@
+{
+  "clubs": [
+    {
+      "id": "7aa25f3f-0c3b-44c4-b7d6-5e87d8a1f8c3",
+      "shortName": "CTC",
+      "displayName": "Cambridge Trout Club",
+      "description": "Cambridge Trout Club - Established 1921",
+      "website": "https://cambridgetroutclub.org",
+      "adminEmail": "admin@cambridgetroutclub.org",
+      "memberDatabase": "ctc",
+      "memberLoginLink": "https://cambridgetroutclub.org/members",
+      "fishingBeatsLink": "https://cambridgetroutclub.org/beats",
+      "loginRedirectUrl": "https://cambridgetroutclub.org",
+      "miniSiteEnabled": true,
+      "miniSiteTitle": "Cambridge Trout Club",
+      "miniSiteTagline": "Fly fishing on the River Great Ouse",
+      "miniSiteDescription": "Cambridge Trout Club is a premier fly fishing club established in 1921, offering access to prime fishing beats on the River Great Ouse.",
+      "miniSiteHeroImagePath": "/club_backgrounds/CTC",
+      "customThemes": {
+        "primary": "#1B5E20",
+        "secondary": "#558B2F",
+        "accent": "#FFC107"
+      }
+    }
+  ],
+  "smtpSettings": [
+    {
+      "club": "CTC",
+      "server": "mail.cambridgetroutclub.org",
+      "port": 587,
+      "tls": true,
+      "username": "noreply@cambridgetroutclub.org",
+      "password": "YOUR_PASSWORD_HERE"
+    }
+  ]
+}
