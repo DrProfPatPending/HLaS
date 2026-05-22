@@ -1,6 +1,6 @@
 # Docker Compose override for the hlastest dev server.
 # Configures the dev server to use deploy/caddy/Caddyfile.dev (hlastest + tls internal)
-# instead of the production Caddyfile (cambridgetroutclub.org + Let's Encrypt).
+# instead of the production Caddyfile (anglerconnect.cloud + Let's Encrypt).
 #
 # After starting, run trust_caddy_mac.sh on your Mac once to install the
 # Caddy root CA into the macOS System Keychain.

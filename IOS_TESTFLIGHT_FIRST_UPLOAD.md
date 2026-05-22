@@ -68,7 +68,7 @@ npm ci
 
 Confirm production API URL in `frontend/.env.mobile-prod`:
 
-- `VITE_MOBILE_BACKEND_URL=https://cambridgetroutclub.org/api`
+- `VITE_MOBILE_BACKEND_URL=https://anglerconnect.cloud/api`
 
 Build and sync iOS project:
 
@@ -128,7 +128,7 @@ In App Store Connect:
 ## 7) Recommended first test pass on device
 
 - App launch and login/logout.
-- API connectivity to `https://cambridgetroutclub.org/api`.
+- API connectivity to `https://anglerconnect.cloud/api`.
 - Navigation and responsive layouts (including My Club sub-nav grid and Beat Details responsive table).
 - Critical workflows: Membership Admin, Beat Details map/details, Catch Return.
 

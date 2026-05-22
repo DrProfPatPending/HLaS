@@ -7,7 +7,7 @@ HLaS is a fishing club membership management application with separate member an
 HLaS uses a **two-branch deployment model** for stability and safe development:
 
 - **`main` branch** — Active development and testing. Local and staging environments.
-- **`production` branch** — Live codebase deployed on VPS (`cambridgetroutclub.org`). Only receives tested, verified changes.
+- **`production` branch** — Live codebase deployed on VPS (`anglerconnect.cloud`). Only receives tested, verified changes.
 
 **Workflow:**
 1. Develop and test thoroughly on `main`
@@ -747,7 +747,7 @@ The dev server uses `docker-compose.dev.yml` as a Compose override. This swaps t
 docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml up -d
 ```
 
-Without this override, Caddy will repeatedly fail ACME challenges for `cambridgetroutclub.org` and the HTTPS handshake for `hlastest` will be rejected entirely.
+Without this override, Caddy will repeatedly fail ACME challenges for `anglerconnect.cloud` and the HTTPS handshake for `hlastest` will be rejected entirely.
 
 Dev URLs: `https://hlastest` and `https://wordpress.hlastest`
 

@@ -10,7 +10,7 @@ HLaS uses **environment-specific Caddyfile configurations** to ensure SSL/TLS se
 **File:** `deploy/caddy/Caddyfile.prod`
 
 ```caddyfile
-cambridgetroutclub.org {
+anglerconnect.cloud {
     encode zstd gzip
 
     handle_path /api/* {
@@ -24,10 +24,10 @@ cambridgetroutclub.org {
 ```
 
 **Usage:**
-- Domain: `cambridgetroutclub.org` (production domain)
+- Domain: `anglerconnect.cloud` (production domain)
 - TLS: Let's Encrypt certificates (automatic, via ACME)
 - Deployed: Via `docker-compose.prod.yml` on VPS
-- Certificate storage: `/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/cambridgetroutclub.org/`
+- Certificate storage: `/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/anglerconnect.cloud/`
 
 ### Development Configuration
 **File:** `deploy/caddy/Caddyfile.dev`
@@ -119,7 +119,7 @@ docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml up -d caddy
    ```bash
    docker compose ps
    docker compose logs caddy | grep -i "domains\|cert"
-   curl -v https://cambridgetroutclub.org
+   curl -v https://anglerconnect.cloud
    ```
 
 ### Build Script Validation
@@ -198,7 +198,7 @@ If the production domain changes (e.g., migrating to a new domain):
 
 ### Production Certificates (Let's Encrypt)
 
-**Location:** `/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/cambridgetroutclub.org/`
+**Location:** `/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/anglerconnect.cloud/`
 
 **Automatic Renewal:**
 - Caddy checks certificates weekly
@@ -208,7 +208,7 @@ If the production domain changes (e.g., migrating to a new domain):
 **Verify Certificate Status:**
 ```bash
 cd /opt/hlas
-docker cp hlas-caddy-1:/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/cambridgetroutclub.org/cambridgetroutclub.org.crt /tmp/cert.crt
+docker cp hlas-caddy-1:/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/anglerconnect.cloud/anglerconnect.cloud.crt /tmp/cert.crt
 openssl x509 -in /tmp/cert.crt -dates -noout
 openssl x509 -in /tmp/cert.crt -subject -noout
 ```

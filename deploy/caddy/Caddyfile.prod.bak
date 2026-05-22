@@ -1,4 +1,4 @@
-cambridgetroutclub.org {
+anglerconnect.cloud {
     encode zstd gzip
 
     handle_path /api/* {
