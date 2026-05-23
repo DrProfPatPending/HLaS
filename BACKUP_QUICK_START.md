@@ -54,6 +54,19 @@ python3 backend/backup_cli.py status
 
 **✓ Backup system is now ready!**
 
+### Deployment Script Reference
+
+If you are rebuilding/deploying with `./hlas_build.sh`, note these CLI pairs:
+
+- `--clean` / `-c` enables post-build Docker prune
+- `--noclean` / `--no-clean` / `-C` explicitly disables post-build prune
+- `--verbose` / `-v` enables command output
+- `--quiet` / `-q` and `--noverbose` / `--no-verbose` / `-V` suppress command output
+
+The script uses **last flag wins** semantics (for example, `--clean -C` ends with no clean).
+
+Canonical reference for all current `hlas_build.sh` options: see [DEPLOYMENT.md](DEPLOYMENT.md) (Deployment Scripts options table).
+
 ---
 
 ## Enable Cloud Storage (Optional)

@@ -152,8 +152,10 @@ Supports a rich set of options for flexible deployment and iterative development
 | `--quick` | `-Q` | | Omit `--no-cache` — reuse Docker layer cache for faster rebuilds |
 | `--nohealth` | `-n` | | Skip post-start health checks |
 | `--clean` | `-c` | | Run `docker system prune -f` after a successful build |
+| `--noclean`, `--no-clean` | `-C` | ✓ | Disable Docker prune step (same effective default as not passing `--clean`) |
 | `--verbose` | `-v` | | Show full command output |
 | `--quiet` | `-q` | ✓ | Suppress command output (default) |
+| `--noverbose`, `--no-verbose` | `-V` | ✓ | Alias for quiet/no-verbose output (same behavior as `--quiet`) |
 
 Examples:
 ```bash
@@ -171,6 +173,9 @@ Examples:
 
 # Verbose production deploy
 ./hlas_build.sh --target production --verbose
+
+# Explicitly disable clean / verbose if an earlier flag enabled them (last flag wins)
+./hlas_build.sh --target production --clean -C --verbose -V
 ```
 
 The script also:
