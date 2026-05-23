@@ -1,5 +1,16 @@
 <template>
   <div class="login-container">
+    <template v-if="isUnknownClub">
+      <h2>Club not recognised</h2>
+      <p>
+        The specific club you requested <strong>{{ unknownClubCode }}</strong> is not recognised on this server,
+        please either correct your URL, or click on the link below to go to the main login page for the application.
+      </p>
+      <p>
+        <a :href="mainLoginUrl">{{ mainLoginUrl }}</a>
+      </p>
+    </template>
+    <template v-else>
     <h2>{{ loginHeading }}</h2>
     <div v-if="selectedClubLogoUrl" class="login-club-logo-wrap">
       <img
@@ -46,10 +57,12 @@
       <a href="/admin.html">Admin login</a>
     </div>
     <div v-if="loginError" class="login-error">{{ loginError }}</div>
+    </template>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
 import { store, login, API_BASE_URL } from '../store.js';
 import AppButton from './ui/AppButton.vue';
 
@@ -61,6 +74,9 @@ export default {
   data() {
     return {
       isClubSpecificUrl: false,
+      isUnknownClub: false,
+      unknownClubCode: '',
+      mainLoginUrl: `${window.location.origin}/`,
       rememberMe: false,
     };
   },
@@ -100,8 +116,8 @@ export default {
       return `${API_BASE_URL}${logoUrl.startsWith('/') ? '' : '/'}${logoUrl}`;
     },
   },
-  mounted() {
-    this.checkIfClubSpecificUrl();
+  async mounted() {
+    await this.checkIfClubSpecificUrl();
     // Prefill username if remembered
     const remembered = window.localStorage.getItem('hlas.rememberedUsername');
     if (remembered) {
@@ -119,12 +135,41 @@ export default {
       }
       login();
     },
-    checkIfClubSpecificUrl() {
+    findClubByCode(clubs, candidateCode) {
+      const target = String(candidateCode || '').trim();
+      if (!target) return null;
+      return (
+        clubs.find((club) => club?.shortName === target)
+        || clubs.find((club) => String(club?.shortName || '').toLowerCase() === target.toLowerCase())
+        || null
+      );
+    },
+    async checkIfClubSpecificUrl() {
       try {
         const match = String(window.location.pathname || '').match(/^\/clubs?\/([^/]+)/i);
         this.isClubSpecificUrl = !!match && !!match[1];
         if (match && match[1]) {
-          store.selectedClub = match[1];
+          const requestedClub = decodeURIComponent(match[1]).trim();
+          store.selectedClub = requestedClub;
+
+          try {
+            const clubsResponse = await axios.get(`${API_BASE_URL}/clubs`);
+            const clubs = Array.isArray(clubsResponse?.data?.clubs)
+              ? clubsResponse.data.clubs
+              : [];
+            const matchedClub = this.findClubByCode(clubs, requestedClub);
+
+            if (!matchedClub) {
+              this.isUnknownClub = true;
+              this.unknownClubCode = requestedClub || 'unknown';
+              document.title = 'HLaS - Club not recognised';
+              return;
+            }
+
+            store.selectedClub = matchedClub.shortName;
+          } catch (validationError) {
+            console.error('Error validating club code:', validationError);
+          }
         }
       } catch {
         this.isClubSpecificUrl = false;
@@ -161,6 +206,10 @@ export default {
 
 .login-error {
   color: var(--app-color-state-danger);
+}
+
+.login-container p {
+  margin-bottom: 12px;
 }
 
 .remember-me-row {
