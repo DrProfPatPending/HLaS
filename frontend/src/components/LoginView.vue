@@ -19,6 +19,14 @@
         class="login-club-logo"
       />
     </div>
+    <div
+      v-else-if="isResolvingClub && (isClubSpecificUrl || isClubPathCandidate)"
+      class="login-club-logo-wrap"
+    >
+      <div class="login-club-logo-placeholder" aria-hidden="true">
+        <div class="login-club-logo-skeleton" />
+      </div>
+    </div>
     <form @submit.prevent="login">
       <div v-if="!isClubSpecificUrl" class="form-field">
         <label for="club-select">Select Club:</label>
@@ -63,7 +71,7 @@
 
 <script>
 import axios from 'axios';
-import { store, login, API_BASE_URL } from '../store.js';
+import { store, login, API_BASE_URL, loadClubs } from '../store.js';
 import AppButton from './ui/AppButton.vue';
 
 export default {
@@ -77,6 +85,8 @@ export default {
       isUnknownClub: false,
       unknownClubCode: '',
       mainLoginUrl: `${window.location.origin}/`,
+      isResolvingClub: false,
+      isClubPathCandidate: false,
       rememberMe: false,
     };
   },
@@ -117,7 +127,22 @@ export default {
     },
   },
   async mounted() {
-    await this.checkIfClubSpecificUrl();
+    this.isClubPathCandidate = /^\/clubs?\/[^/]+/i.test(String(window.location.pathname || ''));
+    this.isResolvingClub = true;
+
+    try {
+      if (!Array.isArray(store.clubs) || store.clubs.length === 0) {
+        try {
+          await loadClubs();
+        } catch {
+        }
+      }
+
+      await this.checkIfClubSpecificUrl();
+    } finally {
+      this.isResolvingClub = false;
+    }
+
     // Prefill username if remembered
     const remembered = window.localStorage.getItem('hlas.rememberedUsername');
     if (remembered) {
@@ -188,6 +213,27 @@ export default {
 .login-club-logo {
   max-height: 72px;
   width: auto;
+}
+
+.login-club-logo-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  min-height: 72px;
+  padding: 8px 12px;
+  border: 1px solid var(--app-color-border-default);
+  border-radius: 4px;
+  background: var(--app-color-bg-subtle);
+}
+
+.login-club-logo-skeleton {
+  width: min(210px, 75vw);
+  max-width: 100%;
+  aspect-ratio: 3.6 / 1;
+  min-height: 48px;
+  border-radius: 4px;
+  background: var(--app-color-bg-muted);
 }
 
 .club-locked-info {

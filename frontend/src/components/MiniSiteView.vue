@@ -44,6 +44,68 @@ export default {
     const unknownClubCode = ref('');
     const mainLoginUrl = ref(`${window.location.origin}/`);
 
+    const getFaviconLinkElement = () => {
+      let link = document.getElementById('club-favicon-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.id = 'club-favicon-link';
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      return link;
+    };
+
+    const setAppFavicon = () => {
+      try {
+        const link = getFaviconLinkElement();
+        link.type = 'image/x-icon';
+        link.href = '/favicon.ico';
+      } catch {
+      }
+    };
+
+    const resolveClubLogoUrl = (clubShortName) => {
+      const normalizedClub = String(clubShortName || '').trim();
+      if (!normalizedClub) return '';
+
+      const apiBase = String(API_BASE_URL || '/api').trim() || '/api';
+      const absoluteApiBase = /^https?:\/\//i.test(apiBase)
+        ? apiBase
+        : `${window.location.origin}${apiBase.startsWith('/') ? '' : '/'}${apiBase}`;
+
+      return `${absoluteApiBase}/club_logo/${encodeURIComponent(normalizedClub)}`;
+    };
+
+    const canLoadImage = (url) => new Promise((resolve) => {
+      if (!url) {
+        resolve(false);
+        return;
+      }
+
+      const image = new Image();
+      image.onload = () => resolve(true);
+      image.onerror = () => resolve(false);
+      image.src = url;
+    });
+
+    const ensureClubOrAppFavicon = async (clubShortName) => {
+      const clubLogoUrl = resolveClubLogoUrl(clubShortName);
+      const hasClubLogo = await canLoadImage(clubLogoUrl);
+
+      if (!hasClubLogo) {
+        setAppFavicon();
+        return;
+      }
+
+      try {
+        const link = getFaviconLinkElement();
+        link.type = 'image/png';
+        link.href = clubLogoUrl;
+      } catch {
+        setAppFavicon();
+      }
+    };
+
     const findClubByCode = (clubs, candidateCode) => {
       const target = String(candidateCode || '').trim();
       if (!target) return null;
@@ -55,12 +117,15 @@ export default {
     };
 
     onMounted(async () => {
+      setAppFavicon();
+
       // Parse the URL to extract club code and page type
       const pathArray = window.location.pathname.split('/');
       // Expected format: /club/{clubCode}/ or /club/{clubCode}/login/
 
       if (pathArray.length >= 3 && pathArray[1] === 'club') {
         clubCode.value = decodeURIComponent(pathArray[2] || '').trim();
+        await ensureClubOrAppFavicon(clubCode.value);
 
         try {
           const clubsResponse = await axios.get(`${API_BASE_URL}/clubs`);
@@ -77,6 +142,7 @@ export default {
           }
 
           clubCode.value = matchedClub.shortName;
+          await ensureClubOrAppFavicon(clubCode.value);
         } catch (error) {
           console.error('Error validating club code:', error);
         }
