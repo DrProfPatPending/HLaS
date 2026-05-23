@@ -7,6 +7,11 @@ This guide also reflects later operational changes, including PostgreSQL-backed 
 It also now covers the Beat Details member page, dedicated field-order config for that view, and the redesigned member home dashboard.
 It now also covers PostgreSQL-backed club document storage and Home dashboard document visibility.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ---
 
 ## Deployment Strategy & Branch Management (May 2026)

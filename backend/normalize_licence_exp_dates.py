@@ -170,7 +170,7 @@ def normalize_licence_exp(raw_value: str) -> NormalizeResult:
             return NormalizeResult(f"{y}-{m}-01", "month-two-digit-year")
         return NormalizeResult(None, "invalid month-two-digit-year")
 
-    return NormalizeResult(None, "unrecognized format")
+    return NormalizeResult(None, "unrecognised format")
 
 
 def normalize_postgres(database_url: str, apply_changes: bool, club_short_name: Optional[str]) -> None:

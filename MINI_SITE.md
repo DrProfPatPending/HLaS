@@ -12,6 +12,11 @@ Club Mini Sites are optional, public-facing marketing websites for individual cl
 - **Future-extensible** - Ready for galleries, event calendars, contact forms
 - **API-accessible** - Public endpoint for external integrations
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ---
 
 ## Quick Start

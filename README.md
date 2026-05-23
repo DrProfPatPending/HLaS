@@ -1262,6 +1262,10 @@ After import, fully restart Edge/Chrome and test:
 - Password hashes are automatically generated during CSV import
 - Migration script available: `backend/migrate_passwords.py` to hash existing plain-text passwords
 
+### Language Convention
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ---
 
 ## Documentation

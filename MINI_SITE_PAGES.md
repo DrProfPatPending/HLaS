@@ -377,7 +377,7 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
    - Open Graph data
    - Sitemap generation
 
-7. **Content Localization**
+7. **Content Localisation**
    - Multi-language support
    - Region-specific content
 
