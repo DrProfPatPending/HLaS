@@ -2,6 +2,11 @@
 
 A comprehensive backup solution for the HLaS system with support for database snapshots, filesystem backups, and cloud storage integration.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Overview
 
 The backup system provides:

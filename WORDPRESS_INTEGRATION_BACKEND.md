@@ -1,5 +1,10 @@
 # HLaS WordPress Integration - Backend API Documentation
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Phase 1: Backend Preparation ✓ COMPLETE
 
 ### New Headless API Endpoints

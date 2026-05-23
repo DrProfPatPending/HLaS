@@ -3,6 +3,11 @@
 # This file shows different timer configurations for various backup scenarios.
 # Choose the one that matches your needs and adapt to your environment.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 # ============================================================================
 # SCENARIO 1: Daily Full Backup
 # ============================================================================

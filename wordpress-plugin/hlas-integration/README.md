@@ -2,6 +2,11 @@
 
 A WordPress plugin that integrates HLaS (Hook Line and Sinker) with your WordPress site, allowing you to embed beat details, catch returns, and member-only content.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Features
 
 - **Beat Details**: Display fishing beat information from HLaS with customizable layouts

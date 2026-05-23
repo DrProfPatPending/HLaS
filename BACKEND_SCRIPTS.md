@@ -2,6 +2,11 @@
 
 This guide explains how to run backend development scripts locally or via Docker.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Quick Start
 
 ### Option 1: Local venv (Fastest - Recommended for development)

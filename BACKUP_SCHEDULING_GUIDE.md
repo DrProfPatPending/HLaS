@@ -2,6 +2,11 @@
 
 This guide explains how to set up automated backup scheduling on Linux servers using either **cron** (traditional) or **systemd timers** (modern approach).
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Quick Summary
 
 | Method | Best For | Complexity | Reliability |

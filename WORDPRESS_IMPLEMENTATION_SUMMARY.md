@@ -1,5 +1,10 @@
 # WordPress Integration Implementation - Executive Summary
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Completion Status: ✓ Phase 1 & Phase 2 Complete
 
 Date: May 14, 2026  

@@ -1,5 +1,10 @@
 # HLaS Backup System - Quick Start Guide
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## 5-Minute Setup
 
 ### Step 1: Install Python Dependencies

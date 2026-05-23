@@ -1,5 +1,10 @@
 # HLaS WordPress Integration - Complete Implementation Guide
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Project Summary
 
 This document outlines the complete implementation of HLaS integration with WordPress, accomplished in two phases:
