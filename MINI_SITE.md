@@ -184,6 +184,14 @@ MiniSiteView.vue (Router/main entry)
 - `/club/{clubCode}/` → Loads `MiniSiteView`
 - All other routes → Loads main `App` (authenticated portal)
 
+### Browser Tab Icon (Favicon) Behaviour
+
+For `/club/{clubCode}/...` routes (including `/club/{clubCode}/login/`), favicon handling is managed in `MiniSiteView`:
+
+- Tries to use the club logo endpoint first: `/api/club_logo/{clubCode}`
+- Falls back automatically to application default favicon: `/favicon.ico`
+- Works with PNG club logos in modern browsers; a separate per-club `favicon.ico` file is not required
+
 ---
 
 ## Admin UI Integration
