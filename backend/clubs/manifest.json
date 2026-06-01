@@ -6,21 +6,6 @@
       "shortName": "CTC",
       "path": "CTC/club.json",
       "enabled": true
-    },
-    {
-      "shortName": "GAAFFS",
-      "path": "GAAFFS/club.json",
-      "enabled": true
-    },
-    {
-      "shortName": "LADFFA",
-      "path": "LADFFA/club.json",
-      "enabled": true
-    },
-    {
-      "shortName": "TEST",
-      "path": "TEST/club.json",
-      "enabled": true
     }
   ]
 }
