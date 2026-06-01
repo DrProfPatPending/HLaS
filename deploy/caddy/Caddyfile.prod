@@ -1,6 +1,9 @@
 cambridgetroutclub.org {
 	encode zstd gzip
 
+	@root path /
+	redir @root /club/CTC/ 302
+
 	handle_path /api/* {
 		reverse_proxy backend:5050
 	}
