@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-TARGET="${TARGET:-production}"
+TARGET="${TARGET:-ctc-production}"
 DIRECTORY="${DIRECTORY:-/opt/hlas}"
 VERBOSE=0
 USE_REMOTE=1
@@ -14,8 +14,8 @@ usage() {
 Usage: $0 [OPTIONS]
 
 Options:
-  -t, --target <target>     Deployment target/branch (default: production)
-                            Examples: production, development, main
+  -t, --target <target>     Deployment target/branch (default: ctc-production)
+                            Examples: ctc-production, production, development, main
   -d, --directory <dir>     Deployment directory (default: /opt/hlas)
                             Example: /opt/HLaS
     -l, --local               Build from local working tree (skip git reset)
@@ -146,8 +146,8 @@ echo "Rebuilding latest HLaS from Github sources (directory: $DIRECTORY, target:
 unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB HLAS_USE_POSTGRES_READS LOG_LEVEL
 
 case "$TARGET" in
-    production|prod)
-        BRANCH_NAME="production"
+    production|prod|ctc-production)
+        BRANCH_NAME="$TARGET"
         ENV_FILE=".env.prod"
         COMPOSE_FILES=("-f" "docker-compose.prod.yml")
         CADDYFILE="deploy/caddy/Caddyfile.prod"
