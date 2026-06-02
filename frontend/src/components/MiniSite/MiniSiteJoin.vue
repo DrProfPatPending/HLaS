@@ -11,45 +11,44 @@
         <div v-else class="join-default">
           <h2>Become a Member</h2>
           <p>
-            Are you interested in joining {{ clubName }}? We welcome fly fishing enthusiasts of all skill
-            levels.
+            Are you interested in joining {{ clubName }}? Our membership is limited by our Constitution as the River Cam is a small stream in the area we fish, and therefore can only support a certain level of angling pressure. Nonetheless, membership opportunities do arise, and we are happy to place people onto the waiting list in anticipation of a spot opening up in the future.
           </p>
 
           <h3>Membership Benefits</h3>
           <div class="benefits-grid">
             <div class="benefit-item">
               <div class="benefit-icon">🎣</div>
-              <h4>Exclusive Water Access</h4>
-              <p>Fish our premium beats throughout the season</p>
+              <h4>Exclusive Access</h4>
+              <p>CTC's waters are member's only fishing, although we do allow members a limited number of guest tickets each season, so it is possible to try out a day on the river before committing to membership</p>
             </div>
             <div class="benefit-item">
               <div class="benefit-icon">👨‍🏫</div>
-              <h4>Expert Tuition</h4>
-              <p>Regular coaching and mentoring opportunities</p>
+              <h4>Friendly Guidance</h4>
+              <p>We will try whenever possible to provie guidance and mentoring opportunities to new members to the club</p>
             </div>
             <div class="benefit-item">
               <div class="benefit-icon">👥</div>
               <h4>Community</h4>
-              <p>Connect with fellow passionate anglers</p>
+              <p>Connect with fellow passionate fly anglers over an evening on the river, or a pint at the Red Lion!</p>
             </div>
             <div class="benefit-item">
               <div class="benefit-icon">📅</div>
-              <h4>Social Events</h4>
-              <p>Participate in club outings and gatherings</p>
+              <h4>Work Parties</h4>
+              <p>We run regular work parties on the river and encourage all members to become actively involved in the conservation of our waters and fish</p>
             </div>
           </div>
 
           <h3>How to Apply</h3>
           <ol class="join-steps">
-            <li>Complete our membership application form</li>
-            <li>Provide references from existing members</li>
-            <li>Meet with the membership committee</li>
+            <li>Send us a message via the 'Contact' page</li>
+            <li>Provide references from an existing member</li>
+            <li>Meet with representatives of the committee</li>
             <li>Be approved and pay your membership fee</li>
           </ol>
 
           <div class="join-cta">
-            <p>Ready to join? Contact us or complete an application:</p>
-            <a href="#" class="join-button">Start Application</a>
+            <p>Ready to join? Contact us :</p>
+            <a :href="contactUrl" class="join-button">Contact Page</a>
           </div>
         </div>
       </div>
@@ -65,6 +64,10 @@ export default {
       type: String,
       required: true,
     },
+    clubCode: {
+      type: String,
+      required: true,
+    },
     content: {
       type: String,
       default: '',
@@ -72,6 +75,11 @@ export default {
     subheading: {
       type: String,
       default: '',
+    },
+  },
+  computed: {
+    contactUrl() {
+      return `/club/${encodeURIComponent(this.clubCode)}/contact/`;
     },
   },
 };
