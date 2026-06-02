@@ -846,6 +846,8 @@ export function login() {
 }
 
 export function logout() {
+  const logoutClub = String(store.loggedInClub || store.selectedClub || DEFAULT_LOGIN_CLUB).trim() || DEFAULT_LOGIN_CLUB;
+
   if (store.memberAuthToken) {
     axios
       .post(
@@ -874,6 +876,8 @@ export function logout() {
   store.lookupNumber = '';
   store.lookupResult = null;
   store.lookupError = '';
+
+  window.location.href = `/club/${encodeURIComponent(logoutClub)}/`;
 }
 
 // ---------------------------------------------------------------------------
