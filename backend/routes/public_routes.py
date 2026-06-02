@@ -9,7 +9,7 @@ from urllib.request import urlopen
 from flask import Blueprint, Response, current_app, jsonify, request, send_file, send_from_directory
 from sqlalchemy import and_, select
 
-from db_models import club_logos, club_backgrounds
+from db_models import club_logos, club_backgrounds, club_heroes
 from routes.app_settings_routes import load_app_settings_config
 from routes.field_order_routes import load_field_order_config
 
@@ -406,5 +406,57 @@ def create_public_blueprint(deps):
         
         logger.warning(f"Background not found for club: {short_name}")
         return jsonify({'error': 'Background not found'}), 404
+
+    @bp.route('/club_hero/<short_name>', methods=['GET'])
+    def club_hero(short_name):
+        import logging
+        logger = logging.getLogger("club_hero")
+        logger.debug(f"Request for club hero: {short_name}")
+
+        # Fallback path for filesystem hero images
+        logo_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'club_logos')
+        if not os.path.exists(logo_dir):
+            logo_dir = os.path.join(os.path.dirname(__file__), '..', 'club_logos')
+        if not os.path.exists(logo_dir):
+            logo_dir = '/app/club_logos'
+
+        hero_path = os.path.join(logo_dir, f'{short_name}_hero.png')
+
+        # Try database first, then filesystem
+        db_engine = deps.get('db_engine')
+        logger.debug(f"db_engine from deps: {db_engine}")
+        if db_engine is None:
+            db_engine = getattr(current_app, 'db_engine', None)
+            logger.debug(f"db_engine from current_app: {db_engine}")
+
+        if db_engine is not None:
+            try:
+                with db_engine.connect() as conn:
+                    stmt = select(
+                        club_heroes.c.image_data,
+                        club_heroes.c.mime_type
+                    ).where(club_heroes.c.club_short_name == short_name)
+                    logger.debug(f"SQL statement: {stmt}")
+                    result = conn.execute(stmt).first()
+                    logger.debug(f"Query result: {result}")
+                    if result:
+                        image_data, mime_type = result
+                        logger.debug(f"image_data type: {type(image_data)}, mime_type: {mime_type}")
+                        return send_file(BytesIO(image_data), mimetype=mime_type)
+            except Exception as e:
+                logger.debug(f"Database lookup failed, trying filesystem: {e}")
+
+        if os.path.isfile(hero_path):
+            try:
+                with open(hero_path, 'rb') as f:
+                    image_data = f.read()
+                mime_type = 'image/png'
+                logger.debug(f"Loaded hero from filesystem: {hero_path}")
+                return send_file(BytesIO(image_data), mimetype=mime_type)
+            except Exception as e:
+                logger.error(f"Error reading hero file: {e}")
+
+        logger.warning(f"Hero not found for club: {short_name}")
+        return jsonify({'error': 'Hero not found'}), 404
 
     return bp

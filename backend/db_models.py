@@ -292,6 +292,16 @@ club_backgrounds = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
 
+club_heroes = Table(
+    "club_heroes",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("club_short_name", String(32), unique=True, nullable=False),
+    Column("image_data", LargeBinary, nullable=False),
+    Column("mime_type", String(64), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
 club_mini_sites = Table(
     "club_mini_sites",
     metadata,

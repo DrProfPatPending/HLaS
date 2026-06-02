@@ -405,10 +405,12 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
    - `GET /mini-site?club=<SHORT_NAME>` for loading club mini site configuration (authenticated, requires `club.read`)
    - `PUT /mini-site?club=<SHORT_NAME>` for saving mini site configuration (Club Admin+ via `club.update`)
    - `GET /club/<club_short_name>/mini-site` public endpoint (no auth) for fetching enabled mini site config
+   - `GET /club_hero/<club_short_name>` public endpoint (no auth) for mini-site hero image bytes
    - POST/GET operations return: `enabled`, `title`, `tagline`, `description`, `hero_image_url`, `pages`, `social_links`
 
 - **Database Migration:**
    - Alembic migration `20260504_0001_club_mini_sites_table.py` creates `club_mini_sites` table
+   - Alembic migration `20260602_0001_club_heroes_table.py` creates `club_heroes` table for hero image binary storage
    - Table schema: `club_id` (unique FK to clubs), `enabled`, `title`, `tagline`, `description`, `hero_image_url`, `pages` (JSONB), `social_links` (JSONB)
    - Indexed on `club_id` (unique) and `enabled` for fast lookups
 
@@ -466,6 +468,8 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
    - Admin UI in Club Settings to enable/disable and configure mini site (title, tagline, description, hero image)
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration
    - PostgreSQL table: `club_mini_sites` with per-club settings (indexed on `club_id` and `enabled`)
+   - PostgreSQL table: `club_heroes` stores mini-site hero images by `club_short_name` (`BYTEA`)
+   - Hero image endpoint uses DB-first retrieval with filesystem fallback to `backend/club_logos/<CLUB>_hero.png`
 
 - **Frontend build environment:**
    - frontend package metadata now targets npm `11.12.1`
@@ -861,7 +865,15 @@ Optional public-facing marketing websites for each club:
    - Access via Club Settings page (member UI → Club Settings)
    - Club Admin+ users can enable/disable and configure per-club mini site
    - Configurable fields: `enabled`, `title`, `tagline`, `description`, `hero_image_url`
-   - Store images externally (e.g., CDN, S3) and reference via URL
+   - Hero image can be external URL or internal route (`/api/club_hero/<SHORT_NAME>`)
+   - Static fallback filename for hero assets: `backend/club_logos/<CLUB>_hero.png`
+   - Batch import helper: `python3 backend/import_club_heroes_to_postgres.py`
+
+- **Hero Image Storage (PostgreSQL + Fallback):**
+   - DB table: `club_heroes` (`club_short_name`, `image_data`, `mime_type`, `updated_at`)
+   - Public route: `GET /api/club_hero/<SHORT_NAME>` serves hero image bytes
+   - Resolution order: Postgres row first, then filesystem fallback (`<CLUB>_hero.png`)
+   - Example (CTC): `hero_image_url` set to `/api/club_hero/CTC`
 
 - **Public Access:**
    - Desktop view: Full mini site at `/club/{clubCode}/`

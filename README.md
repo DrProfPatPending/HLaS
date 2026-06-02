@@ -87,6 +87,13 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
    - Club background images: PostgreSQL-backed storage and admin upload capability
    - Applied consistent compact styling across all pages (Home, About, Join, Our Waters, Contact)
 
+- **CTC Mini-Site Hero Image Storage (June 2026):**
+   - Hero images now support PostgreSQL-backed storage via `club_heroes` (with filesystem fallback)
+   - Public endpoint: `/api/club_hero/<SHORT_NAME>` (e.g., `/api/club_hero/CTC`)
+   - Fallback file naming convention: `backend/club_logos/<CLUB>_hero.png` (e.g., `backend/club_logos/CTC_hero.png`)
+   - CTC mini-site now points `hero_image_url` to `/api/club_hero/CTC`
+   - Import helper script added: `backend/import_club_heroes_to_postgres.py`
+
 - **Club Mini Sites:** Optional public-facing marketing websites for each club.
    - Per-club configuration (enabled/disabled, title, tagline, description, hero image).
    - Desktop: Full mini site with navigation, hero section, featured content, social links.
@@ -95,6 +102,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
    - Admin UI in Club Settings to manage mini site configuration.
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration.
    - Club background image storage in PostgreSQL with admin upload capability.
+   - Club hero image storage in PostgreSQL via `/api/club_hero/<club>` with filesystem fallback to `<CLUB>_hero.png`.
    - See **Comprehensive backup & snapshot system:** Database and file backups for disaster recovery.
    - Full snapshots combine database (`pg_dump`) and file system backups into versioned archives.
    - Upload snapshots to AWS S3, MinIO, DigitalOcean Spaces, or any S3-compatible storage.

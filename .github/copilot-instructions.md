@@ -19,7 +19,14 @@
 	Keep this file free of stale comment blocks.
 
 ## Last Documentation Update
-May 21, 2026 — updated for:
+June 2, 2026 — updated for:
+- **Mini-Site Hero Image PostgreSQL Storage (June 2, 2026):**
+  - New `club_heroes` table (migration `20260602_0001`) for hero image binary storage
+  - New public endpoint `/api/club_hero/<short_name>` with DB-first + filesystem fallback
+  - Hero fallback filename convention: `backend/club_logos/<CLUB>_hero.png` (e.g., `CTC_hero.png`)
+  - New importer script: `backend/import_club_heroes_to_postgres.py`
+  - CTC mini-site `hero_image_url` set to `/api/club_hero/CTC`
+- May 21, 2026 — updated for:
 - **Build Script Enhancements (May 21, 2026):**
   - `--full` / `-f` (default): `--no-cache` full Docker layer rebuild
   - `--quick` / `-Q`: use Docker layer cache for fast iterative dev rebuilds
