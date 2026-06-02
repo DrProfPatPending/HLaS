@@ -9,7 +9,7 @@
       />
     </div>
     <form @submit.prevent="login">
-      <div v-if="!isClubSpecificUrl" class="form-field">
+      <div v-if="showClubDropdown" class="form-field">
         <label for="club-select">Select Club:</label>
         <select id="club-select" v-model="selectedClub" class="club-select">
           <option
@@ -23,7 +23,7 @@
         </select>
       </div>
       <div v-else class="form-field club-locked-info">
-        <label>Club:</label>
+        <label>Selected Club:</label>
         <div class="club-name-display">{{ selectedClubLabel }}</div>
       </div>
       <div class="form-field">
@@ -67,6 +67,9 @@ export default {
   computed: {
     clubs: () => store.clubs,
     loginError: () => store.loginError,
+    showClubDropdown() {
+      return !this.isClubSpecificUrl && this.clubs.length > 1;
+    },
     selectedClub: {
       get: () => store.selectedClub,
       set: v => { store.selectedClub = v; },
