@@ -149,6 +149,7 @@ Supports a rich set of options for flexible deployment and iterative development
 | `--clean` | `-c` | | Run `docker system prune -f` after a successful build |
 | `--verbose` | `-v` | | Show full command output |
 | `--quiet` | `-q` | ✓ | Suppress command output (default) |
+| `--log-file <file>` |  | | Write full stdout/stderr output to the specified file |
 
 Examples:
 ```bash
