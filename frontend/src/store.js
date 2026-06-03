@@ -831,7 +831,7 @@ export function login() {
         // Redirect after successful login
         setTimeout(() => {
           // Always redirect to main app dashboard, not back to mini site
-          window.location.href = '/';
+          window.location.href = '/index.html';
         }, 100);
       } else {
         store.loginError = res.data.error || 'Login failed';

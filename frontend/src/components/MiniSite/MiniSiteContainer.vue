@@ -130,9 +130,15 @@ export default {
           }
         }
       } catch (error) {
+        const status = error?.response?.status;
+        if (status === 404) {
+          // Club no longer exists — redirect to main site
+          window.location.replace('/');
+          return;
+        }
         console.error('Error fetching mini site config:', error);
         loadingMessage.value = 'Mini site not available for this club.';
-        miniSiteData.value = { enabled: false };
+        miniSiteData.value = null;
       }
     });
 

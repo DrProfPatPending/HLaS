@@ -156,6 +156,7 @@ Supports a rich set of options for flexible deployment and iterative development
 | `--verbose` | `-v` | | Show full command output |
 | `--quiet` | `-q` | ✓ | Suppress command output (default) |
 | `--noverbose`, `--no-verbose` | `-V` | ✓ | Alias for quiet/no-verbose output (same behavior as `--quiet`) |
+| `--log-file <file>` |  | | Write full stdout/stderr output to the specified file |
 
 Examples:
 ```bash
