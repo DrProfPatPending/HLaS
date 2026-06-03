@@ -28,7 +28,7 @@
 
     <section class="home-welcome">
       <div class="welcome-container">
-        <h2>{{ clubName }}</h2>
+        <!-- <h2>{{ clubName }}</h2> Temporarily commented out -->
         <p v-if="description" class="welcome-text">{{ description }}</p>
         <p v-else class="welcome-text">
           We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers. We do this through maintaining a small and like-minded membership, and by a program of careful river management with a long-term plan to ensure the sustainability of the river for current and future generations of anglers.
@@ -219,7 +219,7 @@ export default {
 
 .background-image {
   width: 100%;
-  max-width: 1200px;
+  max-width: 800px;
   display: block;
   margin: 0 auto;
   border-radius: 8px;

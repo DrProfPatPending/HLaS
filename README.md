@@ -42,6 +42,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
    - `--clean` / `-c`: runs `docker system prune -f` after a successful build to remove dangling images; only fires on success
    - `--nohealth` / `-n`: skips the post-start health checks; useful for CI or restricted network environments
    - `--local` / `-l`: skip `git fetch/reset` and build from the local working tree
+   - `--log-file <file>`: write the full build transcript, including stdout and stderr, to a file even when `--quiet` is used
    - `--target` / `-t`, `--directory` / `-d`, `--verbose` / `-v`, `--quiet` / `-q` also available
    - See DEPLOYMENT.md for a full options table and examples
 
