@@ -207,8 +207,15 @@ log "Rebuilding latest HLaS from Github sources (directory: $DIRECTORY, target: 
 unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB HLAS_USE_POSTGRES_READS LOG_LEVEL
 
 case "$TARGET" in
-    production|prod|ctc-production)
-        BRANCH_NAME="$TARGET"
+    production|prod)
+        BRANCH_NAME="production"
+        ENV_FILE=".env.prod"
+        COMPOSE_FILES=("-f" "docker-compose.prod.yml")
+        CADDYFILE="deploy/caddy/Caddyfile.prod"
+        HEALTH_HOST="cambridgetroutclub.org"
+        ;;
+    ctc-production)
+        BRANCH_NAME="ctc-production"
         ENV_FILE=".env.prod"
         COMPOSE_FILES=("-f" "docker-compose.prod.yml")
         CADDYFILE="deploy/caddy/Caddyfile.prod"
