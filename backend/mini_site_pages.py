@@ -56,6 +56,7 @@ PAGE_TEMPLATES = {
         'enabled': True,
         'canDisable': True,
         'display_mode': 'form',
+        'show_direct_email_link': True,
         'description': 'Contact form and club information',
     },
 }
@@ -113,6 +114,7 @@ def normalize_pages_config(raw_pages, club_name=''):
             'headline',
             'body_text',
             'display_mode',
+            'show_direct_email_link',
             'show_exclusive_access',
             'show_community',
             'show_learning',

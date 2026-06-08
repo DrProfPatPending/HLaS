@@ -53,6 +53,7 @@
         :contact-phone="miniSite.contact_phone"
         :contact-address="miniSite.contact_address"
         :contact-display-mode="getPageSetting('contact', 'display_mode', miniSite.contact_display_mode || 'form')"
+        :show-direct-email-link-prop="getPageSetting('contact', 'show_direct_email_link', true)"
       />
     </main>
 

@@ -172,6 +172,14 @@
             </select>
             <p class="form-hint">Choose whether visitors see a form or just your registered club email address.</p>
           </div>
+
+          <div class="form-group">
+            <label class="page-checkbox">
+              <input v-model="miniSite.show_direct_email_link" type="checkbox" />
+              <span>Direct Email Link?</span>
+            </label>
+            <p class="form-hint">When email-only mode is selected, show or hide the secondary "Email Us" block.</p>
+          </div>
         </template>
       </div>
     </section>
@@ -233,6 +241,7 @@ function defaultMiniSite() {
     show_community: true,
     show_learning: true,
     contact_display_mode: 'form',
+    show_direct_email_link: true,
     page_configs: {},
     pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
   };
@@ -339,6 +348,7 @@ export default {
             show_community: homePage.show_community !== false,
             show_learning: homePage.show_learning !== false,
             contact_display_mode: res?.data?.contact_display_mode || 'form',
+            show_direct_email_link: pageConfigs.contact?.show_direct_email_link !== false,
             page_configs: pageConfigs,
             pages: enabledPageIds,
           };
@@ -388,6 +398,7 @@ export default {
 
         if (page.id === 'contact') {
           pagePayload.display_mode = this.miniSite.contact_display_mode || 'form';
+          pagePayload.show_direct_email_link = this.miniSite.show_direct_email_link !== false;
         }
 
         return pagePayload;
