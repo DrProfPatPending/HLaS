@@ -73,6 +73,8 @@ def create_mini_site_routes(deps):
 
             row_dict = row._mapping
             pages = normalize_pages_config(row_dict.get('pages', []), club_short_name)
+            contact_page = next((page for page in pages if page.get('id') == 'contact'), {})
+            contact_display_mode = contact_page.get('display_mode', 'form')
             return jsonify({
                 'id': row_dict.get('id'),
                 'club_id': row_dict.get('club_id'),
@@ -82,6 +84,7 @@ def create_mini_site_routes(deps):
                 'hero_image_url': row_dict.get('hero_image_url', ''),
                 'description': row_dict.get('description', ''),
                 'pages': pages,
+                'contact_display_mode': contact_display_mode,
                 'social_links': row_dict.get('social_links', {}),
             })
 
@@ -135,6 +138,9 @@ def create_mini_site_routes(deps):
             tagline = str(payload.get('tagline', '')).strip()
             hero_image_url = str(payload.get('hero_image_url', '')).strip()
             description = str(payload.get('description', '')).strip()
+            contact_display_mode = str(payload.get('contact_display_mode', 'form')).strip().lower()
+            if contact_display_mode not in ('form', 'email'):
+                contact_display_mode = 'form'
             
             # Handle pages from frontend: array of enabled page IDs.
             # Convert to full page objects so omitted pages are persisted as disabled.
@@ -148,9 +154,18 @@ def create_mini_site_routes(deps):
                     for page_id, template in PAGE_TEMPLATES.items():
                         # Home is always enabled regardless of incoming selection.
                         is_enabled = True if page_id == 'home' else page_id in selected_ids
-                        pages_input.append({'id': page_id, 'enabled': is_enabled})
+                        page_payload = {'id': page_id, 'enabled': is_enabled}
+                        if page_id == 'contact':
+                            page_payload['display_mode'] = contact_display_mode
+                        pages_input.append(page_payload)
             else:
                 pages_input = []
+
+            # Ensure contact page mode is applied even when pages are provided as objects.
+            if isinstance(pages_input, list):
+                for page in pages_input:
+                    if isinstance(page, dict) and page.get('id') == 'contact':
+                        page['display_mode'] = contact_display_mode
             
             pages = normalize_pages_config(pages_input, club_short_name)
             social_links = payload.get('social_links', {}) if isinstance(payload.get('social_links'), dict) else {}
@@ -200,6 +215,7 @@ def create_mini_site_routes(deps):
                 'hero_image_url': hero_image_url,
                 'description': description,
                 'pages': pages,
+                'contact_display_mode': contact_display_mode,
                 'social_links': social_links,
             })
 
