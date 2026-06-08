@@ -80,15 +80,18 @@ def create_public_blueprint(deps):
         try:
             clubs_table = backend['clubs_table']
             
-            # Get club_id
-            club_id = session.execute(
-                select(clubs_table.c.id).where(
+            # Get club metadata
+            club_row = session.execute(
+                select(clubs_table.c.id, clubs_table.c.admin_email).where(
                     and_(clubs_table.c.short_name == club_short_name, clubs_table.c.is_active.is_(True))
                 )
-            ).scalar_one_or_none()
+            ).first()
             
-            if club_id is None:
+            if club_row is None:
                 return jsonify({'error': 'Club not found'}), 404
+
+            club_id = club_row.id
+            admin_email = club_row.admin_email or ''
             
             # Try to get mini site from PostgreSQL
             try:
@@ -100,6 +103,15 @@ def create_public_blueprint(deps):
                     
                     if mini_site_row is not None:
                         row_dict = dict(mini_site_row._mapping)
+                        pages = row_dict.get('pages', [])
+                        contact_display_mode = 'form'
+                        if isinstance(pages, list):
+                            for page in pages:
+                                if isinstance(page, dict) and page.get('id') == 'contact':
+                                    mode = str(page.get('display_mode', 'form')).strip().lower()
+                                    if mode in ('form', 'email'):
+                                        contact_display_mode = mode
+                                    break
                         return jsonify({
                             'id': row_dict.get('id'),
                             'club_id': row_dict.get('club_id'),
@@ -108,7 +120,9 @@ def create_public_blueprint(deps):
                             'tagline': row_dict.get('tagline', ''),
                             'hero_image_url': row_dict.get('hero_image_url', ''),
                             'description': row_dict.get('description', ''),
-                            'pages': row_dict.get('pages', []),
+                            'pages': pages,
+                            'contact_email': admin_email,
+                            'contact_display_mode': contact_display_mode,
                             'social_links': row_dict.get('social_links', {}),
                         })
             except Exception as e:

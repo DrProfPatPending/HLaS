@@ -119,6 +119,19 @@
               </label>
             </div>
           </div>
+
+          <div class="form-group">
+            <label for="contact-display-mode">Contact Page Display</label>
+            <select
+              id="contact-display-mode"
+              v-model="miniSite.contact_display_mode"
+              class="form-input"
+            >
+              <option value="form">Show contact form</option>
+              <option value="email">Show email address only</option>
+            </select>
+            <p class="form-hint">Choose whether visitors see a form or just your registered club email address.</p>
+          </div>
         </template>
       </div>
     </section>
@@ -174,6 +187,7 @@ function defaultMiniSite() {
     tagline: '',
     description: '',
     hero_image_url: '',
+    contact_display_mode: 'form',
     pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
   };
 }
@@ -263,6 +277,7 @@ export default {
             tagline: res?.data?.tagline || '',
             description: res?.data?.description || '',
             hero_image_url: res?.data?.hero_image_url || '',
+            contact_display_mode: res?.data?.contact_display_mode || 'form',
             pages: enabledPageIds,
           };
         })
@@ -296,6 +311,7 @@ export default {
         tagline: this.miniSite.tagline,
         description: this.miniSite.description,
         hero_image_url: this.miniSite.hero_image_url,
+        contact_display_mode: this.miniSite.contact_display_mode || 'form',
         pages: pagesArray, // Send the list of enabled page IDs
       };
 

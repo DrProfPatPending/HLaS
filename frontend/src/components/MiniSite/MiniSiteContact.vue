@@ -28,7 +28,7 @@
             </div>
           </div>
 
-          <div class="contact-form-section">
+          <div v-if="showContactForm" class="contact-form-section">
             <h3>Send us a Message</h3>
             <form class="contact-form" @submit.prevent="submitForm">
               <div class="form-group">
@@ -53,6 +53,17 @@
 
               <button type="submit" class="submit-button">Send Message</button>
             </form>
+          </div>
+
+          <div v-else class="contact-form-section">
+            <h3>Email Us</h3>
+            <p v-if="contactEmail" class="email-only-copy">
+              Please email us directly at
+              <a :href="`mailto:${contactEmail}`">{{ contactEmail }}</a>.
+            </p>
+            <p v-else class="email-only-copy">
+              Please use the club email address shown above to contact us.
+            </p>
           </div>
         </div>
       </div>
@@ -87,6 +98,15 @@ export default {
     contactAddress: {
       type: String,
       default: '',
+    },
+    contactDisplayMode: {
+      type: String,
+      default: 'form',
+    },
+  },
+  computed: {
+    showContactForm() {
+      return this.contactDisplayMode !== 'email';
     },
   },
   data() {
@@ -208,6 +228,17 @@ export default {
   color: #1a472a;
   font-size: 1.3rem;
   margin-bottom: 1.5rem;
+}
+
+.email-only-copy {
+  color: #555;
+  line-height: 1.7;
+}
+
+.email-only-copy a {
+  color: #2d6a45;
+  font-weight: bold;
+  text-decoration: none;
 }
 
 .contact-form {

@@ -52,6 +52,7 @@ PAGE_TEMPLATES = {
         'title': 'Contact Us',
         'enabled': True,
         'canDisable': True,
+        'display_mode': 'form',
         'description': 'Contact form and club information',
     },
 }
@@ -104,7 +105,7 @@ def normalize_pages_config(raw_pages, club_name=''):
             normalized[page_id]['enabled'] = bool(raw_page['enabled'])
         
         # Update content fields
-        for field in ['content', 'headline', 'body_text']:
+        for field in ['content', 'headline', 'body_text', 'display_mode']:
             if field in raw_page:
                 normalized[page_id][field] = raw_page[field]
     

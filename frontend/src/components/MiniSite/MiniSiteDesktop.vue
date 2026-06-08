@@ -49,6 +49,7 @@
         :contact-email="miniSite.contact_email"
         :contact-phone="miniSite.contact_phone"
         :contact-address="miniSite.contact_address"
+        :contact-display-mode="getPageSetting('contact', 'display_mode', miniSite.contact_display_mode || 'form')"
       />
     </main>
 
@@ -162,6 +163,12 @@ export default {
       }
     };
 
+    const getPageSetting = (pageId, key, fallback = '') => {
+      const page = props.miniSite.pages?.find((p) => p.id === pageId);
+      if (!page) return fallback;
+      return page[key] ?? fallback;
+    };
+
     const navigateToLogin = () => {
       window.location.href = `/club/${props.clubCode}/login/`;
     };
@@ -171,6 +178,7 @@ export default {
       enabledPages,
       currentPageComponent,
       getPageContent,
+      getPageSetting,
       navigateToLogin,
     };
   },
