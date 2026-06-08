@@ -29,10 +29,7 @@
     <section class="home-welcome">
       <div class="welcome-container">
         <!-- <h2>{{ clubName }}</h2> Temporarily commented out -->
-        <p v-if="description" class="welcome-text">{{ description }}</p>
-        <p v-else class="welcome-text">
-          We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers. We do this through maintaining a small and like-minded membership, and by a program of careful river management with a long-term plan to ensure the sustainability of the river for current and future generations of anglers.
-        </p>
+        <p class="welcome-text">{{ displayBody }}</p>
       </div>
     </section>
 
@@ -85,6 +82,10 @@ export default {
       type: String,
       default: '',
     },
+    content: {
+      type: String,
+      default: '',
+    },
     heroImage: {
       type: String,
       default: '',
@@ -103,8 +104,19 @@ export default {
       return `${API_BASE_URL}/club_background/${props.clubCode}`;
     });
 
+    const displayBody = computed(() => {
+      if (props.content) {
+        return props.content;
+      }
+      if (props.description) {
+        return props.description;
+      }
+      return 'We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers. We do this through maintaining a small and like-minded membership, and by a program of careful river management with a long-term plan to ensure the sustainability of the river for current and future generations of anglers.';
+    });
+
     return {
       displayHeadline,
+      displayBody,
       backgroundImageUrl,
     };
   },

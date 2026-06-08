@@ -121,6 +121,28 @@
           </div>
 
           <div class="form-group">
+            <label for="mini-site-home-headline">Home Headline</label>
+            <input
+              id="mini-site-home-headline"
+              v-model="miniSite.home_headline"
+              type="text"
+              placeholder="Shown as the main heading on the Home page"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="mini-site-home-body">Home Body Text</label>
+            <textarea
+              id="mini-site-home-body"
+              v-model="miniSite.home_body"
+              placeholder="Main welcome paragraph shown on the Home page"
+              class="form-input"
+              rows="4"
+            />
+          </div>
+
+          <div class="form-group">
             <label for="contact-display-mode">Contact Page Display</label>
             <select
               id="contact-display-mode"
@@ -187,7 +209,10 @@ function defaultMiniSite() {
     tagline: '',
     description: '',
     hero_image_url: '',
+    home_headline: '',
+    home_body: '',
     contact_display_mode: 'form',
+    page_configs: {},
     pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
   };
 }
@@ -266,9 +291,19 @@ export default {
           params: { club: this.loggedInClub },
         })
         .then(res => {
+          const pages = Array.isArray(res?.data?.pages) ? res.data.pages : [];
+          const pageConfigs = pages.reduce((acc, page) => {
+            if (page && page.id) {
+              acc[page.id] = { ...page };
+            }
+            return acc;
+          }, {});
+
+          const homePage = pageConfigs.home || {};
+
           // Extract enabled page IDs from the pages array
-          const enabledPageIds = res?.data?.pages
-            ? res.data.pages.filter(p => p.enabled).map(p => p.id)
+          const enabledPageIds = pages.length
+            ? pages.filter(p => p.enabled).map(p => p.id)
             : ['home', 'about', 'waters', 'news', 'join', 'contact'];
           
           this.miniSite = {
@@ -277,7 +312,10 @@ export default {
             tagline: res?.data?.tagline || '',
             description: res?.data?.description || '',
             hero_image_url: res?.data?.hero_image_url || '',
+            home_headline: homePage.headline || '',
+            home_body: homePage.content || '',
             contact_display_mode: res?.data?.contact_display_mode || 'form',
+            page_configs: pageConfigs,
             pages: enabledPageIds,
           };
         })
@@ -301,8 +339,32 @@ export default {
         },
       };
 
-      // Build pages array for API (list of enabled page IDs)
-      const pagesArray = this.miniSite.pages || [];
+      // Build full page configs for API so page-level content (home headline/body) is persisted.
+      const enabledPages = new Set(this.miniSite.pages || []);
+      const pagesArray = MINI_SITE_PAGES.map(page => {
+        const existing = this.miniSite.page_configs?.[page.id] || {};
+        const pagePayload = {
+          id: page.id,
+          enabled: page.id === 'home' ? true : enabledPages.has(page.id),
+        };
+
+        for (const field of ['content', 'headline', 'body_text']) {
+          if (existing[field] !== undefined && existing[field] !== null) {
+            pagePayload[field] = existing[field];
+          }
+        }
+
+        if (page.id === 'home') {
+          pagePayload.headline = this.miniSite.home_headline || '';
+          pagePayload.content = this.miniSite.home_body || '';
+        }
+
+        if (page.id === 'contact') {
+          pagePayload.display_mode = this.miniSite.contact_display_mode || 'form';
+        }
+
+        return pagePayload;
+      });
       
       const miniSitePayload = {
         club: this.loggedInClub,
