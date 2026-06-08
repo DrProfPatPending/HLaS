@@ -12,6 +12,9 @@ PAGE_TEMPLATES = {
         'title': 'Home',
         'enabled': True,
         'canDisable': False,  # Home page cannot be hidden
+        'show_exclusive_access': True,
+        'show_community': True,
+        'show_learning': True,
         'description': 'Club home page with hero image and welcome message',
     },
     'about': {
@@ -105,7 +108,15 @@ def normalize_pages_config(raw_pages, club_name=''):
             normalized[page_id]['enabled'] = bool(raw_page['enabled'])
         
         # Update content fields
-        for field in ['content', 'headline', 'body_text', 'display_mode']:
+        for field in [
+            'content',
+            'headline',
+            'body_text',
+            'display_mode',
+            'show_exclusive_access',
+            'show_community',
+            'show_learning',
+        ]:
             if field in raw_page:
                 normalized[page_id][field] = raw_page[field]
     
