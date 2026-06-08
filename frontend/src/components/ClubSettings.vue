@@ -143,6 +143,24 @@
           </div>
 
           <div class="form-group">
+            <label>Home Feature Panels</label>
+            <div class="pages-grid">
+              <label class="page-checkbox">
+                <input v-model="miniSite.show_exclusive_access" type="checkbox" />
+                <span>Exclusive Access panel</span>
+              </label>
+              <label class="page-checkbox">
+                <input v-model="miniSite.show_community" type="checkbox" />
+                <span>Community panel</span>
+              </label>
+              <label class="page-checkbox">
+                <input v-model="miniSite.show_learning" type="checkbox" />
+                <span>Learning panel</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
             <label for="contact-display-mode">Contact Page Display</label>
             <select
               id="contact-display-mode"
@@ -211,6 +229,9 @@ function defaultMiniSite() {
     hero_image_url: '',
     home_headline: '',
     home_body: '',
+    show_exclusive_access: true,
+    show_community: true,
+    show_learning: true,
     contact_display_mode: 'form',
     page_configs: {},
     pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
@@ -314,6 +335,9 @@ export default {
             hero_image_url: res?.data?.hero_image_url || '',
             home_headline: homePage.headline || '',
             home_body: homePage.content || '',
+            show_exclusive_access: homePage.show_exclusive_access !== false,
+            show_community: homePage.show_community !== false,
+            show_learning: homePage.show_learning !== false,
             contact_display_mode: res?.data?.contact_display_mode || 'form',
             page_configs: pageConfigs,
             pages: enabledPageIds,
@@ -357,6 +381,9 @@ export default {
         if (page.id === 'home') {
           pagePayload.headline = this.miniSite.home_headline || '';
           pagePayload.content = this.miniSite.home_body || '';
+          pagePayload.show_exclusive_access = this.miniSite.show_exclusive_access !== false;
+          pagePayload.show_community = this.miniSite.show_community !== false;
+          pagePayload.show_learning = this.miniSite.show_learning !== false;
         }
 
         if (page.id === 'contact') {

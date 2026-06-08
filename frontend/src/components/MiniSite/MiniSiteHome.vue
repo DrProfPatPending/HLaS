@@ -33,19 +33,19 @@
       </div>
     </section>
 
-    <section class="home-features">
+    <section v-if="showAnyFeature" class="home-features">
       <div class="feature-grid">
-        <div class="feature-card">
+        <div v-if="showExclusiveAccess" class="feature-card">
           <div class="feature-icon">🎣</div>
           <h3>Exclusive Access</h3>
           <p>Premium fly fishing waters for our members</p>
         </div>
-        <div class="feature-card">
+        <div v-if="showCommunity" class="feature-card">
           <div class="feature-icon">👥</div>
           <h3>Community</h3>
           <p>Join a thriving community of passionate anglers</p>
         </div>
-        <div class="feature-card">
+        <div v-if="showLearning" class="feature-card">
           <div class="feature-icon">📚</div>
           <h3>Learning</h3>
           <p>Expert instruction and mentorship available</p>
@@ -90,8 +90,26 @@ export default {
       type: String,
       default: '',
     },
+    showExclusiveAccess: {
+      type: [Boolean, String],
+      default: true,
+    },
+    showCommunity: {
+      type: [Boolean, String],
+      default: true,
+    },
+    showLearning: {
+      type: [Boolean, String],
+      default: true,
+    },
   },
   setup(props) {
+    const toBool = (value) => {
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'string') return value.toLowerCase() !== 'false';
+      return !!value;
+    };
+
     const displayHeadline = computed(() => {
       if (props.headline) {
         return props.headline;
@@ -114,10 +132,21 @@ export default {
       return 'We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers. We do this through maintaining a small and like-minded membership, and by a program of careful river management with a long-term plan to ensure the sustainability of the river for current and future generations of anglers.';
     });
 
+    const showExclusiveAccess = computed(() => toBool(props.showExclusiveAccess));
+    const showCommunity = computed(() => toBool(props.showCommunity));
+    const showLearning = computed(() => toBool(props.showLearning));
+    const showAnyFeature = computed(() => {
+      return showExclusiveAccess.value || showCommunity.value || showLearning.value;
+    });
+
     return {
       displayHeadline,
       displayBody,
       backgroundImageUrl,
+      showExclusiveAccess,
+      showCommunity,
+      showLearning,
+      showAnyFeature,
     };
   },
 };
