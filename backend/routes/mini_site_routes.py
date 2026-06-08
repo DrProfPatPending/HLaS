@@ -136,11 +136,21 @@ def create_mini_site_routes(deps):
             hero_image_url = str(payload.get('hero_image_url', '')).strip()
             description = str(payload.get('description', '')).strip()
             
-            # Handle pages: convert from frontend format (array of IDs) to internal format
-            pages_input = payload.get('pages', []) if isinstance(payload.get('pages'), list) else []
-            # If pages are IDs (strings), convert to page objects with enabled flag
-            if pages_input and isinstance(pages_input[0], str):
-                pages_input = [{'id': page_id, 'enabled': True} for page_id in pages_input]
+            # Handle pages from frontend: array of enabled page IDs.
+            # Convert to full page objects so omitted pages are persisted as disabled.
+            raw_pages = payload.get('pages')
+            if isinstance(raw_pages, list):
+                if raw_pages and isinstance(raw_pages[0], dict):
+                    pages_input = raw_pages
+                else:
+                    selected_ids = {str(page_id) for page_id in raw_pages if isinstance(page_id, str)}
+                    pages_input = []
+                    for page_id, template in PAGE_TEMPLATES.items():
+                        # Home is always enabled regardless of incoming selection.
+                        is_enabled = True if page_id == 'home' else page_id in selected_ids
+                        pages_input.append({'id': page_id, 'enabled': is_enabled})
+            else:
+                pages_input = []
             
             pages = normalize_pages_config(pages_input, club_short_name)
             social_links = payload.get('social_links', {}) if isinstance(payload.get('social_links'), dict) else {}
