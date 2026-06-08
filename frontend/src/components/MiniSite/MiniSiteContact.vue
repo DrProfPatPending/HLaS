@@ -55,7 +55,7 @@
             </form>
           </div>
 
-          <div v-else class="contact-form-section">
+          <div v-else-if="showDirectEmailLinkEnabled" class="contact-form-section">
             <h3>Email Us</h3>
             <p v-if="contactEmail" class="email-only-copy">
               Please email us directly at
@@ -103,10 +103,23 @@ export default {
       type: String,
       default: 'form',
     },
+    showDirectEmailLinkProp: {
+      type: [Boolean, String],
+      default: true,
+    },
   },
   computed: {
     showContactForm() {
       return this.contactDisplayMode !== 'email';
+    },
+    showDirectEmailLinkEnabled() {
+      if (typeof this.showDirectEmailLinkProp === 'boolean') {
+        return this.showDirectEmailLinkProp;
+      }
+      if (typeof this.showDirectEmailLinkProp === 'string') {
+        return this.showDirectEmailLinkProp.toLowerCase() !== 'false';
+      }
+      return !!this.showDirectEmailLinkProp;
     },
   },
   data() {
