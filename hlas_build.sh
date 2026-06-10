@@ -359,7 +359,7 @@ else
     retry_check "Backend health endpoint OK" "curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs" 30 3 || exit 1
 
     log "Checking frontend health endpoint via caddy"
-    retry_check "Frontend/caddy endpoint OK" "curl --connect-timeout 5 --max-time 10 -kfsS --resolve ${HEALTH_HOST}:443:127.0.0.1 https://${HEALTH_HOST}/" 30 3 || exit 1
+    retry_check "Frontend/caddy endpoint OK" "status=\$(curl --connect-timeout 5 --max-time 10 -k -sS -o /dev/null -w '%{http_code}' --resolve ${HEALTH_HOST}:443:127.0.0.1 https://${HEALTH_HOST}/ || true); [[ \"\$status\" == \"200\" || \"\$status\" == \"302\" || \"\$status\" == \"401\" ]]" 30 3 || exit 1
 
     log "Checking WordPress/Nginx health endpoint"
     retry_check "WordPress/Nginx endpoint OK" "compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1

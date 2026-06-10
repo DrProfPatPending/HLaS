@@ -1,20 +1,37 @@
 cambridgetroutclub.org {
-	encode zstd gzip
+    encode zstd gzip
 
-	@root path /
-	redir @root /club/CTC/ 302
+    route {
+        # Keep API outside Basic Auth so member Bearer token auth can use
+        # the Authorization header without browser Basic Auth prompt loops.
+        # Important: keep this handler before basic_auth in this route block.
+        handle_path /api/* {
+            reverse_proxy backend:5050
+        }
 
-	handle_path /api/* {
-		reverse_proxy backend:5050
-	}
+        # Temporary pre-launch gate for content review on ctc-production.
+        # Remove this basic_auth block when the public site is ready.
+        basic_auth bcrypt "Cambridge Trout Club: our website is under construction" {
+            CTCCommittee $2a$14$rt.dpG9ttsL/ral25K94KOL5FEMyoS58TwgXxTBZ.imrrCOU1Xmkm
+        }
 
-	handle {
-		reverse_proxy frontend:80
-	}
+        @root path /
+        redir @root /club/CTC/ 302
+
+        handle {
+            reverse_proxy frontend:80
+        }
+    }
 }
 
 wordpress.cambridgetroutclub.org {
-	encode zstd gzip
+    encode zstd gzip
 
-	reverse_proxy wordpress-web:80
+    # Keep WordPress admin/front-end behind the same temporary gate.
+    # Remove this basic_auth block together with the main site gate.
+    basic_auth bcrypt "Cambridge Trout Club: our website is under construction" {
+        CTCCommittee $2a$14$rt.dpG9ttsL/ral25K94KOL5FEMyoS58TwgXxTBZ.imrrCOU1Xmkm
+    }
+
+    reverse_proxy wordpress-web:80
 }
