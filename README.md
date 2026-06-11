@@ -814,7 +814,7 @@ This script runs:
 - smoke checks for `http://localhost`, `https://hlastest`, `https://wordpress.hlastest`, and backend `/clubs`
 
 ```bash
-# Run with defaults (rob@hlastest, /opt/HLaS)
+# Run with defaults (rob@hlastest, /opt/hlas)
 ./trust_caddy_mac.sh
 
 # Override host, user, or remote path if needed
@@ -827,7 +827,7 @@ Options:
 |------|---------|-------------|
 | `-h HOST` | `hlastest` | SSH hostname or IP of the dev server |
 | `-u USER` | `rob` | SSH username |
-| `-p PATH` | `/opt/HLaS` | Path to the HLaS installation on the remote server |
+| `-p PATH` | `/opt/hlas` | Path to the HLaS installation on the remote server |
 
 The script will install the cert into your Login Keychain (no Mac password required). After it completes, quit and relaunch Safari if it is already open, then browse to `https://hlastest`.
 

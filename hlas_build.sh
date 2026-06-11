@@ -19,7 +19,7 @@ Options:
   -t, --target <target>     Deployment target/branch (default: ctc-production)
                             Examples: ctc-production, production, development, main
   -d, --directory <dir>     Deployment directory (default: /opt/hlas)
-                            Example: /opt/HLaS
+                            Example: /opt/hlas
     -l, --local               Build from local working tree (skip git reset)
     -r, --remote              Build from origin/<target> (default)
   -f, --full                Full rebuild: pass --no-cache to docker build (default)
@@ -38,8 +38,8 @@ Options:
 
 Examples:
   $0
-  $0 --target development --directory /opt/HLaS
-    $0 --target development --directory /opt/HLaS --local
+  $0 --target development --directory /opt/hlas
+    $0 --target development --directory /opt/hlas --local
   $0 -t production -v
     $0 -t production -v -V
     $0 --target production --verbose --noverbose

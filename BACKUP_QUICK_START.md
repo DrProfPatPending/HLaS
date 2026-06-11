@@ -387,24 +387,24 @@ EOF
 
 ```bash
 # Daily full backup, keep 7 days
-0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full
+0 2 * * * python3 /opt/hlas/backend/backup_cli.py create-full
 ```
 
 ### For Medium Deployments
 
 ```bash
 # Daily backups + weekly cloud upload
-0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full
-0 3 * * 0 python3 /opt/HLaS/backend/backup_cli.py upload latest --bucket=my-bucket
+0 2 * * * python3 /opt/hlas/backend/backup_cli.py create-full
+0 3 * * 0 python3 /opt/hlas/backend/backup_cli.py upload latest --bucket=my-bucket
 ```
 
 ### For Large/Production Deployments
 
 ```bash
 # Hourly database backups + daily full backups
-0 * * * * python3 /opt/HLaS/backend/backup_cli.py create-db
-0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full
-0 3 * * 0 python3 /opt/HLaS/backend/backup_cli.py upload latest --bucket=my-bucket
+0 * * * * python3 /opt/hlas/backend/backup_cli.py create-db
+0 2 * * * python3 /opt/hlas/backend/backup_cli.py create-full
+0 3 * * 0 python3 /opt/hlas/backend/backup_cli.py upload latest --bucket=my-bucket
 ```
 
 ---

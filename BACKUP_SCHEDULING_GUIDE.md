@@ -24,7 +24,7 @@ This guide explains how to set up automated backup scheduling on Linux servers u
 
 ```bash
 # Setup daily backups at 2 AM
-cd /opt/HLaS/backend
+cd /opt/hlas/backend
 export DATABASE_URL="postgresql://hlas:password@localhost:5432/hlas"
 chmod +x schedule_backups_cron.sh
 ./schedule_backups_cron.sh daily
@@ -72,16 +72,16 @@ crontab -e
 # Add these lines:
 
 # Daily full backup at 2 AM
-0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full --description="Daily backup" >> /var/log/hlas-backup.log 2>&1
+0 2 * * * python3 /opt/hlas/backend/backup_cli.py create-full --description="Daily backup" >> /var/log/hlas-backup.log 2>&1
 
 # Cleanup old backups at 3 AM
-0 3 * * * python3 /opt/HLaS/backend/backup_cli.py cleanup --days=30 --max=7 >> /var/log/hlas-backup.log 2>&1
+0 3 * * * python3 /opt/hlas/backend/backup_cli.py cleanup --days=30 --max=7 >> /var/log/hlas-backup.log 2>&1
 
 # Hourly database backup (optional, for high-frequency needs)
-0 * * * * python3 /opt/HLaS/backend/backup_cli.py create-db --description="Hourly db backup" >> /var/log/hlas-backup.log 2>&1
+0 * * * * python3 /opt/hlas/backend/backup_cli.py create-db --description="Hourly db backup" >> /var/log/hlas-backup.log 2>&1
 
 # Weekly cloud upload (optional, if configured)
-0 4 * * 0 python3 /opt/HLaS/backend/backup_cli.py upload $(ls -t /data/backups/snapshots/ | head -1) >> /var/log/hlas-backup.log 2>&1
+0 4 * * 0 python3 /opt/hlas/backend/backup_cli.py upload $(ls -t /data/backups/snapshots/ | head -1) >> /var/log/hlas-backup.log 2>&1
 ```
 
 ### Cron Schedule Format
@@ -110,7 +110,7 @@ sudo grep CRON /var/log/syslog          # Debian/Ubuntu
 sudo grep CRON /var/log/messages        # CentOS/RHEL
 
 # Manually test a backup
-python3 /opt/HLaS/backend/backup_cli.py create-full
+python3 /opt/hlas/backend/backup_cli.py create-full
 
 # View backup logs
 tail -f /var/log/hlas-backup.log
@@ -130,8 +130,8 @@ tail -f /var/log/hlas-backup.log
 
 ```bash
 # 1. Copy service and timer files
-sudo cp /opt/HLaS/backend/hlas-backup.service /etc/systemd/system/
-sudo cp /opt/HLaS/backend/hlas-backup.timer /etc/systemd/system/
+sudo cp /opt/hlas/backend/hlas-backup.service /etc/systemd/system/
+sudo cp /opt/hlas/backend/hlas-backup.timer /etc/systemd/system/
 
 # 2. Edit service file to set DATABASE_URL
 sudo nano /etc/systemd/system/hlas-backup.service
@@ -292,7 +292,7 @@ sudo grep DATABASE_URL /etc/systemd/system/hlas-backup.service
 
 # Test connection manually
 export DATABASE_URL="postgresql://..."
-python3 /opt/HLaS/backend/backup_cli.py status
+python3 /opt/hlas/backend/backup_cli.py status
 ```
 
 ---
@@ -321,15 +321,15 @@ python3 /opt/HLaS/backend/backup_cli.py status
 
 ```bash
 # Step 1: Enable systemd timer (primary)
-sudo cp /opt/HLaS/backend/hlas-backup.service /etc/systemd/system/
-sudo cp /opt/HLaS/backend/hlas-backup.timer /etc/systemd/system/
+sudo cp /opt/hlas/backend/hlas-backup.service /etc/systemd/system/
+sudo cp /opt/hlas/backend/hlas-backup.timer /etc/systemd/system/
 # ... customize DATABASE_URL ...
 sudo systemctl enable hlas-backup.timer
 sudo systemctl start hlas-backup.timer
 
 # Step 2: Setup cron as fallback
 export DATABASE_URL="postgresql://..."
-cd /opt/HLaS/backend
+cd /opt/hlas/backend
 ./schedule_backups_cron.sh daily
 
 # Step 3: Monitor both
@@ -347,7 +347,7 @@ tail -f /var/log/hlas-backup.log &
 
 ### With Systemd
 
-Create `/opt/HLaS/backend/backup-failure-handler.sh`:
+Create `/opt/hlas/backend/backup-failure-handler.sh`:
 
 ```bash
 #!/bin/bash
@@ -399,10 +399,10 @@ EOF
 
 ```bash
 # Test backup manually
-python3 /opt/HLaS/backend/backup_cli.py status
+python3 /opt/hlas/backend/backup_cli.py status
 
 # Check system status
-python3 /opt/HLaS/backend/backup_cli.py list
+python3 /opt/hlas/backend/backup_cli.py list
 
 # View detailed logs
 tail -100 /var/log/hlas-backup.log

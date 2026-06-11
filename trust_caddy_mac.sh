@@ -9,7 +9,7 @@
 # Options:
 #   -h HOST       SSH hostname or IP  (default: hlastest)
 #   -u USER       SSH username        (default: rob)
-#   -p PATH       Remote HLaS dir     (default: /opt/HLaS)
+#   -p PATH       Remote HLaS dir     (default: /opt/hlas)
 #   --help        Show this help
 #
 # Requires sudo to write to the System Keychain.
@@ -19,7 +19,7 @@ set -euo pipefail
 # ── Defaults ─────────────────────────────────────────────────────────────────
 SSH_HOST="hlastest"
 SSH_USER="rob"
-REMOTE_DIR="/opt/HLaS"
+REMOTE_DIR="/opt/hlas"
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
 usage() {

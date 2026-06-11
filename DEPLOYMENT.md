@@ -560,13 +560,13 @@ After deploying backend code that includes beats export/import and automatic sta
 
    **Option A: Via API (requires running backend)**
    ```bash
-   cd /opt/HLaS
+   cd /opt/hlas
    python3 sync_beats_via_api.py
    ```
 
    **Option B: Direct database sync (requires DATABASE_URL)**
    ```bash
-   cd /opt/HLaS
+   cd /opt/hlas
    docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
    ```
 

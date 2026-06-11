@@ -303,9 +303,9 @@ See `WORDPRESS_PLUGIN_SETUP.md` for plugin development details.
 ## File Changes Summary
 
 ### Backend Files Modified:
-- `/opt/HLaS/backend/routes/headless_routes.py` - NEW
-- `/opt/HLaS/backend/routes/__init__.py` - Added headless blueprint import
-- `/opt/HLaS/backend/app.py` - Registered headless blueprint
+- `/opt/hlas/backend/routes/headless_routes.py` - NEW
+- `/opt/hlas/backend/routes/__init__.py` - Added headless blueprint import
+- `/opt/hlas/backend/app.py` - Registered headless blueprint
 
 ### Date: 2026-05-14
 ### Status: ✓ Phase 1 Complete

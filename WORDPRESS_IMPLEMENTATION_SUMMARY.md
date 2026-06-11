@@ -54,15 +54,15 @@ Status: **Ready for Testing and Deployment**
 - ✓ Full documentation
 
 **Files Modified/Created:**
-- `/opt/HLaS/backend/routes/headless_routes.py` (NEW - 534 lines)
-- `/opt/HLaS/backend/app.py` (MODIFIED - added blueprint)
-- `/opt/HLaS/backend/routes/__init__.py` (MODIFIED - added import)
+- `/opt/hlas/backend/routes/headless_routes.py` (NEW - 534 lines)
+- `/opt/hlas/backend/app.py` (MODIFIED - added blueprint)
+- `/opt/hlas/backend/routes/__init__.py` (MODIFIED - added import)
 
 ---
 
 ### Phase 2: WordPress Plugin Development ✓
 
-**Complete WordPress Plugin Created at:** `/opt/HLaS/wordpress-plugin/hlas-integration/`
+**Complete WordPress Plugin Created at:** `/opt/hlas/wordpress-plugin/hlas-integration/`
 
 **Plugin Features:**
 
@@ -178,7 +178,7 @@ PostgreSQL Database
 
 ### Backend (HLaS)
 ```
-/opt/HLaS/
+/opt/hlas/
 ├── backend/
 │   ├── app.py (MODIFIED)
 │   └── routes/
@@ -190,7 +190,7 @@ PostgreSQL Database
 
 ### WordPress Plugin
 ```
-/opt/HLaS/wordpress-plugin/hlas-integration/
+/opt/hlas/wordpress-plugin/hlas-integration/
 ├── hlas-integration.php (MAIN PLUGIN FILE)
 ├── includes/
 │   ├── class-api-client.php

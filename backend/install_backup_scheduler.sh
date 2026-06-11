@@ -19,7 +19,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-PROJECT_ROOT="/opt/HLaS"
+PROJECT_ROOT="/opt/hlas"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 
 # Helper functions

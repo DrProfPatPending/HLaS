@@ -532,7 +532,7 @@ Add to backup script:
 LOG_FILE="/var/log/hlas-backup.log"
 EMAIL="admin@example.com"
 
-python3 /opt/HLaS/backend/backup_cli.py create-full >> "$LOG_FILE" 2>&1
+python3 /opt/hlas/backend/backup_cli.py create-full >> "$LOG_FILE" 2>&1
 
 if [ $? -ne 0 ]; then
   tail -20 "$LOG_FILE" | mail -s "HLaS Backup Failed" "$EMAIL"

@@ -59,7 +59,7 @@ python3 -c "import sqlalchemy; print(f'✅ SQLAlchemy installed')"
 
 ```bash
 # Always activate first
-cd /opt/HLaS
+cd /opt/hlas
 source backend-venv/bin/activate
 
 # Run scripts as normal
@@ -89,7 +89,7 @@ deactivate
 
 The helper script is already created and executable at:
 ```bash
-/opt/HLaS/run_backend_script.sh
+/opt/hlas/run_backend_script.sh
 ```
 
 #### Using the helper
