@@ -39,6 +39,12 @@ SYSTEM_ROLES = [
         "is_system": True,
     },
     {
+        "code": "committee",
+        "name": "Committee",
+        "scope_type": "club",
+        "is_system": True,
+    },
+    {
         "code": "club_admin",
         "name": "Club Admin",
         "scope_type": "club",

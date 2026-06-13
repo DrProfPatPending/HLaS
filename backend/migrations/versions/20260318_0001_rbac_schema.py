@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(length=120), nullable=False),
         # 'global' roles apply across all clubs; 'club' roles are scoped to one
         sa.Column("scope_type", sa.String(length=16), nullable=False, server_default="club"),
-        # True for the five hard-coded roles seeded next migration
+        # True for the hard-coded roles seeded next migration
         sa.Column("is_system", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.UniqueConstraint("code", name="uq_roles_code"),

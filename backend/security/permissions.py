@@ -2,6 +2,7 @@ DEFAULT_ROLE_CODE = 'user'
 
 ROLE_CODES = (
     'user',
+    'committee',
     'club_admin',
     'club_manager',
     'app_admin',
@@ -10,6 +11,7 @@ ROLE_CODES = (
 
 ROLE_HIERARCHY = {
     'user': {'user'},
+    'committee': {'user', 'committee'},
     'club_admin': {'user', 'club_admin'},
     'club_manager': {'user', 'club_admin', 'club_manager'},
     'app_admin': {'user', 'club_admin', 'club_manager', 'app_admin'},
@@ -17,9 +19,9 @@ ROLE_HIERARCHY = {
 }
 
 PERMISSIONS = {
-    'member.self.read': {'user', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
-    'member.self.update': {'user', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
-    'member.club.list': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
+    'member.self.read': {'user', 'committee', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
+    'member.self.update': {'user', 'committee', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
+    'member.club.list': {'committee', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'member.club.create': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'member.club.update': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'member.club.delete': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
