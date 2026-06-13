@@ -220,7 +220,7 @@ def create_member_blueprint(deps):
         data = request.json or {}
         username = data.get('username')
         password = data.get('password')
-        club = data.get('club', 'GAAFFS')
+        club = data.get('club', 'TEST')
 
         if not username or not password:
             return jsonify({'error': 'Username and password required'}), 400
@@ -340,7 +340,7 @@ def create_member_blueprint(deps):
 
     @bp.route('/members', methods=['GET'])
     def get_members():
-        club = request.args.get('club', 'GAAFFS')
+        club = request.args.get('club', 'TEST')
         auth_error = require_permission('member.club.list', club)
         if auth_error:
             return auth_error
@@ -422,7 +422,7 @@ def create_member_blueprint(deps):
 
     @bp.route('/members/export', methods=['GET'])
     def export_members():
-        club = request.args.get('club', 'GAAFFS')
+        club = request.args.get('club', 'TEST')
         auth_error = require_permission('member.club.list', club)
         if auth_error:
             return auth_error
@@ -803,7 +803,7 @@ def create_member_blueprint(deps):
     @bp.route('/members', methods=['POST'])
     def add_member():
         data = request.json or {}
-        club = data.get('club', 'GAAFFS')
+        club = data.get('club', 'TEST')
         auth_error = require_permission('member.club.create', club)
         if auth_error:
             return auth_error
@@ -846,7 +846,7 @@ def create_member_blueprint(deps):
     @bp.route('/members/<int:member_id>', methods=['PUT'])
     def update_member(member_id):
         data = request.json or {}
-        club = data.get('club', 'GAAFFS')
+        club = data.get('club', 'TEST')
         auth_error = require_self_or_permission(member_id, 'member.club.update', club)
         if auth_error:
             return auth_error
@@ -908,7 +908,7 @@ def create_member_blueprint(deps):
 
     @bp.route('/members/<int:member_id>', methods=['DELETE'])
     def delete_member(member_id):
-        club = request.args.get('club', 'GAAFFS')
+        club = request.args.get('club', 'TEST')
         auth_error = require_permission('member.club.delete', club)
         if auth_error:
             return auth_error
@@ -955,7 +955,7 @@ def create_member_blueprint(deps):
 
     @bp.route('/member_by_number/<number>', methods=['GET'])
     def get_member_by_number(number):
-        club = request.args.get('club', 'GAAFFS')
+        club = request.args.get('club', 'TEST')
         auth_error = require_permission('member.club.list', club)
         if auth_error:
             return auth_error

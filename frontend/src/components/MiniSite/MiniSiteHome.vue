@@ -114,7 +114,7 @@ export default {
       if (props.headline) {
         return props.headline;
       }
-      return `Welcome to ${props.clubName} - a dedicated fly-fishing club which offers access to a lovely section of the upper River Cam. The river has a good population of native brown trout. This is a fully wild fishery with no stocking.`;
+      return `Welcome to ${props.clubName} - a dedicated fly-fishing club with access to quality river water and a focus on sustainable angling.`;
     });
 
     const backgroundImageUrl = computed(() => {
@@ -129,7 +129,7 @@ export default {
       if (props.description) {
         return props.description;
       }
-      return 'We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers. We do this through maintaining a small and like-minded membership, and by a program of careful river management with a long-term plan to ensure the sustainability of the river for current and future generations of anglers.';
+      return 'We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers through responsible fishing, stewardship, and a welcoming member community.';
     });
 
     const showExclusiveAccess = computed(() => toBool(props.showExclusiveAccess));

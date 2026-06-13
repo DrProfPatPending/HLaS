@@ -20,7 +20,7 @@ def create_document_blueprint(deps):
     _resolve_postgres_club_id = deps['_resolve_postgres_club_id']
     get_current_principal = deps['get_current_principal']
 
-    def _resolve_club_from_request(default='GAAFFS'):
+    def _resolve_club_from_request(default='TEST'):
         club = (
             request.args.get('club')
             or request.form.get('club')

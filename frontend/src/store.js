@@ -42,7 +42,7 @@ function extractPreferredClubFromUrl() {
 }
 
 const URL_PREFERRED_CLUB = extractPreferredClubFromUrl();
-const DEFAULT_LOGIN_CLUB = URL_PREFERRED_CLUB || 'GAAFFS';
+const DEFAULT_LOGIN_CLUB = URL_PREFERRED_CLUB || 'TEST';
 
 export const MY_CLUB_TABS = [
   { id: 'personal', label: 'Personal Info' },
@@ -586,7 +586,7 @@ export function persistMemberSession() {
     const payload = {
       loggedIn: Boolean(store.loggedIn),
       loggedInUsername: store.loggedInUsername || '',
-      loggedInClub: store.loggedInClub || store.selectedClub || 'GAAFFS',
+      loggedInClub: store.loggedInClub || store.selectedClub || 'TEST',
       loggedInUser: store.loggedInUser || null,
       memberAuthToken: store.memberAuthToken || '',
       memberRefreshToken: store.memberRefreshToken || '',
@@ -613,7 +613,7 @@ export function restoreMemberSession() {
     const restoredClub =
       typeof payload.loggedInClub === 'string' && payload.loggedInClub.trim()
         ? payload.loggedInClub.trim()
-        : 'GAAFFS';
+        : 'TEST';
 
     store.loggedIn = true;
     store.loggedInUsername = typeof payload.loggedInUsername === 'string' ? payload.loggedInUsername : '';
