@@ -98,12 +98,12 @@ def create_admin_blueprint(deps):
                     return jsonify({'error': 'Invalid credentials'}), 401
 
                 # Load roles to get complete role list
-                role_payload = load_member_roles(member_id, 'GAAFFS', user_id=user_id)
+                role_payload = load_member_roles(member_id, 'TEST', user_id=user_id)
                 effective_roles = role_payload.get('effective_roles', [])
                 logger.info(f"Loaded roles for {username}: {effective_roles}")
 
-                # Issue token pair (use GAAFFS as the club context for admin token)
-                token_payload = issue_member_token_pair(member_id, 'GAAFFS', username, user_id=user_id, user_type="admin")
+                # Issue token pair (use TEST as the fallback club context for admin token)
+                token_payload = issue_member_token_pair(member_id, 'TEST', username, user_id=user_id, user_type="admin")
                 logger.info(f"Issued token for {username}")
                 
                 return jsonify({

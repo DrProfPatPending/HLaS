@@ -1,20 +1,11 @@
 def _default_clubs_config():
     return [
         {
-            'fullName': 'GAAFFS',
-            'shortName': 'GAAFFS',
-            'description': 'GAAFFS fishing club members',
-            'websiteUrl': 'https://example.com/gaaffs',
-            'adminEmail': 'admin@gaaffs.example.com',
-            'logoUrl': '',
-            'beats': [],
-        },
-        {
-            'fullName': 'CTC',
-            'shortName': 'CTC',
-            'description': 'CTC fishing club members',
-            'websiteUrl': 'https://example.com/ctc',
-            'adminEmail': 'admin@ctc.example.com',
+            'fullName': 'TEST',
+            'shortName': 'TEST',
+            'description': 'Dummy fallback club entry',
+            'websiteUrl': 'https://example.com/test',
+            'adminEmail': 'admin@test.example.com',
             'logoUrl': '',
             'beats': [],
         },

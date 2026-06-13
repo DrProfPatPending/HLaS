@@ -288,7 +288,7 @@ def create_newsletter_blueprint(deps):
     @bp.route('/newsletter/prepare_recipients', methods=['POST'])
     def prepare_newsletter_recipients():
         data = request.json or {}
-        club = data.get('club', 'GAAFFS')
+        club = data.get('club', 'TEST')
         auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
@@ -353,7 +353,7 @@ def create_newsletter_blueprint(deps):
 
     @bp.route('/newsletter/templates', methods=['GET'])
     def get_newsletter_templates():
-        club = request.args.get('club', 'GAAFFS')
+        club = request.args.get('club', 'TEST')
         auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
@@ -412,7 +412,7 @@ def create_newsletter_blueprint(deps):
     @bp.route('/newsletter/templates/<template_id>', methods=['PUT'])
     def update_newsletter_template(template_id):
         data = request.json or {}
-        club = data.get('club', 'GAAFFS')
+        club = data.get('club', 'TEST')
         auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
@@ -461,7 +461,7 @@ def create_newsletter_blueprint(deps):
 
     @bp.route('/newsletter/templates/<template_id>', methods=['DELETE'])
     def delete_newsletter_template(template_id):
-        club = request.args.get('club', 'GAAFFS')
+        club = request.args.get('club', 'TEST')
         auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
@@ -506,7 +506,7 @@ def create_newsletter_blueprint(deps):
     @bp.route('/newsletter/templates', methods=['POST'])
     def create_newsletter_template():
         data = request.json or {}
-        club = data.get('club', 'GAAFFS')
+        club = data.get('club', 'TEST')
         auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
@@ -558,7 +558,7 @@ def create_newsletter_blueprint(deps):
     @bp.route('/newsletter/filtered_member_ids', methods=['POST'])
     def get_newsletter_filtered_member_ids():
         data = request.json or {}
-        club = data.get('club', 'GAAFFS')
+        club = data.get('club', 'TEST')
         auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
@@ -602,7 +602,7 @@ def create_newsletter_blueprint(deps):
     @bp.route('/newsletter/send', methods=['POST'])
     def send_newsletter():
         data = request.json or {}
-        club = data.get('club', 'GAAFFS')
+        club = data.get('club', 'TEST')
         auth_error = require_permission('newsletter.send', club)
         if auth_error:
             return auth_error
