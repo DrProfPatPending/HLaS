@@ -2,6 +2,24 @@
 
 A comprehensive backup solution for the HLaS system with support for database snapshots, filesystem backups, and cloud storage integration.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
+### Deployment Script Reference
+
+If you are rebuilding/deploying with `./hlas_build.sh`, note these CLI pairs:
+
+- `--clean` / `-c` enables post-build Docker prune
+- `--noclean` / `--no-clean` / `-C` explicitly disables post-build prune
+- `--verbose` / `-v` enables command output
+- `--quiet` / `-q` and `--noverbose` / `--no-verbose` / `-V` suppress command output
+
+The script uses **last flag wins** semantics (for example, `--clean -C` ends with no clean).
+
+Canonical reference for all current `hlas_build.sh` options: see [DEPLOYMENT.md](DEPLOYMENT.md) (Deployment Scripts options table).
+
 ## Overview
 
 The backup system provides:
@@ -514,7 +532,7 @@ Add to backup script:
 LOG_FILE="/var/log/hlas-backup.log"
 EMAIL="admin@example.com"
 
-python3 /opt/HLaS/backend/backup_cli.py create-full >> "$LOG_FILE" 2>&1
+python3 /opt/hlas/backend/backup_cli.py create-full >> "$LOG_FILE" 2>&1
 
 if [ $? -ne 0 ]; then
   tail -20 "$LOG_FILE" | mail -s "HLaS Backup Failed" "$EMAIL"

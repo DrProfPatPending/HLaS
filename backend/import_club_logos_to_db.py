@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Update this with your actual database URL or use env var
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://hlas:hlas@postgres:5432/hlas")
-DEFAULT_LOGOS_DIR = "/opt/HLaS/backend/club_logos" if os.path.exists("/opt/HLaS/backend/club_logos") else "/app/club_logos"
+DEFAULT_LOGOS_DIR = "/opt/hlas/backend/club_logos" if os.path.exists("/opt/hlas/backend/club_logos") else "/app/club_logos"
 LOGOS_DIR = os.getenv("LOGOS_DIR", DEFAULT_LOGOS_DIR)
 
 def main():

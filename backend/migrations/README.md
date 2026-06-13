@@ -2,6 +2,11 @@
 
 This folder contains the initial migration scaffold for moving HLaS storage from JSON + per-club SQLite to PostgreSQL.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Files
 
 - `../alembic.ini` Alembic configuration

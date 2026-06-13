@@ -4,6 +4,7 @@ from sqlalchemy import and_, func, or_, select
 
 ROLE_RANK = {
     'user': 1,
+    'committee': 2,
     'club_admin': 2,
     'club_manager': 3,
     'app_admin': 4,

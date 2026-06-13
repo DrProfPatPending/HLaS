@@ -251,7 +251,7 @@ roles = Table(
     Column("name", String(120), nullable=False),
     # 'global' roles apply across all clubs; 'club' roles are scoped to one club
     Column("scope_type", String(16), nullable=False, server_default="club"),
-    # True for the five built-in roles seeded by migration
+    # True for the built-in roles seeded by migration
     Column("is_system", Boolean, nullable=False, server_default="false"),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )

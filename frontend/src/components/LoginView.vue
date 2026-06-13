@@ -1,5 +1,16 @@
 <template>
   <div class="login-container">
+    <template v-if="isUnknownClub">
+      <h2>Club not recognised</h2>
+      <p>
+        The specific club you requested <strong>{{ unknownClubCode }}</strong> is not recognised on this server,
+        please either correct your URL, or click on the link below to go to the main login page for the application.
+      </p>
+      <p>
+        <a :href="mainLoginUrl">{{ mainLoginUrl }}</a>
+      </p>
+    </template>
+    <template v-else>
     <h2>{{ loginHeading }}</h2>
     <div v-if="selectedClubLogoUrl" class="login-club-logo-wrap">
       <img
@@ -7,6 +18,14 @@
         :alt="`${selectedClubLabel} logo`"
         class="login-club-logo"
       />
+    </div>
+    <div
+      v-else-if="isResolvingClub && (isClubSpecificUrl || isClubPathCandidate)"
+      class="login-club-logo-wrap"
+    >
+      <div class="login-club-logo-placeholder" aria-hidden="true">
+        <div class="login-club-logo-skeleton" />
+      </div>
     </div>
     <form @submit.prevent="login">
       <div v-if="showClubDropdown" class="form-field">
@@ -46,11 +65,13 @@
       <a href="/admin.html">Admin login</a>
     </div>
     <div v-if="loginError" class="login-error">{{ loginError }}</div>
+    </template>
   </div>
 </template>
 
 <script>
-import { store, login, API_BASE_URL } from '../store.js';
+import axios from 'axios';
+import { store, login, API_BASE_URL, loadClubs } from '../store.js';
 import AppButton from './ui/AppButton.vue';
 
 export default {
@@ -61,6 +82,11 @@ export default {
   data() {
     return {
       isClubSpecificUrl: false,
+      isUnknownClub: false,
+      unknownClubCode: '',
+      mainLoginUrl: `${window.location.origin}/`,
+      isResolvingClub: false,
+      isClubPathCandidate: false,
       rememberMe: false,
     };
   },
@@ -103,8 +129,23 @@ export default {
       return `${API_BASE_URL}${logoUrl.startsWith('/') ? '' : '/'}${logoUrl}`;
     },
   },
-  mounted() {
-    this.checkIfClubSpecificUrl();
+  async mounted() {
+    this.isClubPathCandidate = /^\/clubs?\/[^/]+/i.test(String(window.location.pathname || ''));
+    this.isResolvingClub = true;
+
+    try {
+      if (!Array.isArray(store.clubs) || store.clubs.length === 0) {
+        try {
+          await loadClubs();
+        } catch {
+        }
+      }
+
+      await this.checkIfClubSpecificUrl();
+    } finally {
+      this.isResolvingClub = false;
+    }
+
     // Prefill username if remembered
     const remembered = window.localStorage.getItem('hlas.rememberedUsername');
     if (remembered) {
@@ -122,12 +163,41 @@ export default {
       }
       login();
     },
-    checkIfClubSpecificUrl() {
+    findClubByCode(clubs, candidateCode) {
+      const target = String(candidateCode || '').trim();
+      if (!target) return null;
+      return (
+        clubs.find((club) => club?.shortName === target)
+        || clubs.find((club) => String(club?.shortName || '').toLowerCase() === target.toLowerCase())
+        || null
+      );
+    },
+    async checkIfClubSpecificUrl() {
       try {
         const match = String(window.location.pathname || '').match(/^\/clubs?\/([^/]+)/i);
         this.isClubSpecificUrl = !!match && !!match[1];
         if (match && match[1]) {
-          store.selectedClub = match[1];
+          const requestedClub = decodeURIComponent(match[1]).trim();
+          store.selectedClub = requestedClub;
+
+          try {
+            const clubsResponse = await axios.get(`${API_BASE_URL}/clubs`);
+            const clubs = Array.isArray(clubsResponse?.data?.clubs)
+              ? clubsResponse.data.clubs
+              : [];
+            const matchedClub = this.findClubByCode(clubs, requestedClub);
+
+            if (!matchedClub) {
+              this.isUnknownClub = true;
+              this.unknownClubCode = requestedClub || 'unknown';
+              document.title = 'HLaS - Club not recognised';
+              return;
+            }
+
+            store.selectedClub = matchedClub.shortName;
+          } catch (validationError) {
+            console.error('Error validating club code:', validationError);
+          }
         }
       } catch {
         this.isClubSpecificUrl = false;
@@ -148,6 +218,27 @@ export default {
   width: auto;
 }
 
+.login-club-logo-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  min-height: 72px;
+  padding: 8px 12px;
+  border: 1px solid var(--app-color-border-default);
+  border-radius: 4px;
+  background: var(--app-color-bg-subtle);
+}
+
+.login-club-logo-skeleton {
+  width: min(210px, 75vw);
+  max-width: 100%;
+  aspect-ratio: 3.6 / 1;
+  min-height: 48px;
+  border-radius: 4px;
+  background: var(--app-color-bg-muted);
+}
+
 .club-locked-info {
   pointer-events: none;
   opacity: 0.7;
@@ -164,6 +255,10 @@ export default {
 
 .login-error {
   color: var(--app-color-state-danger);
+}
+
+.login-container p {
+  margin-bottom: 12px;
 }
 
 .remember-me-row {

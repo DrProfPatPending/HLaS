@@ -568,7 +568,7 @@ class HLaS_Integration {
 				HLAS_PLUGIN_VERSION
 			);
 
-			// Localize script with settings
+			// Localise script with settings
 			wp_localize_script(
 				'hlas-api-client',
 				'hlasConfig',

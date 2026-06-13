@@ -1,5 +1,10 @@
 # Mini Site Multi-Page System Implementation
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Overview
 
 The mini site system has been extended to support multiple template-based pages with full admin control. Clubs can now create a comprehensive marketing website with customizable pages while maintaining responsive mobile views.
@@ -377,7 +382,7 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
    - Open Graph data
    - Sitemap generation
 
-7. **Content Localization**
+7. **Content Localisation**
    - Multi-language support
    - Region-specific content
 

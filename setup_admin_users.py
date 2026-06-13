@@ -14,7 +14,7 @@ os.environ['DATABASE_URL'] = 'postgresql://hlas:hlas@localhost:5433/hlas'
 os.environ['HLAS_USE_POSTGRES_READS'] = '1'
 
 # Add backend to path
-sys.path.insert(0, '/opt/HLaS/backend')
+sys.path.insert(0, '/opt/hlas/backend')
 
 from app import create_app
 from sqlalchemy import select, text

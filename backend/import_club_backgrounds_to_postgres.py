@@ -14,7 +14,7 @@ POSTGRES_URL = os_module.getenv('DATABASE_URL', 'postgresql+psycopg://hlas:hlas@
 # Directory containing background PNG files
 BACKGROUND_DIR = os_module.getenv(
     'BACKGROUND_DIR',
-    '/opt/HLaS/backend/club_logos' if os_module.path.exists('/opt/HLaS/backend/club_logos') else '/app/club_logos'
+    '/opt/hlas/backend/club_logos' if os_module.path.exists('/opt/hlas/backend/club_logos') else '/app/club_logos'
 )
 
 

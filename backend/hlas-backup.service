@@ -24,14 +24,14 @@
 
 [Unit]
 Description=HLaS Backup Service
-Documentation=file:///opt/HLaS/BACKUP_SYSTEM.md
+Documentation=file:///opt/hlas/BACKUP_SYSTEM.md
 After=network.target postgresql.service
 Requires=postgresql.service
 
 [Service]
 Type=oneshot
 User=root
-WorkingDirectory=/opt/HLaS/backend
+WorkingDirectory=/opt/hlas/backend
 
 # Sets database connection - adjust to your setup
 Environment="DATABASE_URL=postgresql://hlas:password@localhost:5432/hlas"
@@ -39,12 +39,12 @@ Environment="HLAS_BACKUP_DIR=/data/backups"
 Environment="HLAS_LOG_LEVEL=INFO"
 
 # Run backup command
-ExecStart=/usr/bin/python3 /opt/HLaS/backend/backup_cli.py create-full \
+ExecStart=/usr/bin/python3 /opt/hlas/backend/backup_cli.py create-full \
     --description="Scheduled automated backup"
 
 # Cleanup old backups after 5 minutes
 ExecStartPost=/bin/sleep 300
-ExecStartPost=/usr/bin/python3 /opt/HLaS/backend/backup_cli.py cleanup \
+ExecStartPost=/usr/bin/python3 /opt/hlas/backend/backup_cli.py cleanup \
     --days=30 --max=7
 
 # Restart policy

@@ -5,7 +5,7 @@ CERT_NAME="hlastest-caddy-local"
 TMP_CERT="/tmp/${CERT_NAME}.crt"
 SYSTEM_CERT="/usr/local/share/ca-certificates/${CERT_NAME}.crt"
 
-cd /opt/HLaS
+cd /opt/hlas
 
 echo "Exporting Caddy local root certificate..."
 docker compose -f docker-compose.prod.yml exec -T caddy \

@@ -7,6 +7,11 @@ This guide also reflects later operational changes, including PostgreSQL-backed 
 It also now covers the Beat Details member page, dedicated field-order config for that view, and the redesigned member home dashboard.
 It now also covers PostgreSQL-backed club document storage and Home dashboard document visibility.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ---
 
 ## Deployment Strategy & Branch Management (May 2026)
@@ -147,8 +152,10 @@ Supports a rich set of options for flexible deployment and iterative development
 | `--quick` | `-Q` | | Omit `--no-cache` — reuse Docker layer cache for faster rebuilds |
 | `--nohealth` | `-n` | | Skip post-start health checks |
 | `--clean` | `-c` | | Run `docker system prune -f` after a successful build |
+| `--noclean`, `--no-clean` | `-C` | ✓ | Disable Docker prune step (same effective default as not passing `--clean`) |
 | `--verbose` | `-v` | | Show full command output |
 | `--quiet` | `-q` | ✓ | Suppress command output (default) |
+| `--noverbose`, `--no-verbose` | `-V` | ✓ | Alias for quiet/no-verbose output (same behavior as `--quiet`) |
 | `--log-file <file>` |  | | Write full stdout/stderr output to the specified file |
 
 Examples:
@@ -167,6 +174,9 @@ Examples:
 
 # Verbose production deploy
 ./hlas_build.sh --target production --verbose
+
+# Explicitly disable clean / verbose if an earlier flag enabled them (last flag wins)
+./hlas_build.sh --target production --clean -C --verbose -V
 ```
 
 The script also:
@@ -550,13 +560,13 @@ After deploying backend code that includes beats export/import and automatic sta
 
    **Option A: Via API (requires running backend)**
    ```bash
-   cd /opt/HLaS
+   cd /opt/hlas
    python3 sync_beats_via_api.py
    ```
 
    **Option B: Direct database sync (requires DATABASE_URL)**
    ```bash
-   cd /opt/HLaS
+   cd /opt/hlas
    docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
    ```
 

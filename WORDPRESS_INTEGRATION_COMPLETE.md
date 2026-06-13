@@ -1,5 +1,10 @@
 # HLaS WordPress Integration - Complete Implementation Guide
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Project Summary
 
 This document outlines the complete implementation of HLaS integration with WordPress, accomplished in two phases:
@@ -71,11 +76,11 @@ This document outlines the complete implementation of HLaS integration with Word
 ### Files Created/Modified
 
 **New Files:**
-- `/opt/HLaS/backend/routes/headless_routes.py` - Headless API endpoints
+- `/opt/hlas/backend/routes/headless_routes.py` - Headless API endpoints
 
 **Modified Files:**
-- `/opt/HLaS/backend/app.py` - Registered headless blueprint
-- `/opt/HLaS/backend/routes/__init__.py` - Added headless blueprint export
+- `/opt/hlas/backend/app.py` - Registered headless blueprint
+- `/opt/hlas/backend/routes/__init__.py` - Added headless blueprint export
 
 ### API Endpoints
 
@@ -243,7 +248,7 @@ Response (201 Created):
 ## Phase 2: WordPress Plugin (Complete)
 
 ### Plugin Location
-`/opt/HLaS/wordpress-plugin/hlas-integration/`
+`/opt/hlas/wordpress-plugin/hlas-integration/`
 
 ### Plugin Structure
 ```
@@ -543,12 +548,12 @@ curl -X POST "http://localhost:5000/api/headless/catch-returns/CTC" \
 
 ## Documentation Files
 
-1. **[WORDPRESS_INTEGRATION_BACKEND.md](/opt/HLaS/WORDPRESS_INTEGRATION_BACKEND.md)**
+1. **[WORDPRESS_INTEGRATION_BACKEND.md](/opt/hlas/WORDPRESS_INTEGRATION_BACKEND.md)**
    - Backend API documentation
    - Endpoint specifications
    - Configuration guides
 
-2. **[wordpress-plugin/hlas-integration/README.md](/opt/HLaS/wordpress-plugin/hlas-integration/README.md)**
+2. **[wordpress-plugin/hlas-integration/README.md](/opt/hlas/wordpress-plugin/hlas-integration/README.md)**
    - Plugin installation and setup
    - Shortcode usage
    - Styling customization

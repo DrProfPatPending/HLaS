@@ -2,6 +2,11 @@
 
 Use this checklist for Android/iOS releases via Capacitor.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## 1) Prerequisites
 
 - Backend target environment is deployed and reachable from devices.

@@ -1,5 +1,10 @@
 # HLaS Backup System - Quick Start Guide
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## 5-Minute Setup
 
 ### Step 1: Install Python Dependencies
@@ -48,6 +53,19 @@ python3 backend/backup_cli.py status
 ```
 
 **✓ Backup system is now ready!**
+
+### Deployment Script Reference
+
+If you are rebuilding/deploying with `./hlas_build.sh`, note these CLI pairs:
+
+- `--clean` / `-c` enables post-build Docker prune
+- `--noclean` / `--no-clean` / `-C` explicitly disables post-build prune
+- `--verbose` / `-v` enables command output
+- `--quiet` / `-q` and `--noverbose` / `--no-verbose` / `-V` suppress command output
+
+The script uses **last flag wins** semantics (for example, `--clean -C` ends with no clean).
+
+Canonical reference for all current `hlas_build.sh` options: see [DEPLOYMENT.md](DEPLOYMENT.md) (Deployment Scripts options table).
 
 ---
 
@@ -369,24 +387,24 @@ EOF
 
 ```bash
 # Daily full backup, keep 7 days
-0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full
+0 2 * * * python3 /opt/hlas/backend/backup_cli.py create-full
 ```
 
 ### For Medium Deployments
 
 ```bash
 # Daily backups + weekly cloud upload
-0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full
-0 3 * * 0 python3 /opt/HLaS/backend/backup_cli.py upload latest --bucket=my-bucket
+0 2 * * * python3 /opt/hlas/backend/backup_cli.py create-full
+0 3 * * 0 python3 /opt/hlas/backend/backup_cli.py upload latest --bucket=my-bucket
 ```
 
 ### For Large/Production Deployments
 
 ```bash
 # Hourly database backups + daily full backups
-0 * * * * python3 /opt/HLaS/backend/backup_cli.py create-db
-0 2 * * * python3 /opt/HLaS/backend/backup_cli.py create-full
-0 3 * * 0 python3 /opt/HLaS/backend/backup_cli.py upload latest --bucket=my-bucket
+0 * * * * python3 /opt/hlas/backend/backup_cli.py create-db
+0 2 * * * python3 /opt/hlas/backend/backup_cli.py create-full
+0 3 * * 0 python3 /opt/hlas/backend/backup_cli.py upload latest --bucket=my-bucket
 ```
 
 ---

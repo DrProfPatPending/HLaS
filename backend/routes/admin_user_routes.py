@@ -184,8 +184,8 @@ def create_admin_user_blueprint(deps):
     # -------------------------------------------------------------------------
     # GET /admin/roles
     # Returns roles the caller is permitted to assign.
-    # app_owner  → all 5 roles
-    # app_admin  → club-scoped roles only (user, club_admin, club_manager)
+    # app_owner  → all roles
+    # app_admin  → club-scoped roles only (user, committee, club_admin, club_manager)
     # -------------------------------------------------------------------------
     @bp.route('/admin/roles', methods=['GET'])
     def admin_list_roles():

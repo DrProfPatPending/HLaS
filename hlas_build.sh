@@ -19,25 +19,34 @@ Options:
   -t, --target <target>     Deployment target/branch (default: ctc-production)
                             Examples: ctc-production, production, development, main
   -d, --directory <dir>     Deployment directory (default: /opt/hlas)
-                            Example: /opt/HLaS
+                            Example: /opt/hlas
     -l, --local               Build from local working tree (skip git reset)
     -r, --remote              Build from origin/<target> (default)
   -f, --full                Full rebuild: pass --no-cache to docker build (default)
   -Q, --quick               Quick rebuild: use Docker layer cache (faster for dev)
   -c, --clean               Run 'docker system prune -f' after successful build
+    -C                        Alias for --noclean (disable Docker prune step)
+      --noclean, --no-clean Disable Docker prune step (default)
   -n, --nohealth            Skip post-start health checks
       --log-file <file>      Write full build output to a file
   -q, --quiet               Suppress command output (default)
+    -V                        Alias for --quiet (no verbose output)
   -v, --verbose             Show command output
+      --noverbose,
+      --no-verbose          Suppress command output (same as --quiet)
   -h, --help                Show this help message
 
 Examples:
   $0
-  $0 --target development --directory /opt/HLaS
-    $0 --target development --directory /opt/HLaS --local
+  $0 --target development --directory /opt/hlas
+    $0 --target development --directory /opt/hlas --local
   $0 -t production -v
+    $0 -t production -v -V
+    $0 --target production --verbose --noverbose
   $0 --target development --quick --local  # fast dev rebuild using cache
   $0 --target production --clean           # deploy and prune dangling images
+    $0 -t production --clean -C              # -C disables clean (last flag wins)
+    $0 --target production --clean --noclean # last flag wins (no prune)
     $0 --target production --quiet --log-file /tmp/hlas-build.log
 EOF
 }
@@ -72,6 +81,10 @@ while (($#)); do
             RUN_CLEAN=1
             shift
             ;;
+        -C|--noclean|--no-clean)
+            RUN_CLEAN=0
+            shift
+            ;;
         -n|--nohealth)
             SKIP_HEALTH=1
             shift
@@ -92,12 +105,16 @@ while (($#)); do
             USE_REMOTE=1
             shift
             ;;
-        -q|--quiet)
+        -q|-V|--quiet)
             VERBOSE=0
             shift
             ;;
         -v|--verbose)
             VERBOSE=1
+            shift
+            ;;
+        --noverbose|--no-verbose)
+            VERBOSE=0
             shift
             ;;
         -h|--help)
@@ -190,8 +207,15 @@ log "Rebuilding latest HLaS from Github sources (directory: $DIRECTORY, target: 
 unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB HLAS_USE_POSTGRES_READS LOG_LEVEL
 
 case "$TARGET" in
-    production|prod|ctc-production)
-        BRANCH_NAME="$TARGET"
+    production|prod)
+        BRANCH_NAME="production"
+        ENV_FILE=".env.prod"
+        COMPOSE_FILES=("-f" "docker-compose.prod.yml")
+        CADDYFILE="deploy/caddy/Caddyfile.prod"
+        HEALTH_HOST="cambridgetroutclub.org"
+        ;;
+    ctc-production)
+        BRANCH_NAME="ctc-production"
         ENV_FILE=".env.prod"
         COMPOSE_FILES=("-f" "docker-compose.prod.yml")
         CADDYFILE="deploy/caddy/Caddyfile.prod"

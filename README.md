@@ -40,10 +40,11 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
    - `--full` / `-f` (default): passes `--no-cache` to `docker compose build` — full layer rebuild, safe for production deploys
    - `--quick` / `-Q`: omits `--no-cache`, reusing Docker layer cache for significantly faster iterative dev rebuilds
    - `--clean` / `-c`: runs `docker system prune -f` after a successful build to remove dangling images; only fires on success
+   - `--noclean` / `--no-clean` / `-C`: explicitly disable cleanup (same effective default as omitting `--clean`)
    - `--nohealth` / `-n`: skips the post-start health checks; useful for CI or restricted network environments
    - `--local` / `-l`: skip `git fetch/reset` and build from the local working tree
    - `--log-file <file>`: write the full build transcript, including stdout and stderr, to a file even when `--quiet` is used
-   - `--target` / `-t`, `--directory` / `-d`, `--verbose` / `-v`, `--quiet` / `-q` also available
+   - `--target` / `-t`, `--directory` / `-d`, `--verbose` / `-v`, `--noverbose` / `--no-verbose` / `-V`, `--quiet` / `-q` also available
    - See DEPLOYMENT.md for a full options table and examples
 
 - **Age Field Calculated at Runtime (May 2026):**
@@ -813,7 +814,7 @@ This script runs:
 - smoke checks for `http://localhost`, `https://hlastest`, `https://wordpress.hlastest`, and backend `/clubs`
 
 ```bash
-# Run with defaults (rob@hlastest, /opt/HLaS)
+# Run with defaults (rob@hlastest, /opt/hlas)
 ./trust_caddy_mac.sh
 
 # Override host, user, or remote path if needed
@@ -826,7 +827,7 @@ Options:
 |------|---------|-------------|
 | `-h HOST` | `hlastest` | SSH hostname or IP of the dev server |
 | `-u USER` | `rob` | SSH username |
-| `-p PATH` | `/opt/HLaS` | Path to the HLaS installation on the remote server |
+| `-p PATH` | `/opt/hlas` | Path to the HLaS installation on the remote server |
 
 The script will install the cert into your Login Keychain (no Mac password required). After it completes, quit and relaunch Safari if it is already open, then browse to `https://hlastest`.
 
@@ -1262,6 +1263,10 @@ After import, fully restart Edge/Chrome and test:
 - The default password for imported members is `password` (hashed)
 - Password hashes are automatically generated during CSV import
 - Migration script available: `backend/migrate_passwords.py` to hash existing plain-text passwords
+
+### Language Convention
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
 
 ---
 

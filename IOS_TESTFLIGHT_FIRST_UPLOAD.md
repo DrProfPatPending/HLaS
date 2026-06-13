@@ -4,6 +4,11 @@ Use this guide for your **first-ever iOS upload** of HLaS to App Store Connect/T
 
 This is written for the current HLaS Capacitor setup on branch `development`.
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## 1) What you need first (one-time)
 
 - An active Apple Developer Program membership.

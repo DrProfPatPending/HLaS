@@ -1,5 +1,10 @@
 # Deployment Changes - May 2026
 
+### Language Convention
+
+- User-facing copy and documentation in this repository should default to British English spelling (for example: recognised, localisation, authorised).
+- Keep external API/library identifiers unchanged where spelling is fixed by the platform (for example: `wp_localize_script`).
+
 ## Summary of Changes
 
 This document covers three major enhancements to the HLaS Home Page and document management system:
@@ -143,7 +148,7 @@ Implemented a JSON-based document sync system that mirrors the existing beats sy
 
 #### Export (Development)
 ```bash
-cd /opt/HLaS
+cd /opt/hlas
 source backend-venv/bin/activate
 
 # Export documents from PostgreSQL to JSON
@@ -159,7 +164,7 @@ python3 backend/sync_documents_postgres_to_json.py \
 
 #### Import (Production)
 ```bash
-cd /opt/HLaS/backend
+cd /opt/hlas/backend
 python3 sync_documents_json_to_postgres.py \
   -u "postgresql://user:pass@host:5432/dbname" \
   -f documents.json
@@ -255,7 +260,7 @@ Options:
 2. **Production Server (Fresh Build):**
    ```bash
    # After database migrations run
-   cd /opt/HLaS
+   cd /opt/hlas
    
    # Restore documents from JSON
    python3 backend/sync_documents_json_to_postgres.py \
