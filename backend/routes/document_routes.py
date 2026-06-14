@@ -2,7 +2,7 @@ import os
 from io import BytesIO
 
 from flask import Blueprint, jsonify, request, send_file
-from sqlalchemy import and_, select
+from sqlalchemy import and_, bindparam, func, select, update
 from werkzeug.utils import secure_filename
 
 ALLOWED_DOCUMENT_EXTENSIONS = {
@@ -29,6 +29,30 @@ def create_document_blueprint(deps):
         )
         return str(club or '').strip()
 
+    def _fetch_ordered_document_ids(session, table, club_id):
+        rows = session.execute(
+            select(table.c.id)
+            .where(table.c.club_id == club_id)
+            .order_by(table.c.display_order.asc(), table.c.id.asc())
+        ).fetchall()
+        return [int(row.id) for row in rows]
+
+    def _rewrite_display_order(session, table, ordered_ids):
+        if not ordered_ids:
+            return
+        session.execute(
+            update(table)
+            .where(table.c.id == bindparam('id_param'))
+            .values(display_order=bindparam('display_order_param')),
+            [
+                {
+                    'id_param': int(document_id),
+                    'display_order_param': index + 1,
+                }
+                for index, document_id in enumerate(ordered_ids)
+            ],
+        )
+
     @bp.route('/documents', methods=['GET'])
     def list_documents():
         club = _resolve_club_from_request()
@@ -46,12 +70,15 @@ def create_document_blueprint(deps):
                 return jsonify({'error': 'Invalid club selection'}), 400
 
             rows = session.execute(
-                select(table).where(table.c.club_id == club_id).order_by(table.c.created_at.desc(), table.c.id.desc())
+                select(table)
+                .where(table.c.club_id == club_id)
+                .order_by(table.c.display_order.asc(), table.c.id.asc())
             ).fetchall()
 
             documents = [
                 {
                     'id': row.id,
+                    'displayOrder': int(row.display_order or 0),
                     'title': row.title,
                     'fileName': row.file_name,
                     'fileExt': row.file_ext,
@@ -137,10 +164,15 @@ def create_document_blueprint(deps):
 
             principal = get_current_principal(club) or {}
             uploaded_by_user_id = principal.get('user_id')
+            max_display_order = session.execute(
+                select(func.max(table.c.display_order)).where(table.c.club_id == club_id)
+            ).scalar()
+            next_display_order = int(max_display_order or 0) + 1
 
             insert_result = session.execute(
                 table.insert().values(
                     club_id=club_id,
+                    display_order=next_display_order,
                     title=title,
                     file_name=safe_filename,
                     file_ext=file_ext,
@@ -179,11 +211,74 @@ def create_document_blueprint(deps):
             result = session.execute(
                 table.delete().where(and_(table.c.id == document_id, table.c.club_id == club_id))
             )
+
+            if result.rowcount:
+                ordered_ids = _fetch_ordered_document_ids(session, table, club_id)
+                _rewrite_display_order(session, table, ordered_ids)
             session.commit()
 
             if result.rowcount == 0:
                 return jsonify({'error': 'Document not found'}), 404
             return jsonify({'message': 'Document deleted'})
+        finally:
+            session.close()
+
+    @bp.route('/documents/<int:document_id>/order', methods=['PUT'])
+    def update_document_order(document_id):
+        club = _resolve_club_from_request()
+        auth_error = require_permission('document.club.manage', club)
+        if auth_error:
+            return auth_error
+
+        payload = request.get_json(silent=True) or {}
+        raw_display_order = (
+            payload.get('displayOrder')
+            or payload.get('display_order')
+            or request.form.get('displayOrder')
+            or request.form.get('display_order')
+            or request.args.get('displayOrder')
+            or request.args.get('display_order')
+        )
+
+        try:
+            requested_order = int(raw_display_order)
+        except (TypeError, ValueError):
+            return jsonify({'error': 'displayOrder must be a positive integer'}), 400
+
+        if requested_order < 1:
+            return jsonify({'error': 'displayOrder must be a positive integer'}), 400
+
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        table = backend['club_documents_table']
+
+        try:
+            club_id = _resolve_postgres_club_id(session, club)
+            if club_id is None:
+                return jsonify({'error': 'Invalid club selection'}), 400
+
+            existing = session.execute(
+                select(table.c.id).where(and_(table.c.id == document_id, table.c.club_id == club_id))
+            ).first()
+            if existing is None:
+                return jsonify({'error': 'Document not found'}), 404
+
+            ordered_ids = _fetch_ordered_document_ids(session, table, club_id)
+            if document_id not in ordered_ids:
+                return jsonify({'error': 'Document not found'}), 404
+
+            ordered_ids.remove(document_id)
+            insert_index = min(len(ordered_ids), max(0, requested_order - 1))
+            ordered_ids.insert(insert_index, document_id)
+
+            _rewrite_display_order(session, table, ordered_ids)
+            session.commit()
+
+            return jsonify({
+                'message': 'Document order updated',
+                'id': document_id,
+                'displayOrder': insert_index + 1,
+            })
         finally:
             session.close()
 

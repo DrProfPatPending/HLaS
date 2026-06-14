@@ -139,12 +139,13 @@
             <tr v-else-if="!documents.length">
               <td :colspan="documentsColumnCount">No documents uploaded yet.</td>
             </tr>
-            <tr v-else v-for="doc in sortedDocuments" :key="doc.id">
+            <tr v-else v-for="(doc, docIndex) in sortedDocuments" :key="doc.id">
               <td
                 v-for="column in visibleDocumentsColumns"
                 :key="`docs-cell-${doc.id}-${column.key}`"
                 :class="{
                   'documents-title-cell': column.key === 'Title',
+                  'documents-position-cell': column.key === 'Position',
                   'documents-file-cell': column.key === 'File',
                   'documents-actions-cell': column.key === 'Actions',
                 }"
@@ -162,8 +163,58 @@
                 <span v-else-if="column.key === 'File'">{{ doc.fileName }}</span>
                 <span v-else-if="column.key === 'Uploaded'">{{ formatNewsDate(doc.createdAt) }}</span>
                 <span v-else-if="column.key === 'Size'">{{ formatFileSize(doc.fileSize) }}</span>
+                <template v-else-if="column.key === 'Position'">
+                  <div
+                    v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
+                    class="documents-position-controls"
+                  >
+                    <input
+                      :value="getPendingDocumentOrder(doc, docIndex)"
+                      type="number"
+                      min="1"
+                      :max="sortedDocuments.length"
+                      class="documents-order-input"
+                      :disabled="orderUpdateBusyId === doc.id"
+                      @input="setPendingDocumentOrder(doc.id, $event.target.value)"
+                      @keydown.enter.prevent="applyDocumentOrder(doc, docIndex)"
+                    />
+                    <app-button
+                      type="button"
+                      size="sm"
+                      class="documents-link-btn documents-action-btn"
+                      inherit-style
+                      :disabled="orderUpdateBusyId === doc.id"
+                      @click="applyDocumentOrder(doc, docIndex)"
+                    >
+                      Apply
+                    </app-button>
+                  </div>
+                  <span v-else>{{ Number(doc.displayOrder || (docIndex + 1)) }}</span>
+                </template>
                 <template v-else-if="column.key === 'Actions'">
                   <div class="documents-actions-stack">
+                    <app-button
+                      v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
+                      type="button"
+                      size="sm"
+                      class="documents-link-btn documents-action-btn"
+                      inherit-style
+                      :disabled="orderUpdateBusyId === doc.id || docIndex === 0"
+                      @click="moveDocument(doc, -1, docIndex)"
+                    >
+                      Move Up
+                    </app-button>
+                    <app-button
+                      v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
+                      type="button"
+                      size="sm"
+                      class="documents-link-btn documents-action-btn"
+                      inherit-style
+                      :disabled="orderUpdateBusyId === doc.id || docIndex === (sortedDocuments.length - 1)"
+                      @click="moveDocument(doc, 1, docIndex)"
+                    >
+                      Move Down
+                    </app-button>
                     <app-button type="button" size="sm" class="documents-link-btn documents-action-btn" inherit-style @click="downloadDocument(doc)">Download</app-button>
                     <app-button
                       v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
@@ -226,6 +277,8 @@ export default {
       newsSortDirection: 'asc',
       documentsSortedBy: null,
       documentsSortDirection: 'asc',
+      orderUpdateBusyId: null,
+      pendingDocumentOrders: {},
     };
   },
   computed: {
@@ -293,6 +346,7 @@ export default {
       const cols = [
         { key: 'Title', label: 'Title' },
         { key: 'Size', label: 'Size' },
+        { key: 'Position', label: 'Position' },
         { key: 'Actions', label: 'Actions' },
       ];
       if (this.VerboseDebug) {
@@ -347,6 +401,7 @@ export default {
         'File': 'fileName',
         'Uploaded': 'createdAt',
         'Size': 'fileSize',
+        'Position': 'displayOrder',
       };
       const sortProperty = propertyMap[this.documentsSortedBy] || this.documentsSortedBy.toLowerCase();
       
@@ -521,6 +576,14 @@ export default {
         .filter(Boolean)
         .filter(column => column.key !== 'Actions' && this.isColumnVisible(contextKey, column.key));
 
+      if (contextKey === 'home_documents') {
+        const positionColumn = fallbackMap.get('Position');
+        const hasPosition = ordered.some(column => column.key === 'Position');
+        if (positionColumn && !hasPosition && this.isColumnVisible(contextKey, 'Position')) {
+          ordered.push(positionColumn);
+        }
+      }
+
       // Always include Actions column at the end, regardless of Field Order settings
       const actionsColumn = fallbackMap.get('Actions');
       if (actionsColumn) {
@@ -549,8 +612,16 @@ export default {
       // Fall back to minimum_widths if weight is not specified
       const rawMinWidth = this.fieldOrder?.minimum_widths?.[contextKey]?.[columnKey];
       const minWidth = Number(rawMinWidth);
-      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
-      return { minWidth: `${minWidth}px` };
+      if (Number.isFinite(minWidth) && minWidth > 0) {
+        return { minWidth: `${minWidth}px` };
+      }
+
+      // Compact default for Position keeps this column close to Actions width
+      if (contextKey === 'home_documents' && columnKey === 'Position') {
+        return { width: '92px', minWidth: '92px' };
+      }
+
+      return {};
     },
     toggleNewsSort(columnKey) {
       // Don't allow sorting by Actions column
@@ -690,6 +761,73 @@ export default {
         window.URL.revokeObjectURL(blobUrl);
       }).catch((err) => {
         this.documentsError = err?.response?.data?.error || 'Download failed';
+      });
+    },
+    moveDocument(doc, delta, docIndex) {
+      this.documentsError = '';
+      if (this.isHomeDocumentsFieldReadOnly('Actions')) {
+        this.documentsError = 'Document actions are read-only for your role.';
+        return Promise.resolve();
+      }
+
+      const currentOrder = Number(doc.displayOrder || (docIndex + 1));
+      const requestedOrder = Math.max(1, Math.min(this.sortedDocuments.length, currentOrder + Number(delta || 0)));
+      if (!Number.isFinite(currentOrder) || requestedOrder === currentOrder) {
+        return Promise.resolve();
+      }
+
+      return this.updateDocumentOrder(doc, requestedOrder);
+    },
+    getPendingDocumentOrder(doc, docIndex) {
+      const pendingValue = this.pendingDocumentOrders?.[doc.id];
+      if (pendingValue !== undefined && pendingValue !== null && pendingValue !== '') {
+        return pendingValue;
+      }
+      return Number(doc.displayOrder || (docIndex + 1));
+    },
+    setPendingDocumentOrder(documentId, rawValue) {
+      this.pendingDocumentOrders = {
+        ...this.pendingDocumentOrders,
+        [documentId]: rawValue,
+      };
+    },
+    applyDocumentOrder(doc, docIndex) {
+      this.documentsError = '';
+      if (this.isHomeDocumentsFieldReadOnly('Actions')) {
+        this.documentsError = 'Document actions are read-only for your role.';
+        return Promise.resolve();
+      }
+
+      const rawValue = this.getPendingDocumentOrder(doc, docIndex);
+      const parsedValue = Number.parseInt(String(rawValue), 10);
+      if (!Number.isFinite(parsedValue)) {
+        this.documentsError = 'Order must be a whole number.';
+        return Promise.resolve();
+      }
+
+      const requestedOrder = Math.max(1, Math.min(this.sortedDocuments.length, parsedValue));
+      return this.updateDocumentOrder(doc, requestedOrder);
+    },
+    updateDocumentOrder(doc, requestedOrder) {
+      const currentOrder = Number(doc.displayOrder || 0);
+      if (currentOrder === requestedOrder) {
+        return Promise.resolve();
+      }
+
+      this.orderUpdateBusyId = doc.id;
+      return axios.put(`${API_BASE_URL}/documents/${doc.id}/order`, {
+        club: this.loggedInClub,
+        displayOrder: requestedOrder,
+      }).then(() => {
+        this.pendingDocumentOrders = {
+          ...this.pendingDocumentOrders,
+          [doc.id]: requestedOrder,
+        };
+        return this.fetchDocuments();
+      }).catch((err) => {
+        this.documentsError = err?.response?.data?.error || 'Unable to update document order';
+      }).finally(() => {
+        this.orderUpdateBusyId = null;
       });
     },
     deleteDocument(doc) {
@@ -1036,7 +1174,30 @@ export default {
   max-width: 100%;
 }
 
+.documents-position-controls {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+}
+
+.documents-order-input {
+  width: 56px;
+  min-height: 26px;
+  border: 1px solid #b7c9d9;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 8pt;
+  line-height: 1.1;
+}
+
+.documents-position-cell {
+  text-align: left;
+}
+
 .documents-title-cell,
+.documents-position-cell,
 .documents-file-cell {
   white-space: normal;
   overflow-wrap: anywhere;
@@ -1176,6 +1337,13 @@ export default {
     padding: 2px 6px !important;
     min-height: 20px !important;
     height: 20px !important;
+  }
+
+  .documents-order-input {
+    width: 48px;
+    min-height: 20px;
+    font-size: 8pt;
+    padding: 2px 4px;
   }
 
   .home-news-table :deep(.news-action-btn.app-button .v-btn__content),
