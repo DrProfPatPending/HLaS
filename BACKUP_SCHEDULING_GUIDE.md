@@ -133,9 +133,9 @@ tail -f /var/log/hlas-backup.log
 sudo cp /opt/hlas/backend/hlas-backup.service /etc/systemd/system/
 sudo cp /opt/hlas/backend/hlas-backup.timer /etc/systemd/system/
 
-# 2. Edit service file to set DATABASE_URL
-sudo nano /etc/systemd/system/hlas-backup.service
-# Update the line: Environment="DATABASE_URL=..."
+# 2. Ensure /opt/hlas/.env.prod contains the production DATABASE_URL
+#    The service sources that file at runtime, so you do not need to edit
+#    the unit file for credentials.
 
 # 3. Reload systemd
 sudo systemctl daemon-reload
@@ -287,8 +287,11 @@ sudo systemctl daemon-reload
 
 **Database connection failing?**
 ```bash
-# Verify DATABASE_URL in service file
-sudo grep DATABASE_URL /etc/systemd/system/hlas-backup.service
+# Verify the deployment DATABASE_URL source
+grep DATABASE_URL /opt/hlas/.env.prod
+
+# The host backup service connects via the published Docker port
+grep -n '^ *- "5433:5432"' /opt/hlas/docker-compose.prod.yml
 
 # Test connection manually
 export DATABASE_URL="postgresql://..."
@@ -323,11 +326,12 @@ python3 /opt/hlas/backend/backup_cli.py status
 # Step 1: Enable systemd timer (primary)
 sudo cp /opt/hlas/backend/hlas-backup.service /etc/systemd/system/
 sudo cp /opt/hlas/backend/hlas-backup.timer /etc/systemd/system/
-# ... customize DATABASE_URL ...
+# Ensure /opt/hlas/.env.prod contains the production credentials
+# The service will translate those into a host-reachable URL using 127.0.0.1:5433
 sudo systemctl enable hlas-backup.timer
 sudo systemctl start hlas-backup.timer
 
-# Step 2: Setup cron as fallback
+# Step 2: Setup cron as fallback (only if you want a second scheduler)
 export DATABASE_URL="postgresql://..."
 cd /opt/hlas/backend
 ./schedule_backups_cron.sh daily
