@@ -28,7 +28,7 @@
               :class="{ 'is-active': activeSection === 'my-club' }"
               @click="navigate('my-club')"
             >
-              My Club
+              Member Info
             </button>
             <button
               type="button"
