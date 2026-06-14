@@ -13,9 +13,6 @@
           <app-button type="button" inherit-style @click="navigate('beat-details')">Beat Details</app-button>
         </li>
         <li>
-          <app-button type="button" inherit-style @click="navigate('club-store')">Club Store</app-button>
-        </li>
-        <li>
           <app-button
             type="button"
             inherit-style

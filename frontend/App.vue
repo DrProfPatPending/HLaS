@@ -63,14 +63,6 @@
               Club Information
             </button>
             <button
-              type="button"
-              class="app-member-nav-button"
-              :class="{ 'is-active': activeSection === 'club-store' }"
-              @click="navigate('club-store')"
-            >
-              Club Store
-            </button>
-            <button
               v-if="canAccessNewsletters"
               type="button"
               class="app-member-nav-button"
