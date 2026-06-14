@@ -20,7 +20,7 @@
               :class="{ 'is-active': activeSection === 'home' }"
               @click="navigate('home')"
             >
-              {{ clubShortName }}
+              {{ clubShortName }} Home
             </button>
             <button
               type="button"

@@ -126,7 +126,7 @@ def sync_documents_to_postgres(json_path: str = None, dry_run: bool = False,
                         print(f'🗑️  Cleared existing documents for {club_name}')
                 
                 # Insert documents from JSON
-                for doc in docs:
+                for index, doc in enumerate(docs):
                     try:
                         # Decode base64 file content
                         file_b64 = doc.get('fileContent', '')
@@ -134,6 +134,7 @@ def sync_documents_to_postgres(json_path: str = None, dry_run: bool = False,
                         
                         doc_insert = {
                             'club_id': club_id,
+                            'display_order': int(doc.get('displayOrder') or (index + 1)),
                             'title': doc.get('title', ''),
                             'file_name': doc.get('fileName', ''),
                             'file_ext': doc.get('fileExt', ''),
