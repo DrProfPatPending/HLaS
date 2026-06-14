@@ -298,6 +298,7 @@ export default {
   computed: {
     clubFullName: () => clubDetails.value.fullName,
     orderedTableColumns() {
+      const summaryHiddenColumns = new Set(['Beat_Upstream', 'Beat_Downstream']);
       const columnMap = {
         Beat_ID: { key: 'Beat_ID', label: 'Beat ID' },
         Beat_Name: { key: 'Beat_Name', label: 'Beat Name' },
@@ -321,6 +322,7 @@ export default {
         : fallbackOrder;
       return configuredOrder
         .filter(key => this.isColumnVisible('fishing_beats', key))
+        .filter(key => !summaryHiddenColumns.has(key))
         .filter(key => columnMap[key])
         .map(key => columnMap[key]);
     },
