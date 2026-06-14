@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import and_, select
 
 FIELD_ORDER_PATH = os.path.join(os.path.dirname(__file__), '../field_order.json')
+FIELD_ORDER_KEY = 'field_order'
 
 
 def _load_field_order_from_json():
@@ -79,9 +80,123 @@ def _normalize_field_order_config(loaded, defaults=None):
     return merged
 
 
-def load_field_order_config(deps=None):
+def _resolve_club_short_name(explicit_club, deps):
+    requested_club = str(explicit_club or '').strip()
+    get_current_principal = deps.get('get_current_principal')
+    if not callable(get_current_principal):
+        return requested_club
+
+    principal = get_current_principal(requested_club)
+    if not principal:
+        return requested_club
+
+    scoped = str(principal.get('scope_club_short_name') or '').strip()
+    session_club = str(principal.get('club_short_name') or '').strip()
+    return scoped or session_club or requested_club
+
+
+def _load_field_order_from_postgres_for_club(club_short_name, deps):
+    normalized_club = str(club_short_name or '').strip()
+    if not normalized_club:
+        return None
+
+    is_postgres_reads_enabled = deps.get('is_postgres_reads_enabled')
+    get_postgres_backend = deps.get('get_postgres_backend')
+    if not (callable(is_postgres_reads_enabled) and callable(get_postgres_backend) and is_postgres_reads_enabled()):
+        return None
+
+    backend = get_postgres_backend()
+    session = backend['session_factory']()
+    club_field_order_table = backend.get('club_field_order_table')
+    clubs_table = backend.get('clubs_table')
+    if club_field_order_table is None or clubs_table is None:
+        session.close()
+        return None
+
+    try:
+        row = session.execute(
+            select(club_field_order_table.c.config)
+            .select_from(club_field_order_table.join(clubs_table, club_field_order_table.c.club_id == clubs_table.c.id))
+            .where(
+                and_(
+                    clubs_table.c.short_name == normalized_club,
+                    clubs_table.c.is_active.is_(True),
+                )
+            )
+        ).first()
+    finally:
+        session.close()
+
+    loaded = row[0] if row else None
+    return loaded if isinstance(loaded, dict) else None
+
+
+def _save_field_order_to_postgres_for_club(club_short_name, normalized_data, deps):
+    normalized_club = str(club_short_name or '').strip()
+    if not normalized_club:
+        raise ValueError('Club is required')
+
+    is_postgres_writes_enabled = deps.get('is_postgres_writes_enabled')
+    get_postgres_backend = deps.get('get_postgres_backend')
+    if not (callable(is_postgres_writes_enabled) and callable(get_postgres_backend) and is_postgres_writes_enabled()):
+        raise RuntimeError('PostgreSQL writes are not enabled')
+
+    backend = get_postgres_backend()
+    session = backend['session_factory']()
+    club_field_order_table = backend.get('club_field_order_table')
+    clubs_table = backend.get('clubs_table')
+    if club_field_order_table is None or clubs_table is None:
+        session.close()
+        raise RuntimeError('club_field_order table is unavailable')
+
+    try:
+        club_id = session.execute(
+            select(clubs_table.c.id).where(
+                and_(
+                    clubs_table.c.short_name == normalized_club,
+                    clubs_table.c.is_active.is_(True),
+                )
+            )
+        ).scalar_one_or_none()
+        if club_id is None:
+            raise ValueError('Club not found')
+
+        existing = session.execute(
+            select(club_field_order_table.c.id).where(club_field_order_table.c.club_id == club_id)
+        ).first()
+
+        if existing:
+            session.execute(
+                club_field_order_table.update()
+                .where(club_field_order_table.c.id == existing[0])
+                .values(config=normalized_data)
+            )
+        else:
+            session.execute(
+                club_field_order_table.insert().values(club_id=club_id, config=normalized_data)
+            )
+
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def load_field_order_config(deps=None, club_short_name=''):
     deps = deps or {}
     default_config = _normalize_field_order_config(_load_field_order_from_json())
+
+    normalized_club = str(club_short_name or '').strip()
+    if normalized_club:
+        try:
+            loaded = _load_field_order_from_postgres_for_club(normalized_club, deps)
+            if isinstance(loaded, dict) and loaded:
+                return _normalize_field_order_config(loaded, default_config)
+        except Exception:
+            pass
+
     is_postgres_reads_enabled = deps.get('is_postgres_reads_enabled')
     get_postgres_backend = deps.get('get_postgres_backend')
 
@@ -93,7 +208,7 @@ def load_field_order_config(deps=None):
             try:
                 row = session.execute(
                     select(app_settings_table.c.value).where(
-                        and_(app_settings_table.c.scope == 'global', app_settings_table.c.key == 'field_order')
+                        and_(app_settings_table.c.scope == 'global', app_settings_table.c.key == FIELD_ORDER_KEY)
                     )
                 ).first()
             finally:
@@ -124,7 +239,7 @@ def save_field_order_config(data, deps=None):
         try:
             existing = session.execute(
                 select(app_settings_table.c.id).where(
-                    and_(app_settings_table.c.scope == 'global', app_settings_table.c.key == 'field_order')
+                    and_(app_settings_table.c.scope == 'global', app_settings_table.c.key == FIELD_ORDER_KEY)
                 )
             ).first()
 
@@ -136,7 +251,7 @@ def save_field_order_config(data, deps=None):
                 )
             else:
                 session.execute(
-                    app_settings_table.insert().values(scope='global', key='field_order', value=normalized_data)
+                    app_settings_table.insert().values(scope='global', key=FIELD_ORDER_KEY, value=normalized_data)
                 )
             session.commit()
         except Exception:
@@ -150,38 +265,85 @@ def create_field_order_blueprint(deps=None):
     deps = deps or {}
     bp = Blueprint('field_order', __name__)
 
-    def require_admin():
-        # Placeholder: Replace with actual admin check logic
-        # Should check for admin token/role in production
-        auth_header = request.headers.get('Authorization', '')
-        if not auth_header or 'Bearer' not in auth_header:
-            return jsonify({'error': 'Admin authentication required'}), 401
-        # Optionally, validate token and check admin role here
-        return None
+    require_authenticated = deps.get('require_authenticated')
+    require_permission = deps.get('require_permission')
 
     @bp.route('/admin/field-order', methods=['GET'])
     def get_field_order():
-        auth_error = require_admin()
-        if auth_error:
-            return auth_error
+        requested_club = str(request.args.get('club', '')).strip()
+        if callable(require_permission):
+            auth_error = require_permission('system.settings', requested_club)
+            if auth_error:
+                return auth_error
         try:
-            data = load_field_order_config(deps)
-            return jsonify({'field_order': data})
+            resolved_club = _resolve_club_short_name(requested_club, deps)
+            data = load_field_order_config(deps, resolved_club)
+            return jsonify({'field_order': data, 'club': resolved_club})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
     @bp.route('/admin/field-order', methods=['POST', 'PUT'])
     def set_field_order():
-        auth_error = require_admin()
-        if auth_error:
-            return auth_error
+        requested_club = str(request.args.get('club', '')).strip()
+        if callable(require_permission):
+            auth_error = require_permission('system.settings', requested_club)
+            if auth_error:
+                return auth_error
         try:
             data = request.json
             if not data:
                 return jsonify({'error': 'No data provided'}), 400
+            requested_club = str(requested_club or data.get('club') or '').strip()
+            if requested_club:
+                normalized_data = _normalize_field_order_config(data.get('field_order', data), _normalize_field_order_config(_load_field_order_from_json()))
+                _save_field_order_to_postgres_for_club(requested_club, normalized_data, deps)
+                return jsonify({'success': True, 'club': requested_club})
             save_field_order_config(data, deps)
             return jsonify({'success': True})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+
+    @bp.route('/club-field-order', methods=['GET'])
+    def get_club_field_order():
+        requested_club = str(request.args.get('club', '')).strip()
+        if callable(require_permission):
+            auth_error = require_permission('field_order.club.manage', requested_club)
+            if auth_error:
+                return auth_error
+        elif callable(require_authenticated):
+            auth_error = require_authenticated(requested_club)
+            if auth_error:
+                return auth_error
+
+        try:
+            resolved_club = _resolve_club_short_name(requested_club, deps)
+            if not resolved_club:
+                return jsonify({'error': 'Club is required'}), 400
+            data = load_field_order_config(deps, resolved_club)
+            return jsonify({'club': resolved_club, 'field_order': data})
+        except Exception as exc:
+            return jsonify({'error': str(exc)}), 500
+
+    @bp.route('/club-field-order', methods=['POST', 'PUT'])
+    def set_club_field_order():
+        payload = request.json or {}
+        requested_club = str(payload.get('club') or request.args.get('club') or '').strip()
+        if callable(require_permission):
+            auth_error = require_permission('field_order.club.manage', requested_club)
+            if auth_error:
+                return auth_error
+
+        try:
+            resolved_club = _resolve_club_short_name(requested_club, deps)
+            if not resolved_club:
+                return jsonify({'error': 'Club is required'}), 400
+
+            incoming = payload.get('field_order', payload)
+            default_config = _normalize_field_order_config(_load_field_order_from_json())
+            normalized_data = _normalize_field_order_config(incoming, default_config)
+            _save_field_order_to_postgres_for_club(resolved_club, normalized_data, deps)
+            return jsonify({'success': True, 'club': resolved_club, 'field_order': normalized_data})
+        except Exception as exc:
+            return jsonify({'error': str(exc)}), 500
 
     return bp

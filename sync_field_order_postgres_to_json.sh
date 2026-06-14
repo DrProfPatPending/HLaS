@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${1:-.env.prod}"
 COMPOSE_FILE="${2:-docker-compose.prod.yml}"
 OUTPUT_FILE="${3:-backend/field_order.json}"
+CLUB_SHORT_NAME="${4:-}"
 
 cd "$ROOT_DIR"
 
@@ -42,11 +43,21 @@ trap 'rm -f "$TMP_FILE"' EXIT
 
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres \
   psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -c \
-  "SELECT value::text FROM app_settings WHERE scope='global' AND key='field_order' ORDER BY id DESC LIMIT 1;" \
+  "SELECT COALESCE(cfo.config, a.value)::text
+   FROM clubs c
+   LEFT JOIN club_field_order cfo ON cfo.club_id = c.id
+   LEFT JOIN app_settings a ON a.scope='global' AND a.key='field_order'
+   WHERE ('${CLUB_SHORT_NAME}' = '' OR c.short_name='${CLUB_SHORT_NAME}')
+   ORDER BY CASE WHEN '${CLUB_SHORT_NAME}' = '' THEN c.short_name ELSE '' END, c.id
+   LIMIT 1;" \
   > "$TMP_FILE"
 
 if [ ! -s "$TMP_FILE" ]; then
-  echo "ERROR: No field_order payload found in app_settings (scope='global', key='field_order')" >&2
+  if [ -n "$CLUB_SHORT_NAME" ]; then
+    echo "ERROR: No field_order payload found for club '$CLUB_SHORT_NAME'" >&2
+  else
+    echo "ERROR: No field_order payload found (club_field_order/app_settings)" >&2
+  fi
   exit 1
 fi
 
@@ -59,7 +70,7 @@ src = Path(sys.argv[1])
 out = Path(sys.argv[2])
 raw = src.read_text(encoding='utf-8').strip()
 if not raw:
-    raise SystemExit("No field_order value returned from PostgreSQL app_settings")
+    raise SystemExit("No field_order value returned from PostgreSQL")
 
 payload = json.loads(raw)
 out.parent.mkdir(parents=True, exist_ok=True)

@@ -62,6 +62,16 @@ club_smtp_settings = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
 
+club_field_order = Table(
+    "club_field_order",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False),
+    Column("config", JSONB, nullable=False, server_default="{}"),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("club_id", name="uq_club_field_order_club_id"),
+)
+
 club_beats = Table(
     "club_beats",
     metadata,

@@ -19,6 +19,21 @@
 	Keep this file free of stale comment blocks.
 
 ## Last Documentation Update
+June 14, 2026 — updated for:
+- **Per-Club Field Order (June 2026):**
+  - Field Order settings are now stored per-club in a dedicated `club_field_order` PostgreSQL table (one JSONB `config` row per club, `UNIQUE(club_id)`)
+  - Alembic migration `20260614_0001` creates the table and backfills all active clubs from the existing global `app_settings` row
+  - Resolution chain at runtime: `club_field_order` → `app_settings(global/field_order)` → `backend/field_order.json`
+  - New permission `field_order.club.manage` (granted to `club_admin`, `club_manager`, `app_admin`, `app_owner`)
+  - New API endpoints: `GET /club-field-order?club=` and `PUT /club-field-order` (authenticated, RBAC)
+  - Public `GET /field-order?club=` now resolves per-club config for runtime rendering
+  - Field Order editor section added to **Club Settings** in the standard login app (visible to Club Admin+ users)
+  - `sync_field_order_postgres_to_json.sh` updated to query `club_field_order` with optional 4th arg `CLUB_SHORT_NAME`
+  - All member-facing field-order loads (`HomeView`, `FishingBeats`, `BeatDetails`, `store.js`) now pass `?club=` to get club-specific config
+  - `backend/field_order.json` is now a read-only default template; it is no longer updated at runtime
+- **Documentation (June 2026):**
+  - README.md, DEPLOYMENT.md, DEPLOYMENT_CHANGES_MAY_2026.md updated to reflect per-club field order architecture
+
 May 21, 2026 — updated for:
 - **Build Script Enhancements (May 21, 2026):**
   - `--full` / `-f` (default): `--no-cache` full Docker layer rebuild

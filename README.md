@@ -30,8 +30,9 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
 - Member ID photos can now be stored and served from PostgreSQL via the `member_photos` table.
 - Club documents can be stored in PostgreSQL (binary) and surfaced on the member Home page.
 - Membership Admin includes sorting, filtering, linked member lookup, and linked member edit navigation.
-- Fishing Beats field order, visibility, and minimum width settings are configurable.
-- Beat Details now has its own dedicated field-order and visibility configuration context.
+- Field Order (column order, visibility, display names, widths, read-only flags) is now stored **per-club** in the `club_field_order` table — each club configures its own layout independently.
+- Fishing Beats field order, visibility, and minimum width settings are configurable per club.
+- Beat Details now has its own dedicated field-order and visibility configuration context per club.
 - The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
 
 ## Recent Changes
@@ -341,10 +342,10 @@ This creates a layout where:
 
 - Admin UI: `Admin` tab → `Field Order` button
 - Editable contexts include: `membership_admin`, `fishing_beats`, `beat_details`, `home_news`, `home_documents`
-- Changes are persisted via `/admin/field-order` endpoint
-- Storage: PostgreSQL (`app_settings` with `scope='global'`) or fallback to `backend/field_order.json`
-- `read_only` is stored inside the same JSON payload (`app_settings.value`), so no SQL schema migration is required
-- Load/save paths normalize `read_only` across JSON + PostgreSQL to keep both sources consistent during sync/fallback
+- Changes are persisted via the `PUT /club-field-order` endpoint (Club Admin+)
+- Storage: PostgreSQL `club_field_order` table (one row per club), with fallback to global `app_settings(scope='global', key='field_order')`, then `backend/field_order.json`
+- `read_only`, `show_columns`, `display_names`, `minimum_widths`, and `widths` are all stored inside the same JSONB `config` column per club
+- Admin UI: **Club Settings** → **Field Order** section (visible to Club Admin+ users in the member login app)
 
 **Read-only behavior:**
 
@@ -370,16 +371,17 @@ Responsive behaviour:
 Other behaviour:
 
 - beat selector labels display `<Beat ID> <Beat Name>`
-- detail fields use the `beat_details` field-order context from `field_order.json` / `app_settings`
+- detail fields use the `beat_details` field-order context from the per-club `club_field_order` record (falls back to global defaults in `field_order.json`)
 - what3words locations are resolved through `/w3w/coordinates` when direct coordinates are unavailable
 - users with `club_admin` role can edit/save beat details for the selected beat
 - users with `club_admin` role can add new beats and delete the selected beat
 - users without `club_admin` role see the page in read-only mode
 
-Configuration sources:
+Configuration sources (in priority order):
 
-- file fallback: `backend/field_order.json`
-- PostgreSQL runtime source of truth: `app_settings(scope='global', key='field_order')`
+1. PostgreSQL `club_field_order` table — per-club row (primary source)
+2. PostgreSQL `app_settings(scope='global', key='field_order')` — legacy global fallback
+3. `backend/field_order.json` — default template / file fallback
 
 See DEPLOYMENT.md for full technical details and migration notes.
 # Fishing Club Membership Management Web Application
@@ -429,10 +431,18 @@ iOS on macOS:
 
 ## Field Order sync
 
-- Sync live PostgreSQL `field_order` settings into JSON fallback with:
-   - `make sync-field-order-from-db`
-- Script used by this target:
-   - `./sync_field_order_postgres_to_json.sh [ENV_FILE] [COMPOSE_FILE] [OUTPUT_FILE]`
+Sync the active field-order config from PostgreSQL into the JSON fallback file:
+
+```bash
+# Sync using first active club (or global fallback)
+./sync_field_order_postgres_to_json.sh [ENV_FILE] [COMPOSE_FILE] [OUTPUT_FILE]
+
+# Sync for a specific club
+./sync_field_order_postgres_to_json.sh .env.prod docker-compose.prod.yml backend/field_order.json CTC
+```
+
+- The script queries the `club_field_order` table first (joined to `clubs`), falling back to `app_settings` if no per-club row exists.
+- Makefile shortcut: `make sync-field-order-from-db`
 
 ## Setup Instructions
 
@@ -535,14 +545,34 @@ python normalize_licence_exp_dates.py --sqlite-all
 python normalize_licence_exp_dates.py --sqlite-db ./GAAFFS.db --apply
 ```
 
-### Field-order configuration contexts
+### Field-order configuration
 
-Field ordering and column visibility are now stored per context. Current member-facing contexts include:
+Field ordering and column visibility are stored **per-club** in the `club_field_order` PostgreSQL table. Each club can maintain independent configurations across all supported contexts:
 
-- `fishing_beats`
-- `beat_details`
+| Context | Used by |
+|---|---|
+| `membership_admin` | Membership Admin table columns |
+| `my_club` | My Club personal info tabs |
+| `fishing_beats` | Fishing Beats list table |
+| `beat_details` | Beat Details detail table |
+| `home_news` | Home News & Updates panel |
+| `home_documents` | Home Documents panel |
+| `news_updates` | News/Updates section |
+| `club_information_officers` | Club Information officers table |
 
-When PostgreSQL runtime mode is enabled, updates are persisted in `app_settings`. The JSON file in `backend/field_order.json` remains the fallback source.
+Each context configuration supports: field order (sequence), `show_columns`, `display_names`, `minimum_widths`, `widths`, and `read_only` flags.
+
+**Persistence:**
+- Primary: `club_field_order` PostgreSQL table (one JSONB config row per club)
+- Fallback: `app_settings(scope='global', key='field_order')`
+- Final fallback: `backend/field_order.json` (default template — not modified at runtime)
+
+**Admin UI:** Club Settings → Field Order section (Club Admin+ only, visible in the standard login app).
+
+**API endpoints:**
+- `GET /club-field-order?club=<SHORT_NAME>` — load per-club config (authenticated, `field_order.club.manage`)
+- `PUT /club-field-order` — save per-club config (authenticated, `field_order.club.manage`)
+- `GET /field-order?club=<SHORT_NAME>` — public read for runtime rendering (no auth)
 
 ### Frontend
 Frontend tooling now targets:

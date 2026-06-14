@@ -299,7 +299,7 @@ All stored in: `backend/documents.json`
 
 ### Field Order Settings
 Both sorting and Actions column visibility follow field order rules:
-- Column visibility is controlled by `field_order.json` settings
+- Column visibility is controlled by the per-club `club_field_order` record in PostgreSQL (falls back to `field_order.json`)
 - Sort arrows only appear when user clicks to sort
 - Actions column is **always visible** (not controlled by Field Order)
 
@@ -387,7 +387,7 @@ To remove the sync system:
 ## Related Documentation
 
 - [Beats Sync System](README.md#beats-sync)
-- [Field Order Configuration](README.md#field-order)
+- [Field Order Configuration](README.md#field-order-configuration)
 - [Backup System](BACKUP_SYSTEM.md)
 - [Database Migrations](DEPLOYMENT.md#database-migrations)
 

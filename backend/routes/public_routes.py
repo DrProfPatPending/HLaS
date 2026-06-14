@@ -140,7 +140,8 @@ def create_public_blueprint(deps):
     @bp.route('/field-order', methods=['GET'])
     def get_field_order():
         try:
-            return jsonify({'field_order': load_field_order_config(deps)})
+            club = str(request.args.get('club', '')).strip()
+            return jsonify({'club': club, 'field_order': load_field_order_config(deps, club)})
         except Exception as exc:
             return jsonify({'error': str(exc)}), 500
 

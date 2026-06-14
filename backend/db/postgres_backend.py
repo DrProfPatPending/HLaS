@@ -432,6 +432,31 @@ def ensure_postgres_club_documents_table(engine):
             conn.execute(stmt)
 
 
+def ensure_postgres_club_field_order_table(engine):
+    statements = [
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS club_field_order (
+                id BIGSERIAL PRIMARY KEY,
+                club_id BIGINT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                config JSONB NOT NULL DEFAULT '{}',
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT uq_club_field_order_club_id UNIQUE (club_id)
+            )
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_club_field_order_club_id
+            ON club_field_order (club_id)
+            """
+        ),
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(stmt)
+
+
 def ensure_postgres_role_assignment_user_id(engine):
     """Idempotently add user_id FK to member_role_assignments and backfill.
 
@@ -540,6 +565,7 @@ def get_postgres_backend():
         ensure_postgres_member_photos_table(engine)
         ensure_postgres_catch_returns_table(engine)
         ensure_postgres_club_documents_table(engine)
+        ensure_postgres_club_field_order_table(engine)
         metadata = MetaData()
         metadata.reflect(
             bind=engine,
@@ -558,6 +584,7 @@ def get_postgres_backend():
                 'member_photos',
                 'catch_returns',
                 'club_documents',
+                'club_field_order',
                 'roles',
                 'member_role_assignments',
                 'security_audit_log',
@@ -582,6 +609,7 @@ def get_postgres_backend():
             'member_photos_table': metadata.tables['member_photos'],
             'catch_returns_table': metadata.tables['catch_returns'],
             'club_documents_table': metadata.tables['club_documents'],
+            'club_field_order_table': metadata.tables['club_field_order'],
             'roles_table': metadata.tables['roles'],
             'member_role_assignments_table': metadata.tables['member_role_assignments'],
             'security_audit_log_table': metadata.tables['security_audit_log'],

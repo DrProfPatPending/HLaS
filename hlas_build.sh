@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-TARGET="${TARGET:-ctc-production}"
+TARGET="${TARGET:-development}"
 DIRECTORY="${DIRECTORY:-/opt/hlas}"
 VERBOSE=0
 USE_REMOTE=1
@@ -16,8 +16,8 @@ usage() {
 Usage: $0 [OPTIONS]
 
 Options:
-  -t, --target <target>     Deployment target/branch (default: ctc-production)
-                            Examples: ctc-production, production, development, main
+  -t, --target <target>     Deployment target/branch (default: development)
+                            Examples: -production, production, development, main
   -d, --directory <dir>     Deployment directory (default: /opt/hlas)
                             Example: /opt/hlas
     -l, --local               Build from local working tree (skip git reset)

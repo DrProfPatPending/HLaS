@@ -496,7 +496,9 @@ export default {
       return mimeByExtension[extension] || fallbackType || 'application/octet-stream';
     },
     loadFieldOrder() {
-      return axios.get(`${API_BASE_URL}/field-order`)
+      return axios.get(`${API_BASE_URL}/field-order`, {
+        params: { club: this.loggedInClub },
+      })
         .then((res) => {
           const loaded = res.data?.field_order;
           this.fieldOrder = loaded && typeof loaded === 'object' ? loaded : {};

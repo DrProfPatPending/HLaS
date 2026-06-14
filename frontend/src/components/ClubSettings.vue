@@ -184,6 +184,96 @@
       </div>
     </section>
 
+    <section class="club-settings-section">
+      <h3>Field Order</h3>
+      <p class="section-description">Configure column order and visibility for this club.</p>
+
+      <div class="club-settings-inline-controls">
+        <label for="club-field-order-context">Context:</label>
+        <select
+          id="club-field-order-context"
+          v-model="selectedFieldOrderContext"
+          class="form-input"
+          :disabled="loading || !fieldOrderContextNames.length"
+        >
+          <option v-for="contextName in fieldOrderContextNames" :key="contextName" :value="contextName">
+            {{ contextName }}
+          </option>
+        </select>
+      </div>
+
+      <div v-if="fieldOrderContextNames.length" class="club-settings-field-order-table-wrap">
+        <table class="club-settings-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Field</th>
+              <th>Display As</th>
+              <th>Show</th>
+              <th>Read Only</th>
+              <th>Min Width</th>
+              <th>Width</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(fieldName, index) in selectedFieldOrderFields" :key="`${selectedFieldOrderContext}-${fieldName}-${index}`">
+              <td>{{ index + 1 }}</td>
+              <td>{{ fieldName }}</td>
+              <td>
+                <input
+                  type="text"
+                  class="form-input"
+                  :value="getFieldOrderDisplayName(fieldName)"
+                  :placeholder="fieldName"
+                  @input="setFieldOrderDisplayName(fieldName, $event.target.value)"
+                />
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  :checked="isFieldOrderFieldVisible(fieldName)"
+                  @change="setFieldOrderFieldVisible(fieldName, $event.target.checked)"
+                />
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  :checked="isFieldOrderFieldReadOnly(fieldName)"
+                  @change="setFieldOrderFieldReadOnly(fieldName, $event.target.checked)"
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  class="form-input"
+                  min="0"
+                  :value="getFieldOrderMinWidth(fieldName)"
+                  @input="setFieldOrderMinWidth(fieldName, $event.target.value)"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  class="form-input"
+                  placeholder="flex"
+                  :value="getFieldOrderColumnWidth(fieldName)"
+                  @input="setFieldOrderColumnWidth(fieldName, $event.target.value)"
+                />
+              </td>
+              <td class="club-settings-field-order-actions-cell">
+                <button type="button" :disabled="index === 0" @click="moveFieldOrderToTop(index)">Top</button>
+                <button type="button" :disabled="index === 0" @click="moveFieldOrderUp(index)">Up</button>
+                <button type="button" :disabled="index === selectedFieldOrderFields.length - 1" @click="moveFieldOrderDown(index)">Down</button>
+                <button type="button" :disabled="index === selectedFieldOrderFields.length - 1" @click="moveFieldOrderToBottom(index)">Bottom</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="section-description">No field-order contexts available for this club.</p>
+    </section>
+
     <div class="club-settings-actions">
       <app-button type="button" inherit-style :disabled="loading || saving" @click="loadSettings">
         {{ loading ? 'Loading…' : 'Reload' }}
@@ -260,12 +350,23 @@ export default {
       error: '',
       visibility: defaultVisibility(),
       miniSite: defaultMiniSite(),
+      fieldOrder: {},
+      selectedFieldOrderContext: '',
     };
   },
   computed: {
     loggedInClub: () => store.loggedInClub,
     catchReturnFields: () => CATCH_RETURN_FIELDS,
     miniSitePages: () => MINI_SITE_PAGES,
+    fieldOrderContextNames() {
+      return Object.entries(this.fieldOrder || {})
+        .filter(([, contextValue]) => Array.isArray(contextValue))
+        .map(([contextName]) => contextName);
+    },
+    selectedFieldOrderFields() {
+      const fields = this.fieldOrder?.[this.selectedFieldOrderContext];
+      return Array.isArray(fields) ? fields : [];
+    },
     miniSiteUrl() {
       const domain = window.location.origin;
       return `${domain}/club/${this.loggedInClub}/`;
@@ -295,11 +396,120 @@ export default {
       }
       return normalized;
     },
+    replaceSelectedFieldOrderFields(nextFields) {
+      if (!this.selectedFieldOrderContext) return;
+      this.fieldOrder = {
+        ...this.fieldOrder,
+        [this.selectedFieldOrderContext]: nextFields,
+      };
+    },
+    selectedFieldOrderMap(settingKey) {
+      const perContext = this.fieldOrder?.[settingKey]?.[this.selectedFieldOrderContext];
+      return perContext && typeof perContext === 'object' ? perContext : {};
+    },
+    isFieldOrderFieldVisible(fieldName) {
+      return this.selectedFieldOrderMap('show_columns')?.[fieldName] !== false;
+    },
+    isFieldOrderFieldReadOnly(fieldName) {
+      return this.selectedFieldOrderMap('read_only')?.[fieldName] === true;
+    },
+    getFieldOrderDisplayName(fieldName) {
+      const value = this.selectedFieldOrderMap('display_names')?.[fieldName];
+      return typeof value === 'string' ? value : '';
+    },
+    getFieldOrderMinWidth(fieldName) {
+      const value = this.selectedFieldOrderMap('minimum_widths')?.[fieldName];
+      return Number.isFinite(value) ? value : '';
+    },
+    getFieldOrderColumnWidth(fieldName) {
+      const value = this.selectedFieldOrderMap('widths')?.[fieldName];
+      return typeof value === 'string' ? value : '';
+    },
+    upsertFieldOrderMap(settingKey, fieldName, rawValue, removeWhenEmpty = true) {
+      if (!this.selectedFieldOrderContext || !fieldName) return;
+
+      const nextPerContext = {
+        ...(this.fieldOrder?.[settingKey]?.[this.selectedFieldOrderContext] || {}),
+      };
+
+      if (removeWhenEmpty && (rawValue === '' || rawValue == null)) {
+        delete nextPerContext[fieldName];
+      } else {
+        nextPerContext[fieldName] = rawValue;
+      }
+
+      this.fieldOrder = {
+        ...this.fieldOrder,
+        [settingKey]: {
+          ...(this.fieldOrder?.[settingKey] || {}),
+          [this.selectedFieldOrderContext]: nextPerContext,
+        },
+      };
+    },
+    setFieldOrderFieldVisible(fieldName, isVisible) {
+      this.upsertFieldOrderMap('show_columns', fieldName, Boolean(isVisible), false);
+    },
+    setFieldOrderFieldReadOnly(fieldName, isReadOnly) {
+      if (isReadOnly) {
+        this.upsertFieldOrderMap('read_only', fieldName, true, false);
+      } else {
+        this.upsertFieldOrderMap('read_only', fieldName, '', true);
+      }
+    },
+    setFieldOrderDisplayName(fieldName, displayName) {
+      const value = String(displayName || '');
+      this.upsertFieldOrderMap('display_names', fieldName, value, true);
+    },
+    setFieldOrderMinWidth(fieldName, minWidthInput) {
+      const value = String(minWidthInput || '').trim();
+      if (!value) {
+        this.upsertFieldOrderMap('minimum_widths', fieldName, '', true);
+        return;
+      }
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        this.upsertFieldOrderMap('minimum_widths', fieldName, '', true);
+        return;
+      }
+      this.upsertFieldOrderMap('minimum_widths', fieldName, parsed, false);
+    },
+    setFieldOrderColumnWidth(fieldName, widthValue) {
+      const value = String(widthValue || '').trim();
+      this.upsertFieldOrderMap('widths', fieldName, value, true);
+    },
+    moveFieldOrderUp(index) {
+      if (index <= 0) return;
+      const nextFields = [...this.selectedFieldOrderFields];
+      [nextFields[index - 1], nextFields[index]] = [nextFields[index], nextFields[index - 1]];
+      this.replaceSelectedFieldOrderFields(nextFields);
+    },
+    moveFieldOrderDown(index) {
+      if (index >= this.selectedFieldOrderFields.length - 1) return;
+      const nextFields = [...this.selectedFieldOrderFields];
+      [nextFields[index], nextFields[index + 1]] = [nextFields[index + 1], nextFields[index]];
+      this.replaceSelectedFieldOrderFields(nextFields);
+    },
+    moveFieldOrderToTop(index) {
+      if (index <= 0) return;
+      const nextFields = [...this.selectedFieldOrderFields];
+      const [entry] = nextFields.splice(index, 1);
+      nextFields.unshift(entry);
+      this.replaceSelectedFieldOrderFields(nextFields);
+    },
+    moveFieldOrderToBottom(index) {
+      if (index >= this.selectedFieldOrderFields.length - 1) return;
+      const nextFields = [...this.selectedFieldOrderFields];
+      const [entry] = nextFields.splice(index, 1);
+      nextFields.push(entry);
+      this.replaceSelectedFieldOrderFields(nextFields);
+    },
     loadSettings() {
       this.loading = true;
       this.error = '';
       this.status = '';
       this.miniSite = defaultMiniSite();
+      this.fieldOrder = {};
+      this.selectedFieldOrderContext = '';
 
       // Load catch return settings
       axios
@@ -313,6 +523,24 @@ export default {
         .catch(err => {
           this.visibility = defaultVisibility();
           this.error = err?.response?.data?.error || 'Unable to load club settings.';
+        });
+
+      axios
+        .get(`${API_BASE_URL}/club-field-order`, {
+          params: { club: this.loggedInClub },
+        })
+        .then(res => {
+          const loaded = res?.data?.field_order;
+          this.fieldOrder = loaded && typeof loaded === 'object' ? loaded : {};
+          if (!this.fieldOrder[this.selectedFieldOrderContext]) {
+            this.selectedFieldOrderContext = this.fieldOrderContextNames[0] || '';
+          }
+        })
+        .catch(err => {
+          this.fieldOrder = {};
+          if (!this.error) {
+            this.error = err?.response?.data?.error || 'Unable to load club field-order settings.';
+          }
         });
 
       // Load mini site settings
@@ -415,10 +643,16 @@ export default {
         pages: pagesArray, // Send the list of enabled page IDs
       };
 
+        const fieldOrderPayload = {
+          club: this.loggedInClub,
+          field_order: this.fieldOrder,
+        };
+
       // Save both settings in parallel
       Promise.all([
         axios.put(`${API_BASE_URL}/club-settings`, catchReturnPayload),
         axios.put(`${API_BASE_URL}/mini-site`, miniSitePayload),
+          axios.put(`${API_BASE_URL}/club-field-order`, fieldOrderPayload),
       ])
         .then(() => {
           this.status = 'Club settings saved.';
@@ -455,6 +689,25 @@ export default {
 .club-settings-section h3 {
   margin: 0 0 10px;
   color: #1a472a;
+}
+
+.club-settings-inline-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.club-settings-inline-controls .form-input {
+  max-width: 360px;
+}
+
+.club-settings-field-order-table-wrap {
+  overflow-x: auto;
+}
+
+.club-settings-field-order-actions-cell {
+  white-space: nowrap;
 }
 
 .section-description {
