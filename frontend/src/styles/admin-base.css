@@ -77,27 +77,35 @@
   padding: 8px 18px;
   font-size: 9pt;
   font-family: Helvetica, Arial, sans-serif;
-  background: linear-gradient(180deg, #4b86b4 0%, #2d5f8b 100%);
-  border: 1px solid #2d5f8b;
+  background: linear-gradient(180deg, #eaf3ff 0%, #dcecff 100%);
+  border: 1px solid #b7cfe9;
   border-radius: 6px;
   cursor: pointer;
-  color: #fff;
+  color: #566273;
   font-weight: 600;
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
+.admin-tab-btn :deep(.v-btn__content) {
+  color: #566273;
+}
+
 .admin-tab-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(45, 95, 139, 0.24);
-  background: linear-gradient(180deg, #5a97c7 0%, #2f6c9c 100%);
+  box-shadow: 0 5px 14px rgba(92, 128, 168, 0.2);
+  background: linear-gradient(180deg, #e3efff 0%, #d2e6ff 100%);
 }
 
 .admin-tab-btn-active {
-  background: linear-gradient(180deg, #2f6c9c 0%, #17324d 100%);
-  border-color: #17324d;
-  box-shadow: 0 5px 14px rgba(45, 95, 139, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: linear-gradient(180deg, #d6e8ff 0%, #c2dcff 100%);
+  border-color: #8fb5e3;
+  box-shadow: 0 5px 14px rgba(83, 123, 170, 0.26), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  color: #2f4b67;
   font-weight: bold;
+}
+
+.admin-tab-btn-active :deep(.v-btn__content) {
+  color: #2f4b67;
 }
 
 .admin-table {
