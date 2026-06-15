@@ -19,7 +19,7 @@
           <input v-model="loginPassword" class="admin-form-input" type="password" autocomplete="current-password" required />
         </div>
         <div v-if="loginError" class="error-msg admin-login-error">{{ loginError }}</div>
-        <app-button type="submit" class="save-btn" inherit-style>Login</app-button>
+        <app-button type="submit" class="admin-login-submit" inherit-style>Login</app-button>
       </form>
     </div>
     <div v-else class="admin-container">
@@ -176,6 +176,27 @@ export default {
   font-size: 10pt;
   font-family: Helvetica, Arial, sans-serif;
   cursor: pointer;
+}
+
+:deep(.admin-login-submit.app-button) {
+  margin-top: 10px;
+  padding: 7px 20px;
+  border-radius: 6px;
+  border: 1px solid #b7cfe9;
+  background: linear-gradient(180deg, #eaf3ff 0%, #dcecff 100%);
+  color: #566273;
+  font-size: 10pt;
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 600;
+}
+
+:deep(.admin-login-submit.app-button .v-btn__content) {
+  color: #566273;
+}
+
+:deep(.admin-login-submit.app-button:hover) {
+  background: linear-gradient(180deg, #e3efff 0%, #d2e6ff 100%);
+  box-shadow: 0 5px 14px rgba(92, 128, 168, 0.2);
 }
 .admin-container {
   max-width: 1200px;

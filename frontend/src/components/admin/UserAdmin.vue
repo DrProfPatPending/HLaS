@@ -9,6 +9,48 @@
     </div>
     <div v-if="uaLoading" class="admin-loading-text">Loading...</div>
     <div v-if="uaStatusMsg" :class="uaStatusError ? 'error-msg' : 'success-msg'">{{ uaStatusMsg }}</div>
+
+    <div class="admin-subsection">
+      <h3 class="admin-subsection-title">Find User To Grant First Role</h3>
+      <div class="admin-inline-controls">
+        <input
+          v-model="uaLookupQuery"
+          class="admin-search-input"
+          @keyup.enter="searchAssignableUsers"
+          placeholder="Search by username or display name..."
+        />
+        <button @click="searchAssignableUsers">Find Users</button>
+        <button @click="resetAssignableSearch">Reset</button>
+      </div>
+      <div v-if="uaLookupLoading" class="admin-loading-text">Searching users...</div>
+      <div v-if="uaLookupStatusMsg" :class="uaLookupStatusError ? 'error-msg' : 'success-msg'">{{ uaLookupStatusMsg }}</div>
+
+      <table class="admin-table" v-if="uaLookupResults.length">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Display Name</th>
+            <th>Clubs</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="candidate in uaLookupResults" :key="`lookup-${candidate.userId}`">
+            <td>{{ candidate.username }}</td>
+            <td>{{ candidate.displayName || '-' }}</td>
+            <td>
+              <span v-for="(club, index) in candidate.clubs" :key="`${candidate.userId}-${club.id || club.shortName}`">
+                {{ club.shortName || club.name || '-' }}<span v-if="index < candidate.clubs.length - 1">, </span>
+              </span>
+            </td>
+            <td>
+              <button @click="openGrantModal(candidate)">Grant Role</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <table class="admin-table" v-if="uaSearchResults.length">
       <thead>
         <tr>
@@ -35,6 +77,76 @@
         </tr>
       </tbody>
     </table>
+
+    <div class="admin-subsection ua-merge-workflow">
+      <h3 class="admin-subsection-title">Merge Users</h3>
+      <p class="admin-info-text">
+        Use merge to combine duplicate app-user identities. Source user will be deactivated after merge.
+      </p>
+
+      <div class="admin-inline-controls">
+        <strong>Source:</strong>
+        <span v-if="uaMerge.sourceUser">{{ uaMerge.sourceUser.username }} (id {{ uaMerge.sourceUser.userId }})</span>
+        <span v-else class="admin-muted-text">Click "Merge" on a user row above to set source.</span>
+      </div>
+
+      <div class="admin-inline-controls">
+        <input
+          v-model="uaMerge.targetQuery"
+          class="admin-search-input"
+          placeholder="Search target user (username/display name)..."
+          :disabled="!uaMerge.sourceUser"
+          @keyup.enter="searchMergeTargets"
+        />
+        <button :disabled="!uaMerge.sourceUser" @click="searchMergeTargets">Find Target</button>
+        <button :disabled="!uaMerge.sourceUser" @click="clearMergeTarget">Clear Target</button>
+      </div>
+
+      <div v-if="uaMerge.targetResults.length" class="ua-merge-target-list">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Display Name</th>
+              <th>Clubs</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="candidate in uaMerge.targetResults" :key="`merge-target-${candidate.userId}`">
+              <td>{{ candidate.username }}</td>
+              <td>{{ candidate.displayName || '-' }}</td>
+              <td>
+                <span v-for="(club, index) in candidate.clubs" :key="`${candidate.userId}-club-${club.id || club.shortName}`">
+                  {{ club.shortName || '-' }}<span v-if="index < candidate.clubs.length - 1">, </span>
+                </span>
+              </td>
+              <td>
+                <button @click="selectMergeTarget(candidate)">Select Target</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="admin-inline-controls">
+        <strong>Target:</strong>
+        <span v-if="uaMerge.targetUser">{{ uaMerge.targetUser.username }} (id {{ uaMerge.targetUser.userId }})</span>
+        <span v-else class="admin-muted-text">No target selected.</span>
+      </div>
+
+      <div class="admin-inline-controls">
+        <button
+          :disabled="!uaMerge.sourceUser || !uaMerge.targetUser || uaMerge.busy"
+          @click="mergeUsers"
+        >
+          {{ uaMerge.busy ? 'Merging...' : 'Run Merge' }}
+        </button>
+        <button :disabled="uaMerge.busy" @click="resetMergeState">Reset Merge</button>
+        <span v-if="uaMerge.statusMsg" :class="uaMerge.statusError ? 'error-msg' : 'success-msg'">{{ uaMerge.statusMsg }}</span>
+      </div>
+    </div>
+
     <!-- Grant Role Modal -->
     <div v-if="uaGrant.visible" class="admin-modal-overlay">
       <div class="admin-modal-card user-admin-modal-card">
@@ -46,7 +158,7 @@
         <div v-if="selectedRole && selectedRole.scopeType === 'club'">
           <select v-model="uaGrant.clubId" class="admin-select user-admin-modal-select">
             <option value="">Select Club</option>
-            <option v-for="club in uaClubs" :key="club.id" :value="club.id">{{ club.name }}</option>
+            <option v-for="club in uaClubs" :key="club.id" :value="club.id">{{ club.shortName }} - {{ club.fullName }}</option>
           </select>
         </div>
         <div v-if="uaGrant.statusMsg" :class="uaGrant.statusError ? 'error-msg' : 'success-msg'">{{ uaGrant.statusMsg }}</div>
@@ -103,6 +215,11 @@ export default {
         busy: false,
       },
       uaMergeCleanupPreview: [],
+      uaLookupQuery: '',
+      uaLookupLoading: false,
+      uaLookupResults: [],
+      uaLookupStatusMsg: '',
+      uaLookupStatusError: false,
       uaStatusMsg: '',
       uaStatusError: false,
     };
@@ -134,6 +251,41 @@ export default {
       this.searchUsers();
       this.uaStatusMsg = '';
     },
+    searchAssignableUsers() {
+      const query = String(this.uaLookupQuery || '').trim();
+      if (query.length < 2) {
+        this.uaLookupStatusMsg = 'Enter at least 2 characters to search users.';
+        this.uaLookupStatusError = true;
+        this.uaLookupResults = [];
+        return;
+      }
+      this.uaLookupLoading = true;
+      this.uaLookupStatusMsg = '';
+      this.uaLookupStatusError = false;
+      adminGet('/admin/users/search', { params: { q: query, limit: 20 } })
+        .then(res => {
+          const members = Array.isArray(res.data?.members) ? res.data.members : [];
+          this.uaLookupResults = members;
+          if (!members.length) {
+            this.uaLookupStatusMsg = 'No matching users found.';
+            this.uaLookupStatusError = false;
+          }
+        })
+        .catch(err => {
+          this.uaLookupResults = [];
+          this.uaLookupStatusMsg = err.response?.data?.error || 'Failed to search users';
+          this.uaLookupStatusError = true;
+        })
+        .finally(() => {
+          this.uaLookupLoading = false;
+        });
+    },
+    resetAssignableSearch() {
+      this.uaLookupQuery = '';
+      this.uaLookupResults = [];
+      this.uaLookupStatusMsg = '';
+      this.uaLookupStatusError = false;
+    },
     openGrantModal(user) {
       this.uaGrant = { visible: true, member: user, roleCode: '', clubId: null, statusMsg: '', statusError: false };
     },
@@ -141,6 +293,7 @@ export default {
       this.uaGrant.visible = false;
     },
     grantRole() {
+      const grantedUserId = this.uaGrant?.member?.userId;
       if (!this.uaGrant.roleCode) {
         this.uaGrant.statusMsg = 'Please select a role.';
         this.uaGrant.statusError = true;
@@ -161,6 +314,9 @@ export default {
         this.uaSearch = '';
         this.uaSearchResults = [];
         this.uaShowStatus('Role granted successfully.');
+        this.uaLookupResults = this.uaLookupResults.filter(user => user.userId !== grantedUserId);
+        this.uaLookupStatusMsg = 'Role granted. User will now appear in Manage Admin Users.';
+        this.uaLookupStatusError = false;
         this.searchUsers();
       }).catch(err => {
         this.uaGrant.statusMsg = err.response?.data?.error || 'Grant failed';
@@ -211,11 +367,57 @@ export default {
       setTimeout(() => { this.uaStatusMsg = ''; }, 4000);
     },
     startMerge(user) {
-      // Begin merge process: set source user and open merge UI (if implemented)
       this.uaMerge.sourceUser = user;
       this.uaMerge.sourceQuery = user.username;
-      // For now, just show an alert (UI for merge selection can be added)
-      alert('Select a target user to merge into. (UI not yet implemented)');
+      this.uaMerge.targetQuery = '';
+      this.uaMerge.targetResults = [];
+      this.uaMerge.targetUser = null;
+      this.uaMerge.statusMsg = `Source selected: ${user.username}. Find and select a target user.`;
+      this.uaMerge.statusError = false;
+    },
+    searchMergeTargets() {
+      if (!this.uaMerge.sourceUser) {
+        this.uaMerge.statusMsg = 'Select a source user first.';
+        this.uaMerge.statusError = true;
+        return;
+      }
+
+      const query = String(this.uaMerge.targetQuery || '').trim();
+      if (query.length < 2) {
+        this.uaMerge.statusMsg = 'Enter at least 2 characters to search for target user.';
+        this.uaMerge.statusError = true;
+        this.uaMerge.targetResults = [];
+        return;
+      }
+
+      this.uaMerge.statusMsg = '';
+      this.uaMerge.statusError = false;
+      adminGet('/admin/users/search', { params: { q: query, limit: 20 } })
+        .then(res => {
+          const members = Array.isArray(res.data?.members) ? res.data.members : [];
+          this.uaMerge.targetResults = members.filter(member => member.userId !== this.uaMerge.sourceUser.userId);
+          if (!this.uaMerge.targetResults.length) {
+            this.uaMerge.statusMsg = 'No eligible target users found for this query.';
+            this.uaMerge.statusError = false;
+          }
+        })
+        .catch(err => {
+          this.uaMerge.targetResults = [];
+          this.uaMerge.statusMsg = err.response?.data?.error || 'Target search failed';
+          this.uaMerge.statusError = true;
+        });
+    },
+    selectMergeTarget(candidate) {
+      this.uaMerge.targetUser = candidate;
+      this.uaMerge.statusMsg = `Target selected: ${candidate.username}. Ready to run merge.`;
+      this.uaMerge.statusError = false;
+    },
+    clearMergeTarget() {
+      this.uaMerge.targetQuery = '';
+      this.uaMerge.targetResults = [];
+      this.uaMerge.targetUser = null;
+      this.uaMerge.statusMsg = '';
+      this.uaMerge.statusError = false;
     },
     mergeUsers() {
       if (!this.uaMerge.sourceUser || !this.uaMerge.targetUser || this.uaMerge.sourceUser.userId === this.uaMerge.targetUser.userId) {
@@ -237,6 +439,7 @@ export default {
         targetUserId: target.userId,
       }).then(res => {
         const summary = res.data.summary || {};
+        this.resetMergeState();
         this.uaMerge.statusMsg = `Merge complete. Links moved: ${summary.movedLinks || 0}, assignments moved: ${summary.movedAssignments || 0}.`;
         this.uaMerge.statusError = false;
         this.searchUsers();
@@ -269,7 +472,7 @@ export default {
     // Load roles and clubs for role assignment
     adminGet('/admin/roles')
       .then(res => { this.uaAvailableRoles = res.data.roles || []; });
-    adminGet('/admin/clubs')
+    adminGet('/admin/clubs-list')
       .then(res => { this.uaClubs = res.data.clubs || []; });
   },
 };
@@ -332,6 +535,24 @@ export default {
 
 .user-admin-modal-select {
   width: 100%;
+  margin-top: 8px;
+}
+
+.admin-subsection {
+  margin: 14px 0 18px;
+}
+
+.admin-subsection-title {
+  margin: 0 0 8px;
+  font-size: 10pt;
+}
+
+.ua-merge-workflow {
+  border-top: 1px solid #d7e2f0;
+  padding-top: 12px;
+}
+
+.ua-merge-target-list {
   margin-top: 8px;
 }
 </style>
