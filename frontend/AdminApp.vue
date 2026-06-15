@@ -198,6 +198,39 @@ export default {
   background: linear-gradient(180deg, #e3efff 0%, #d2e6ff 100%);
   box-shadow: 0 5px 14px rgba(92, 128, 168, 0.2);
 }
+
+:deep(.admin-tab-btn.app-button) {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: 1px solid #b7cfe9;
+  background: linear-gradient(180deg, #eaf3ff 0%, #dcecff 100%);
+  color: #566273;
+  font-size: 9pt;
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 600;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+:deep(.admin-tab-btn.app-button .v-btn__content) {
+  color: #566273;
+}
+
+:deep(.admin-tab-btn.app-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(92, 128, 168, 0.2);
+  background: linear-gradient(180deg, #e3efff 0%, #d2e6ff 100%);
+}
+
+:deep(.admin-tab-btn.admin-tab-btn-active.app-button) {
+  background: linear-gradient(180deg, #d6e8ff 0%, #c2dcff 100%);
+  border-color: #8fb5e3;
+  box-shadow: 0 5px 14px rgba(83, 123, 170, 0.26), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  color: #2f4b67;
+}
+
+:deep(.admin-tab-btn.admin-tab-btn-active.app-button .v-btn__content) {
+  color: #2f4b67;
+}
 .admin-container {
   max-width: 1200px;
   margin: 24px auto;
