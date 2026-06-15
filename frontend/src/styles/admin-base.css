@@ -86,7 +86,7 @@
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
-.admin-tab-btn :deep(.v-btn__content) {
+.admin-tab-btn .v-btn__content {
   color: #566273;
 }
 
@@ -104,7 +104,7 @@
   font-weight: bold;
 }
 
-.admin-tab-btn-active :deep(.v-btn__content) {
+.admin-tab-btn-active .v-btn__content {
   color: #2f4b67;
 }
 
