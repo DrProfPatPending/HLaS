@@ -13,8 +13,8 @@
       
       <div class="hero-overlay" />
       <div class="hero-content">
-        <h1>{{ displayHeadline }}</h1>
-        <p v-if="tagline" class="hero-tagline">{{ tagline }}</p>
+        <h1>This is the Headline: {{ displayHeadline }}</h1>
+        <p v-if="tagline" class="hero-tagline">This is the Tagline: {{ tagline }}</p>
       </div>
     </div>
 
@@ -217,6 +217,7 @@ export default {
   margin: 0;
   font-weight: 700;
   line-height: 1.2;
+  color: #e6e6e6;
 }
 
 .hero-tagline {
