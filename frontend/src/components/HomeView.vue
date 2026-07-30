@@ -38,6 +38,12 @@
                       <label class="news-edit-label">Date
                         <input v-model="editNewsForm.date" type="date" class="news-edit-input" :disabled="isHomeNewsFieldReadOnly('Date')" />
                       </label>
+                      <label class="news-edit-label">Destination
+                        <select v-model="editNewsForm.contentScope" class="news-edit-input" :disabled="isHomeNewsFieldReadOnly('Status')">
+                          <option value="home">Home</option>
+                          <option value="health-safety">Health and Safety</option>
+                        </select>
+                      </label>
                       <label class="news-edit-label">Category
                         <input v-model="editNewsForm.category" type="text" class="news-edit-input" placeholder="Category" :disabled="isHomeNewsFieldReadOnly('Category')" />
                       </label>
@@ -289,7 +295,7 @@ export default {
       uploadError: '',
       VerboseDebug,
       editingNewsId: null,
-      editNewsForm: { date: '', category: '', update: '', status: '' },
+      editNewsForm: { date: '', contentScope: 'home', category: '', update: '', status: '' },
       editNewsBusy: false,
       editNewsError: '',
       deleteNewsBusy: null,
@@ -516,6 +522,7 @@ export default {
       this.editingNewsId = item.id;
       this.editNewsForm = {
         date: item.date || '',
+        contentScope: item.content_scope || this.contentScope,
         category: item.category || '',
         update: item.update || item.message || '',
         status: item.status || 'Published',
@@ -531,8 +538,8 @@ export default {
       this.editNewsError = '';
       const payload = this.sanitizeHomeNewsPayload({
         club: this.loggedInClub,
-        content_scope: this.contentScope,
         date: this.editNewsForm.date,
+        content_scope: this.editNewsForm.contentScope || this.contentScope,
         category: this.editNewsForm.category,
         update: this.editNewsForm.update,
         status: this.editNewsForm.status,
