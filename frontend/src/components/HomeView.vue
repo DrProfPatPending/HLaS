@@ -72,7 +72,10 @@
                 >
                   <template v-if="column.key === 'Date'">
                     <span>{{ formatNewsDate(item.date) }}</span>
-                    <div class="news-date-status"><app-status-badge :status="item.status" /></div>
+                    <div class="news-date-status">
+                      <app-status-badge :status="item.status" />
+                      <span v-if="showScopeBadge" class="content-scope-badge">{{ contentScopeBadgeLabel }}</span>
+                    </div>
                   </template>
                   <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
                   <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
@@ -152,13 +155,16 @@
                 :style="getColumnStyle('home_documents', column.key)"
               >
                 <template v-if="column.key === 'Title'">
-                  <app-button
-                    variant="link"
-                    class="documents-title-link"
-                    @click="openDocumentPreview(doc)"
-                  >
-                    {{ doc.title || doc.fileName }}
-                  </app-button>
+                  <div class="documents-title-wrap">
+                    <app-button
+                      variant="link"
+                      class="documents-title-link"
+                      @click="openDocumentPreview(doc)"
+                    >
+                      {{ doc.title || doc.fileName }}
+                    </app-button>
+                    <span v-if="showScopeBadge" class="content-scope-badge">{{ contentScopeBadgeLabel }}</span>
+                  </div>
                 </template>
                 <span v-else-if="column.key === 'File'">{{ doc.fileName }}</span>
                 <span v-else-if="column.key === 'Uploaded'">{{ formatNewsDate(doc.createdAt) }}</span>
@@ -254,6 +260,20 @@ export default {
     AppButton,
     AppStatusBadge,
   },
+  props: {
+    newsTitle: {
+      type: String,
+      default: '',
+    },
+    documentsTitle: {
+      type: String,
+      default: '',
+    },
+    contentScope: {
+      type: String,
+      default: 'home',
+    },
+  },
   data() {
     return {
       newsItems: [],
@@ -295,6 +315,15 @@ export default {
         || normalizedRoles.includes('appadmin')
         || normalizedRoles.includes('appowner');
     },
+    showScopeBadge() {
+      return this.hasAdminRole;
+    },
+    contentScopeBadgeLabel() {
+      if (this.contentScope === 'health-safety') {
+        return 'Health & Safety';
+      }
+      return 'Home';
+    },
     homeNewsReadOnlyColumns() {
       const configured = this.fieldOrder?.read_only?.home_news;
       return configured && typeof configured === 'object' ? configured : {};
@@ -328,8 +357,18 @@ export default {
     welcomeClubShortName() {
       return clubDetails.value.shortName || this.loggedInClub || 'your club';
     },
-    clubNewsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} News and Updates`,
-    clubDocumentsTitle: () => `${clubDetails.value.shortName || store.loggedInClub || 'Club'} Documents`,
+    clubNewsTitle() {
+      if (this.newsTitle) {
+        return this.newsTitle;
+      }
+      return `${clubDetails.value.shortName || store.loggedInClub || 'Club'} News and Updates`;
+    },
+    clubDocumentsTitle() {
+      if (this.documentsTitle) {
+        return this.documentsTitle;
+      }
+      return `${clubDetails.value.shortName || store.loggedInClub || 'Club'} Documents`;
+    },
     newsColumns() {
       const cols = [
         { key: 'Date', label: 'Date' },
@@ -492,6 +531,7 @@ export default {
       this.editNewsError = '';
       const payload = this.sanitizeHomeNewsPayload({
         club: this.loggedInClub,
+        content_scope: this.contentScope,
         date: this.editNewsForm.date,
         category: this.editNewsForm.category,
         update: this.editNewsForm.update,
@@ -513,7 +553,7 @@ export default {
       if (!window.confirm(`Delete this news post?`)) return Promise.resolve();
       this.deleteNewsBusy = item.id;
       return axios.delete(`${API_BASE_URL}/news-updates/${item.id}`, {
-        params: { club: this.loggedInClub },
+          params: { club: this.loggedInClub, content_scope: this.contentScope },
       }).then(() => {
         this.fetchNewsUpdates();
       }).catch((err) => {
@@ -526,7 +566,7 @@ export default {
       this.newsLoading = true;
       this.newsError = '';
       return axios.get(`${API_BASE_URL}/news-updates`, {
-        params: { club: this.loggedInClub, limit: 20 },
+        params: { club: this.loggedInClub, limit: 20, content_scope: this.contentScope },
       }).then((res) => {
         this.newsItems = Array.isArray(res.data?.updates) ? res.data.updates : [];
       }).catch((err) => {
@@ -669,7 +709,7 @@ export default {
       this.documentsLoading = true;
       this.documentsError = '';
       return axios.get(`${API_BASE_URL}/documents`, {
-        params: { club: this.loggedInClub },
+        params: { club: this.loggedInClub, content_scope: this.contentScope },
       }).then((res) => {
         this.documents = Array.isArray(res.data?.documents) ? res.data.documents : [];
       }).catch((err) => {
@@ -703,6 +743,7 @@ export default {
 
       const formData = new FormData();
       formData.append('club', this.loggedInClub);
+      formData.append('content_scope', this.contentScope);
       formData.append('file', this.uploadFile);
       if (this.uploadTitle.trim()) {
         formData.append('title', this.uploadTitle.trim());
@@ -725,7 +766,7 @@ export default {
     openDocumentPreview(doc) {
       this.documentsError = '';
       return axios.get(`${API_BASE_URL}/documents/${doc.id}/download`, {
-        params: { club: this.loggedInClub },
+        params: { club: this.loggedInClub, content_scope: this.contentScope },
         responseType: 'blob',
       }).then((res) => {
         const inferredMimeType = this.inferDocumentMimeType(doc.fileName, res?.data?.type);
@@ -750,7 +791,7 @@ export default {
     },
     downloadDocument(doc) {
       return axios.get(`${API_BASE_URL}/documents/${doc.id}/download`, {
-        params: { club: this.loggedInClub },
+        params: { club: this.loggedInClub, content_scope: this.contentScope },
         responseType: 'blob',
       }).then((res) => {
         const blobUrl = window.URL.createObjectURL(res.data);
@@ -819,6 +860,7 @@ export default {
       this.orderUpdateBusyId = doc.id;
       return axios.put(`${API_BASE_URL}/documents/${doc.id}/order`, {
         club: this.loggedInClub,
+        content_scope: this.contentScope,
         displayOrder: requestedOrder,
       }).then(() => {
         this.pendingDocumentOrders = {
@@ -842,7 +884,7 @@ export default {
         return Promise.resolve();
       }
       return axios.delete(`${API_BASE_URL}/documents/${doc.id}`, {
-        params: { club: this.loggedInClub },
+        params: { club: this.loggedInClub, content_scope: this.contentScope },
       }).then(() => {
         this.fetchDocuments();
       }).catch((err) => {
@@ -951,6 +993,30 @@ export default {
 
 .news-date-status {
   margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.content-scope-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid #9ab0c6;
+  background: #f2f7fb;
+  color: #2a4f70;
+  font-size: 7pt;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.documents-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .news-actions-stack {

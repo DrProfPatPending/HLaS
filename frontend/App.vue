@@ -22,6 +22,14 @@
             >
               {{ clubShortName }} Home
             </button>
+              <button
+                type="button"
+                class="app-member-nav-button app-member-health-button"
+                :class="{ 'is-active': activeSection === 'health-safety' }"
+                @click="navigate('health-safety')"
+              >
+                Health and Safety
+              </button>
             <button
               type="button"
               class="app-member-nav-button"
@@ -123,6 +131,7 @@
 
       <main class="app-member-content">
         <home-view v-if="activeSection === 'home'" />
+          <health-safety-view v-else-if="activeSection === 'health-safety'" />
         <membership-admin v-else-if="activeSection === 'membership-admin'" />
         <club-information v-else-if="activeSection === 'club-information'" />
         <my-club v-else-if="activeSection === 'my-club'" />
@@ -161,6 +170,7 @@ import CatchReturn from './src/components/CatchReturn.vue';
 import MemberEdit from './src/components/MemberEdit.vue';
 import MyClub from './src/components/MyClub.vue';
 import ClubSettings from './src/components/ClubSettings.vue';
+import HealthSafetyView from './src/components/HealthSafetyView.vue';
 import AppCard from './src/components/ui/AppCard.vue';
 import {
   store,
@@ -200,6 +210,7 @@ export default {
     CatchReturn,
     MemberEdit,
     ClubSettings,
+    HealthSafetyView,
     AppCard,
   },
   computed: {
@@ -382,6 +393,18 @@ export default {
   border-color: #9ba5ae;
   background: linear-gradient(180deg, #dce1e6 0%, #c0c8d0 100%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+#app .app-member-health-button {
+  border-color: #934d16;
+  background: linear-gradient(180deg, #d8842e 0%, #aa5f1f 100%);
+}
+#app .app-member-health-button:hover {
+  background: linear-gradient(180deg, #e29547 0%, #b56a29 100%);
+  box-shadow: 0 5px 14px rgba(170, 95, 31, 0.24);
+}
+#app .app-member-health-button.is-active {
+  border-color: #7f4110;
+  background: linear-gradient(180deg, #b56a29 0%, #7f4110 100%);
 }
 #app .app-member-nav-button.is-admin {
   border-color: #2f7a45;

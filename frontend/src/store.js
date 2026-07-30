@@ -546,6 +546,7 @@ export function sectionDisplayName(sectionKey) {
     'fishing-beats': 'Fishing Beats',
     'beat-details': 'Beat Details',
     'catch-return': 'Catch Return',
+    'health-safety': 'Health and Safety',
     'member-edit': 'Edit Member',
   };
   return names[sectionKey] || 'Home';

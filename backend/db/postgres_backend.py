@@ -402,6 +402,7 @@ def ensure_postgres_club_documents_table(engine):
             CREATE TABLE IF NOT EXISTS club_documents (
                 id                  BIGSERIAL PRIMARY KEY,
                 club_id             BIGINT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                content_scope       VARCHAR(32) NOT NULL DEFAULT 'home',
                 title               VARCHAR(255) NOT NULL DEFAULT '',
                 file_name           VARCHAR(512) NOT NULL DEFAULT '',
                 file_ext            VARCHAR(16) NOT NULL DEFAULT '',
@@ -424,6 +425,12 @@ def ensure_postgres_club_documents_table(engine):
             """
             CREATE INDEX IF NOT EXISTS ix_club_documents_uploaded_by
             ON club_documents (uploaded_by_user_id)
+            """
+        ),
+        text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_club_documents_club_scope_display_order
+            ON club_documents (club_id, content_scope, display_order, id)
             """
         ),
     ]
