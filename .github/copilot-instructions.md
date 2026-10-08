@@ -22,7 +22,7 @@
 June 14, 2026 — updated for:
 - **Per-Club Field Order (June 2026):**
   - Field Order settings are now stored per-club in a dedicated `club_field_order` PostgreSQL table (one JSONB `config` row per club, `UNIQUE(club_id)`)
-  - Alembic migration `20260614_0001` creates the table and backfills all active clubs from the existing global `app_settings` row
+  - Alembic migration `20260615_0001` creates the table and backfills all active clubs from the existing global `app_settings` row
   - Resolution chain at runtime: `club_field_order` → `app_settings(global/field_order)` → `backend/field_order.json`
   - New permission `field_order.club.manage` (granted to `club_admin`, `club_manager`, `app_admin`, `app_owner`)
   - New API endpoints: `GET /club-field-order?club=` and `PUT /club-field-order` (authenticated, RBAC)

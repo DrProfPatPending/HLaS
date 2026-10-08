@@ -1,7 +1,7 @@
 """Add club_field_order table for per-club field-order configuration
 
-Revision ID: 20260614_0001
-Revises: 20260613_0001
+Revision ID: 20260615_0001
+Revises: 20260614_0001
 Create Date: 2026-06-14 00:00:00
 """
 
@@ -13,8 +13,8 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy import text
 
 
-revision: str = "20260614_0001"
-down_revision: Union[str, Sequence[str], None] = "20260613_0001"
+revision: str = "20260615_0001"
+down_revision: Union[str, Sequence[str], None] = "20260614_0001"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

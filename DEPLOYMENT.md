@@ -514,7 +514,7 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
    - PostgreSQL mode (primary): `club_field_order` table, one row per club (`club_id`, `config` JSONB)
    - PostgreSQL fallback: `app_settings(scope='global', key='field_order')` (legacy global row)
    - File fallback: `backend/field_order.json` (default template — not written to at runtime)
-   - Alembic migration `20260614_0001_add_club_field_order_table.py` creates the table and backfills all active clubs from the current global `app_settings` row
+   - Alembic migration `20260615_0001_add_club_field_order_table.py` creates the table and backfills all active clubs from the current global `app_settings` row
 - Field-order display labels:
    - Stored inside the `config` JSONB column in `club_field_order` under `display_names.<context>.<field>`
 
