@@ -25,27 +25,23 @@
 [Unit]
 Description=HLaS Backup Service
 Documentation=file:///opt/hlas/BACKUP_SYSTEM.md
-After=network.target postgresql.service
-Requires=postgresql.service
+After=network.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=root
 WorkingDirectory=/opt/hlas/backend
 
-# Sets database connection - adjust to your setup
-Environment="DATABASE_URL=postgresql://hlas:password@localhost:5432/hlas"
 Environment="HLAS_BACKUP_DIR=/data/backups"
 Environment="HLAS_LOG_LEVEL=INFO"
 
-# Run backup command
-ExecStart=/usr/bin/python3 /opt/hlas/backend/backup_cli.py create-full \
-    --description="Scheduled automated backup"
+# Load the production environment if present, then construct a host-reachable
+# DATABASE_URL for the Docker-published PostgreSQL port.
+ExecStart=/bin/bash -lc 'if [ -f /opt/hlas/.env.prod ]; then set -a; source /opt/hlas/.env.prod; set +a; fi; export DATABASE_URL="postgresql://${POSTGRES_USER:-hlas}:${POSTGRES_PASSWORD:-hlas}@127.0.0.1:${POSTGRES_PORT:-5433}/${POSTGRES_DB:-hlas}"; exec /usr/bin/python3 /opt/hlas/backend/backup_cli.py create-full --description="Scheduled automated backup"'
 
-# Cleanup old backups after 5 minutes
-ExecStartPost=/bin/sleep 300
-ExecStartPost=/usr/bin/python3 /opt/hlas/backend/backup_cli.py cleanup \
-    --days=30 --max=7
+# Cleanup old backups after the main snapshot finishes
+ExecStartPost=/bin/bash -lc 'if [ -f /opt/hlas/.env.prod ]; then set -a; source /opt/hlas/.env.prod; set +a; fi; export DATABASE_URL="postgresql://${POSTGRES_USER:-hlas}:${POSTGRES_PASSWORD:-hlas}@127.0.0.1:${POSTGRES_PORT:-5433}/${POSTGRES_DB:-hlas}"; sleep 300; exec /usr/bin/python3 /opt/hlas/backend/backup_cli.py cleanup --days=30 --max=7'
 
 # Restart policy
 Restart=on-failure

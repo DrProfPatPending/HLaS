@@ -379,8 +379,10 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
        - Blank: Use Min Width or browser default
    - Width priority: explicit Width > Min Width > browser default
    - Example use case: set Size column to `80px`, Actions to `120px`, Title to `flex`
-   - Configure via Admin UI: `/admin/field-order`
-   - Configuration structure in `field_order.json`:
+   - Configure via the **Club Settings** page (Club Admin+ role in the member login app), **Field Order** section
+   - Per-club configuration endpoint: `PUT /club-field-order`
+   - Global admin fallback still accessible at `/admin/field-order` (system admin only)
+   - Configuration structure (stored as JSONB `config` in `club_field_order` table):
      ```json
      {
        "home_documents": ["Title", "Size", "Actions"],
@@ -405,10 +407,12 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
    - `GET /mini-site?club=<SHORT_NAME>` for loading club mini site configuration (authenticated, requires `club.read`)
    - `PUT /mini-site?club=<SHORT_NAME>` for saving mini site configuration (Club Admin+ via `club.update`)
    - `GET /club/<club_short_name>/mini-site` public endpoint (no auth) for fetching enabled mini site config
+   - `GET /club_hero/<club_short_name>` public endpoint (no auth) for mini-site hero image bytes
    - POST/GET operations return: `enabled`, `title`, `tagline`, `description`, `hero_image_url`, `pages`, `social_links`
 
 - **Database Migration:**
    - Alembic migration `20260504_0001_club_mini_sites_table.py` creates `club_mini_sites` table
+   - Alembic migration `20260602_0001_club_heroes_table.py` creates `club_heroes` table for hero image binary storage
    - Table schema: `club_id` (unique FK to clubs), `enabled`, `title`, `tagline`, `description`, `hero_image_url`, `pages` (JSONB), `social_links` (JSONB)
    - Indexed on `club_id` (unique) and `enabled` for fast lookups
 
@@ -443,7 +447,7 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
    - dedicated member page added for beat-focused viewing
    - dropdown labels show `<Beat ID> <Beat Name>`
    - detail page reuses Fishing Beats map behavior for upstream/downstream markers and parking locations
-   - field order and visibility are stored under the `beat_details` context
+   - field order and visibility are stored per-club under the `beat_details` context in the `club_field_order` table
    - users with `club_admin` role can Edit/Save the selected beat details
    - users with `club_admin` role can Add a new beat and Delete the currently selected beat
    - users without `club_admin` role remain read-only in Beat Details
@@ -451,12 +455,13 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
    - post-login member home page now uses a left-side vertical action stack
    - central placeholder `News and Updates` table is present until backend news/message endpoints are implemented
    - `Documents` table is shown alongside news and backed by live document APIs
-- **Club Settings:**
+- Club Settings:
    - member-facing Club Settings page allows clubs to configure:
      - Catch Return field visibility (which fields appear in the form and recent returns table)
      - Club Mini Site (marketing website configuration for each club)
-   - Club Admin+ users can manage these settings
-   - Settings are stored in PostgreSQL and applied cluster-wide
+     - **Field Order** (per-club column order, visibility, display names, widths, and read-only flags for all table contexts)
+   - Club Admin+ users can manage all of these settings
+   - Settings are stored in PostgreSQL and applied club-wide (Field Order in `club_field_order`; other settings in `app_settings`)
 
 - **Club Mini Sites:**
    - Optional public-facing marketing websites for each club (per-club configuration)
@@ -466,6 +471,8 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
    - Admin UI in Club Settings to enable/disable and configure mini site (title, tagline, description, hero image)
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration
    - PostgreSQL table: `club_mini_sites` with per-club settings (indexed on `club_id` and `enabled`)
+   - PostgreSQL table: `club_heroes` stores mini-site hero images by `club_short_name` (`BYTEA`)
+   - Hero image endpoint uses DB-first retrieval with filesystem fallback to `backend/club_logos/<CLUB>_hero.png`
 
 - **Frontend build environment:**
    - frontend package metadata now targets npm `11.12.1`
@@ -496,19 +503,20 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
 - Rebuild the frontend to ensure both admin and member UIs are up to date.
 - Live Docker PostgreSQL is published on host port `5433` (`5433 -> 5432`).
 - In member-facing deployments behind Caddy, frontend should call backend via `/api`.
-- If Beat Details columns are changed in admin field-order tooling, ensure the `beat_details` context is included in the persisted `field_order` payload.
+- If Beat Details columns are changed via Club Settings field-order tooling, the change is stored in the `club_field_order` table for that club. Changes to `backend/field_order.json` affect only clubs that have no per-club row yet.
 - App Settings persistence:
    - PostgreSQL mode: `app_settings(scope='global', key='app_settings')`
    - JSON fallback: `backend/app_settings.json`
 - Club Settings persistence:
-   - PostgreSQL mode: `app_settings(scope='club:<SHORT_NAME>', key='club_settings')`
+   - PostgreSQL mode: `app_settings(scope='club:<SHORT_NAME>', key='club_settings')` for catch-return visibility and mini-site settings
    - JSON fallback: `backend/club_settings.json`
-- Membership export output:
-   - CSV and JSON are generated on demand by backend; no schema migration required
-   - Export excludes sensitive fields such as `password`
+- Field-order persistence (per-club):
+   - PostgreSQL mode (primary): `club_field_order` table, one row per club (`club_id`, `config` JSONB)
+   - PostgreSQL fallback: `app_settings(scope='global', key='field_order')` (legacy global row)
+   - File fallback: `backend/field_order.json` (default template — not written to at runtime)
+   - Alembic migration `20260615_0001_add_club_field_order_table.py` creates the table and backfills all active clubs from the current global `app_settings` row
 - Field-order display labels:
-   - Stored in existing field-order JSON/app_settings payload under `display_names`
-   - No database schema migration required
+   - Stored inside the `config` JSONB column in `club_field_order` under `display_names.<context>.<field>`
 
 ### Member photo deployment steps
 
@@ -861,7 +869,15 @@ Optional public-facing marketing websites for each club:
    - Access via Club Settings page (member UI → Club Settings)
    - Club Admin+ users can enable/disable and configure per-club mini site
    - Configurable fields: `enabled`, `title`, `tagline`, `description`, `hero_image_url`
-   - Store images externally (e.g., CDN, S3) and reference via URL
+   - Hero image can be external URL or internal route (`/api/club_hero/<SHORT_NAME>`)
+   - Static fallback filename for hero assets: `backend/club_logos/<CLUB>_hero.png`
+   - Batch import helper: `python3 backend/import_club_heroes_to_postgres.py`
+
+- **Hero Image Storage (PostgreSQL + Fallback):**
+   - DB table: `club_heroes` (`club_short_name`, `image_data`, `mime_type`, `updated_at`)
+   - Public route: `GET /api/club_hero/<SHORT_NAME>` serves hero image bytes
+   - Resolution order: Postgres row first, then filesystem fallback (`<CLUB>_hero.png`)
+   - Example (CTC): `hero_image_url` set to `/api/club_hero/CTC`
 
 - **Public Access:**
    - Desktop view: Full mini site at `/club/{clubCode}/`
@@ -888,11 +904,21 @@ Optional public-facing marketing websites for each club:
    - `Utilities/member_paused_verification_pack.sql`
    - `Utilities/member_paused_verification_pack_psql.sql`
 
-### Field-order persistence note
+### Field-order persistence
 
-Current runtime-configured field-order contexts include both:
+Field order configuration is now stored **per-club** in the dedicated `club_field_order` table (one JSONB `config` row per club). The resolution chain at request time is:
 
-- `fishing_beats`
-- `beat_details`
+1. `club_field_order` row for the requested club (primary source)
+2. `app_settings(scope='global', key='field_order')` (legacy global fallback)
+3. `backend/field_order.json` (default template / file fallback)
 
-If `app_settings(scope='global', key='field_order')` exists, it is treated as the runtime source of truth. Keep it aligned with `backend/field_order.json` when deploying manual config updates.
+All contexts (`fishing_beats`, `beat_details`, `membership_admin`, `my_club`, `home_news`, `home_documents`, `news_updates`, `club_information_officers`) are stored inside the single JSONB `config` column for the club.
+
+**API endpoints:**
+- `GET  /club-field-order?club=<SHORT_NAME>` — returns resolved per-club config (requires `field_order.club.manage` permission)
+- `PUT  /club-field-order` — saves config for the requesting club (requires `field_order.club.manage`)
+- `GET  /field-order?club=<SHORT_NAME>` — public read for runtime rendering by member-facing views
+
+**Permission:** `field_order.club.manage` is granted to `club_admin`, `club_manager`, `app_admin`, `app_owner`.
+
+**Deployment note:** run `alembic upgrade head` after deploy to create `club_field_order` and backfill clubs from the existing global `app_settings` row.

@@ -1341,7 +1341,9 @@ export default {
     },
     loadFieldOrder() {
       axios
-        .get(`${API_BASE_URL}/field-order`)
+        .get(`${API_BASE_URL}/field-order`, {
+          params: { club: this.loggedInClub },
+        })
         .then(res => {
           const loadedFieldOrder = res.data?.field_order;
           this.fieldOrder = loadedFieldOrder && typeof loadedFieldOrder === 'object'

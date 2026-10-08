@@ -227,10 +227,13 @@ setup_systemd() {
         return
     fi
     
-    # Edit service file to set DATABASE_URL
-    print_info "Updating DATABASE_URL in service file..."
-    sudo sh -c "sed -i 's|^Environment=\"DATABASE_URL=.*\"|Environment=\"DATABASE_URL=$DATABASE_URL\"|' /etc/systemd/system/hlas-backup.service"
-    print_success "DATABASE_URL configured"
+    # The service now sources /opt/hlas/.env.prod when it runs, so the
+    # deployment database URL stays in one place.
+    if [ -z "$DATABASE_URL" ]; then
+        print_error "DATABASE_URL is still required for validation"
+        return
+    fi
+    print_success "DATABASE_URL will be loaded from /opt/hlas/.env.prod at runtime"
     
     # Reload and start
     print_info "Reloading systemd..."

@@ -9,6 +9,7 @@ Club Mini Sites are optional, public-facing marketing websites for individual cl
 - **Public access** - No authentication required; accessible worldwide
 - **Device-responsive** - Desktop: full experience; Mobile/Responsive: placeholder with desktop prompt
 - **Customizable** - Clubs can set title, tagline, description, and hero image
+- **Flexible media storage** - Hero images can be external URLs or served from internal PostgreSQL-backed endpoints
 - **Future-extensible** - Ready for galleries, event calendars, contact forms
 - **API-accessible** - Public endpoint for external integrations
 
@@ -31,7 +32,7 @@ Club Mini Sites are optional, public-facing marketing websites for individual cl
    - **Site Title** - Display name (e.g., "Cambridge Trout Club")
    - **Tagline** - Subtitle (e.g., "Premier fly fishing destination")
    - **Description** - Club overview (max 500 chars recommended)
-   - **Hero Image URL** - External URL to banner image (CDN, S3, etc.)
+  - **Hero Image URL** - External URL (CDN/S3) or internal route (e.g., `/api/club_hero/CTC`)
 6. Click **Save Settings**
 
 ### 2) View Your Mini Site
@@ -111,6 +112,14 @@ curl -H "Content-Type: application/json" \
   "error": "Mini site not configured for this club"
 }
 ```
+
+**GET `/api/club_hero/{club_code}`**
+
+Public endpoint to fetch hero image bytes for mini-site display.
+
+- Resolution order: PostgreSQL (`club_heroes`) first, then filesystem fallback
+- Fallback filename convention: `backend/club_logos/<CLUB>_hero.png`
+- Example: `/api/club_hero/CTC`
 
 #### Authenticated Endpoints (Club Admin+)
 
@@ -210,6 +219,34 @@ For `/club/{clubCode}/...` routes (including `/club/{clubCode}/login/`), favicon
 - **Status** - Displays if enabled or not configured
 
 **Permissions:** Club Admin+ (requires `club.update`)
+
+---
+
+## Mini-Site Media Storage
+
+### Hero Images (PostgreSQL + Fallback)
+
+- `club_mini_sites.hero_image_url` controls the image source rendered by the mini-site hero section.
+- Recommended internal pattern: set `hero_image_url` to `/api/club_hero/<CLUB_CODE>`.
+- Public serving endpoint: `GET /api/club_hero/<club_code>`.
+
+**Storage sources:**
+
+1. **Primary:** PostgreSQL table `club_heroes`
+  - Columns: `club_short_name`, `image_data`, `mime_type`, `updated_at`
+2. **Fallback:** Filesystem
+  - Path convention: `backend/club_logos/<CLUB>_hero.png`
+  - Example: `backend/club_logos/CTC_hero.png`
+
+**Batch import tool:**
+
+```bash
+python3 backend/import_club_heroes_to_postgres.py
+```
+
+For CTC production, the standard configuration is:
+
+- `hero_image_url`: `/api/club_hero/CTC`
 
 ---
 

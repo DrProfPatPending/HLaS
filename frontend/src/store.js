@@ -7,8 +7,10 @@ export const fieldOrderConfig = reactive({
   order: {},
 });
 
-export function loadFieldOrderConfig() {
-  return axios.get(`${API_BASE_URL}/admin/field-order`)
+export function loadFieldOrderConfig(clubShortName = '') {
+  const club = String(clubShortName || store?.loggedInClub || '').trim();
+  const params = club ? { club } : undefined;
+  return axios.get(`${API_BASE_URL}/field-order`, { params })
     .then(res => {
       fieldOrderConfig.order = res.data.field_order || {};
       fieldOrderConfig.contexts = Object.keys(fieldOrderConfig.order);

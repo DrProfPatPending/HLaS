@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-TARGET="${TARGET:-ctc-production}"
+TARGET="${TARGET:-development}"
 DIRECTORY="${DIRECTORY:-/opt/hlas}"
 VERBOSE=0
 USE_REMOTE=1
@@ -11,13 +11,22 @@ SKIP_HEALTH=0
 LOG_FILE=""
 INITIAL_PWD="$(pwd)"
 
+if command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+else
+    echo "✗ ERROR: Neither 'python' nor 'python3' was found in PATH" >&2
+    exit 1
+fi
+
 usage() {
     cat <<EOF
 Usage: $0 [OPTIONS]
 
 Options:
-  -t, --target <target>     Deployment target/branch (default: ctc-production)
-                            Examples: ctc-production, production, development, main
+  -t, --target <target>     Deployment target/branch (default: development)
+                            Examples: -production, production, development, main
   -d, --directory <dir>     Deployment directory (default: /opt/hlas)
                             Example: /opt/hlas
     -l, --local               Build from local working tree (skip git reset)
