@@ -67,10 +67,7 @@ Examples:
     $0 -t production --clean -C              # -C disables clean (last flag wins)
     $0 --target production --clean --noclean # last flag wins (no prune)
     $0 --target production --quiet --log-file /tmp/hlas-build.log
-        $0 --target ctc-production --env-file .env.ctc \
-            --clubs-config clubs.config.ctc.json \
-            --caddyfile deploy/caddy/Caddyfile.ctc \
-            --health-host cambridgetroutclub.org --allow-http-401
+    $0 --target ctc-production --allow-http-401
 EOF
 }
 
@@ -265,6 +262,8 @@ log "Rebuilding latest HLaS from Github sources (directory: $DIRECTORY, target: 
 
 unset BACKEND_IMAGE FRONTEND_IMAGE DOMAIN DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB HLAS_USE_POSTGRES_READS LOG_LEVEL
 
+DEFAULT_CLUBS_CONFIG_FILE="backend/clubs.config.json"
+
 case "$TARGET" in
     production|prod)
         BRANCH_NAME="production"
@@ -275,10 +274,11 @@ case "$TARGET" in
         ;;
     ctc-production)
         BRANCH_NAME="ctc-production"
-        ENV_FILE=".env.prod"
+        ENV_FILE=".env.ctc"
         COMPOSE_FILES=("-f" "docker-compose.prod.yml")
-        CADDYFILE="deploy/caddy/Caddyfile.prod"
+        CADDYFILE="deploy/caddy/Caddyfile.ctc"
         HEALTH_HOST="cambridgetroutclub.org"
+        DEFAULT_CLUBS_CONFIG_FILE="clubs.config.ctc.json"
         ;;
     development|dev)
         BRANCH_NAME="development"
@@ -312,7 +312,7 @@ fi
 if [ -n "$HEALTH_HOST_OVERRIDE" ]; then
     HEALTH_HOST="$HEALTH_HOST_OVERRIDE"
 fi
-CLUBS_CONFIG_FILE="${CLUBS_CONFIG_FILE_OVERRIDE:-backend/clubs.config.json}"
+CLUBS_CONFIG_FILE="${CLUBS_CONFIG_FILE_OVERRIDE:-$DEFAULT_CLUBS_CONFIG_FILE}"
 
 if [ "${CADDYFILE#/}" = "$CADDYFILE" ]; then
     CADDYFILE="$PWD/$CADDYFILE"
