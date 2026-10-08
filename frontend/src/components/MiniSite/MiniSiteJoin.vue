@@ -49,7 +49,7 @@
 
           <div class="join-cta">
             <p>Ready to join? Contact us or complete an application:</p>
-            <a href="#" class="join-button">Start Application</a>
+            <a :href="contactUrl" class="join-button">Contact Page</a>
           </div>
         </div>
       </div>
@@ -65,6 +65,10 @@ export default {
       type: String,
       required: true,
     },
+    clubCode: {
+      type: String,
+      required: true,
+    },
     content: {
       type: String,
       default: '',
@@ -72,6 +76,11 @@ export default {
     subheading: {
       type: String,
       default: '',
+    },
+  },
+  computed: {
+    contactUrl() {
+      return `/club/${encodeURIComponent(this.clubCode)}/contact/`;
     },
   },
 };
