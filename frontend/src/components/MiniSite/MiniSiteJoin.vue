@@ -47,7 +47,7 @@
           </ol>
 
           <div class="join-cta">
-            <p>Ready to join? Contact us :</p>
+            <p>Ready to join? Contact us:</p>
             <a :href="contactUrl" class="join-button">Contact Page</a>
           </div>
         </div>

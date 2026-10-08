@@ -9,6 +9,8 @@ from datetime import datetime
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy import String, and_, cast, select
 
+from core.content_scopes import DEFAULT_CONTENT_SCOPE, normalize_content_scope
+
 
 def create_newsletter_blueprint(deps):
     bp = Blueprint('newsletter', __name__)
@@ -53,12 +55,26 @@ def create_newsletter_blueprint(deps):
         value = str(raw_value or '').strip()
         return value or 'Published'
 
+    def _resolve_content_scope_from_request(payload=None, *, allow_all=False):
+        source = payload if isinstance(payload, dict) else {}
+        raw_scope = (
+            source.get('content_scope')
+            or source.get('contentScope')
+            or request.args.get('content_scope')
+            or request.args.get('contentScope')
+            or DEFAULT_CONTENT_SCOPE
+        )
+        return normalize_content_scope(raw_scope, allow_all=allow_all)
+
     def _normalize_news_post(raw_post):
         post = raw_post if isinstance(raw_post, dict) else {}
         normalized_date = _normalize_date(post.get('date'))
         return {
             'id': str(post.get('id') or '').strip() or secrets.token_hex(8),
             'date': normalized_date,
+            'content_scope': normalize_content_scope(
+                post.get('content_scope') or post.get('contentScope')
+            ),
             'category': str(post.get('category') or '').strip(),
             'update': str(post.get('update') or post.get('message') or '').strip(),
             'status': _normalize_status(post.get('status')),
@@ -164,6 +180,7 @@ def create_newsletter_blueprint(deps):
     @bp.route('/news-updates', methods=['GET'])
     def list_news_updates():
         requested_club = str(request.args.get('club', '')).strip()
+        content_scope = _resolve_content_scope_from_request(allow_all=True)
         auth_error = require_authenticated(requested_club)
         if auth_error:
             return auth_error
@@ -181,7 +198,10 @@ def create_newsletter_blueprint(deps):
             limit = 20
         limit = min(limit, 200)
 
-        posts = _load_news_updates_for_club(club)[:limit]
+        posts = _load_news_updates_for_club(club)
+        if content_scope != 'all':
+            posts = [post for post in posts if post.get('content_scope', DEFAULT_CONTENT_SCOPE) == content_scope]
+        posts = posts[:limit]
         return jsonify({'club': club, 'updates': posts})
 
     @bp.route('/news-updates', methods=['POST'])
@@ -204,6 +224,7 @@ def create_newsletter_blueprint(deps):
         category = str(payload.get('category') or '').strip()
         update_text = str(payload.get('update') or '').strip()
         status = _normalize_status(payload.get('status'))
+        content_scope = _resolve_content_scope_from_request(payload)
 
         if not normalized_date:
             return jsonify({'error': 'Date is required and must be YYYY-MM-DD'}), 400
@@ -214,6 +235,7 @@ def create_newsletter_blueprint(deps):
         new_post = {
             'id': secrets.token_hex(8),
             'date': normalized_date,
+            'content_scope': content_scope,
             'category': category,
             'update': update_text,
             'status': status,
@@ -258,6 +280,8 @@ def create_newsletter_blueprint(deps):
             post['update'] = update_text
         if 'status' in payload:
             post['status'] = _normalize_status(payload['status'])
+        if 'content_scope' in payload or 'contentScope' in payload:
+            post['content_scope'] = _resolve_content_scope_from_request(payload)
 
         _save_news_updates_for_club(club, existing_posts)
         return jsonify({'success': True, 'club': club, 'post': post})

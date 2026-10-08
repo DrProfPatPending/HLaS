@@ -134,6 +134,7 @@ def sync_documents_to_postgres(json_path: str = None, dry_run: bool = False,
                         
                         doc_insert = {
                             'club_id': club_id,
+                            'content_scope': str(doc.get('contentScope') or doc.get('content_scope') or 'home').strip() or 'home',
                             'display_order': int(doc.get('displayOrder') or (index + 1)),
                             'title': doc.get('title', ''),
                             'file_name': doc.get('fileName', ''),

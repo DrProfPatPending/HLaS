@@ -12,6 +12,13 @@
             <input v-model="newsPostForm.date" type="date" required :disabled="isNewsUpdatesFieldReadOnly('Date')" />
           </label>
           <label>
+            <span>Destination</span>
+            <select v-model="newsPostForm.contentScope" :disabled="isNewsUpdatesCreateReadOnly">
+              <option value="home">Home</option>
+              <option value="health-safety">Health and Safety</option>
+            </select>
+          </label>
+          <label>
             <span>Category</span>
             <input v-model="newsPostForm.category" type="text" maxlength="80" placeholder="e.g. Club Notice" :disabled="isNewsUpdatesFieldReadOnly('Category')" />
           </label>
@@ -31,7 +38,7 @@
             v-model="newsPostForm.update"
             rows="3"
             maxlength="500"
-            placeholder="Write the update to display on the Home page table"
+            :placeholder="newsPostPlaceholder"
             required
             :disabled="isNewsUpdatesFieldReadOnly('Update')"
           ></textarea>
@@ -49,10 +56,21 @@
 
     <section class="news-updates-list-section">
       <h3>Current Club Posts</h3>
+      <div class="news-updates-filter-row">
+        <label>
+          <span>Show posts for</span>
+          <select v-model="newsUpdatesFilterScope" @change="fetchNewsUpdates">
+            <option value="all">All Destinations</option>
+            <option value="home">Home</option>
+            <option value="health-safety">Health and Safety</option>
+          </select>
+        </label>
+      </div>
       <table class="newsletter-table">
         <thead>
           <tr>
             <th :style="getColumnStyle('news_updates', 'Date')">Date</th>
+            <th>Destination</th>
             <th :style="getColumnStyle('news_updates', 'Category')">Category</th>
             <th :style="getColumnStyle('news_updates', 'Update')">Update</th>
             <th :style="getColumnStyle('news_updates', 'Status')">Status</th>
@@ -60,13 +78,14 @@
         </thead>
         <tbody>
           <tr v-if="newsUpdatesLoading">
-            <td colspan="4">Loading posts...</td>
+            <td colspan="5">Loading posts...</td>
           </tr>
           <tr v-else-if="!newsUpdates.length">
-            <td colspan="4">No posts yet.</td>
+            <td colspan="5">No posts yet.</td>
           </tr>
           <tr v-else v-for="post in newsUpdates" :key="post.id">
             <td :style="getColumnStyle('news_updates', 'Date')">{{ formatNewsDate(post.date) }}</td>
+            <td>{{ formatContentScope(post.content_scope) }}</td>
             <td :style="getColumnStyle('news_updates', 'Category')">{{ post.category }}</td>
             <td :style="getColumnStyle('news_updates', 'Update')">{{ post.update }}</td>
             <td :style="getColumnStyle('news_updates', 'Status')">{{ post.status }}</td>
@@ -378,10 +397,12 @@ export default {
       newsPostError: '',
       newsPostForm: {
         date: todayIsoDate(),
+        contentScope: 'home',
         category: '',
         update: '',
         status: 'Published',
       },
+      newsUpdatesFilterScope: 'all',
     };
   },
   computed: {
@@ -453,6 +474,12 @@ export default {
         || this.isNewsUpdatesFieldReadOnly('Update')
         || this.isNewsUpdatesFieldReadOnly('Status');
     },
+    newsPostPlaceholder() {
+      if (this.newsPostForm.contentScope === 'health-safety') {
+        return 'Write the update to display on the Health and Safety page table';
+      }
+      return 'Write the update to display on the Home page table';
+    },
   },
   created() {
     loadFieldOrderConfig();
@@ -481,6 +508,10 @@ export default {
       const formatted = formatConfiguredDate(value, 'Date');
       return formatted || value;
     },
+    formatContentScope(scope) {
+      if (scope === 'health-safety') return 'Health and Safety';
+      return 'Home';
+    },
     getColumnStyle(contextKey, columnKey) {
       // First check if a width is specified in the widths configuration
       const configuredWidth = this.newsUpdatesWidths?.[columnKey];
@@ -507,7 +538,11 @@ export default {
       this.newsPostError = '';
       return axios
         .get(`${API_BASE_URL}/news-updates`, {
-          params: { club: store.loggedInClub, limit: 50 },
+          params: {
+            club: store.loggedInClub,
+            limit: 50,
+            content_scope: this.newsUpdatesFilterScope,
+          },
         })
         .then((res) => {
           this.newsUpdates = Array.isArray(res?.data?.updates) ? res.data.updates : [];
@@ -532,6 +567,7 @@ export default {
       const payload = {
         club: store.loggedInClub,
         date: this.newsPostForm.date,
+        content_scope: this.newsPostForm.contentScope,
         category: String(this.newsPostForm.category || '').trim(),
         update: String(this.newsPostForm.update || '').trim(),
         status: String(this.newsPostForm.status || 'Published').trim(),
@@ -552,6 +588,7 @@ export default {
         .then(() => {
           this.newsPostStatus = 'News/update post created.';
           this.newsPostForm.update = '';
+          this.newsUpdatesFilterScope = 'all';
           this.fetchNewsUpdates();
         })
         .catch((err) => {
@@ -925,6 +962,34 @@ export default {
   display: flex;
   gap: 8px;
   margin-top: 2px;
+}
+
+.news-updates-filter-row {
+  margin: 0 0 10px;
+}
+
+.news-updates-filter-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.news-updates-filter-row label span {
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.news-updates-filter-row select {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.3;
+  background: #fff;
+  color: #111827;
 }
 
 @media (max-width: 900px) {

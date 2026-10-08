@@ -13,6 +13,9 @@ frontend/ios/App/Podfile.lock
 # frontend/android
 # frontend/ios
 .env.prod
+.env.ctc
+clubs.config.ctc.json
+deploy/caddy/Caddyfile.ctc
 deploy/.env*
 !deploy/.env*.example
 *.pyc
