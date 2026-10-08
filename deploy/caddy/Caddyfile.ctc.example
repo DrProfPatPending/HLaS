@@ -1,26 +1,26 @@
 cambridgetroutclub.org {
-    encode zstd gzip
+	encode zstd gzip
 
-    route {
-        handle_path /api/* {
-            reverse_proxy backend:5050
-        }
+	route {
+		handle_path /api/* {
+			reverse_proxy backend:5050
+		}
 
-        # Add a basic_auth block here only while a temporary site gate is needed.
-        @root path /
-        redir @root /club/CTC/ 302
+		# Add a basic_auth block here only while a temporary site gate is needed.
+		@root path /
+		redir @root /club/CTC/ 302
 
-        handle {
-            reverse_proxy frontend:80
-        }
-    }
+		handle {
+			reverse_proxy frontend:80
+		}
+	}
 }
 
 www.cambridgetroutclub.org {
-    redir https://cambridgetroutclub.org{uri} 308
+	redir https://cambridgetroutclub.org{uri} 308
 }
 
 wordpress.cambridgetroutclub.org {
-    encode zstd gzip
-    reverse_proxy wordpress-web:80
+	encode zstd gzip
+	reverse_proxy wordpress-web:80
 }
