@@ -291,16 +291,15 @@ git checkout ctc-production
 cp clubs.config.ctc.example.json clubs.config.ctc.json
 # Edit to match your CTC setup
 
+cp .env.ctc.example .env.ctc
+cp deploy/caddy/Caddyfile.ctc.example deploy/caddy/Caddyfile.ctc
+
 # Keep the live environment and Caddy configuration outside shared commits.
 # The paths may be relative to the repository or absolute.
 
-# Deploy the CTC profile. --allow-http-401 is only needed while Basic Auth is enabled.
-./hlas_build.sh --target ctc-production \
-   --env-file .env.ctc \
-   --clubs-config clubs.config.ctc.json \
-   --caddyfile deploy/caddy/Caddyfile.ctc \
-   --health-host cambridgetroutclub.org \
-   --allow-http-401
+# The ctc-production target selects these files automatically.
+# --allow-http-401 is only needed while Basic Auth is enabled.
+./hlas_build.sh --target ctc-production --allow-http-401
 ```
 
 **Benefits:**
