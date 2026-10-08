@@ -28,11 +28,11 @@ Alternatively, extract the `[CTC]` entries from the current `backend/clubs.confi
 ### 2. Create Deployment Files
 
 ```bash
-cp .env.ctc.example .env.ctc
+cp --preserve=mode .env.prod .env.ctc
 cp deploy/caddy/Caddyfile.ctc.example deploy/caddy/Caddyfile.ctc
 ```
 
-Copy the required database values from `.env.prod` into `.env.ctc`. Configure the CTC WordPress URL there. If the temporary site gate is required, add its bcrypt hash only to the ignored `Caddyfile.ctc` file.
+Set `WORDPRESS_PUBLIC_URL=https://wordpress.cambridgetroutclub.org` in `.env.ctc`. If the temporary site gate is required, add its bcrypt hash only to the ignored `Caddyfile.ctc` file.
 
 ### 3. Deploy with ctc-production Branch
 
@@ -42,13 +42,10 @@ git fetch origin
 git checkout ctc-production
 git pull origin ctc-production
 
-./hlas_build.sh --target ctc-production --directory /opt/hlas \
-  --env-file .env.ctc \
-  --clubs-config clubs.config.ctc.json \
-  --caddyfile deploy/caddy/Caddyfile.ctc \
-  --health-host cambridgetroutclub.org \
-  --allow-http-401
+./hlas_build.sh --target ctc-production --directory /opt/hlas --allow-http-401
 ```
+
+The target automatically selects `.env.ctc`, `clubs.config.ctc.json`, `deploy/caddy/Caddyfile.ctc`, and the CTC health-check hostname. The explicit file options remain available for exceptional deployments.
 
 ---
 
