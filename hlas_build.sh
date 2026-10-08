@@ -8,7 +8,12 @@ USE_REMOTE=1
 NO_CACHE=1
 RUN_CLEAN=0
 SKIP_HEALTH=0
+ALLOW_HTTP_401=0
 LOG_FILE=""
+ENV_FILE_OVERRIDE=""
+CADDYFILE_OVERRIDE=""
+HEALTH_HOST_OVERRIDE=""
+CLUBS_CONFIG_FILE_OVERRIDE=""
 INITIAL_PWD="$(pwd)"
 
 if command -v python >/dev/null 2>&1; then
@@ -37,6 +42,11 @@ Options:
     -C                        Alias for --noclean (disable Docker prune step)
       --noclean, --no-clean Disable Docker prune step (default)
   -n, --nohealth            Skip post-start health checks
+      --allow-http-401      Accept HTTP 401 from the public site health check
+      --env-file <file>     Compose environment file (overrides target default)
+      --caddyfile <file>    Caddyfile to mount (overrides target default)
+      --health-host <host>  Hostname used for the HTTPS health check
+      --clubs-config <file> Club configuration file mounted into the backend
       --log-file <file>      Write full build output to a file
   -q, --quiet               Suppress command output (default)
     -V                        Alias for --quiet (no verbose output)
@@ -57,6 +67,10 @@ Examples:
     $0 -t production --clean -C              # -C disables clean (last flag wins)
     $0 --target production --clean --noclean # last flag wins (no prune)
     $0 --target production --quiet --log-file /tmp/hlas-build.log
+        $0 --target ctc-production --env-file .env.ctc \
+            --clubs-config clubs.config.ctc.json \
+            --caddyfile deploy/caddy/Caddyfile.ctc \
+            --health-host cambridgetroutclub.org --allow-http-401
 EOF
 }
 
@@ -97,6 +111,42 @@ while (($#)); do
         -n|--nohealth)
             SKIP_HEALTH=1
             shift
+            ;;
+        --allow-http-401)
+            ALLOW_HTTP_401=1
+            shift
+            ;;
+        --env-file)
+            if [ $# -lt 2 ]; then
+                echo "✗ ERROR: Missing value for $1" >&2
+                exit 1
+            fi
+            ENV_FILE_OVERRIDE="$2"
+            shift 2
+            ;;
+        --caddyfile)
+            if [ $# -lt 2 ]; then
+                echo "✗ ERROR: Missing value for $1" >&2
+                exit 1
+            fi
+            CADDYFILE_OVERRIDE="$2"
+            shift 2
+            ;;
+        --health-host)
+            if [ $# -lt 2 ]; then
+                echo "✗ ERROR: Missing value for $1" >&2
+                exit 1
+            fi
+            HEALTH_HOST_OVERRIDE="$2"
+            shift 2
+            ;;
+        --clubs-config)
+            if [ $# -lt 2 ]; then
+                echo "✗ ERROR: Missing value for $1" >&2
+                exit 1
+            fi
+            CLUBS_CONFIG_FILE_OVERRIDE="$2"
+            shift 2
             ;;
         --log-file)
             if [ $# -lt 2 ]; then
@@ -253,8 +303,29 @@ case "$TARGET" in
         ;;
 esac
 
+if [ -n "$ENV_FILE_OVERRIDE" ]; then
+    ENV_FILE="$ENV_FILE_OVERRIDE"
+fi
+if [ -n "$CADDYFILE_OVERRIDE" ]; then
+    CADDYFILE="$CADDYFILE_OVERRIDE"
+fi
+if [ -n "$HEALTH_HOST_OVERRIDE" ]; then
+    HEALTH_HOST="$HEALTH_HOST_OVERRIDE"
+fi
+CLUBS_CONFIG_FILE="${CLUBS_CONFIG_FILE_OVERRIDE:-backend/clubs.config.json}"
+
+if [ "${CADDYFILE#/}" = "$CADDYFILE" ]; then
+    CADDYFILE="$PWD/$CADDYFILE"
+fi
+if [ "${CLUBS_CONFIG_FILE#/}" = "$CLUBS_CONFIG_FILE" ]; then
+    CLUBS_CONFIG_FILE="$PWD/$CLUBS_CONFIG_FILE"
+fi
+
 compose() {
-    docker compose --env-file "$ENV_FILE" "${COMPOSE_FILES[@]}" "$@"
+    HLAS_ENV_FILE="$ENV_FILE" \
+    HLAS_CADDYFILE="$CADDYFILE" \
+    HLAS_CLUBS_CONFIG_FILE="$CLUBS_CONFIG_FILE" \
+        docker compose --env-file "$ENV_FILE" "${COMPOSE_FILES[@]}" "$@"
 }
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -284,6 +355,12 @@ if [ ! -f "$CADDYFILE" ]; then
     exit 1
 fi
 log "✓ Caddyfile configuration found: $CADDYFILE"
+
+if [ ! -f "$CLUBS_CONFIG_FILE" ]; then
+    log_err "✗ ERROR: Club configuration file ($CLUBS_CONFIG_FILE) not found!"
+    exit 1
+fi
+log "✓ Club configuration found: $CLUBS_CONFIG_FILE"
 
 log "Validating club source manifest"
 if make -n clubs-check >/dev/null 2>&1; then
@@ -340,6 +417,17 @@ retry_check() {
     return 1
 }
 
+frontend_health_check() {
+    local status
+    status="$(curl --connect-timeout 5 --max-time 10 -ksS -o /dev/null -w '%{http_code}' \
+        --resolve "${HEALTH_HOST}:443:127.0.0.1" "https://${HEALTH_HOST}/")" || return 1
+
+    if [[ "$status" =~ ^[23][0-9][0-9]$ ]]; then
+        return 0
+    fi
+    [[ "$ALLOW_HTTP_401" -eq 1 && "$status" = "401" ]]
+}
+
 if [ "$SKIP_HEALTH" -eq 1 ]; then
     log "⚠ Health checks skipped (--nohealth)"
 else
@@ -359,7 +447,7 @@ else
     retry_check "Backend health endpoint OK" "curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs" 30 3 || exit 1
 
     log "Checking frontend health endpoint via caddy"
-    retry_check "Frontend/caddy endpoint OK" "curl --connect-timeout 5 --max-time 10 -kfsS --resolve ${HEALTH_HOST}:443:127.0.0.1 https://${HEALTH_HOST}/" 30 3 || exit 1
+    retry_check "Frontend/caddy endpoint OK" "frontend_health_check" 30 3 || exit 1
 
     log "Checking WordPress/Nginx health endpoint"
     retry_check "WordPress/Nginx endpoint OK" "compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1

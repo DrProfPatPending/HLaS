@@ -260,17 +260,18 @@ Some deployments may include Alembic database schema migrations:
 
 ### Specialized / Single-Club Deployments
 
-For multi-version deployments where different clubs need unique codebases, use **Option 3: Config-as-Code Separation**.
+For deployments with club-specific configuration, keep the application code shared and pass deployment files explicitly to the build script.
 
 **Concept:**
 
-- Load clubs configuration from an external file path (environment variable)
-- Maintain a custom branch (e.g., `ctc-production`) with specialized themes/configs
-- Merge core code updates from `development`/`production` without config conflicts
+- Keep live environment, club and Caddy configuration outside shared application commits
+- Mount the selected club configuration read-only at `/config/clubs.config.json`
+- Maintain a custom branch only for club-specific content or presentation that cannot yet be configured
+- Merge core updates without replacing deployment-local files
 
 **Implementation:**
 
-The backend respects `HLAS_CLUBS_CONFIG_PATH` environment variable to load clubs config from anywhere:
+Docker Compose sets `HLAS_CLUBS_CONFIG_PATH=/config/clubs.config.json`. The build script selects the host file mounted at that path with `--clubs-config`.
 
 ```python
 # backend/app.py
@@ -290,25 +291,29 @@ git checkout ctc-production
 cp clubs.config.ctc.example.json clubs.config.ctc.json
 # Edit to match your CTC setup
 
-# Set environment variable in .env.ctc
-export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
+# Keep the live environment and Caddy configuration outside shared commits.
+# The paths may be relative to the repository or absolute.
 
-# Deploy as usual
-./hlas_build.sh --target ctc-production
+# Deploy the CTC profile. --allow-http-401 is only needed while Basic Auth is enabled.
+./hlas_build.sh --target ctc-production \
+   --env-file .env.ctc \
+   --clubs-config clubs.config.ctc.json \
+   --caddyfile deploy/caddy/Caddyfile.ctc \
+   --health-host cambridgetroutclub.org \
+   --allow-http-401
 ```
 
 **Benefits:**
 
 - ✅ Core code updates merge cleanly (no config conflicts)
-- ✅ Club-specific configs in external files (not git-managed or ignored)
+- ✅ Club-specific live files are ignored by Git
 - ✅ Backward compatible (defaults to `backend/clubs.config.json`)
-- ✅ Supports theme customizations, feature flags, SMTP settings on the branch
+- ✅ Environment, Caddy and health-check settings are selected independently
+- ✅ Supports theme customizations, feature flags and SMTP settings without changing core code
 
 **See Also:**
 
-- [CTC_SETUP.md](CTC_SETUP.md) — Detailed CTC-production branch maintenance guide
-- `.env.ctc.example` — Environment template with `HLAS_CLUBS_CONFIG_PATH`
-- `clubs.config.ctc.example.json` — Example single-club config
+- The `ctc-production` branch contains CTC-specific setup examples and presentation overrides.
 
 ---
 
