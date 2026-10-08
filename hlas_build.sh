@@ -271,7 +271,7 @@ case "$TARGET" in
         ENV_FILE=".env.prod"
         COMPOSE_FILES=("-f" "docker-compose.prod.yml")
         CADDYFILE="deploy/caddy/Caddyfile.prod"
-        HEALTH_HOST="cambridgetroutclub.org"
+        HEALTH_HOST="anglerconnect.cloud"
         ;;
     ctc-production)
         BRANCH_NAME="ctc-production"

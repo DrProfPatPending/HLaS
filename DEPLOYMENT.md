@@ -21,7 +21,7 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
 HLaS uses a **two-branch deployment strategy** to ensure production stability while enabling safe development:
 
 - **`main` branch**: Development and active feature development. Used locally and in testing environments.
-- **`production` branch**: Deployed codebase running on the VPS server (`cambridgetroutclub.org`). Only receives thoroughly tested, verified changes.
+- **`production` branch**: Shared production codebase (`anglerconnect.cloud`). Only receives thoroughly tested, verified changes.
 
 This separation ensures that experimental changes on `main` never affect the live clubs (CTC, GAAFFS, LADFFA) without careful validation first.
 
@@ -91,7 +91,7 @@ Once changes are tested and verified on `main`, promote them to `production`:
    docker compose logs frontend | tail -20
    ```
 
-5. **Test in browser**: Visit `https://cambridgetroutclub.org` and verify functionality
+5. **Test in browser**: Visit `https://anglerconnect.cloud` and verify functionality
 
 ### Environment-Specific Configuration Management
 
@@ -100,7 +100,7 @@ Once changes are tested and verified on `main`, promote them to `production`:
 HLaS uses separate, version-controlled Caddyfile configurations for development and production:
 
 - **`deploy/caddy/Caddyfile.prod`** — Production configuration
-  - Domain: `cambridgetroutclub.org`
+   - Domain: `anglerconnect.cloud`
   - TLS: Let's Encrypt automatic certificate management
   - Used by `docker-compose.prod.yml` on VPS deployments
 

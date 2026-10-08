@@ -118,7 +118,7 @@ services:
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-}
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-}
       WORDPRESS_TABLE_PREFIX: wp_
-      WORDPRESS_PUBLIC_URL: ${WORDPRESS_PUBLIC_URL:-https://wordpress.cambridgetroutclub.org}
+      WORDPRESS_PUBLIC_URL: ${WORDPRESS_PUBLIC_URL:-https://wordpress.anglerconnect.cloud}
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_HOME', getenv('WORDPRESS_PUBLIC_URL'));
         define('WP_SITEURL', getenv('WORDPRESS_PUBLIC_URL'));

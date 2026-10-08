@@ -7,7 +7,7 @@ HLaS is a fishing club membership management application with separate member an
 HLaS uses a **two-branch deployment model** for stability and safe development:
 
 - **`main` branch** — Active development and testing. Local and staging environments.
-- **`production` branch** — Live codebase deployed on VPS (`cambridgetroutclub.org`). Only receives tested, verified changes.
+- **`production` branch** — Shared live codebase (`anglerconnect.cloud`). Only receives tested, verified changes.
 
 **Workflow:**
 1. Develop and test thoroughly on `main`
