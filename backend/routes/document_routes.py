@@ -5,13 +5,12 @@ from flask import Blueprint, jsonify, request, send_file
 from sqlalchemy import and_, bindparam, func, select, update
 from werkzeug.utils import secure_filename
 
+from core.content_scopes import DEFAULT_CONTENT_SCOPE, normalize_content_scope
+
 ALLOWED_DOCUMENT_EXTENSIONS = {
     '.pdf', '.xls', '.xlsx', '.doc', '.docx'
 }
 MAX_DOCUMENT_SIZE_BYTES = 20 * 1024 * 1024
-DEFAULT_CONTENT_SCOPE = 'home'
-HEALTH_SAFETY_SCOPE = 'health-safety'
-ALL_CONTENT_SCOPES = {DEFAULT_CONTENT_SCOPE, HEALTH_SAFETY_SCOPE}
 
 
 def create_document_blueprint(deps):
@@ -32,16 +31,6 @@ def create_document_blueprint(deps):
         )
         return str(club or '').strip()
 
-    def _normalize_content_scope(raw_scope, *, allow_all=False):
-        value = str(raw_scope or '').strip().lower().replace('_', '-')
-        if allow_all and value == 'all':
-            return 'all'
-        if value in ('health-safety', 'healthandsafety', 'hs'):
-            return HEALTH_SAFETY_SCOPE
-        if value in ('home', ''):
-            return DEFAULT_CONTENT_SCOPE
-        return DEFAULT_CONTENT_SCOPE
-
     def _resolve_content_scope(default=DEFAULT_CONTENT_SCOPE, *, allow_all=False):
         raw_scope = (
             request.args.get('content_scope')
@@ -52,7 +41,7 @@ def create_document_blueprint(deps):
             or (request.json or {}).get('contentScope')
             or default
         )
-        return _normalize_content_scope(raw_scope, allow_all=allow_all)
+        return normalize_content_scope(raw_scope, allow_all=allow_all)
 
     def _fetch_ordered_document_ids(session, table, club_id, content_scope):
         rows = session.execute(

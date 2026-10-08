@@ -9,6 +9,8 @@ from datetime import datetime
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy import String, and_, cast, select
 
+from core.content_scopes import DEFAULT_CONTENT_SCOPE, normalize_content_scope
+
 
 def create_newsletter_blueprint(deps):
     bp = Blueprint('newsletter', __name__)
@@ -35,8 +37,6 @@ def create_newsletter_blueprint(deps):
     get_current_principal = deps['get_current_principal']
 
     NEWS_UPDATES_SETTINGS_KEY = 'news_updates'
-    DEFAULT_CONTENT_SCOPE = 'home'
-    HEALTH_SAFETY_SCOPE = 'health-safety'
 
     def _news_updates_json_path():
         app_data_dir = deps.get('APP_DATA_DIR') or os.path.dirname(__file__)
@@ -55,16 +55,6 @@ def create_newsletter_blueprint(deps):
         value = str(raw_value or '').strip()
         return value or 'Published'
 
-    def _normalize_content_scope(raw_scope, *, allow_all=False):
-        value = str(raw_scope or '').strip().lower().replace('_', '-')
-        if allow_all and value == 'all':
-            return 'all'
-        if value in ('health-safety', 'healthandsafety', 'hs'):
-            return HEALTH_SAFETY_SCOPE
-        if value in ('home', ''):
-            return DEFAULT_CONTENT_SCOPE
-        return DEFAULT_CONTENT_SCOPE
-
     def _resolve_content_scope_from_request(payload=None, *, allow_all=False):
         source = payload if isinstance(payload, dict) else {}
         raw_scope = (
@@ -74,7 +64,7 @@ def create_newsletter_blueprint(deps):
             or request.args.get('contentScope')
             or DEFAULT_CONTENT_SCOPE
         )
-        return _normalize_content_scope(raw_scope, allow_all=allow_all)
+        return normalize_content_scope(raw_scope, allow_all=allow_all)
 
     def _normalize_news_post(raw_post):
         post = raw_post if isinstance(raw_post, dict) else {}
@@ -82,7 +72,7 @@ def create_newsletter_blueprint(deps):
         return {
             'id': str(post.get('id') or '').strip() or secrets.token_hex(8),
             'date': normalized_date,
-            'content_scope': _normalize_content_scope(
+            'content_scope': normalize_content_scope(
                 post.get('content_scope') or post.get('contentScope')
             ),
             'category': str(post.get('category') or '').strip(),
