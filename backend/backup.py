@@ -114,6 +114,41 @@ class BackupManager:
                     file_count += 1
         return file_count
 
+    def create_wordpress_dump(self, output_path: Path, container: str = None) -> Optional[Path]:
+        """
+        Dump the WordPress MySQL database to a gzipped SQL file.
+
+        Runs mysqldump inside the WordPress DB container, which already holds the
+        root password in its environment, so no credentials pass through the host.
+        The container name comes from HLAS_WORDPRESS_DB_CONTAINER (default
+        hlas-wordpress-db-1); set it to an empty string to skip the dump.
+
+        Returns:
+            output_path, or None if the dump is disabled
+        """
+        if container is None:
+            container = os.getenv('HLAS_WORDPRESS_DB_CONTAINER', 'hlas-wordpress-db-1')
+        if not container:
+            logger.info("WordPress database dump disabled (empty HLAS_WORDPRESS_DB_CONTAINER)")
+            return None
+
+        script = (
+            'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump -uroot --single-transaction '
+            '--routines --triggers --no-tablespaces "$MYSQL_DATABASE"'
+        )
+        output_path.touch(mode=0o600)
+        with gzip.open(output_path, 'wb') as f:
+            proc = subprocess.Popen(
+                ['docker', 'exec', container, 'sh', '-c', script],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            shutil.copyfileobj(proc.stdout, f)
+            stderr = proc.stderr.read()
+            returncode = proc.wait()
+        if returncode != 0:
+            raise RuntimeError(f"WordPress mysqldump failed: {stderr.decode(errors='replace')}")
+        return output_path
+
     def create_database_snapshot(
         self,
         db_connection_uri: str,
@@ -264,6 +299,9 @@ class BackupManager:
                 if result.returncode != 0:
                     raise RuntimeError(f"pg_dump failed: {result.stderr.decode()}")
             
+            # Create WordPress (MySQL) dump
+            wp_dump = self.create_wordpress_dump(snapshot_dir / 'wordpress.sql.gz')
+
             # Create filesystem tarball
             fs_tar = snapshot_dir / 'filesystem.tar.gz'
             file_count = 0
@@ -279,6 +317,10 @@ class BackupManager:
                     'file': 'database.sql.gz',
                     'size_bytes': db_dump.stat().st_size
                 },
+                'wordpress_database': {
+                    'file': 'wordpress.sql.gz',
+                    'size_bytes': wp_dump.stat().st_size
+                } if wp_dump else None,
                 'filesystem': {
                     'file': 'filesystem.tar.gz',
                     'size_bytes': fs_tar.stat().st_size,
@@ -292,13 +334,15 @@ class BackupManager:
                 json.dump(manifest, f, indent=2)
             
             total_size = db_dump.stat().st_size + fs_tar.stat().st_size
+            if wp_dump:
+                total_size += wp_dump.stat().st_size
             
             self._record_snapshot(
                 snapshot_id=snapshot_id,
                 snapshot_type='full',
                 size_bytes=total_size,
                 description=description,
-                file_count=file_count + 1
+                file_count=file_count + (2 if wp_dump else 1)
             )
             
             logger.info(f"Full snapshot created: {snapshot_id} ({total_size} bytes)")

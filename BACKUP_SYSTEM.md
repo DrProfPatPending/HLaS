@@ -265,7 +265,8 @@ python3 backend/backup_cli.py create-full \
 - `--dirs` entries can be a path or `name=path` (archives under `name`, useful for Docker volume mount points). Files and directories are both supported; missing paths are skipped with a warning.
 - Anything inside the backup directory (`/data/backups`) is always excluded, so snapshots never contain older snapshots.
 - Snapshots can contain secrets (`.env.prod`), so snapshot directories are created `0700` and archives `0600`. Docker volume paths require running as root (the systemd service does).
-- The WordPress MySQL database (`wordpress_db_data`) is **not** included; only the PostgreSQL dump is.
+- Full snapshots also include `wordpress.sql.gz`, a `mysqldump` of the WordPress database (`--single-transaction`, safe while running). It runs inside the WordPress DB container via `docker exec`, using the container's own root password, so the host needs Docker access but no MySQL credentials. The container name comes from `HLAS_WORDPRESS_DB_CONTAINER` (default `hlas-wordpress-db-1`); set it to an empty string to skip the dump. If the dump fails, the whole snapshot fails rather than silently omitting WordPress.
+- Restore the WordPress database with: `gunzip -c wordpress.sql.gz | docker exec -i hlas-wordpress-db-1 sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot "$MYSQL_DATABASE"'`
 
 #### List Snapshots
 
