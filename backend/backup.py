@@ -85,6 +85,35 @@ class BackupManager:
         except ValueError:
             return False
 
+    def _add_sources_to_tar(self, tar: tarfile.TarFile, sources: List[str]) -> int:
+        """
+        Add files and directories to an open tarball and return the file count.
+
+        Each source is "path" (archived under its own name) or "name=path"
+        (archived under "name", useful for paths like Docker volume mount points).
+        Files inside the backup directory itself are skipped.
+        """
+        file_count = 0
+        for source in sources:
+            name, sep, raw_path = source.partition('=')
+            if not sep:
+                raw_path, name = source, None
+            source_path = Path(raw_path)
+            if not source_path.exists():
+                logger.warning(f"Backup source not found, skipping: {raw_path}")
+                continue
+            logger.info(f"Adding {raw_path} to snapshot")
+            if source_path.is_file():
+                tar.add(source_path, arcname=name or source_path.name)
+                file_count += 1
+                continue
+            base = Path(name) if name else Path(source_path.name)
+            for file in source_path.rglob('*'):
+                if file.is_file() and not self._is_in_backup_dir(file):
+                    tar.add(file, arcname=str(base / file.relative_to(source_path)))
+                    file_count += 1
+        return file_count
+
     def create_database_snapshot(
         self,
         db_connection_uri: str,
@@ -177,16 +206,9 @@ class BackupManager:
             file_count = 0
             mode = 'w:gz' if compress else 'w'
             
+            tar_path.touch(mode=0o600)
             with tarfile.open(str(tar_path), mode) as tar:
-                for source_dir in source_dirs:
-                    source_path = Path(source_dir)
-                    if source_path.exists():
-                        logger.info(f"Adding {source_dir} to snapshot")
-                        for file in source_path.rglob('*'):
-                            if file.is_file() and not self._is_in_backup_dir(file):
-                                arcname = file.relative_to(source_path.parent)
-                                tar.add(file, arcname=arcname)
-                                file_count += 1
+                file_count = self._add_sources_to_tar(tar, source_dirs)
             
             size_bytes = tar_path.stat().st_size
             
@@ -229,6 +251,7 @@ class BackupManager:
         
         snapshot_dir = self.snapshots_dir / snapshot_id
         snapshot_dir.mkdir(exist_ok=True)
+        snapshot_dir.chmod(0o700)
         
         try:
             logger.info(f"Creating full snapshot: {snapshot_id}")
@@ -245,14 +268,7 @@ class BackupManager:
             fs_tar = snapshot_dir / 'filesystem.tar.gz'
             file_count = 0
             with tarfile.open(str(fs_tar), 'w:gz') as tar:
-                for source_dir in source_dirs:
-                    source_path = Path(source_dir)
-                    if source_path.exists():
-                        for file in source_path.rglob('*'):
-                            if file.is_file() and not self._is_in_backup_dir(file):
-                                arcname = file.relative_to(source_path.parent)
-                                tar.add(file, arcname=arcname)
-                                file_count += 1
+                file_count = self._add_sources_to_tar(tar, source_dirs)
             
             # Create manifest
             manifest = {

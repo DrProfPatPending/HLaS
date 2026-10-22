@@ -34,6 +34,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger('hlas.backup.cli')
 
+# "name=path" archives the path under "name" (Docker volume mount points have generic names).
+DEFAULT_BACKUP_SOURCES = [
+    '/opt/hlas/backend/club_logos',
+    '/opt/hlas/.env.prod',
+    'hlas_data=/var/lib/docker/volumes/hlas_hlas_data/_data',
+    'wordpress_data=/var/lib/docker/volumes/hlas_wordpress_data/_data',
+]
+
 
 def get_backup_manager():
     """Initialize backup manager from environment."""
@@ -69,7 +77,7 @@ def cmd_create_fs(args):
     """Create filesystem snapshot."""
     logger.info("Creating filesystem snapshot...")
     
-    dirs = args.dirs.split(',') if args.dirs else ['/data', '/app/club_logos']
+    dirs = args.dirs.split(',') if args.dirs else DEFAULT_BACKUP_SOURCES
     
     try:
         manager = get_backup_manager()
@@ -95,7 +103,7 @@ def cmd_create_full(args):
         logger.error("DATABASE_URL environment variable not set")
         return False
     
-    dirs = args.dirs.split(',') if args.dirs else ['/data', '/app/club_logos']
+    dirs = args.dirs.split(',') if args.dirs else DEFAULT_BACKUP_SOURCES
     
     try:
         manager = get_backup_manager()
@@ -371,13 +379,13 @@ def main():
     create_fs = subparsers.add_parser('create-fs', help='Create filesystem snapshot')
     create_fs.add_argument('--compress', action='store_true', default=True)
     create_fs.add_argument('--description', help='Snapshot description')
-    create_fs.add_argument('--dirs', help='Comma-separated directories (default: /data, /app/club_logos)')
+    create_fs.add_argument('--dirs', help='Comma-separated directories (default: club logos, app data volume, WordPress volume, .env.prod; entries may be name=path)')
     create_fs.set_defaults(func=cmd_create_fs)
     
     create_full = subparsers.add_parser('create-full', help='Create full snapshot')
     create_full.add_argument('--compress', action='store_true', default=True)
     create_full.add_argument('--description', help='Snapshot description')
-    create_full.add_argument('--dirs', help='Comma-separated directories (default: /data, /app/club_logos)')
+    create_full.add_argument('--dirs', help='Comma-separated directories (default: club logos, app data volume, WordPress volume, .env.prod; entries may be name=path)')
     create_full.set_defaults(func=cmd_create_full)
     
     # List command

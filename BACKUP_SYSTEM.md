@@ -253,6 +253,20 @@ python3 backend/backup_cli.py create-full \
   --description="Complete system backup"
 ```
 
+**Default filesystem sources** (when `--dirs` is omitted; see `DEFAULT_BACKUP_SOURCES` in `backend/backup_cli.py`):
+
+| Source | Archived as |
+|---|---|
+| `/opt/hlas/backend/club_logos` | `club_logos/` |
+| `/opt/hlas/.env.prod` | `.env.prod` |
+| Docker volume `hlas_hlas_data` | `hlas_data/` |
+| Docker volume `wordpress_data` | `wordpress_data/` |
+
+- `--dirs` entries can be a path or `name=path` (archives under `name`, useful for Docker volume mount points). Files and directories are both supported; missing paths are skipped with a warning.
+- Anything inside the backup directory (`/data/backups`) is always excluded, so snapshots never contain older snapshots.
+- Snapshots can contain secrets (`.env.prod`), so snapshot directories are created `0700` and archives `0600`. Docker volume paths require running as root (the systemd service does).
+- The WordPress MySQL database (`wordpress_db_data`) is **not** included; only the PostgreSQL dump is.
+
 #### List Snapshots
 
 ```bash
