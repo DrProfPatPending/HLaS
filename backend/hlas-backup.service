@@ -27,6 +27,9 @@ Description=HLaS Backup Service
 Documentation=file:///opt/hlas/BACKUP_SYSTEM.md
 After=network.target
 Wants=network-online.target
+# Give up after 3 starts per hour instead of retrying forever (a failing backup once looped ~190 times and filled the disk).
+StartLimitIntervalSec=3600
+StartLimitBurst=3
 
 [Service]
 Type=oneshot
@@ -45,7 +48,7 @@ ExecStartPost=/bin/bash -lc 'if [ -f /opt/hlas/.env.prod ]; then set -a; source 
 
 # Restart policy
 Restart=on-failure
-RestartSec=60
+RestartSec=300
 
 # Security settings
 NoNewPrivileges=true
