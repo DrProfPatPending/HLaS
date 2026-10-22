@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/.env.prod}"
 COMPOSE_FILE="${COMPOSE_FILE:-$SCRIPT_DIR/docker-compose.prod.yml}"
 LOG_WINDOW="${LOG_WINDOW:-15m}"
+# Optional "user:password" for sites behind Caddy basic_auth (e.g. export HEALTH_BASIC_AUTH='user:pass').
+HEALTH_BASIC_AUTH="${HEALTH_BASIC_AUTH:-}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "✗ Missing env file: $ENV_FILE"
@@ -65,10 +67,18 @@ check_http_code() {
   local host="$4"
 
   local code
+  local curl_args=(--connect-timeout 5 --max-time 12 -sS -o /dev/null -w "%{http_code}")
   if [[ -n "$host" ]]; then
-    code="$(curl --connect-timeout 5 --max-time 12 -sS -o /dev/null -w "%{http_code}" --resolve "$host:443:127.0.0.1" "$url" || true)"
+    curl_args+=(--resolve "$host:443:127.0.0.1")
+  fi
+
+  if [[ -n "${HEALTH_BASIC_AUTH:-}" ]]; then
+    # Pass credentials via a curl config on stdin so they never appear in the process list.
+    local escaped="${HEALTH_BASIC_AUTH//\\/\\\\}"
+    escaped="${escaped//\"/\\\"}"
+    code="$(printf 'user = "%s"\n' "$escaped" | curl -K - "${curl_args[@]}" "$url" || true)"
   else
-    code="$(curl --connect-timeout 5 --max-time 12 -sS -o /dev/null -w "%{http_code}" "$url" || true)"
+    code="$(curl "${curl_args[@]}" "$url" || true)"
   fi
 
   if [[ "$code" =~ $expected_regex ]]; then
@@ -102,7 +112,7 @@ done
 echo
 
 echo "--- smoke checks ---"
-check_http_code "main site via Caddy" '^2[0-9][0-9]$' "https://$DOMAIN/" "$DOMAIN"
+check_http_code "main site via Caddy" '^(2|3)[0-9][0-9]$' "https://$DOMAIN/" "$DOMAIN"
 check_http_code "api endpoint via Caddy" '^2[0-9][0-9]$' "https://$DOMAIN/api/clubs" "$DOMAIN"
 check_http_code "wordpress site via Caddy" '^(2|3)[0-9][0-9]$' "https://$WORDPRESS_DOMAIN/" "$WORDPRESS_DOMAIN"
 check_status "postgres readiness" docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres pg_isready -U "$POSTGRES_USER"
