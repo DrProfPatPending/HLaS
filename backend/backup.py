@@ -77,6 +77,14 @@ class BackupManager:
         conn.commit()
         conn.close()
 
+    def _is_in_backup_dir(self, path: Path) -> bool:
+        """True if path is inside the backup directory (avoids archiving old backups into new ones)."""
+        try:
+            path.resolve().relative_to(self.backup_base_dir.resolve())
+            return True
+        except ValueError:
+            return False
+
     def create_database_snapshot(
         self,
         db_connection_uri: str,
@@ -175,7 +183,7 @@ class BackupManager:
                     if source_path.exists():
                         logger.info(f"Adding {source_dir} to snapshot")
                         for file in source_path.rglob('*'):
-                            if file.is_file():
+                            if file.is_file() and not self._is_in_backup_dir(file):
                                 arcname = file.relative_to(source_path.parent)
                                 tar.add(file, arcname=arcname)
                                 file_count += 1
@@ -241,7 +249,7 @@ class BackupManager:
                     source_path = Path(source_dir)
                     if source_path.exists():
                         for file in source_path.rglob('*'):
-                            if file.is_file():
+                            if file.is_file() and not self._is_in_backup_dir(file):
                                 arcname = file.relative_to(source_path.parent)
                                 tar.add(file, arcname=arcname)
                                 file_count += 1
