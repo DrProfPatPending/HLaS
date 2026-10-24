@@ -10,20 +10,20 @@
         <div v-if="content" class="about-text" v-html="content" />
         <div v-else class="about-default">
           <p>
-            Welcome to {{ clubName }}. We are a dedicated community of fly fishing enthusiasts with acess to fishing on the River Cam upstream of the historic city of Cambridge.
+            Welcome to {{ clubName }}. We are a dedicated community of fly fishing enthusiasts with access to fishing on the River Cam upstream of the historic city of Cambridge.
           </p>
           <p>
-            Cambridge Trout Club has a long history, and whilst only has a small (and limited by our Constitution) membership, provides a unique opportunity to fish for wild brown trout in the Essex/Cambridgeshire borders.
+            Cambridge Trout Club has a long history, and whilst its membership is small (and limited by our Constitution) it provides a unique opportunity to fish for wild brown trout in the Essex/Cambridgeshire borders.
           </p>
           <p>
-            Whilst we are first and foremost fly fishers, we are also guided by principles of conservation and sustainability, we are committed to protecting our rivers
+            Whilst we are first and foremost fly fishers, we are also guided by principles of conservation and sustainability and are committed to protecting our rivers
             and ensuring they remain a source of joy for generations to come.
           </p>
           <h3>Our Values</h3>
           <ul>
             <li><strong>Sustainability:</strong> Protecting the River Cam and maintaining it as a legacy for future generations</li>
             <li><strong>Community:</strong> Supporting and mentoring fellow anglers within the club</li>
-            <li><strong>Enjoyment:</strong> Ensuring that our small local river is a source of tranquiility and pleasure for our members</li>
+            <li><strong>Enjoyment:</strong> Ensuring that our small local river is a source of tranquility and pleasure for our members</li>
           </ul>
         </div>
       </div>

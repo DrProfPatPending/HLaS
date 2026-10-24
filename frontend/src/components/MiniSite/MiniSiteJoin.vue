@@ -19,12 +19,12 @@
             <div class="benefit-item">
               <div class="benefit-icon">🎣</div>
               <h4>Exclusive Access</h4>
-              <p>CTC's waters are member's only fishing, although we do allow members a limited number of guest tickets each season, so it is possible to try out a day on the river before committing to membership</p>
+              <p>CTC's waters are members-only fishing, although we do allow members a limited number of guest tickets each season, so it is possible to try out a day on the river before committing to membership.</p>
             </div>
             <div class="benefit-item">
               <div class="benefit-icon">👨‍🏫</div>
               <h4>Friendly Guidance</h4>
-              <p>We will try whenever possible to provie guidance and mentoring opportunities to new members to the club</p>
+              <p>We will try whenever possible to provide guidance and mentoring opportunities to new members to the club.</p>
             </div>
             <div class="benefit-item">
               <div class="benefit-icon">👥</div>
@@ -34,7 +34,7 @@
             <div class="benefit-item">
               <div class="benefit-icon">📅</div>
               <h4>Work Parties</h4>
-              <p>We run regular work parties on the river and encourage all members to become actively involved in the conservation of our waters and fish</p>
+              <p>We run regular work parties on the river and encourage all members to become actively involved in the conservation of our waters and fish.</p>
             </div>
           </div>
 
