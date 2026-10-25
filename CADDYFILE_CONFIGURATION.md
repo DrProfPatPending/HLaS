@@ -74,7 +74,7 @@ hlastest {
 
 ```yaml
 caddy:
-  image: caddy:2.8-alpine
+  image: caddy:2.11-alpine
   volumes:
     - ./deploy/caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro  # ← Explicit production config
     - caddy_data:/data
