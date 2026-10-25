@@ -67,7 +67,7 @@ services:
     env_file:
       - path: .env.prod
         required: false
-    image: caddy:2.8-alpine
+    image: caddy:2.11-alpine
     depends_on:
       frontend:
         condition: service_healthy
