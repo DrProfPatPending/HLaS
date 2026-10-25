@@ -556,7 +556,7 @@ def get_postgres_backend():
 
     cache_key = database_url
     if cache_key not in _postgres_cache:
-        engine = create_engine(database_url, future=True)
+        engine = create_engine(database_url, future=True, pool_pre_ping=True)
         ensure_postgres_member_sessions_table(engine)
         ensure_postgres_member_refresh_sessions_table(engine)
         ensure_postgres_global_user_tables(engine)
