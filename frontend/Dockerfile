@@ -20,7 +20,7 @@ ENV VITE_APP_BACKEND_URL=${VITE_APP_BACKEND_URL}
 # Build using Vite
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.30-alpine
 
 COPY deploy/nginx/frontend.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
