@@ -585,8 +585,8 @@ Each context configuration supports: field order (sequence), `show_columns`, `di
 ### Frontend
 Frontend tooling now targets:
 
-- Node.js 20+
-- npm `11.12.1`
+- Node.js 22+ (Docker build uses `node:22-alpine`)
+- npm `11.13.0`
 
 The frontend package metadata declares `packageManager: npm@11.12.1`, and the startup scripts use that npm version explicitly.
 
