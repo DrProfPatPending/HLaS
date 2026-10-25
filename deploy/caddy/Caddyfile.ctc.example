@@ -6,7 +6,8 @@ cambridgetroutclub.org {
 			reverse_proxy backend:5050
 		}
 
-		# Add a basic_auth block here only while a temporary site gate is needed.
+		# The public site is not gated. To add a temporary pre-launch gate, add a
+		# basic_auth block here (after the /api handler, before the other handlers).
 		@root path /
 		redir @root /club/CTC/ 302
 
@@ -22,5 +23,13 @@ www.cambridgetroutclub.org {
 
 wordpress.cambridgetroutclub.org {
 	encode zstd gzip
+
+	# WordPress (content back end) is not a public site; keep it behind Basic Auth.
+	# Generate the hash with: docker run --rm caddy:2 caddy hash-password
+	# Replace the placeholders below in the real (untracked) Caddyfile.ctc.
+	basic_auth bcrypt "Cambridge Trout Club: restricted" {
+		CHANGE_ME_USERNAME CHANGE_ME_BCRYPT_HASH
+	}
+
 	reverse_proxy wordpress-web:80
 }
