@@ -9,7 +9,7 @@
       <div class="contact-container">
         <div v-if="content" class="contact-text" v-html="content" />
         <div v-else class="contact-default">
-          <p>Get in touch with {{ clubName }}. We'd love to hear from you.</p>
+          <p>Get in touch with {{ clubName }}.</p>
 
           <div class="contact-info">
             <div v-if="contactEmail" class="contact-method">
