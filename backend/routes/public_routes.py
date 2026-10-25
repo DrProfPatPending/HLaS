@@ -1,7 +1,9 @@
 import json
 import mimetypes
 import os
+import re
 from io import BytesIO
+from xml.sax.saxutils import escape as xml_escape
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import urlopen
@@ -136,6 +138,55 @@ def create_public_blueprint(deps):
             
         finally:
             session.close()
+
+    @bp.route('/sitemap.xml', methods=['GET'])
+    def get_sitemap():
+        """Public sitemap listing the enabled pages of every enabled club mini site."""
+        if not is_postgres_reads_enabled():
+            return jsonify({'error': 'Sitemap not available'}), 404
+
+        host = (request.headers.get('X-Forwarded-Host') or request.host).split(',')[0].strip()
+        scheme = (request.headers.get('X-Forwarded-Proto') or request.scheme).split(',')[0].strip()
+        base_url = f'{scheme}://{host}'
+
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            clubs_table = backend['clubs_table']
+            mini_sites_table = backend.get('club_mini_sites_table')
+            if mini_sites_table is None:
+                return jsonify({'error': 'Sitemap not available'}), 404
+
+            rows = session.execute(
+                select(clubs_table.c.short_name, mini_sites_table.c.pages, mini_sites_table.c.updated_at)
+                .join(mini_sites_table, mini_sites_table.c.club_id == clubs_table.c.id)
+                .where(and_(clubs_table.c.is_active.is_(True), mini_sites_table.c.enabled.is_(True)))
+                .order_by(clubs_table.c.short_name)
+            ).all()
+        finally:
+            session.close()
+
+        entries = []
+        for short_name, pages, updated_at in rows:
+            club_path = f'/club/{quote(short_name, safe="")}/'
+            lastmod = updated_at.date().isoformat() if updated_at else ''
+            page_ids = ['home']
+            for page in pages if isinstance(pages, list) else []:
+                page_id = str(page.get('id', '')).strip().lower() if isinstance(page, dict) else ''
+                if page_id and page_id != 'home' and re.fullmatch(r'[a-z0-9-]+', page_id) and page.get('enabled', True):
+                    page_ids.append(page_id)
+            for page_id in page_ids:
+                loc = base_url + club_path + ('' if page_id == 'home' else f'{page_id}/')
+                lastmod_xml = f'<lastmod>{lastmod}</lastmod>' if lastmod else ''
+                entries.append(f'  <url><loc>{xml_escape(loc)}</loc>{lastmod_xml}</url>')
+
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + '\n'.join(entries)
+            + '\n</urlset>\n'
+        )
+        return Response(xml, mimetype='application/xml')
 
     @bp.route('/field-order', methods=['GET'])
     def get_field_order():
