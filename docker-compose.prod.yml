@@ -107,7 +107,7 @@ services:
     env_file:
       - path: ${HLAS_ENV_FILE:-.env.prod}
         required: false
-    image: wordpress:6.9-php8.3-fpm-alpine
+    image: wordpress:7.1-php8.3-fpm-alpine
     container_name: hlas-wordpress
     depends_on:
       wordpress-db:
