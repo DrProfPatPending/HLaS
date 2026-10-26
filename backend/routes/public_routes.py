@@ -1,7 +1,9 @@
+import html
 import json
 import mimetypes
 import os
 import re
+import time
 from io import BytesIO
 from xml.sax.saxutils import escape as xml_escape
 from urllib.error import HTTPError, URLError
@@ -9,7 +11,7 @@ from urllib.parse import quote
 from urllib.request import urlopen
 
 from flask import Blueprint, Response, current_app, jsonify, request, send_file, send_from_directory
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 
 from db_models import club_logos, club_backgrounds, club_heroes
 from routes.app_settings_routes import load_app_settings_config
@@ -60,6 +62,45 @@ def create_public_blueprint(deps):
     def _guess_mime_type(filename, fallback='image/jpeg'):
         mime_type, _ = mimetypes.guess_type(filename)
         return mime_type or fallback
+
+    def _public_base_url():
+        host = (request.headers.get('X-Forwarded-Host') or request.host).split(',')[0].strip()
+        scheme = (request.headers.get('X-Forwarded-Proto') or request.scheme).split(',')[0].strip()
+        return f'{scheme}://{host}'
+
+    shell_cache = {'html': None, 'fetched_at': 0.0}
+    SHELL_CACHE_TTL_SECONDS = 60
+
+    def _load_frontend_shell():
+        """Fetch the built SPA index.html from the frontend container (cached briefly)."""
+        now = time.monotonic()
+        if shell_cache['html'] and now - shell_cache['fetched_at'] < SHELL_CACHE_TTL_SECONDS:
+            return shell_cache['html']
+        shell_url = os.getenv('HLAS_FRONTEND_SHELL_URL', 'http://frontend:80/index.html')
+        with urlopen(shell_url, timeout=5) as response:
+            shell_cache['html'] = response.read().decode('utf-8')
+        shell_cache['fetched_at'] = now
+        return shell_cache['html']
+
+    def _summarize(text, limit=160):
+        text = re.sub(r'\s+', ' ', str(text or '')).strip()
+        if len(text) <= limit:
+            return text
+        return text[:limit].rsplit(' ', 1)[0].rstrip(' ,;:.') + '…'
+
+    def _inject_head(shell_html, title, head_tags):
+        if title:
+            shell_html = re.sub(
+                r'<title>.*?</title>',
+                lambda _m: f'<title>{html.escape(title)}</title>',
+                shell_html,
+                count=1,
+                flags=re.IGNORECASE | re.DOTALL,
+            )
+        return re.sub(r'</head>', lambda _m: head_tags + '\n</head>', shell_html, count=1, flags=re.IGNORECASE)
+
+    def _meta(attr, key, value):
+        return f'  <meta {attr}="{html.escape(key)}" content="{html.escape(value, quote=True)}">'
 
     @bp.route('/clubs', methods=['GET'])
     def get_clubs():
@@ -139,15 +180,105 @@ def create_public_blueprint(deps):
         finally:
             session.close()
 
+    @bp.route('/club-page/<club_short_name>/', defaults={'page_id': ''}, methods=['GET'])
+    @bp.route('/club-page/<club_short_name>/<page_id>', methods=['GET'])
+    @bp.route('/club-page/<club_short_name>/<page_id>/', methods=['GET'])
+    def get_club_page_html(club_short_name, page_id):
+        """
+        Public SPA shell for /club/<club>/[<page>/] with per-club SEO tags
+        (title, description, canonical, Open Graph) injected for crawlers.
+        """
+        try:
+            shell_html = _load_frontend_shell()
+        except (HTTPError, URLError, OSError) as exc:
+            current_app.logger.error(f"Unable to load frontend shell for club page: {exc}")
+            return Response('Service temporarily unavailable', status=503)
+
+        def respond(body, status=200):
+            response = Response(body, status=status, mimetype='text/html')
+            response.headers['Cache-Control'] = 'public, max-age=300'
+            return response
+
+        noindex_tags = _meta('name', 'robots', 'noindex, nofollow')
+        page_id = str(page_id or '').strip().lower()
+
+        if page_id == 'login' or not is_postgres_reads_enabled():
+            return respond(_inject_head(shell_html, '', noindex_tags))
+
+        mini_site = None
+        short_name = ''
+        backend = get_postgres_backend()
+        session = backend['session_factory']()
+        try:
+            clubs_table = backend['clubs_table']
+            mini_sites_table = backend.get('club_mini_sites_table')
+            club_row = session.execute(
+                select(clubs_table.c.id, clubs_table.c.short_name).where(
+                    and_(
+                        func.lower(clubs_table.c.short_name) == club_short_name.strip().lower(),
+                        clubs_table.c.is_active.is_(True),
+                    )
+                )
+            ).first()
+            if club_row is not None:
+                short_name = club_row.short_name
+                if mini_sites_table is not None:
+                    mini_row = session.execute(
+                        select(mini_sites_table).where(mini_sites_table.c.club_id == club_row.id)
+                    ).first()
+                    if mini_row is not None and mini_row._mapping.get('enabled'):
+                        mini_site = dict(mini_row._mapping)
+        finally:
+            session.close()
+
+        if club_row is None:
+            return respond(_inject_head(shell_html, 'HLaS - Club not recognised', noindex_tags), status=404)
+        if mini_site is None:
+            return respond(_inject_head(shell_html, '', noindex_tags))
+
+        pages = mini_site.get('pages')
+        enabled_page_ids = {'home'}
+        for page in pages if isinstance(pages, list) else []:
+            if isinstance(page, dict) and page.get('enabled', True) and page.get('id'):
+                enabled_page_ids.add(str(page['id']).strip().lower())
+        if page_id not in enabled_page_ids:
+            page_id = ''
+        if page_id == 'home':
+            page_id = ''
+
+        base_url = _public_base_url()
+        canonical_url = f'{base_url}/club/{quote(short_name, safe="")}/' + (f'{page_id}/' if page_id else '')
+        title = str(mini_site.get('title') or '').strip() or short_name
+        description = _summarize(mini_site.get('description') or mini_site.get('tagline'))
+
+        tags = [f'  <link rel="canonical" href="{html.escape(canonical_url, quote=True)}">']
+        if description:
+            tags.append(_meta('name', 'description', description))
+        tags += [
+            _meta('property', 'og:type', 'website'),
+            _meta('property', 'og:site_name', title),
+            _meta('property', 'og:title', title),
+            _meta('property', 'og:url', canonical_url),
+            _meta('name', 'twitter:card', 'summary_large_image' if mini_site.get('hero_image_url') else 'summary'),
+            _meta('name', 'twitter:title', title),
+        ]
+        if description:
+            tags += [_meta('property', 'og:description', description), _meta('name', 'twitter:description', description)]
+        hero_url = str(mini_site.get('hero_image_url') or '').strip()
+        if hero_url:
+            if not re.match(r'^https?://', hero_url, re.IGNORECASE):
+                hero_url = base_url + (hero_url if hero_url.startswith('/') else '/' + hero_url)
+            tags += [_meta('property', 'og:image', hero_url), _meta('name', 'twitter:image', hero_url)]
+
+        return respond(_inject_head(shell_html, title, '\n'.join(tags)))
+
     @bp.route('/sitemap.xml', methods=['GET'])
     def get_sitemap():
         """Public sitemap listing the enabled pages of every enabled club mini site."""
         if not is_postgres_reads_enabled():
             return jsonify({'error': 'Sitemap not available'}), 404
 
-        host = (request.headers.get('X-Forwarded-Host') or request.host).split(',')[0].strip()
-        scheme = (request.headers.get('X-Forwarded-Proto') or request.scheme).split(',')[0].strip()
-        base_url = f'{scheme}://{host}'
+        base_url = _public_base_url()
 
         backend = get_postgres_backend()
         session = backend['session_factory']()

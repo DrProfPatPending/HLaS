@@ -297,6 +297,14 @@ For CTC production, the standard configuration is:
 
 ---
 
+## SEO (Crawler Metadata)
+
+- `/sitemap.xml` (backend) lists the enabled pages of every enabled mini site.
+- nginx routes `/club/{club}/` and `/club/{club}/{page}/` to the backend `/club-page/...` endpoint, which returns the SPA `index.html` with per-club tags injected: `<title>` (mini-site title), meta description (mini-site description, truncated to ~160 chars), canonical URL, Open Graph/Twitter tags and the hero image.
+- Login pages, clubs without an enabled mini site and unknown clubs are served with `noindex` (unknown clubs also return 404).
+- The backend fetches the shell from `HLAS_FRONTEND_SHELL_URL` (default `http://frontend:80/index.html`) and caches it for 60 seconds; if the frontend is unreachable nginx falls back to the plain SPA shell.
+- Tests: `backend/tests/test_club_page_seo.py`.
+
 ## Future Enhancements
 
 ### Phase 2: Content Management
