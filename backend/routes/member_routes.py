@@ -859,7 +859,10 @@ def create_member_blueprint(deps):
                 if club_id is None:
                     return jsonify({'error': 'Invalid club selection'}), 400
 
-                values = _build_postgres_member_values({k: v for k, v in data.items() if k not in {'club', 'ID', 'id'}})
+                member_data = {k: v for k, v in data.items() if k not in {'club', 'ID', 'id'}}
+                if 'password' in member_data and not member_data['password']:
+                    member_data.pop('password')
+                values = _build_postgres_member_values(member_data)
                 if not values:
                     return jsonify({'status': 'success'})
 
@@ -870,6 +873,32 @@ def create_member_blueprint(deps):
                 )
                 if updated.rowcount == 0:
                     return jsonify({'error': 'Member not found'}), 404
+
+                password_hash = values.get('password')
+                if password_hash:
+                    app_users_table = backend.get('app_users_table')
+                    links_table = backend.get('member_user_links_table')
+                    if app_users_table is None or links_table is None:
+                        raise RuntimeError('PostgreSQL account tables are unavailable for password synchronization')
+
+                    user_id = session.execute(
+                        select(links_table.c.user_id).where(
+                            and_(
+                                links_table.c.member_id == member_id,
+                                links_table.c.club_id == club_id,
+                            )
+                        )
+                    ).scalar_one_or_none()
+
+                    if user_id is not None:
+                        user_updated = session.execute(
+                            app_users_table.update().where(
+                                app_users_table.c.id == user_id
+                            ).values(password_hash=password_hash)
+                        )
+                        if user_updated.rowcount == 0:
+                            raise RuntimeError('Linked application account was not found during password synchronization')
+
                 session.commit()
             except Exception as exc:
                 session.rollback()
