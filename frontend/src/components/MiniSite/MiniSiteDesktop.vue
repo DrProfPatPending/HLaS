@@ -132,6 +132,7 @@ export default {
       { id: 'home', label: 'Home' },
       { id: 'about', label: 'About Us' },
       { id: 'waters', label: 'Our Waters' },
+      { id: 'news', label: 'News' },
       { id: 'join', label: 'Join Us' },
       { id: 'contact', label: 'Contact' },
     ];
