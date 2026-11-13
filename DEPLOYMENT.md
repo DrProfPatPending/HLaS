@@ -479,9 +479,9 @@ cp deploy/caddy/Caddyfile.ctc.example deploy/caddy/Caddyfile.ctc
    - Hero image endpoint uses DB-first retrieval with filesystem fallback to `backend/club_logos/<CLUB>_hero.png`
 
 - **Frontend build environment:**
-   - frontend package metadata now targets npm `11.12.1`
-   - local startup scripts invoke `npx --yes npm@11.12.1` for the Vite dev server
-   - Docker frontend builds install npm `11.12.1` before `npm ci` / `npm run build`
+   - frontend package metadata now targets npm `11.13.0`
+   - local startup scripts invoke `npx --yes npm@11.13.0` for the Vite dev server
+   - Docker frontend builds install npm `11.13.0` before `npm ci` / `npm run build`
 - **Member photo display:**
    - Edit Member Details displays the member photo again
    - photo routes support DB-first retrieval in PostgreSQL mode
@@ -692,7 +692,7 @@ This bundle deploys HLaS with three containers:
 
 ## 3) Build and push images (local machine)
 
-Frontend image builds now standardize on npm `11.12.1` inside [frontend/Dockerfile](frontend/Dockerfile), so local and container builds use the same npm major/minor version.
+Frontend image builds now standardize on npm `11.13.0` inside [frontend/Dockerfile](frontend/Dockerfile), so local and container builds use the same npm version.
 
 1. Copy `.env.prod.example` to `.env.prod` and set values.
    - Token TTL defaults now included in the template:

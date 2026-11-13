@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 
 # Upgrade npm to v11.13.0
 RUN npm install -g npm@11.13.0
@@ -20,7 +20,7 @@ ENV VITE_APP_BACKEND_URL=${VITE_APP_BACKEND_URL}
 # Build using Vite
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.30-alpine
 
 COPY deploy/nginx/frontend.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
