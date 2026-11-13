@@ -276,4 +276,16 @@ export default {
 .remember-me-checkbox {
   margin: 0;
 }
+
+@media (max-width: 480px) {
+  .login-container {
+    box-sizing: border-box;
+    width: calc(100% - 2rem);
+    margin: 1.5rem auto;
+  }
+
+  .login-container input {
+    box-sizing: border-box;
+  }
+}
 </style>

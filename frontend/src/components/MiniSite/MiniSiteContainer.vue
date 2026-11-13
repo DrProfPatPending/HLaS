@@ -1,40 +1,31 @@
 <template>
   <div class="mini-site-container">
-    <!-- Desktop: Show mini site or placeholder -->
+    <!-- Show the same club-configured mini site at every viewport width. -->
     <mini-site-desktop
-      v-if="!isResponsive && miniSiteData"
+      v-if="miniSiteData"
       :mini-site="miniSiteData"
       :club-code="clubCode"
       :club-logo-url="clubLogoUrl"
       :initial-page="currentPageFromUrl"
     />
 
-    <!-- Responsive: Show placeholder with note about mini site -->
-    <mini-site-placeholder
-      v-else-if="isResponsive"
-      :club-code="clubCode"
-      :mini-site-enabled="miniSiteData?.enabled || false"
-    />
-
     <!-- Neither: Show error or loading -->
-    <div v-else class="mini-site-error">
+    <div v-else class="mini-site-error" role="status" aria-live="polite">
       <p>{{ loadingMessage }}</p>
     </div>
   </div>
 </template>
 
 <script>
-import { computed, ref, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { API_BASE_URL } from '../../store.js';
 import MiniSiteDesktop from './MiniSiteDesktop.vue';
-import MiniSitePlaceholder from './MiniSitePlaceholder.vue';
 
 export default {
   name: 'MiniSiteContainer',
   components: {
     MiniSiteDesktop,
-    MiniSitePlaceholder,
   },
   props: {
     clubCode: {
@@ -46,7 +37,6 @@ export default {
     const miniSiteData = ref(null);
     const clubLogoUrl = ref('');
     const loadingMessage = ref('Loading mini site...');
-    const isResponsive = ref(false);
     const currentPageFromUrl = ref('home');
 
     // Build club logo URL (same as LoginView)
@@ -73,18 +63,9 @@ export default {
       currentPageFromUrl.value = 'home';
     };
 
-    // Check if responsive mode (mobile)
-    const updateResponsiveState = () => {
-      isResponsive.value = window.innerWidth < 768; // 768px breakpoint
-    };
-
     onMounted(async () => {
       // Parse initial page from URL
       parsePageFromUrl();
-
-      // Setup responsive listener
-      updateResponsiveState();
-      window.addEventListener('resize', updateResponsiveState);
 
       // Fetch clubs data to get logo URL
       try {
@@ -146,7 +127,6 @@ export default {
       miniSiteData,
       clubLogoUrl,
       loadingMessage,
-      isResponsive,
       currentPageFromUrl,
     };
   },
