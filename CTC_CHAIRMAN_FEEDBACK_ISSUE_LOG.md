@@ -12,7 +12,7 @@ Capture the Chairman's website feedback as a backlog for discussion and planning
 | ID | Area | Feedback / requested outcome | Open questions for planning | Status |
 |---|---|---|---|---|
 | CONF-01 | Public pages | The three outward-facing mini-site pages are liked and approved to go public. The CTC configuration enables Home, About, and Contact. | None for the approval recorded here. Separate review observations are listed as PUBLIC-01 and PUBLIC-02. | Complete |
-| PUBLIC-01 | Public mini-site / mobile | Before release, make CTC's enabled Home, About and Contact pages usable on mobile. Currently, viewports below 768px see a placeholder that advertises unavailable pages. Shared implementation is tracked as **CORE-01** in the core issue log. | Verify the three CTC pages, navigation and login on mobile after the core change is deployed to CTC. | Pre-release |
+| PUBLIC-01 | Public mini-site / mobile | Make CTC's enabled Home, About and Contact pages usable on mobile. Shared implementation is tracked as **CORE-01** in the core issue log. | Deployed to CTC and checked in the browser at 375, 767, 768, 769 and 1024px; direct About access and mobile login form checked. User accepted the result. Physical-device testing was not performed. | Complete |
 | PUBLIC-02 | Public mini-site / Home | Before release, correct the Home heading: it prepends “Welcome to:” to the configured headline, so the current heading reads “Welcome to: Cambridge Trout Club”. | Remove the fixed prefix or otherwise adjust the heading so configured headlines read naturally. | Pre-release |
 | NAV-01 | Navigation / documents | Add a separate **CTC Documents** navigation tab, with the Club Rules, Catch & Release Guidelines, and CTC River Management Plan. | Are these documents already available in final form? Should this section be member-only, and who will maintain the documents? | Untriaged |
 | NAV-02 | Navigation / club information | Move the information currently under **Club Information** into **CTC Home**. If that is not suitable, move Club Information to the second or third navigation position. | Confirm the preferred option and which information should appear on CTC Home. | Untriaged |
@@ -30,7 +30,7 @@ Capture the Chairman's website feedback as a backlog for discussion and planning
 
 ## Planning notes
 
-- PUBLIC-01 and PUBLIC-02 are release blockers for the mini-site and should be resolved before the CTC website goes live.
+- PUBLIC-02 remains a release blocker for the mini-site and should be resolved before the CTC website goes live.
 - Resolve content, placement, and audience decisions before implementation, especially for navigation, documents, and the beat-page consolidation.
 - Treat personal/contact and vehicle information changes as requiring an explicit data-access and consent review.
 - Notice emails are an operational feature as well as a page: define ownership, delivery expectations, and an urgent alternative before committing to it.

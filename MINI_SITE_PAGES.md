@@ -267,7 +267,7 @@ enabled pages → nav links → click → currentPage update → component switc
 
 ## Routing and URLs
 
-### Desktop Views
+### Desktop and Mobile Views
 ```
 GET /club/CTC/              → MiniSiteContainer → MiniSiteDesktop (Home)
 GET /club/CTC/about/        → MiniSiteContainer → MiniSiteDesktop (About)
@@ -277,11 +277,7 @@ GET /club/CTC/join/         → MiniSiteContainer → MiniSiteDesktop (Join)
 GET /club/CTC/contact/      → MiniSiteContainer → MiniSiteDesktop (Contact)
 ```
 
-### Mobile Views
-```
-GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
-```
-(All paths show placeholder with login redirect)
+Enabled pages use the same routes on mobile, with responsive navigation and layout.
 
 ### Admin Access
 ```
@@ -340,9 +336,8 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 - **Text:** Dark grey `#333`, medium grey `#555`
 
 ### Responsive Breakpoints
-- **768px:** Mobile/responsive threshold
-- **Below 768px:** MiniSitePlaceholder (mobile)
-- **Above 768px:** Full MiniSiteDesktop (desktop)
+- **At and below 768px:** Full mini-site with a stacked navigation and mobile layout
+- **Above 768px:** Full mini-site with desktop navigation and layout
 
 ### Navigation Header
 - Sticky positioning (top: 0, z-index: 100)
@@ -397,7 +392,7 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 - [ ] All page components render correctly with props
 - [ ] Logo displays correctly (or placeholder)
 - [ ] Login button navigates to `/club/{code}/login/`
-- [ ] Mobile view shows placeholder
+- [ ] Mobile view shows enabled pages and navigation without horizontal overflow
 - [ ] Desktop view shows full mini site
 - [ ] URL parsing detects current page correctly
 - [ ] Different page IDs load correct components

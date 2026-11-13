@@ -19,6 +19,10 @@
 	Keep this file free of stale comment blocks.
 
 ## Last Documentation Update
+November 13, 2026 — updated for:
+- **Responsive Public Mini-Sites:** Enabled pages and navigation render on mobile as well as desktop; CTC Home, About and Contact were verified after deployment.
+- **PostgreSQL Password Updates:** Member and admin password edits update the club member record and linked central account in the same transaction.
+
 June 14, 2026 — updated for:
 - **Per-Club Field Order (June 2026):**
   - Field Order settings are now stored per-club in a dedicated `club_field_order` PostgreSQL table (one JSONB `config` row per club, `UNIQUE(club_id)`)

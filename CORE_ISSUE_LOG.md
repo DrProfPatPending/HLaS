@@ -12,11 +12,10 @@ This log is intended to be maintained with the shared code on `main`; promote up
 
 | ID | Area | Issue / requested outcome | Origin | Open questions | Status |
 |---|---|---|---|---|---|
-| CORE-01 | Public mini-site / mobile | Make enabled mini-site pages usable on mobile viewports. The shared container currently replaces them with a placeholder below 768px; existing responsive styling needs to be assessed and completed. Preserve desktop behaviour and club-specific configuration. | CTC PUBLIC-01 in the CTC Chairman feedback log. | Confirm mobile navigation and accessibility, direct page access, loading and error behaviour, and behaviour for other clubs and enabled pages. | Planned for Dev |
+| CORE-01 | Public mini-site / mobile | Make enabled mini-site pages usable on mobile viewports while preserving desktop behaviour and club-specific configuration. | CTC PUBLIC-01 in the CTC Chairman feedback log. | Physical-device testing remains outstanding. | Implemented; physical-device testing outstanding |
 
 ### CORE-01 verification
 
-- Implement and test in the Dev environment before promoting shared changes to `main`.
-- Test enabled pages, navigation and login on a real mobile device and across representative viewport widths, including either side of 768px.
-- Check desktop behaviour and different club configurations for regressions.
-- After promotion to CTC, verify its Home, About and Contact pages on mobile; track CTC release readiness under PUBLIC-01.
+- Implemented and browser-tested in Dev, then promoted to `main` and deployed to CTC.
+- CTC Home, About and Contact, navigation and login form were checked in a browser at 375, 767, 768, 769 and 1024px; direct About access was also checked.
+- CTC PUBLIC-01 was accepted and closed; testing on a physical mobile device remains outstanding.

@@ -7,7 +7,7 @@ Club Mini Sites are optional, public-facing marketing websites for individual cl
 **Key Characteristics:**
 - **Per-club configuration** - Enabled/disabled on a club-by-club basis
 - **Public access** - No authentication required; accessible worldwide
-- **Device-responsive** - Desktop: full experience; Mobile/Responsive: placeholder with desktop prompt
+- **Device-responsive** - Enabled mini-site pages and navigation adapt to desktop and mobile widths
 - **Customizable** - Clubs can set title, tagline, description, and hero image
 - **Flexible media storage** - Hero images can be external URLs or served from internal PostgreSQL-backed endpoints
 - **Future-extensible** - Ready for galleries, event calendars, contact forms
@@ -37,8 +37,7 @@ Club Mini Sites are optional, public-facing marketing websites for individual cl
 
 ### 2) View Your Mini Site
 
-- **Desktop:** `https://yourdomain.org/club/{CLUB_CODE}/`
-- **Mobile:** Same URL shows placeholder with link to desktop
+- **Desktop and mobile:** `https://yourdomain.org/club/{CLUB_CODE}/`
 - **Login:** Always available at `https://yourdomain.org/club/{CLUB_CODE}/login/`
 
 ### 3) Disable Mini Site
@@ -168,24 +167,17 @@ Update mini site configuration.
 ```
 MiniSiteView.vue (Router/main entry)
 ├── MiniSiteContainer.vue (Main wrapper)
-│   ├── MiniSiteDesktop.vue (Full site, desktop only)
-│   │   ├── MiniSiteNavigation (top nav)
-│   │   ├── MiniSiteHero (hero section)
-│   │   ├── ContentSections (home, about, beats)
-│   │   └── MiniSiteFooter (social links, copyright)
-│   │
-│   └── MiniSitePlaceholder.vue (Mobile/responsive fallback)
-│       ├── Responsive nav
-│       ├── Mobile-friendly info
-│       └── "View on Desktop" prompt
+│   └── MiniSiteDesktop.vue (Full site, responsive layout)
+│       ├── Navigation and footer
+│       └── Page components (Home, About, Waters, News, Join and Contact)
 │
 └── LoginView (For /login/ route)
 ```
 
 ### Responsive Breakpoint
 
-- **Desktop (768px+):** Full mini site experience
-- **Mobile (<768px):** Responsive placeholder with desktop redirect prompt
+- The same configured pages are rendered at all viewport widths.
+- Navigation and page layouts adapt at the 768px CSS breakpoint.
 
 ### Entry Point Detection
 
@@ -274,13 +266,13 @@ For CTC production, the standard configuration is:
 - Compact hero section: 100px height with background image overlay
 - Background image section: Full-width responsive, 100% width with max-width 1200px
 - Content container: max-width 1200px, centered
-- Mobile fallback: Responsive CSS at 768px breakpoint
+- Responsive layout adjustments at the 768px breakpoint
 
 ### Mobile & Responsive Design
 
 **Responsive Breakpoints:**
-- **Desktop (768px+):** Full mini site with navigation, hero, and content sections
-- **Mobile (<768px):** Placeholder with option to view on desktop
+- **Above 768px:** Full mini site with desktop navigation and content layout
+- **At and below 768px:** The same enabled pages with a stacked navigation and mobile layout
 
 **Mobile Color Scheme:**
 - Same primary green as desktop
@@ -347,11 +339,11 @@ For CTC production, the standard configuration is:
 3. Check CORS headers if using external CDN
 4. Use HTTPS URLs for production
 
-### Mobile Shows Placeholder on Desktop
+### Mobile Layout or Navigation Problems
 
-1. Check CSS media query breakpoint (should be 768px)
-2. Test browser responsive mode (press F12 → toggle device mode)
-3. Check window.innerWidth in console for actual breakpoint
+1. Check the deployed frontend is up to date and reload the page.
+2. Test browser responsive mode on both sides of the 768px breakpoint.
+3. Check the browser console and network tab for errors.
 
 ### Admin Can't Save Mini Site Config
 

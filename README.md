@@ -27,6 +27,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
 ## Current Application Highlights
 - Distinct member UI and admin UI entry points.
 - PostgreSQL-backed reads and writes for clubs, members, roles, newsletters, field order, and member photos.
+- PostgreSQL member password changes through the member or admin editor update the member record and, when linked, the central login account in the same transaction.
 - Member ID photos can now be stored and served from PostgreSQL via the `member_photos` table.
 - Club documents can be stored in PostgreSQL (binary) and surfaced on the member Home page.
 - Membership Admin includes sorting, filtering, linked member lookup, and linked member edit navigation.
@@ -97,8 +98,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
 
 - **Club Mini Sites:** Optional public-facing marketing websites for each club.
    - Per-club configuration (enabled/disabled, title, tagline, description, hero image).
-   - Desktop: Full mini site with navigation, hero section, featured content, social links.
-   - Mobile/Responsive: Placeholder with message to view on desktop, with link to login.
+   - Desktop and mobile: The same enabled pages, navigation and login link, with a responsive layout.
    - Public access via `/club/{clubCode}/` (no authentication required).
    - Admin UI in Club Settings to manage mini site configuration.
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration.

@@ -47,6 +47,14 @@ git pull origin ctc-production
 
 The target automatically selects `.env.ctc`, `clubs.config.ctc.json`, `deploy/caddy/Caddyfile.ctc`, and the CTC health-check hostname. The explicit file options remain available for exceptional deployments.
 
+The build script defaults to fetching and resetting to the remote target branch. Use `--local --quick` only when intentionally deploying the checked-out local commit, and ensure the commit has been pushed first so a later remote deployment will retain it.
+
+### 4. Verify the CTC Mini-Site
+
+- Check the enabled Home, About and Contact pages at mobile and desktop widths, including navigation, direct page access and the member login form.
+- Verify the public page and `/api/clubs` through Caddy, and check container health. The protected WordPress host may return HTTP 401 without credentials.
+- Mini-site page settings are stored per club in PostgreSQL; Dev database settings are not deployed by Git and must be reviewed separately in the authorised Club Settings interface.
+
 ---
 
 ## Merging Core Updates

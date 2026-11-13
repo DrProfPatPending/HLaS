@@ -469,8 +469,7 @@ cp deploy/caddy/Caddyfile.ctc.example deploy/caddy/Caddyfile.ctc
 
 - **Club Mini Sites:**
    - Optional public-facing marketing websites for each club (per-club configuration)
-   - Desktop users: Full mini site with navigation, hero section, club content, social links footer
-   - Mobile/Responsive users: Placeholder with message directing to desktop mode
+   - Desktop and mobile users: The same enabled pages, navigation, club content and login link, with a responsive layout
    - Public access via `/club/{clubCode}/` (no authentication required)
    - Admin UI in Club Settings to enable/disable and configure mini site (title, tagline, description, hero image)
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration
@@ -884,8 +883,7 @@ Optional public-facing marketing websites for each club:
    - Example (CTC): `hero_image_url` set to `/api/club_hero/CTC`
 
 - **Public Access:**
-   - Desktop view: Full mini site at `/club/{clubCode}/`
-   - Mobile/Responsive view: Placeholder at `/club/{clubCode}/` with link to desktop
+   - Desktop and mobile views: Enabled mini-site pages at `/club/{clubCode}/`
    - Public API: `GET /api/club/{id}/mini-site` (no authentication required)
 
 - **API Endpoints (Authenticated):**
