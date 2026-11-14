@@ -88,3 +88,41 @@ of Git. Use a protected channel for any sensitive material.
 No action on the production database or deployment is requested by these
 questions. Production should not cherry-pick the menu change separately if
 it will later merge the tested `ctc-dev` branch.
+
+## Production responses
+
+Recorded 2026-11-14 (UTC). No dump transfer or production service changes
+were performed.
+
+1. The transfer route and destination account have not yet been agreed. The
+   dump is owned by `hlas:hlas`, mode `0600`; its SHA-256 is listed above.
+   Arrange an approved secure transfer and verify the checksum, ownership and
+   restricted permissions at the destination before restoring.
+2. The tracked `docker-compose.prod.yml` also controls PostgreSQL and
+   application volumes, bind mounts, backend and frontend images, Caddy
+   routing, API build path, and the WordPress stack. The build script selects
+   the three CTC files using `HLAS_ENV_FILE`, `HLAS_CLUBS_CONFIG_FILE` and
+   `HLAS_CADDYFILE`. Development needs its own database connection and
+   read/write flags, image names, data volumes, public hostnames and routing;
+   never reuse the external `hlas_postgres_data` production volume. The live
+   backend and frontend images are `hlas-backend:latest` and
+   `hlas-frontend:latest`. This is not a guarantee that every external
+   dependency or runtime override has been identified.
+3. The mounted CTC logo, background, both old background copies and hero
+   files match their Git blobs at `2c5ccafc`; no untracked files were found
+   in `backend/club_logos`. No transfer of those CTC assets is needed for
+   that revision.
+4. The mini-site login button routes to the HLaS login page, which uses the
+   HLaS backend login endpoint; it does not require WordPress for that flow.
+   WordPress data migration can be deferred for those initial checks. However,
+   the production Compose configuration makes Caddy depend on `wordpress-web`:
+   a development-specific Compose configuration must account for that
+   dependency rather than assuming WordPress services can simply be omitted.
+5. Newsletter sending and the SMTP test endpoint can send real email. SMTP
+   settings may come from club configuration or environment variables;
+   isolate or redirect both and block production outbound delivery before
+   testing. The production host also has a daily `hlas-backup.timer`;
+   development must use its own backup paths and schedules. WordPress may
+   have additional plugins, jobs and integrations that were not audited.
+   Review and isolate those and any other external effects before enabling
+   them. Do not copy production credentials.
