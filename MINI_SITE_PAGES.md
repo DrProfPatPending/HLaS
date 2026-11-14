@@ -341,14 +341,14 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 
 ### Responsive Breakpoints
 - **768px:** Mobile/responsive threshold
-- **Below 768px:** MiniSitePlaceholder (mobile)
-- **Above 768px:** Full MiniSiteDesktop (desktop)
+- **At or below 768px:** Full mini site with a mobile navigation layout
+- **Above 768px:** Full mini site with desktop navigation
 
 ### Navigation Header
 - Sticky positioning (top: 0, z-index: 100)
 - Green gradient background
 - Logo left, menu center, login button right
-- Flex layout with responsive reflow
+- On mobile, enabled menu items appear in rows of up to three, below the login button
 
 ## Future Enhancements
 
