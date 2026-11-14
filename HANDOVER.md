@@ -552,3 +552,71 @@ Recorded 2026-11-14 at approximately 16:05 UTC.
   startup-write investigation, an agreed safe deployment plan and explicit
   deployment approval. This acceptance report authorizes no production
   restart, volume change or data restore.
+
+## Production backend correction and next development steps
+
+Recorded 2026-11-14 at approximately 16:23 UTC. This supersedes the earlier
+production mount discrepancy and the pending comparison/startup-control
+items; the hero feature itself has not been deployed to production.
+
+### Investigation and controlled correction
+
+- The infrastructure refresh used direct Compose commands without the CTC
+  interpolation overrides, causing the backend to use the default club
+  config and `.env.prod`. Its database settings nevertheless matched `.env.ctc`.
+  The backend was confirmed connected to database `hlas` in the production
+  PostgreSQL container, backed by the existing `hlas_postgres_data` volume.
+- Compared the protected pre-refresh PostgreSQL archive with live data
+  without restoring over production. All four beat row IDs changed after the
+  startup sync, but their other stored fields matched. The `club_beats` table
+  has no timestamp columns. `beat_map_rotations`, the table with a declared
+  foreign key to beat rows, had zero rows in both snapshots; this does not
+  rule out changes between them or effects outside that declared relationship.
+  Logo and background image bytes, MIME types and timestamps matched. This
+  was a targeted comparison, not proof that the entire database was unchanged.
+- The user authorised a controlled correction. Production commit `fa344546`
+  adds `HLAS_SYNC_FILES_ON_STARTUP`, using the same default-on behaviour and
+  opt-out already present in development. It was pushed to `ctc-production`;
+  this is the new production application baseline. The backend now loads
+  `.env.ctc` with the flag set to `false` and mounts `clubs.config.ctc.json`
+  read-only at `/config/clubs.config.json`. Caddy retains its explicit CTC
+  configuration. Only the backend was recreated; PostgreSQL and the other
+  containers were not restarted by this correction.
+- The candidate backend image was built from the previously running image
+  with only the patched `app.py` overlaid. Nineteen isolated backend tests
+  passed. A network-isolated temporary PostgreSQL restore was also tested:
+  intentionally divergent beats and background data remained unchanged
+  with sync disabled, while a separate enabled-sync control replaced
+  divergent beats. No production data was restored or altered for that test.
+- A fresh PostgreSQL custom-format dump and CTC configuration archive were
+  created at 16:21 UTC with mode `0600`; the PostgreSQL archive list and full
+  decode and the configuration archive integrity passed. These are not a
+  fresh full WordPress/filesystem backup. The prior backend image is retained
+  under a rollback tag; reverting to it would re-enable the old startup hooks
+  and must not be done casually.
+- After recreation, the backend and PostgreSQL were healthy, the same database
+  and volume were confirmed, and pre/post fingerprints of beats, rotations,
+  logos and backgrounds matched. CTC home, mini-site, login route, API,
+  background and hero returned HTTP 200; the WordPress gate returned HTTP 401.
+  A successful authenticated member login and authenticated WordPress
+  acceptance were not tested.
+
+### Development handoff
+
+- Hero user acceptance passed as recorded above. Continue development and
+  integration against the new `ctc-production` baseline `fa344546`; retain
+  the startup-sync opt-out and ensure a future deployment sets it to `false`.
+  Resolve any overlap with the equivalent development implementation rather
+  than introducing a second control.
+- Before any hero promotion, complete compatibility checks against the
+  refreshed production stack, agree a deployment and rollback plan, take
+  fresh protected backups and obtain explicit user approval. The production
+  correction does not itself authorise hero deployment.
+- Recovery acceptance remains open for authorised login, visual beat-map
+  checks, WordPress recovery, ongoing CTC-specific configuration backup
+  coverage and scheduled-backup verification. The development database is
+  based on the earlier 12:15 UTC snapshot, not current production data.
+- For direct Compose operations, supply the CTC environment, club-config and
+  Caddyfile overrides explicitly; `--env-file .env.ctc` alone does not set
+  those interpolation overrides. The correction addressed the backend only;
+  do not assume other services were recreated with `.env.ctc`.
