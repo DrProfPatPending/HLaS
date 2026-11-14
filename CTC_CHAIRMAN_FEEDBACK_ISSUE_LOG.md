@@ -8,8 +8,6 @@ Capture the Chairman's website feedback as a backlog for discussion and planning
 
 **Launch context:** The Chairman hopes the site can go live for the next season in the New Year. The date, scope, and feasibility need to be confirmed.
 
-**Import follow-up:** CONF-01 ([#3](https://github.com/DrProfPatPending/HLaS/issues/3)) and PUBLIC-01 ([#4](https://github.com/DrProfPatPending/HLaS/issues/4)) were already complete, but remain open in GitHub because an edit request was rejected with HTTP 403. Close those two as completed once edit access is available, or manually using an authorised account; the other fourteen items remain open for planning.
-
 ## Feedback
 
 | ID / GitHub issue | Area | Feedback / requested outcome | Open questions for planning | Status at import |
