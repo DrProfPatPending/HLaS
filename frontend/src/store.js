@@ -546,6 +546,7 @@ export function sectionDisplayName(sectionKey) {
     'fishing-beats': 'Fishing Beats',
     'beat-details': 'Beat Details',
     'catch-return': 'Catch Return',
+    'health-safety': 'Health and Safety',
     'member-edit': 'Edit Member',
   };
   return names[sectionKey] || 'Home';
@@ -848,6 +849,8 @@ export function login() {
 }
 
 export function logout() {
+  const logoutClub = String(store.loggedInClub || store.selectedClub || DEFAULT_LOGIN_CLUB).trim() || DEFAULT_LOGIN_CLUB;
+
   if (store.memberAuthToken) {
     axios
       .post(
@@ -876,6 +879,8 @@ export function logout() {
   store.lookupNumber = '';
   store.lookupResult = null;
   store.lookupError = '';
+
+  window.location.href = `/club/${encodeURIComponent(logoutClub)}/`;
 }
 
 // ---------------------------------------------------------------------------

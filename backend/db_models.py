@@ -224,6 +224,7 @@ club_documents = Table(
     metadata,
     Column("id", BigInteger, primary_key=True),
     Column("club_id", BigInteger, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False),
+    Column("content_scope", String(32), nullable=False, server_default="home"),
     Column("display_order", Integer, nullable=False, server_default="0"),
     Column("title", String(255), nullable=False, server_default=""),
     Column("file_name", String(512), nullable=False, server_default=""),

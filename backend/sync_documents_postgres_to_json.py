@@ -78,6 +78,7 @@ def load_documents_from_postgres(db_url: str) -> Dict[str, List[Dict[str, Any]]]
                 
                 # Build document JSON
                 doc_json = {
+                    'contentScope': doc_dict.get('content_scope', 'home') or 'home',
                     'title': doc_dict.get('title', ''),
                     'fileName': doc_dict.get('file_name', ''),
                     'fileExt': doc_dict.get('file_ext', ''),

@@ -5,6 +5,8 @@ from flask import Blueprint, jsonify, request, send_file
 from sqlalchemy import and_, bindparam, func, select, update
 from werkzeug.utils import secure_filename
 
+from core.content_scopes import DEFAULT_CONTENT_SCOPE, normalize_content_scope
+
 ALLOWED_DOCUMENT_EXTENSIONS = {
     '.pdf', '.xls', '.xlsx', '.doc', '.docx'
 }
@@ -29,10 +31,27 @@ def create_document_blueprint(deps):
         )
         return str(club or '').strip()
 
-    def _fetch_ordered_document_ids(session, table, club_id):
+    def _resolve_content_scope(default=DEFAULT_CONTENT_SCOPE, *, allow_all=False):
+        raw_scope = (
+            request.args.get('content_scope')
+            or request.args.get('contentScope')
+            or request.form.get('content_scope')
+            or request.form.get('contentScope')
+            or (request.json or {}).get('content_scope')
+            or (request.json or {}).get('contentScope')
+            or default
+        )
+        return normalize_content_scope(raw_scope, allow_all=allow_all)
+
+    def _fetch_ordered_document_ids(session, table, club_id, content_scope):
         rows = session.execute(
             select(table.c.id)
-            .where(table.c.club_id == club_id)
+            .where(
+                and_(
+                    table.c.club_id == club_id,
+                    table.c.content_scope == content_scope,
+                )
+            )
             .order_by(table.c.display_order.asc(), table.c.id.asc())
         ).fetchall()
         return [int(row.id) for row in rows]
@@ -56,6 +75,7 @@ def create_document_blueprint(deps):
     @bp.route('/documents', methods=['GET'])
     def list_documents():
         club = _resolve_club_from_request()
+        content_scope = _resolve_content_scope(allow_all=True)
         auth_error = require_authenticated(club)
         if auth_error:
             return auth_error
@@ -69,16 +89,18 @@ def create_document_blueprint(deps):
             if club_id is None:
                 return jsonify({'error': 'Invalid club selection'}), 400
 
+            query = select(table).where(table.c.club_id == club_id)
+            if content_scope != 'all':
+                query = query.where(table.c.content_scope == content_scope)
             rows = session.execute(
-                select(table)
-                .where(table.c.club_id == club_id)
-                .order_by(table.c.display_order.asc(), table.c.id.asc())
+                query.order_by(table.c.display_order.asc(), table.c.id.asc())
             ).fetchall()
 
             documents = [
                 {
                     'id': row.id,
                     'displayOrder': int(row.display_order or 0),
+                    'contentScope': row.content_scope or DEFAULT_CONTENT_SCOPE,
                     'title': row.title,
                     'fileName': row.file_name,
                     'fileExt': row.file_ext,
@@ -152,6 +174,7 @@ def create_document_blueprint(deps):
             title = os.path.splitext(safe_filename)[0]
 
         mime_type = str(upload.mimetype or 'application/octet-stream').strip() or 'application/octet-stream'
+        content_scope = _resolve_content_scope()
 
         backend = get_postgres_backend()
         session = backend['session_factory']()
@@ -165,13 +188,19 @@ def create_document_blueprint(deps):
             principal = get_current_principal(club) or {}
             uploaded_by_user_id = principal.get('user_id')
             max_display_order = session.execute(
-                select(func.max(table.c.display_order)).where(table.c.club_id == club_id)
+                select(func.max(table.c.display_order)).where(
+                    and_(
+                        table.c.club_id == club_id,
+                        table.c.content_scope == content_scope,
+                    )
+                )
             ).scalar()
             next_display_order = int(max_display_order or 0) + 1
 
             insert_result = session.execute(
                 table.insert().values(
                     club_id=club_id,
+                    content_scope=content_scope,
                     display_order=next_display_order,
                     title=title,
                     file_name=safe_filename,
@@ -208,13 +237,20 @@ def create_document_blueprint(deps):
             if club_id is None:
                 return jsonify({'error': 'Invalid club selection'}), 400
 
+            target_scope = session.execute(
+                select(table.c.content_scope).where(
+                    and_(table.c.id == document_id, table.c.club_id == club_id)
+                )
+            ).scalar()
+
             result = session.execute(
                 table.delete().where(and_(table.c.id == document_id, table.c.club_id == club_id))
             )
 
             if result.rowcount:
-                ordered_ids = _fetch_ordered_document_ids(session, table, club_id)
-                _rewrite_display_order(session, table, ordered_ids)
+                if target_scope:
+                    ordered_ids = _fetch_ordered_document_ids(session, table, club_id, target_scope)
+                    _rewrite_display_order(session, table, ordered_ids)
             session.commit()
 
             if result.rowcount == 0:
@@ -258,12 +294,15 @@ def create_document_blueprint(deps):
                 return jsonify({'error': 'Invalid club selection'}), 400
 
             existing = session.execute(
-                select(table.c.id).where(and_(table.c.id == document_id, table.c.club_id == club_id))
+                select(table.c.id, table.c.content_scope).where(
+                    and_(table.c.id == document_id, table.c.club_id == club_id)
+                )
             ).first()
             if existing is None:
                 return jsonify({'error': 'Document not found'}), 404
 
-            ordered_ids = _fetch_ordered_document_ids(session, table, club_id)
+            document_scope = existing.content_scope or DEFAULT_CONTENT_SCOPE
+            ordered_ids = _fetch_ordered_document_ids(session, table, club_id, document_scope)
             if document_id not in ordered_ids:
                 return jsonify({'error': 'Document not found'}), 404
 

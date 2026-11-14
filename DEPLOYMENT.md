@@ -21,7 +21,7 @@ It now also covers PostgreSQL-backed club document storage and Home dashboard do
 HLaS uses a **two-branch deployment strategy** to ensure production stability while enabling safe development:
 
 - **`main` branch**: Development and active feature development. Used locally and in testing environments.
-- **`production` branch**: Deployed codebase running on the VPS server (`cambridgetroutclub.org`). Only receives thoroughly tested, verified changes.
+- **`production` branch**: Shared production codebase (`anglerconnect.cloud`). Only receives thoroughly tested, verified changes.
 
 This separation ensures that experimental changes on `main` never affect the live clubs (CTC, GAAFFS, LADFFA) without careful validation first.
 
@@ -91,7 +91,7 @@ Once changes are tested and verified on `main`, promote them to `production`:
    docker compose logs frontend | tail -20
    ```
 
-5. **Test in browser**: Visit `https://cambridgetroutclub.org` and verify functionality
+5. **Test in browser**: Visit `https://anglerconnect.cloud` and verify functionality
 
 ### Environment-Specific Configuration Management
 
@@ -100,7 +100,7 @@ Once changes are tested and verified on `main`, promote them to `production`:
 HLaS uses separate, version-controlled Caddyfile configurations for development and production:
 
 - **`deploy/caddy/Caddyfile.prod`** — Production configuration
-  - Domain: `cambridgetroutclub.org`
+   - Domain: `anglerconnect.cloud`
   - TLS: Let's Encrypt automatic certificate management
   - Used by `docker-compose.prod.yml` on VPS deployments
 
@@ -260,17 +260,18 @@ Some deployments may include Alembic database schema migrations:
 
 ### Specialized / Single-Club Deployments
 
-For multi-version deployments where different clubs need unique codebases, use **Option 3: Config-as-Code Separation**.
+For deployments with club-specific configuration, keep the application code shared and pass deployment files explicitly to the build script.
 
 **Concept:**
 
-- Load clubs configuration from an external file path (environment variable)
-- Maintain a custom branch (e.g., `ctc-production`) with specialized themes/configs
-- Merge core code updates from `development`/`production` without config conflicts
+- Keep live environment, club and Caddy configuration outside shared application commits
+- Mount the selected club configuration read-only at `/config/clubs.config.json`
+- Maintain a custom branch only for club-specific content or presentation that cannot yet be configured
+- Merge core updates without replacing deployment-local files
 
 **Implementation:**
 
-The backend respects `HLAS_CLUBS_CONFIG_PATH` environment variable to load clubs config from anywhere:
+Docker Compose sets `HLAS_CLUBS_CONFIG_PATH=/config/clubs.config.json`. The build script selects the host file mounted at that path with `--clubs-config`.
 
 ```python
 # backend/app.py
@@ -290,25 +291,28 @@ git checkout ctc-production
 cp clubs.config.ctc.example.json clubs.config.ctc.json
 # Edit to match your CTC setup
 
-# Set environment variable in .env.ctc
-export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
+cp .env.ctc.example .env.ctc
+cp deploy/caddy/Caddyfile.ctc.example deploy/caddy/Caddyfile.ctc
 
-# Deploy as usual
-./hlas_build.sh --target ctc-production
+# Keep the live environment and Caddy configuration outside shared commits.
+# The paths may be relative to the repository or absolute.
+
+# The ctc-production target selects these files automatically.
+# --allow-http-401 is only needed while Basic Auth is enabled.
+./hlas_build.sh --target ctc-production --allow-http-401
 ```
 
 **Benefits:**
 
 - ✅ Core code updates merge cleanly (no config conflicts)
-- ✅ Club-specific configs in external files (not git-managed or ignored)
+- ✅ Club-specific live files are ignored by Git
 - ✅ Backward compatible (defaults to `backend/clubs.config.json`)
-- ✅ Supports theme customizations, feature flags, SMTP settings on the branch
+- ✅ Environment, Caddy and health-check settings are selected independently
+- ✅ Supports theme customizations, feature flags and SMTP settings without changing core code
 
 **See Also:**
 
-- [CTC_SETUP.md](CTC_SETUP.md) — Detailed CTC-production branch maintenance guide
-- `.env.ctc.example` — Environment template with `HLAS_CLUBS_CONFIG_PATH`
-- `clubs.config.ctc.example.json` — Example single-club config
+- The `ctc-production` branch contains CTC-specific setup examples and presentation overrides.
 
 ---
 
@@ -475,9 +479,9 @@ export HLAS_CLUBS_CONFIG_PATH=/opt/hlas/clubs.config.ctc.json
    - Hero image endpoint uses DB-first retrieval with filesystem fallback to `backend/club_logos/<CLUB>_hero.png`
 
 - **Frontend build environment:**
-   - frontend package metadata now targets npm `11.12.1`
-   - local startup scripts invoke `npx --yes npm@11.12.1` for the Vite dev server
-   - Docker frontend builds install npm `11.12.1` before `npm ci` / `npm run build`
+   - frontend package metadata now targets npm `11.13.0`
+   - local startup scripts invoke `npx --yes npm@11.13.0` for the Vite dev server
+   - Docker frontend builds install npm `11.13.0` before `npm ci` / `npm run build`
 - **Member photo display:**
    - Edit Member Details displays the member photo again
    - photo routes support DB-first retrieval in PostgreSQL mode
@@ -688,7 +692,7 @@ This bundle deploys HLaS with three containers:
 
 ## 3) Build and push images (local machine)
 
-Frontend image builds now standardize on npm `11.12.1` inside [frontend/Dockerfile](frontend/Dockerfile), so local and container builds use the same npm major/minor version.
+Frontend image builds now standardize on npm `11.13.0` inside [frontend/Dockerfile](frontend/Dockerfile), so local and container builds use the same npm version.
 
 1. Copy `.env.prod.example` to `.env.prod` and set values.
    - Token TTL defaults now included in the template:
