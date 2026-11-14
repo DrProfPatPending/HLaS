@@ -796,3 +796,44 @@ Recorded 2026-11-14 following the production deployment/build-tool report.
   `docker compose -f docker-compose.ctc-dev.yml ...` commands on hlastest.
   Adding a dedicated script target for this stack was not part of this sync.
 - No production changes were made by the development integration.
+
+## Dedicated isolated ctc-dev build target implemented
+
+Recorded 2026-11-14 following the user's request to select the isolated
+development target in app-only mode.
+
+- Pushed `ctc-dev` commit `a5fc6b64`. This supersedes the earlier warning that
+  `--target ctc-dev` selects the legacy development Compose configuration.
+  The new explicit target selects only `docker-compose.ctc-dev.yml`, pins
+  project `ctc-dev`, and uses `--env-file /dev/null` to avoid loading legacy
+  or production environment files.
+- Routine development command:
+  `./hlas_build.sh --target ctc-dev --directory . --local --quick --app-only`.
+  Without `--local`, existing remote branch selection targets `origin/ctc-dev`;
+  that behaviour was tested with Git mocked, not a destructive checkout/reset
+  on the running deployment tree.
+- Requires the existing development database secret, a healthy PostgreSQL
+  service and `HLAS_SYNC_FILES_ON_STARTUP=false` in app-only mode. Does not
+  require WordPress credentials or inspect/recreate WordPress services.
+  Fixed environment/Caddyfile/club-config overrides are rejected for this
+  isolated target. Production targets keep their existing behaviour.
+- Backend readiness is checked inside its private container network rather
+  than through an unpublished host port. Post-start checks require only the
+  four development services plus the hlastest HTTPS route. Full-stack mode
+  selects those four services, not the production/WordPress stack; initial
+  seed restoration and routing cutover remain separate manual setup steps.
+- Ten mocked script regressions passed, covering target/branch selection,
+  isolated app-only and full modes, missing secrets, unsafe preconditions,
+  rejected overrides and unchanged production behaviour. Thirteen isolated
+  hero/public-page/startup tests also passed in the rebuilt backend image.
+  Shell syntax, standalone Compose and whitespace checks passed.
+- Exercised the actual command above on hlastest with verbose output.
+  App image builds and both health waits succeeded. Only the development
+  backend/frontend were recreated: every other pre-existing container ID
+  was unchanged. Beat, rotation, logo and background fingerprints were
+  unchanged; SMTP connection/credential fields remained cleared.
+- Verified the new backend retains disabled startup sync, no published
+  backend ports and its internal-only Docker network. No production server,
+  production branch, data restore or infrastructure update was involved.
+- Updated `CTC_SETUP.md`, `DEPLOYMENT.md` and script help. No production
+  deployment of this additional script change is claimed or requested.
