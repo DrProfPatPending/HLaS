@@ -363,14 +363,19 @@ export default {
   .nav-links {
     order: 3;
     width: 100%;
-    gap: 1rem;
-    flex-direction: column;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
   }
 
   .nav-links a {
-    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.5rem 0.25rem;
     text-align: center;
+    overflow-wrap: anywhere;
   }
 
   .login-button {
