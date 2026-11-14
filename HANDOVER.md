@@ -393,3 +393,34 @@ This report supersedes the earlier pending upload and routing status.
 - The user can remove the temporary Windows dump once no longer needed.
   Retain or dispose of the protected development seed under the agreed
   backup/data-retention policy.
+
+## Per-page hero images ready for CTC acceptance
+
+- Implemented, tested and pushed `ctc-dev` commit `e1c35ad2`; rebuilt only
+  the isolated development backend/frontend and verified them healthy.
+  Production and `main` were not updated by this feature work.
+- Club Settings > Club Mini Site now provides an optional image URL and
+  fallback selection for each inner page. Home retains its existing hero
+  URL field. Page settings use the existing PostgreSQL `pages` JSON; no
+  database migration or production data edit is needed.
+- The user chose existing inner pages to inherit the Home hero by default.
+  A page-specific image takes precedence; when missing or broken, it uses
+  the selected Home-then-banner or banner-only fallback. A broken Home
+  image also falls back to the light green banner. To show only the banner,
+  leave the page URL empty and choose the banner fallback.
+- All six pages share the same compact header. Image headers use white
+  text with a dark overlay; banners use dark green text on a light green
+  gradient. Measured normal-text contrast is at least 7.69:1 on the plain
+  banner and 5.74:1 against a worst-case white image under the overlay.
+- Three backend regression tests passed (save/reload, legacy defaults,
+  invalid-setting rejection). Frontend and both Docker builds passed.
+  Browser checks covered valid/missing/broken image chains, all six page
+  types, banner-only selection, and Club Settings load/edit/save payloads
+  without modifying stored site configuration.
+- Live HTTPS checks confirmed Home, About and Contact load the Home hero
+  with readable white headings at 320, 375, 390, 768 and 1024px widths.
+  The restored beats fingerprint remains unchanged and SMTP credentials
+  remain cleared in development.
+- Updated `MINI_SITE_PAGES.md` and `README.md`. Production promotion and
+  final visual acceptance remain user-controlled. The infrastructure
+  refresh recorded above is separate work, not part of this deployment.
