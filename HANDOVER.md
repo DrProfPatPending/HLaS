@@ -864,3 +864,15 @@ development target in app-only mode.
   source of truth for ongoing status/decisions; the Markdown table preserves
   the original feedback/status snapshot. No Project board or extra backlog
   features were created, and no application implementation/deployment occurred.
+
+## Completed issue import follow-up resolved
+
+- After the user updated permissions on the older PAT as well, the stored
+  credential successfully closed CONF-01 (#3) and PUBLIC-01 (#4) as completed.
+  Both states and completion reasons were independently read back through
+  the GitHub API. The earlier edit-access/closure blocker is resolved.
+- Removed the temporary permission warning from the Chairman feedback index.
+  No token was displayed, regenerated, replaced or copied during this retry.
+  The successful retry does not establish a token name or expiration date.
+- The other fourteen backlog items are not changed by this follow-up.
+  Continue tracking status and decisions in the linked GitHub issues.
