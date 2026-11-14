@@ -5,7 +5,10 @@ hlastest {
 
 	handle /robots.txt {
 		header Content-Type text/plain
-		respond "User-agent: *\nDisallow: /\n" 200
+		respond <<TXT
+			User-agent: *
+			Disallow: /
+			TXT 200
 	}
 
 	handle_path /api/* {
@@ -24,7 +27,10 @@ wordpress.hlastest {
 
 	handle /robots.txt {
 		header Content-Type text/plain
-		respond "User-agent: *\nDisallow: /\n" 200
+		respond <<TXT
+			User-agent: *
+			Disallow: /
+			TXT 200
 	}
 
 	handle {

@@ -53,7 +53,8 @@ Before starting:
    Restore only into that database with `pg_restore --no-owner --no-acl
    --exit-on-error --single-transaction`. Before starting the backend, clear
    `host`, `username`, `password` and `from_email` in its restored
-   `club_smtp_settings` table, and review other production-specific settings.
+   `club_smtp_settings` table, truncate `member_sessions` and
+   `member_refresh_sessions`, and review other production-specific settings.
    Do not copy production environment files or credentials.
 5. Start and check `backend` and `frontend` first. Neither service publishes
    a host port; run readiness checks inside their internal Docker network.
@@ -81,7 +82,9 @@ docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml start caddy
 
 Exchange non-sensitive progress and questions in `HANDOVER.md` on
 `sync-handover`, not on the deployment branches. Fetch before updating it and
-push responses without including dumps or secrets.
+push responses without including dumps or secrets. While the stack is running,
+update the handover branch without switching the deployment checkout: its
+branch-specific files are bind-mounted into running containers.
 
 ---
 
