@@ -837,3 +837,30 @@ development target in app-only mode.
   production branch, data restore or infrastructure update was involved.
 - Updated `CTC_SETUP.md`, `DEPLOYMENT.md` and script help. No production
   deployment of this additional script change is claimed or requested.
+
+## Chairman feedback imported into GitHub Issues
+
+- Created sixteen matching issues in `DrProfPatPending/HLaS`, preserving
+  source IDs in their titles: CONF-01 is #3, PUBLIC-01/02 are #4/#5,
+  NAV-01 through NAV-04 are #6 through #9, MEM-01 is #10, BEAT-01/02 are
+  #11/#12, CATCH-01/02 are #13/#14, ADMIN-01/02 are #15/#16, FORM-01 is #17
+  and NOTICE-01 is #18.
+- Each issue includes the original request/questions, source link and
+  recorded completion or proposed acceptance criteria. Owners and estimates
+  remain unassigned/unassessed; PUBLIC-02 retains its recorded release-blocker
+  priority. NAV-04 links to its NAV-02 dependency. CORE-01 shared verification
+  remains distinct from completed CTC mobile acceptance.
+- All sixteen issue titles/numbers/states were checked through the GitHub
+  API. All are currently open: after successful creation, the first edit
+  request returned HTTP 403, so the two completed source items #3/#4 have
+  not been closed. Their descriptions record completion; the attempted
+  post-import related-link update also did not apply. No permission bypass
+  or credential change was attempted.
+- The user is considering correcting PAT access for ongoing issue management.
+  Once authorised, close #3/#4 as completed and remove the temporary import
+  follow-up note from the source index. Do not duplicate the created issues.
+- Pushed `ctc-dev` documentation commit `98d55ffc`, linking every original
+  row in `CTC_CHAIRMAN_FEEDBACK_ISSUE_LOG.md` to its issue. GitHub is now the
+  source of truth for ongoing status/decisions; the Markdown table preserves
+  the original feedback/status snapshot. No Project board or extra backlog
+  features were created, and no application implementation/deployment occurred.
