@@ -620,3 +620,69 @@ items; the hero feature itself has not been deployed to production.
   Caddyfile overrides explicitly; `--env-file .env.ctc` alone does not set
   those interpolation overrides. The correction addressed the backend only;
   do not assume other services were recreated with `.env.ctc`.
+
+## Hero code promoted to ctc-production
+
+Recorded 2026-11-14 following the user's confirmation that the mount problem
+is resolved and request to pull the accepted hero changes into production.
+
+### Promoted code and scope
+
+- Read and acknowledge the controlled correction report above, including the
+  confirmed production PostgreSQL volume, targeted backup comparison, corrected
+  backend mounts/environment and tested startup-sync protection.
+- Pushed `ctc-production` commit
+  `949397da46ec30e2b2895ec9a542332c5e280ac2`, directly on `fa344546`.
+  This cherry-picks only the 14-file hero change from accepted development
+  commit `e1c35ad2`; development-only Compose/configuration files and the
+  earlier separate mobile-navigation change were not included.
+- Production's `backend/app.py` and its stronger startup-sync regression tests
+  are preserved unchanged. No second startup control was introduced.
+- No migration or configuration rewrite is needed. Inner pages without
+  explicit settings inherit the Home hero and fall back to the light banner.
+  Settings remain in the existing mini-site pages JSON.
+- The running hlastest checkout remains on `ctc-dev`, unchanged. No live
+  production container, mount, environment or database was changed here.
+
+### Candidate validation
+
+- Built both backend and frontend images from the exact promoted Git tree.
+  Five hero/startup regression tests passed in the built backend image.
+- Repeated the three hero regression cases against PostgreSQL `17.12`,
+  matching the refreshed production database version. Used an isolated
+  temporary PostgreSQL container with no external network or production data;
+  all passed and the container was removed.
+- Candidate frontend Nginx configuration and Home/About/Contact/admin shell
+  routing checks passed in an isolated container, then removed. Backend API
+  connectivity was intentionally absent from that smoke check; it was not
+  an end-to-end production acceptance test.
+- User browser acceptance on hlastest remains PASS as recorded above.
+  No Caddy, WordPress, MySQL or proxy-infrastructure changes are included.
+
+### Production deployment handoff
+
+- Production can now fast-forward its clean checkout from `fa344546` to
+  `949397da`; stop and reconcile if its code or worktree has changed.
+- Before recreation, take/verify a fresh protected PostgreSQL backup and CTC
+  configuration archive and retain the current corrected backend/frontend
+  images for rollback. The corrected `fa344546` backend is the rollback
+  baseline, not the older image whose startup hooks always sync.
+- Use the corrected explicit CTC interpolation overrides for application
+  environment, club-config mount and Caddyfile. Do not rely on `--env-file`
+  alone. Confirm `HLAS_SYNC_FILES_ON_STARTUP=false` reaches the new backend
+  and the intended PostgreSQL connection/volume and config mounts are retained.
+- Build/recreate only backend/frontend with dependencies left running; do not
+  refresh infrastructure images, run a broad stack restart or remove volumes
+  as part of this feature deployment. No application migration was added.
+- After rollout, verify health, actual mounts/environment, startup-sync
+  suppression and unchanged beats/rotations/logo/background fingerprints.
+  Check hero image responses and rendered Home/About/Contact, settings
+  persistence and normal member access. A successful authenticated login
+  remains distinct from an HTTP 200 on the login route.
+
+### Questions
+
+- Production: please acknowledge receipt of `949397da` and record whether it
+  is merely pulled or actually deployed. Report the backup/rollback baseline,
+  built image identifiers, controlled rollout checks and any remaining manual
+  acceptance gaps. Development has pushed the code, not claimed a live rollout.
