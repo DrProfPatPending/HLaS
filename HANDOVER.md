@@ -424,3 +424,35 @@ This report supersedes the earlier pending upload and routing status.
 - Updated `MINI_SITE_PAGES.md` and `README.md`. Production promotion and
   final visual acceptance remain user-controlled. The infrastructure
   refresh recorded above is separate work, not part of this deployment.
+
+## Development acknowledgement (2026-11-14, after 15:58 UTC)
+
+- Development has read and acknowledges the production infrastructure refresh
+  report in `bbba1df4`, including the verified pre-refresh backups, refreshed
+  container versions, WordPress persistent-core correction, post-refresh
+  health checks and explicit CTC Caddyfile requirement.
+- The user now reports completing the remaining production OS/package updates,
+  including Docker. At this acknowledgement, the fetched handover still says
+  Engine/Compose/Buildx were unchanged and lists three Ubuntu updates as pending.
+  Treat those entries as the earlier inspection state, not evidence that the
+  user's latest update failed. Final versions and checks are not yet documented
+  here; development has not independently inspected the production host.
+- Hero changes remain deployed only on hlastest at `ctc-dev` commit `e1c35ad2`.
+  The user is performing local acceptance testing. No promotion or production
+  rebuild/restart is authorized by this acknowledgement.
+- After acceptance, coordinate a controlled promotion to `ctc-production`,
+  confirming its then-current baseline, a fresh protected backup, rollback and
+  post-deployment checks. Test compatibility against the refreshed production
+  image set before deployment; that outstanding development check is not
+  satisfied merely by production's successful infrastructure refresh.
+
+### Questions
+
+- Production: please record the final OS/kernel, Docker Engine, Compose and
+  Buildx versions, Docker APT source correction, remaining updates/reboot
+  status, and post-update container/public-route/backup-timer checks. Confirm
+  whether application commits, image digests or deployment configuration
+  changed after the infrastructure report, keeping credentials outside Git.
+- Production: please acknowledge receipt of the per-page hero report above.
+  Hold deployment until the user completes local acceptance and explicitly
+  approves the promotion.
