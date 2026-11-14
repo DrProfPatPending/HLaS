@@ -11,6 +11,70 @@ This branch:
 
 ---
 
+## CTC Development on hlastest
+
+Use `ctc-dev` for CTC changes, starting from the pushed production baseline.
+Test there before merging into `ctc-production`; do not deploy directly from
+`main` or the handover branch. Configuration and content stored in PostgreSQL
+are not transferred by Git.
+
+`docker-compose.ctc-dev.yml` is a standalone development stack, not an override
+for the production Compose file. It uses separate `ctc-dev` database/application
+volumes and local image tags. The backend has only an internal Docker network,
+with no external egress, and PostgreSQL has no published port. WordPress data
+is not cloned: Caddy retains the existing `wordpress.hlastest` route over
+`hlas_default`. Only the existing development TLS data volume is shared, so
+trusted development certificates continue working. Do not use this file on
+production.
+
+Before starting:
+
+1. Securely transfer the approved custom-format dump outside the repository.
+   Verify its SHA-256, byte count and restricted permissions.
+2. Generate a development-only database password once:
+   ```bash
+   (umask 077; test ! -e deploy/.ctc-dev-postgres-password &&
+     openssl rand -hex -out deploy/.ctc-dev-postgres-password 32)
+   ```
+   Keep this ignored file private and do not regenerate it for an existing
+   database volume.
+3. Validate and build the standalone stack:
+   ```bash
+   docker compose -f docker-compose.ctc-dev.yml config --quiet
+   docker compose -f docker-compose.ctc-dev.yml build backend frontend
+   docker compose -f docker-compose.ctc-dev.yml up -d --wait postgres
+   ```
+4. Verify PostgreSQL is using a new `ctc-dev` volume and an empty database.
+   Restore only into that database with `pg_restore --no-owner --no-acl
+   --exit-on-error --single-transaction`. Before starting the backend, clear
+   `host`, `username`, `password` and `from_email` in its restored
+   `club_smtp_settings` table, and review other production-specific settings.
+   Do not copy production environment files or credentials.
+5. Start and check `backend` and `frontend` first. The frontend is available
+   locally at `http://127.0.0.1:8187/club/CTC/` for readiness checks.
+   Verify blocked backend egress before switching public development routing.
+6. Only after readiness checks, stop the old development Caddy and start
+   the CTC Caddy:
+   ```bash
+   docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml stop caddy
+   docker compose -f docker-compose.ctc-dev.yml up -d caddy
+   ```
+   Verify `https://hlastest/club/CTC/`, its enabled pages, login, and the
+   `X-Robots-Tag`/robots.txt indexing restrictions. The original databases and
+   other services remain untouched.
+
+To roll back routing without deleting either stack's data:
+```bash
+docker compose -f docker-compose.ctc-dev.yml stop caddy
+docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml start caddy
+```
+
+Exchange non-sensitive progress and questions in `HANDOVER.md` on
+`sync-handover`, not on the deployment branches. Fetch before updating it and
+push responses without including dumps or secrets.
+
+---
+
 ## Initial Setup on VPS
 
 ### 1. Create External Config File

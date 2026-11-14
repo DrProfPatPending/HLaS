@@ -18,6 +18,7 @@ clubs.config.ctc.json
 deploy/caddy/Caddyfile.ctc
 deploy/.env*
 !deploy/.env*.example
+deploy/.ctc-dev-postgres-password
 *.pyc
 .backend.pid
 .frontend.pid
