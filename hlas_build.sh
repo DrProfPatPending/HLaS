@@ -8,6 +8,7 @@ USE_REMOTE=1
 NO_CACHE=1
 RUN_CLEAN=0
 SKIP_HEALTH=0
+APP_ONLY=0
 ALLOW_HTTP_401=0
 LOG_FILE=""
 ENV_FILE_OVERRIDE=""
@@ -42,6 +43,7 @@ Options:
     -C                        Alias for --noclean (disable Docker prune step)
       --noclean, --no-clean Disable Docker prune step (default)
   -n, --nohealth            Skip post-start health checks
+      --app-only            Rebuild/restart only backend and frontend (no dependencies)
       --allow-http-401      Accept HTTP 401 from the public site health check
       --env-file <file>     Compose environment file (overrides target default)
       --caddyfile <file>    Caddyfile to mount (overrides target default)
@@ -107,6 +109,10 @@ while (($#)); do
             ;;
         -n|--nohealth)
             SKIP_HEALTH=1
+            shift
+            ;;
+        --app-only)
+            APP_ONLY=1
             shift
             ;;
         --allow-http-401)
@@ -362,6 +368,26 @@ if [ ! -f "$CLUBS_CONFIG_FILE" ]; then
 fi
 log "✓ Club configuration found: $CLUBS_CONFIG_FILE"
 
+if [ "$APP_ONLY" -eq 1 ]; then
+    log "Checking app-only deployment prerequisites"
+    postgres_id="$(compose ps --status running -q postgres)"
+    if [ -z "$postgres_id" ] || [ "$(docker inspect --format '{{.State.Health.Status}}' "$postgres_id")" != "healthy" ]; then
+        log_err "✗ ERROR: App-only deployment requires an already running, healthy PostgreSQL service"
+        exit 1
+    fi
+    if [ "$TARGET" = "ctc-production" ]; then
+        if ! compose config --format json | "$PYTHON_BIN" -c '
+import json, sys
+config = json.load(sys.stdin)
+flag = config["services"]["backend"]["environment"].get("HLAS_SYNC_FILES_ON_STARTUP", "")
+sys.exit(0 if str(flag).strip().lower() == "false" else 1)
+'; then
+            log_err "✗ ERROR: CTC app-only deployment requires HLAS_SYNC_FILES_ON_STARTUP=false"
+            exit 1
+        fi
+    fi
+fi
+
 log "Validating club source manifest"
 if make -n clubs-check >/dev/null 2>&1; then
     run_step "  Running make clubs-check..." make clubs-check
@@ -380,17 +406,23 @@ else
     run_step "  Building backend and frontend images..." compose build backend frontend
 fi
 
-log "Start databases (Postgres + WordPress MySQL)"
-run_step "  Starting postgres and wordpress-db..." compose up -d postgres wordpress-db
+if [ "$APP_ONLY" -eq 1 ]; then
+    log "Start backend and frontend without recreating dependencies"
+    run_step "  Starting backend..." compose up -d --no-deps --wait --wait-timeout 120 backend
+    run_step "  Starting frontend..." compose up -d --no-deps --wait --wait-timeout 120 frontend
+else
+    log "Start databases (Postgres + WordPress MySQL)"
+    run_step "  Starting postgres and wordpress-db..." compose up -d postgres wordpress-db
 
-log "Start backend and frontend"
-run_step "  Starting backend and frontend..." compose up -d backend frontend
+    log "Start backend and frontend"
+    run_step "  Starting backend and frontend..." compose up -d backend frontend
 
-log "Start WordPress services"
-run_step "  Starting wordpress and wordpress-web..." compose up -d wordpress wordpress-web
+    log "Start WordPress services"
+    run_step "  Starting wordpress and wordpress-web..." compose up -d wordpress wordpress-web
 
-log "Start caddy"
-run_step "  Starting caddy..." compose up -d caddy
+    log "Start caddy"
+    run_step "  Starting caddy..." compose up -d caddy
+fi
 
 run_step "  Checking running processes..." compose ps
 
@@ -398,13 +430,13 @@ log "Running post-start health checks"
 
 retry_check() {
     local description="$1"
-    local command="$2"
-    local attempts="${3:-30}"
-    local delay_seconds="${4:-3}"
+    local attempts="$2"
+    local delay_seconds="$3"
+    shift 3
 
     local i
     for ((i=1; i<=attempts; i++)); do
-        if eval "$command" >/dev/null 2>&1; then
+        if "$@" >/dev/null 2>&1; then
             log "✓ ${description}"
             return 0
         fi
@@ -444,13 +476,13 @@ else
     log "✓ All required services are running"
 
     log "Checking backend health endpoint"
-    retry_check "Backend health endpoint OK" "curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs" 30 3 || exit 1
+    retry_check "Backend health endpoint OK" 30 3 curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs || exit 1
 
     log "Checking frontend health endpoint via caddy"
-    retry_check "Frontend/caddy endpoint OK" "frontend_health_check" 30 3 || exit 1
+    retry_check "Frontend/caddy endpoint OK" 30 3 frontend_health_check || exit 1
 
     log "Checking WordPress/Nginx health endpoint"
-    retry_check "WordPress/Nginx endpoint OK" "compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz" 30 3 || exit 1
+    retry_check "WordPress/Nginx endpoint OK" 30 3 compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz || exit 1
 fi
 
 log "✓ Build complete"

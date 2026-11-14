@@ -150,6 +150,7 @@ Supports a rich set of options for flexible deployment and iterative development
 | `--local` | `-l` | | Skip git fetch/reset — build from local working tree |
 | `--full` | `-f` | ✓ | Pass `--no-cache` to `docker compose build` (full layer rebuild, default) |
 | `--quick` | `-Q` | | Omit `--no-cache` — reuse Docker layer cache for faster rebuilds |
+| `--app-only` |  | | Rebuild and restart only backend and frontend without starting dependencies; PostgreSQL must already be healthy |
 | `--nohealth` | `-n` | | Skip post-start health checks |
 | `--clean` | `-c` | | Run `docker system prune -f` after a successful build |
 | `--noclean`, `--no-clean` | `-C` | ✓ | Disable Docker prune step (same effective default as not passing `--clean`) |

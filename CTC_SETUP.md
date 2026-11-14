@@ -53,6 +53,11 @@ and backgrounds. The default is `true` for compatibility; the setting only
 works with a backend image containing this startup control. Disabling these
 hooks does not disable migrations or other database writes.
 
+For an application-only update when PostgreSQL and the other services are
+already running, add `--app-only`. This rebuilds and restarts only the backend
+and frontend, waits for each to become healthy, and requires a healthy
+PostgreSQL service and the CTC startup-sync opt-out.
+
 The build script defaults to fetching and resetting to the remote target branch. Use `--local --quick` only when intentionally deploying the checked-out local commit, and ensure the commit has been pushed first so a later remote deployment will retain it.
 
 ### 4. Verify the CTC Mini-Site
