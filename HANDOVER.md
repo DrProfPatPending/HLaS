@@ -257,32 +257,66 @@ or maintenance.
 
 ### Production OS maintenance (user-managed)
 
-- [ ] The user will run `apt update` / `apt upgrade` separately. The earlier
-  package cache listed 28 pending updates, including systemd, udev, snapd and Vim.
-- [ ] The user will reboot the server. At inspection, kernel `7.0.0-38` was
-  running, `7.0.0-43` was installed, and a reboot was required.
-- [ ] After maintenance, verify the running kernel, remaining package updates,
-  container health, public mini-site/member login and backup timer. Record
-  results before proceeding to build-environment or container maintenance.
+- [x] User patched and rebooted the host. The running kernel is now
+  `7.0.0-43-generic`; no reboot is pending.
+- [ ] Apply the three remaining Ubuntu updates observed after the reboot:
+  `python3-software-properties`, `software-properties-common` and `snapd`.
+- [x] Post-reboot verification completed after the production image refresh:
+  containers are healthy; CTC home, API, login route, background and hero image
+  endpoints return HTTP 200; the gated WordPress host returns its expected
+  HTTP 401; the daily backup timer is active.
 
 ### Build environment and container updates (after OS maintenance)
 
 - [ ] Review Docker's package source configuration: Docker Engine `29.5.3`,
   Compose `5.1.4` and Buildx `0.34.1` were installed as Ubuntu 24.04 packages
-  on Ubuntu 26.04. No enabled Docker repository was found; installed-only APT
-  candidates are not proof that these tools are current.
-- [ ] Test refreshed container images in ctc-dev before production rollout.
-  Running PostgreSQL `17.11`, Caddy `2.11.7`, Nginx `1.31.8` and MySQL `8.4.13`
-  had registry tag digests differing from the running images. This may represent
-  base-image changes rather than application-version upgrades; record tested
-  versions/digests and compatibility results.
-- [ ] Resolve the WordPress image mismatch deliberately: production runs
-  `wordpress:6.9-php8.3-fpm-alpine`, while the tracked production Compose file
-  specifies `wordpress:7.1-php8.3-fpm-alpine`. Test with separately backed-up
-  WordPress data before deploying the configured version.
-- [ ] Plan production rollout with a fresh protected backup, rollback procedure
-  and post-deployment checks. Do not update/restart production automatically
-  as part of the development recovery rehearsal.
+  on Ubuntu 26.04. The Docker repository file is disabled and points at `noble`;
+  no enabled Docker APT repository is configured. Docker's official repository
+  supports `resolute`; user is reviewing source configuration. Installed-only
+  APT candidates do not prove these tools are current. The official Engine
+  release notes listed `29.9.3` while this host remained at `29.5.3`.
+- [ ] Test the refreshed production image set in ctc-dev before any subsequent
+  production changes. The user explicitly chose to refresh production before
+  that test; treat the production update below as an exception, not evidence
+  that the dev validation step is complete.
+- [x] Refreshed production images on 2026-11-14 after user authorization:
+  PostgreSQL `17.12`, Caddy `2.11.9`, Nginx `1.31.8`, MySQL `8.4.13`, PHP
+  `8.3.36`, WordPress core `7.1.4`. Pulled CTC Compose image digests and
+  recreated services; backend/frontend application images were not rebuilt.
+- [x] Resolved the WordPress image/volume mismatch. The refreshed image alone
+  had left the persistent document-root at WordPress `7.0`; official WP-CLI
+  updated the persistent core to `7.1.4`. Core checksums verified and the
+  database reported its schema at the current version (`61833`).
+- [x] Pre-refresh full backup and CTC configuration archive were copied to
+  `/home/hlas/backups/pre-container-refresh-20261114T153310Z/`, mode `0600`
+  files in a mode `0700` directory. PostgreSQL archive decoding, WordPress
+  dump gzip integrity, filesystem tar and configuration tar checks passed.
+  Full-snapshot SHA-256:
+  `d7075154393f931f0846598f687f4dd4ccc4032ff5d3eff8f4358b094f4ee388`;
+  CTC-config archive SHA-256:
+  `fd45afd388e7af804fce7cdb791e5023d2f61636d2acf6b7acd1ad50ab1924c6`.
+- [x] Post-deployment public checks passed. Caddy uses
+  `deploy/caddy/Caddyfile.ctc`. For direct Compose commands, set
+  `HLAS_CADDYFILE=./deploy/caddy/Caddyfile.ctc`; otherwise Compose defaults to
+  `Caddyfile.prod`.
+
+### Production infrastructure refresh report
+
+Recorded 2026-11-14 after the user chose to proceed with production updates.
+
+- Image pull first hit Docker Hub's anonymous rate limit; after the user
+  completed Docker Hub login, pulls succeeded. No credentials were shared.
+- All seven production services are running. PostgreSQL and MySQL are healthy;
+  backend, frontend and WordPress web proxy health checks pass.
+- The refreshed Caddy image was initially started with the default production
+  Caddyfile during a direct Compose call, causing brief TLS failures. Corrected
+  immediately by recreating only Caddy with the explicit CTC Caddyfile mount.
+  Public TLS checks now pass.
+- CTC home, `/api/clubs`, mini-site login route, background and hero endpoints
+  return HTTP 200. The WordPress public host returns HTTP 401 as expected due
+  to its access gate.
+- Docker Engine, Compose and Buildx packages were not changed: APT still has no
+  enabled Docker repository and this session has no privileged APT access.
 
 ## Development restore and routing completed
 
