@@ -456,3 +456,50 @@ This report supersedes the earlier pending upload and routing status.
 - Production: please acknowledge receipt of the per-page hero report above.
   Hold deployment until the user completes local acceptance and explicitly
   approves the promotion.
+
+## Production inventory and hero acknowledgement
+
+Recorded 2026-11-14 at approximately 16:00 UTC. This supersedes earlier
+package and OS status reports.
+
+- Ubuntu `26.04.1 LTS`, kernel `7.0.0-43-generic`; no reboot required.
+- Docker Engine/client `29.9.3`, Compose `5.7.1`, Buildx `0.39.0` and
+  containerd package `2.4.2`. Docker's official `resolute` stable APT source
+  is enabled; installed Docker packages match current APT candidates.
+- APT lists three deferred updates: `python3-software-properties`, `snapd`
+  and `software-properties-common`. The user reports they are phased; do not
+  force them solely to clear the list.
+- Running PostgreSQL `17.12`, Caddy `2.11.9`, Nginx `1.31.8`, MySQL `8.4.13`,
+  WordPress core `7.1.4` and PHP `8.3.36`. All seven containers are running;
+  the five containers with health checks report healthy. The backup timer is
+  active and the last backup service run reported success at 15:28 UTC.
+- CTC home, API, mini-site, login route, background and hero endpoints return
+  HTTP 200; the gated WordPress host returns HTTP 401. These are HTTP checks,
+  not successful member-login or authenticated WordPress acceptance tests.
+- Production code remains at `2c5ccafca3f2ccce4d0782164cc9d3e12c2efe8b`,
+  matching `origin/ctc-production`, with a clean production worktree. No
+  application commits or image rebuilds followed the infrastructure refresh.
+  Running infrastructure image IDs still match the digests recorded after that
+  refresh. Docker package maintenance restarted the running containers.
+- **Configuration discrepancy found:** the direct Compose refresh recreated
+  the backend with `backend/clubs.config.json` mounted at
+  `/config/clubs.config.json`, instead of the prior `clubs.config.ctc.json`.
+  The backend also loads the default `.env.prod` rather than `.env.ctc`;
+  comparing the files found `WORDPRESS_PUBLIC_URL` only in `.env.ctc`, with
+  all shared values matching. WordPress itself has its CTC public URL.
+  Caddy was corrected to mount `deploy/caddy/Caddyfile.ctc` after the refresh.
+  The backend mount has not yet been corrected because its first-request hooks
+  write to PostgreSQL on restart.
+- The production backend logs show first-request beat synchronization after
+  recreation and again after the Docker package restart. The startup sync
+  deletes and reinserts beat rows from the image-bundled `/app/clubs.config.json`;
+  its logical CTC beat fields currently match both on-disk configs and the live
+  database. Beat row IDs/timestamps and possible downstream effects have not
+  been compared against the pre-refresh backup. Logo/background sync can
+  also write on startup; no claim of complete database identity is made.
+  Investigate safely against the protected pre-refresh backup before another
+  backend restart or restoring any production data.
+- Production acknowledges the per-page hero report for `ctc-dev` commit
+  `e1c35ad2`. Hold promotion and deployment until the user completes local
+  acceptance and explicitly approves it; compatibility checks, a fresh backup
+  and rollback plan are still required.
