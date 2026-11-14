@@ -336,14 +336,14 @@ Enabled pages use the same routes on mobile, with responsive navigation and layo
 - **Text:** Dark grey `#333`, medium grey `#555`
 
 ### Responsive Breakpoints
-- **At and below 768px:** Full mini-site with a stacked navigation and mobile layout
+- **At and below 768px:** Full mini-site with a mobile navigation grid
 - **Above 768px:** Full mini-site with desktop navigation and layout
 
 ### Navigation Header
 - Sticky positioning (top: 0, z-index: 100)
 - Green gradient background
 - Logo left, menu center, login button right
-- Flex layout with responsive reflow
+- On mobile, enabled menu items appear in rows of up to three, below the login button
 
 ### Page Hero Images
 
