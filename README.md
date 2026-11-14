@@ -33,7 +33,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
 - Field Order (column order, visibility, display names, widths, read-only flags) is now stored **per-club** in the `club_field_order` table — each club configures its own layout independently.
 - Fishing Beats field order, visibility, and minimum width settings are configurable per club.
 - Beat Details now has its own dedicated field-order and visibility configuration context per club.
-- The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
+- The post-login home page uses a dashboard layout with a left-side action stack on desktop and a top navigation grid above content on tablets and phones.
 
 ## Recent Changes
 - **Build Script Enhancements (May 2026):**
@@ -111,7 +111,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
    - CLI tool (`backup_cli.py`) for manual operations and cron scheduling.
    - REST API endpoints for programmatic access (gated by `app_admin`/`app_owner`).
    - See `BACKUP_SYSTEM.md` and `BACKUP_QUICK_START.md` for complete documentation.
-- **Mobile responsive navigation:** the main Navigation Bar now switches to a 2-column grid layout at ≤ 768 px, containing buttons sized to 80 % of the screen width, stacked above page content.
+- **Responsive member navigation:** the main Navigation Bar and My Club subnavigation sit above page content in a full-width 2-column grid at 769–1000 px and a compact 3-column grid at ≤ 768 px. Desktop navigation remains a left-side stack above 1000 px.
 - **Mobile full-width layout:** the application shell, nav card, subnav card, and all content containers now expand to 100 % window width in responsive mode, with content areas independently centred at 80 vw.
 - **Beat Details page restructure:** the read-only Beat Details page now shows:
    1. A compact 2-column quick-info bar with **River** and **Beat Name** at the top.

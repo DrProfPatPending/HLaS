@@ -1305,11 +1305,22 @@ export default {
 
   #app .app-member-sidebar-group {
     flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
   #app .app-member-sidebar-card,
   #app .app-member-subnav-card {
     position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    padding: 10px 8px;
+  }
+
+  #app .app-member-sidebar-title {
+    grid-column: 1 / -1;
   }
 
   #app .app-member-subnav-button {
@@ -1345,24 +1356,9 @@ export default {
     gap: 10px;
   }
 
-  #app .app-member-sidebar-card {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-    padding: 10px 8px;
-  }
-
+  #app .app-member-sidebar-card,
   #app .app-member-subnav-card {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-    padding: 10px 8px;
-  }
-
-  #app .app-member-sidebar-title {
-    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   #app .app-member-nav-button {

@@ -19,6 +19,12 @@
 	Keep this file free of stale comment blocks.
 
 ## Last Documentation Update
+November 14, 2026 — updated for:
+- **Responsive Member Navigation:**
+  - At 769–1000 px, primary navigation and My Club subnavigation use full-width 2-column grids above content.
+  - At ≤ 768 px, both navigation grids use 3 columns.
+  - Above 1000 px, the desktop left-side navigation stacks are unchanged.
+
 June 14, 2026 — updated for:
 - **Per-Club Field Order (June 2026):**
   - Field Order settings are now stored per-club in a dedicated `club_field_order` PostgreSQL table (one JSONB `config` row per club, `UNIQUE(club_id)`)
