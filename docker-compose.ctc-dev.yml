@@ -30,6 +30,8 @@ services:
       HLAS_CLUBS_CONFIG_PATH: /config/clubs.config.json
       HLAS_USE_POSTGRES_READS: "true"
       HLAS_USE_POSTGRES_WRITES: "true"
+      HLAS_SYNC_FILES_ON_STARTUP: "false"
+      ENABLE_BACKUPS: "false"
       HLAS_MEMBER_TOKEN_TTL_SECONDS: "300"
       HLAS_MEMBER_REFRESH_TOKEN_TTL_SECONDS: "600"
     secrets:
@@ -67,8 +69,6 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         VITE_APP_BACKEND_URL: /api
-    ports:
-      - "127.0.0.1:8187:80"
     networks:
       app:
         aliases:

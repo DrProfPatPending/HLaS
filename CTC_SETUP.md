@@ -27,6 +27,11 @@ is not cloned: Caddy retains the existing `wordpress.hlastest` route over
 trusted development certificates continue working. Do not use this file on
 production.
 
+The stack sets `HLAS_SYNC_FILES_ON_STARTUP=false` so first-request hooks cannot
+replace restored PostgreSQL beats or images with filesystem defaults. Other
+deployments retain the existing default (`true`). Backup API routes are also
+disabled with `ENABLE_BACKUPS=false`; no production backup schedule is copied.
+
 Before starting:
 
 1. Securely transfer the approved custom-format dump outside the repository.
@@ -50,8 +55,13 @@ Before starting:
    `host`, `username`, `password` and `from_email` in its restored
    `club_smtp_settings` table, and review other production-specific settings.
    Do not copy production environment files or credentials.
-5. Start and check `backend` and `frontend` first. The frontend is available
-   locally at `http://127.0.0.1:8187/club/CTC/` for readiness checks.
+5. Start and check `backend` and `frontend` first. Neither service publishes
+   a host port; run readiness checks inside their internal Docker network.
+   For example:
+   ```bash
+   docker compose -f docker-compose.ctc-dev.yml exec -T frontend \
+     wget -q -O /dev/null http://127.0.0.1/club/CTC/
+   ```
    Verify blocked backend egress before switching public development routing.
 6. Only after readiness checks, stop the old development Caddy and start
    the CTC Caddy:
