@@ -179,5 +179,38 @@ Recorded 2026-11-14 (UTC) on hlastest.
   The new backend/frontend/Caddy are not started; switching hlastest
   routing remains gated on seed restoration, SMTP sanitisation and
   readiness checks.
-- Awaiting production's secure-transfer response to the request above.
+- Awaiting the Windows-to-development upload described below.
   No dump is present in the repository or Git history.
+
+## Transfer update: verified download to Windows PC
+
+Recorded 2026-11-14 at approximately 13:04 UTC.
+
+- The user chose production -> Windows PC -> development VM instead of the
+  direct production-to-hlastest transfer requested above. No direct transfer
+  or temporary receiving file/ACL was created by this production session.
+- The user downloaded the dump to
+  `C:\Temp\ctc-dev-seed-20261114T121523Z.dump`.
+- The user ran PowerShell `Get-FileHash` and compared the full SHA-256 with
+  `5f941e41ef0fd2dcdd7c2c5e8dde878d1f7096749a1f7f1428e88348dd84bd95`;
+  the equality check returned `True`.
+- Upload to the development VM and database restore are still pending.
+  Arrange a private destination outside the repository, preferably owned by
+  `rob` with mode `0600`, then verify the destination checksum and permissions
+  before restoring into the isolated development database.
+- No production database or deployment changes were made. Keep dump contents
+  out of Git and remove the temporary PC copy when no longer needed.
+
+## Development receiving endpoint
+
+- Prepared `/tmp/ctc-dev-seed.sYUpS5` on hlastest, owned by `rob`.
+  Only `rob` can read it; a named-user ACL permits `hlas` to write the
+  upload without granting group/other access or access to `rob`'s home.
+- From Windows, upload the already-verified dump using:
+  ```powershell
+  scp C:\Temp\ctc-dev-seed-20261114T121523Z.dump hlas@hlastest:/tmp/ctc-dev-seed.sYUpS5
+  ```
+- After upload, development will revoke the `hlas` write ACL, verify size
+  and SHA-256, and copy it to a mode-0600 file outside the repository.
+  Do not restore until those checks pass. The receiving file is currently
+  empty; its creation is not confirmation of successful transfer.
