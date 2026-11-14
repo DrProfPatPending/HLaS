@@ -214,3 +214,71 @@ Recorded 2026-11-14 at approximately 13:04 UTC.
   and SHA-256, and copy it to a mode-0600 file outside the repository.
   Do not restore until those checks pass. The receiving file is currently
   empty; its creation is not confirmation of successful transfer.
+
+## Recovery and maintenance to-do list
+
+Recorded 2026-11-14 following read-only production checks at approximately
+14:05 UTC. These are pending actions, not confirmation of completed recovery
+or maintenance.
+
+### Full recovery rehearsal in ctc-dev
+
+- [ ] Finish the seed upload and verify its checksum and restricted permissions.
+  The verified dump captures PostgreSQL at 12:15 UTC; later production changes
+  require a fresh snapshot if they must be included.
+- [ ] Rehearse recovery from an empty, isolated development database and fresh
+  application data volumes. Preserve the existing development stack and rollback
+  data; do not erase or reuse production or legacy volumes.
+- [ ] Restore the dump and recreate development equivalents of required
+  deployment configuration. Clear restored SMTP settings/credentials before
+  application startup and retain blocked backend egress and no-index controls.
+- [ ] Check recovery against the snapshot: beat maps, pools, parking, waypoints,
+  member/user status, account roles, mini-site pages/settings, field order and
+  database-backed images. Test mobile/desktop navigation and member login.
+  Record deliberate development-only differences without publishing personal
+  data or credentials.
+- [ ] Resolve field-order recovery expectations. Both on-disk CTC beat exports
+  matched PostgreSQL during the check, but `backend/field_order.json` differed
+  from the global database setting. No CTC-specific field-order row was present.
+  A Git-only rebuild cannot reproduce all current application state; restore
+  database settings rather than treating JSON defaults as a complete backup.
+- [ ] Ensure protected backup coverage includes `.env.ctc`,
+  `clubs.config.ctc.json` and `deploy/caddy/Caddyfile.ctc`. The scheduled backup
+  uses `.env.prod` and its default filesystem sources do not explicitly include
+  those three live CTC files. Keep their contents outside Git.
+- [ ] Independently verify the scheduled full backup and rehearse restoration of
+  any required filesystem data. Today's scheduled job reported success, but its
+  protected archive has not been independently verified. WordPress's separate
+  database/files remain outside the transferred PostgreSQL seed; include a
+  separate WordPress recovery test before claiming complete-site recovery.
+- [ ] Record the reproducible recovery procedure, snapshot/commit used, required
+  protected inputs, validation results and remaining gaps in this handover.
+
+### Production OS maintenance (user-managed)
+
+- [ ] The user will run `apt update` / `apt upgrade` separately. The earlier
+  package cache listed 28 pending updates, including systemd, udev, snapd and Vim.
+- [ ] The user will reboot the server. At inspection, kernel `7.0.0-38` was
+  running, `7.0.0-43` was installed, and a reboot was required.
+- [ ] After maintenance, verify the running kernel, remaining package updates,
+  container health, public mini-site/member login and backup timer. Record
+  results before proceeding to build-environment or container maintenance.
+
+### Build environment and container updates (after OS maintenance)
+
+- [ ] Review Docker's package source configuration: Docker Engine `29.5.3`,
+  Compose `5.1.4` and Buildx `0.34.1` were installed as Ubuntu 24.04 packages
+  on Ubuntu 26.04. No enabled Docker repository was found; installed-only APT
+  candidates are not proof that these tools are current.
+- [ ] Test refreshed container images in ctc-dev before production rollout.
+  Running PostgreSQL `17.11`, Caddy `2.11.7`, Nginx `1.31.8` and MySQL `8.4.13`
+  had registry tag digests differing from the running images. This may represent
+  base-image changes rather than application-version upgrades; record tested
+  versions/digests and compatibility results.
+- [ ] Resolve the WordPress image mismatch deliberately: production runs
+  `wordpress:6.9-php8.3-fpm-alpine`, while the tracked production Compose file
+  specifies `wordpress:7.1-php8.3-fpm-alpine`. Test with separately backed-up
+  WordPress data before deploying the configured version.
+- [ ] Plan production rollout with a fresh protected backup, rollback procedure
+  and post-deployment checks. Do not update/restart production automatically
+  as part of the development recovery rehearsal.
