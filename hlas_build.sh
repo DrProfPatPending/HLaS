@@ -32,7 +32,7 @@ Usage: $0 [OPTIONS]
 
 Options:
   -t, --target <target>     Deployment target/branch (default: development)
-                            Examples: -production, production, development, main
+                            Examples: production, ctc-production, ctc-dev, development, main
   -d, --directory <dir>     Deployment directory (default: /opt/hlas)
                             Example: /opt/hlas
     -l, --local               Build from local working tree (skip git reset)
@@ -70,6 +70,7 @@ Examples:
     $0 --target production --clean --noclean # last flag wins (no prune)
     $0 --target production --quiet --log-file /tmp/hlas-build.log
     $0 --target ctc-production --allow-http-401
+    $0 --target ctc-dev --directory . --local --quick --app-only
 EOF
 }
 
@@ -286,6 +287,18 @@ case "$TARGET" in
         HEALTH_HOST="cambridgetroutclub.org"
         DEFAULT_CLUBS_CONFIG_FILE="clubs.config.ctc.json"
         ;;
+    ctc-dev)
+        BRANCH_NAME="ctc-dev"
+        ENV_FILE="/dev/null"
+        COMPOSE_FILES=("--project-name" "ctc-dev" "-f" "docker-compose.ctc-dev.yml")
+        CADDYFILE="deploy/caddy/Caddyfile.ctc-dev"
+        HEALTH_HOST="hlastest"
+        DEFAULT_CLUBS_CONFIG_FILE="deploy/clubs.config.ctc-dev.json"
+        if [ -n "$ENV_FILE_OVERRIDE$CADDYFILE_OVERRIDE$CLUBS_CONFIG_FILE_OVERRIDE" ]; then
+            log_err "✗ ERROR: ctc-dev uses fixed isolated configuration; --env-file, --caddyfile and --clubs-config are not supported"
+            exit 1
+        fi
+        ;;
     development|dev)
         BRANCH_NAME="development"
         ENV_FILE=".env.dev"
@@ -334,17 +347,19 @@ compose() {
         docker compose --env-file "$ENV_FILE" "${COMPOSE_FILES[@]}" "$@"
 }
 
-if [ ! -f "$ENV_FILE" ]; then
-    log_err "✗ ERROR: Environment file '$ENV_FILE' not found"
-    exit 1
-fi
+if [ "$TARGET" != "ctc-dev" ]; then
+    if [ ! -f "$ENV_FILE" ]; then
+        log_err "✗ ERROR: Environment file '$ENV_FILE' not found"
+        exit 1
+    fi
 
-require_env_vars "$ENV_FILE" \
-    WORDPRESS_DB_HOST \
-    WORDPRESS_DB_NAME \
-    WORDPRESS_DB_ROOT_PASSWORD \
-    WORDPRESS_DB_USER \
-    WORDPRESS_DB_PASSWORD
+    require_env_vars "$ENV_FILE" \
+        WORDPRESS_DB_HOST \
+        WORDPRESS_DB_NAME \
+        WORDPRESS_DB_ROOT_PASSWORD \
+        WORDPRESS_DB_USER \
+        WORDPRESS_DB_PASSWORD
+fi
 
 if [ "$USE_REMOTE" -eq 1 ]; then
     log "Pulling latest code from Git (branch: $BRANCH_NAME)"
@@ -368,6 +383,11 @@ if [ ! -f "$CLUBS_CONFIG_FILE" ]; then
 fi
 log "✓ Club configuration found: $CLUBS_CONFIG_FILE"
 
+if [ "$TARGET" = "ctc-dev" ] && [ ! -s "deploy/.ctc-dev-postgres-password" ]; then
+    log_err "✗ ERROR: ctc-dev requires the existing non-empty deploy/.ctc-dev-postgres-password secret"
+    exit 1
+fi
+
 if [ "$APP_ONLY" -eq 1 ]; then
     log "Checking app-only deployment prerequisites"
     postgres_id="$(compose ps --status running -q postgres)"
@@ -375,7 +395,7 @@ if [ "$APP_ONLY" -eq 1 ]; then
         log_err "✗ ERROR: App-only deployment requires an already running, healthy PostgreSQL service"
         exit 1
     fi
-    if [ "$TARGET" = "ctc-production" ]; then
+    if [[ "$TARGET" = "ctc-production" || "$TARGET" = "ctc-dev" ]]; then
         if ! compose config --format json | "$PYTHON_BIN" -c '
 import json, sys
 config = json.load(sys.stdin)
@@ -411,14 +431,21 @@ if [ "$APP_ONLY" -eq 1 ]; then
     run_step "  Starting backend..." compose up -d --no-deps --wait --wait-timeout 120 backend
     run_step "  Starting frontend..." compose up -d --no-deps --wait --wait-timeout 120 frontend
 else
-    log "Start databases (Postgres + WordPress MySQL)"
-    run_step "  Starting postgres and wordpress-db..." compose up -d postgres wordpress-db
+    if [ "$TARGET" = "ctc-dev" ]; then
+        log "Start isolated development PostgreSQL"
+        run_step "  Starting postgres..." compose up -d postgres
+    else
+        log "Start databases (Postgres + WordPress MySQL)"
+        run_step "  Starting postgres and wordpress-db..." compose up -d postgres wordpress-db
+    fi
 
     log "Start backend and frontend"
     run_step "  Starting backend and frontend..." compose up -d backend frontend
 
-    log "Start WordPress services"
-    run_step "  Starting wordpress and wordpress-web..." compose up -d wordpress wordpress-web
+    if [ "$TARGET" != "ctc-dev" ]; then
+        log "Start WordPress services"
+        run_step "  Starting wordpress and wordpress-web..." compose up -d wordpress wordpress-web
+    fi
 
     log "Start caddy"
     run_step "  Starting caddy..." compose up -d caddy
@@ -463,7 +490,11 @@ frontend_health_check() {
 if [ "$SKIP_HEALTH" -eq 1 ]; then
     log "⚠ Health checks skipped (--nohealth)"
 else
-    required_services=(postgres backend frontend wordpress-db wordpress wordpress-web caddy)
+    if [ "$TARGET" = "ctc-dev" ]; then
+        required_services=(postgres backend frontend caddy)
+    else
+        required_services=(postgres backend frontend wordpress-db wordpress wordpress-web caddy)
+    fi
 
     for service in "${required_services[@]}"; do
         if ! compose ps --services --filter "status=running" | grep -q "^${service}$"; then
@@ -476,13 +507,20 @@ else
     log "✓ All required services are running"
 
     log "Checking backend health endpoint"
-    retry_check "Backend health endpoint OK" 30 3 curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs || exit 1
+    if [ "$TARGET" = "ctc-dev" ]; then
+        retry_check "Backend health endpoint OK" 30 3 compose exec -T backend python -c \
+            "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5050/clubs', timeout=5)" || exit 1
+    else
+        retry_check "Backend health endpoint OK" 30 3 curl --connect-timeout 5 --max-time 10 -fsS http://127.0.0.1:5050/clubs || exit 1
+    fi
 
     log "Checking frontend health endpoint via caddy"
     retry_check "Frontend/caddy endpoint OK" 30 3 frontend_health_check || exit 1
 
-    log "Checking WordPress/Nginx health endpoint"
-    retry_check "WordPress/Nginx endpoint OK" 30 3 compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz || exit 1
+    if [ "$TARGET" != "ctc-dev" ]; then
+        log "Checking WordPress/Nginx health endpoint"
+        retry_check "WordPress/Nginx endpoint OK" 30 3 compose exec -T wordpress-web wget -q -O - http://127.0.0.1/healthz || exit 1
+    fi
 fi
 
 log "✓ Build complete"

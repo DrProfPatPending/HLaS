@@ -27,11 +27,24 @@ is not cloned: Caddy retains the existing `wordpress.hlastest` route over
 trusted development certificates continue working. Do not use this file on
 production.
 
-For this isolated stack, continue using explicit
-`docker compose -f docker-compose.ctc-dev.yml ...` commands. The production
-build script's `--app-only` option does not select this stack:
-`hlas_build.sh --target ctc-dev --app-only` still selects the legacy development
-Compose files and must not be used for the isolated CTC environment.
+For routine application updates after the isolated stack has been set up:
+
+```bash
+./hlas_build.sh --target ctc-dev --directory . --local --quick --app-only
+```
+
+The explicit `ctc-dev` target selects only `docker-compose.ctc-dev.yml` and
+project `ctc-dev`, without loading a production/legacy environment file or
+requiring WordPress credentials. It requires the existing development database
+secret, a healthy PostgreSQL service and disabled startup sync. Only backend
+and frontend are recreated; backend health is checked inside its private
+network. The existing Caddy must be running for the HTTPS health check.
+Configuration-file overrides are rejected for this fixed isolated target.
+Without `--local`, the script fetches and resets to `origin/ctc-dev` using its
+existing remote-deployment behaviour; push changes before using that mode.
+Without `--app-only`, it starts the four-service development stack, not
+WordPress. Initial seed restoration and the routing cutover still require
+the manual setup below.
 
 The stack sets `HLAS_SYNC_FILES_ON_STARTUP=false` so first-request hooks cannot
 replace restored PostgreSQL beats or images with filesystem defaults. Other

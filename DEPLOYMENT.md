@@ -144,7 +144,7 @@ Supports a rich set of options for flexible deployment and iterative development
 
 | Option | Short | Default | Description |
 |---|---|---|---|
-| `--target <branch>` | `-t` | `production` | Branch/target to deploy (`production`, `development`, `main`) |
+| `--target <branch>` | `-t` | `production` | Branch/target to deploy (`production`, `ctc-production`, `ctc-dev`, `development`, `main`) |
 | `--directory <dir>` | `-d` | `/opt/hlas` | Repository directory on the host |
 | `--remote` | `-r` | ✓ | Pull from `origin/<branch>` before building (default) |
 | `--local` | `-l` | | Skip git fetch/reset — build from local working tree |
@@ -170,6 +170,9 @@ Examples:
 # Fast iterative dev rebuild from local working tree
 ./hlas_build.sh --target development --local --quick
 
+# Isolated CTC development: rebuild only the app, leaving infrastructure running
+./hlas_build.sh --target ctc-dev --directory . --local --quick --app-only
+
 # Dev rebuild, skip health checks, clean up dangling images when done
 ./hlas_build.sh --target development --local --quick --nohealth --clean
 
@@ -181,6 +184,7 @@ Examples:
 ```
 
 The script also:
+- Selects the standalone `ctc-dev` Compose project for that target, without production environment files or WordPress services; see [CTC setup](CTC_SETUP.md#ctc-development-on-hlastest) for seed/secret prerequisites
 - Validates `Caddyfile.prod` exists before a production deploy
 - Runs the clubs split-config preflight check (`make clubs-check` or `python backend/build_clubs_config.py --check`)
 - Runs `docker system prune -f` only on success when `--clean` is given — a failed deploy never auto-prunes
