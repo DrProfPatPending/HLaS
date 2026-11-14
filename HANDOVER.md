@@ -201,7 +201,7 @@ Recorded 2026-11-14 at approximately 13:04 UTC.
 - No production database or deployment changes were made. Keep dump contents
   out of Git and remove the temporary PC copy when no longer needed.
 
-## Development receiving endpoint
+## Development receiving endpoint (completed; do not upload again)
 
 - Prepared `/tmp/ctc-dev-seed.sYUpS5` on hlastest, owned by `rob`.
   Only `rob` can read it; a named-user ACL permits `hlas` to write the
@@ -212,8 +212,9 @@ Recorded 2026-11-14 at approximately 13:04 UTC.
   ```
 - After upload, development will revoke the `hlas` write ACL, verify size
   and SHA-256, and copy it to a mode-0600 file outside the repository.
-  Do not restore until those checks pass. The receiving file is currently
-  empty; its creation is not confirmation of successful transfer.
+  At preparation time the receiving file was empty. Transfer and verification
+  have since completed, and this temporary file has been removed; see the
+  completion report below.
 
 ## Recovery and maintenance to-do list
 
@@ -223,13 +224,13 @@ or maintenance.
 
 ### Full recovery rehearsal in ctc-dev
 
-- [ ] Finish the seed upload and verify its checksum and restricted permissions.
+- [x] Finish the seed upload and verify its checksum and restricted permissions.
   The verified dump captures PostgreSQL at 12:15 UTC; later production changes
   require a fresh snapshot if they must be included.
-- [ ] Rehearse recovery from an empty, isolated development database and fresh
+- [x] Rehearse recovery from an empty, isolated development database and fresh
   application data volumes. Preserve the existing development stack and rollback
   data; do not erase or reuse production or legacy volumes.
-- [ ] Restore the dump and recreate development equivalents of required
+- [x] Restore the dump and recreate development equivalents of required
   deployment configuration. Clear restored SMTP settings/credentials before
   application startup and retain blocked backend egress and no-index controls.
 - [ ] Check recovery against the snapshot: beat maps, pools, parking, waypoints,
@@ -237,7 +238,7 @@ or maintenance.
   database-backed images. Test mobile/desktop navigation and member login.
   Record deliberate development-only differences without publishing personal
   data or credentials.
-- [ ] Resolve field-order recovery expectations. Both on-disk CTC beat exports
+- [x] Resolve field-order recovery expectations. Both on-disk CTC beat exports
   matched PostgreSQL during the check, but `backend/field_order.json` differed
   from the global database setting. No CTC-specific field-order row was present.
   A Git-only rebuild cannot reproduce all current application state; restore
@@ -251,7 +252,7 @@ or maintenance.
   protected archive has not been independently verified. WordPress's separate
   database/files remain outside the transferred PostgreSQL seed; include a
   separate WordPress recovery test before claiming complete-site recovery.
-- [ ] Record the reproducible recovery procedure, snapshot/commit used, required
+- [x] Record the reproducible recovery procedure, snapshot/commit used, required
   protected inputs, validation results and remaining gaps in this handover.
 
 ### Production OS maintenance (user-managed)
@@ -282,3 +283,79 @@ or maintenance.
 - [ ] Plan production rollout with a fresh protected backup, rollback procedure
   and post-deployment checks. Do not update/restart production automatically
   as part of the development recovery rehearsal.
+
+## Development restore and routing completed
+
+This report supersedes the earlier pending upload and routing status.
+
+### Snapshot and isolation
+
+- The Windows upload completed. Verified the full SHA-256 stated above and
+  the 8,611,452-byte size, then retained the seed outside Git at
+  `/home/rob/ctc-dev-seed-20261114T121523Z.dump`, owned by `rob:rob`, mode
+  `0600`. Revoked the upload ACL and removed the temporary receiving file.
+  No further upload to that temporary path is needed.
+- Restored into `ctc_dev` on `ctc-dev-postgres-1`, using only the new
+  `ctc-dev_postgres_data` volume. The original `hlas_postgres_data` volume
+  and database container remain untouched.
+- Cleared the development copy's SMTP connection/credential fields and
+  truncated `member_sessions` and `member_refresh_sessions`. These are
+  deliberate development-only differences, not production changes.
+- The running backend has no external route: the TCP egress test returned
+  `ENETUNREACH`. Backend, frontend and database publish no host ports.
+  Backup API routes are disabled and no production timer was copied.
+
+### Startup protection and recovery verification
+
+- Found that the existing first-request startup hooks replace database beats
+  and images from filesystem defaults. Added `HLAS_SYNC_FILES_ON_STARTUP`
+  with the existing behaviour retained by default; the isolated CTC stack
+  sets it to `false`. Re-restored the snapshot with the application stopped
+  after discovering the hooks, then verified data was preserved on startup.
+  No change to production startup behaviour has been deployed.
+- Restored a temporary reference database from the same seed and compared
+  complete-row fingerprints without publishing records. All 18 checked tables
+  matched: clubs, members, app users, member/user links, roles, role
+  assignments, beats, mini-sites, app settings, club field order, logos,
+  backgrounds, heroes, map rotations, member photos, documents, newsletter
+  templates and catch returns. The temporary reference database was removed.
+- Confirmed the live CTC field-order API resolves to the restored global
+  PostgreSQL configuration, including its overrides, rather than JSON
+  defaults. The snapshot's lack of a club-specific row is preserved.
+- The targeted startup-hook regression test passed. Both application Docker
+  images built successfully; Compose and Caddy validation passed.
+
+### Development routing and acceptance checks
+
+- `ctc-dev` is pushed at `1142f0cc` and remains checked out with a clean
+  working tree. Setup, safe restore prerequisites and routing rollback are
+  documented in `CTC_SETUP.md`.
+- `https://hlastest/club/CTC/` now uses the seeded CTC stack. The previous
+  `hlas-caddy-1` is stopped but preserved for rollback; the other original
+  services and their data remain running unchanged.
+- HTTPS certificate verification passed using the existing development CA.
+  Both hlastest hosts return no-index headers and valid multiline robots
+  exclusion rules. The existing WordPress health route still responds.
+  This does not constitute a WordPress recovery test.
+- Home, About, Contact and the member login page return HTTP 200. Database
+  logo, hero and background endpoints return images. Enabled pages are
+  Home, About and Contact as captured by the snapshot.
+- Firefox checks passed at 320, 375, 390, 768 and 1024px widths. Mobile
+  navigation has three columns and 44px-or-larger tap targets; six simulated
+  links form two rows. About/Contact clicks work, and Log In opens the
+  member password form. Invalid credentials correctly return HTTP 401.
+- A successful login with an authorised account and visual acceptance of
+  the actual beat maps remain manual checks. No production password was
+  requested, changed or published. The broader recovery acceptance item
+  remains unchecked for those checks.
+
+### Remaining boundaries
+
+- The baseline is the 12:15 UTC snapshot, not any later production changes.
+- WordPress data recovery, protected live-configuration backup coverage,
+  scheduled archive verification, OS maintenance and refreshed container
+  testing remain pending as listed above. Do not claim complete-site
+  disaster recovery or update production on the basis of these CTC checks.
+- The user can remove the temporary Windows dump once no longer needed.
+  Retain or dispose of the protected development seed under the agreed
+  backup/data-retention policy.
