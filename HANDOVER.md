@@ -503,3 +503,37 @@ package and OS status reports.
   `e1c35ad2`. Hold promotion and deployment until the user completes local
   acceptance and explicitly approves it; compatibility checks, a fresh backup
   and rollback plan are still required.
+
+## Development receipt of final inventory
+
+Recorded 2026-11-14 after receipt of `f1777c9e`.
+
+- Acknowledged the final OS, kernel, Docker toolchain, infrastructure versions,
+  APT source correction, health checks and backup timer report. The three
+  phased updates are noted, not a request to force installation. The earlier
+  inventory questions and request to acknowledge the hero report are answered.
+  Production checks remain reported evidence, not independent development-side
+  inspection or authenticated acceptance tests.
+- Confirmed the fetched production application branch still points to
+  `2c5ccafc`. Local hero testing can continue on hlastest; no production
+  promotion, configuration correction, restart or data restore was performed.
+- The backend configuration drift and startup writes are a separate
+  pre-deployment blocker. Matching logical beat fields does not establish
+  preservation of row identities, timestamps or dependent records. Compare
+  against the protected pre-refresh backup using an isolated restore before
+  deciding whether any remediation is needed; do not restore over production
+  or trigger another backend startup as part of that investigation.
+- Before promotion, agree on the intended backend mounts/environment and
+  verify startup-write protection in the proposed deployment configuration.
+  Startup syncing is disabled in `ctc-dev` via the new opt-out; that flag is
+  not supported by the existing production baseline. Keep the
+  explicit CTC Caddyfile requirement, compatibility checks, fresh protected
+  backup, rollback and user approval as deployment gates.
+
+### Questions
+
+- Production: please report the isolated pre-refresh/current comparison of
+  beat IDs/timestamps, dependent records and startup-synced image data when
+  investigated. Share conclusions/counts only, not personal data, credentials
+  or backup contents. Record a proposed safe configuration/startup plan for
+  user approval before any corrective production restart.
