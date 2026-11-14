@@ -347,6 +347,7 @@ Enabled pages use the same routes on mobile, with responsive navigation and layo
 
 ### Page Hero Images
 
+- The Home hero prefixes its configured headline with `Welcome to `, without a colon.
 - **Club Settings > Club Mini Site:** Set the Home hero URL, then use
   **Page Hero Images** to configure About, Waters, News, Join and Contact.
 - Each inner page has an optional `hero_image_url` and `hero_fallback`

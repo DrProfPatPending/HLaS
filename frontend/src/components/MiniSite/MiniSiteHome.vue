@@ -1,7 +1,7 @@
 <template>
   <div class="mini-site-page home-page">
     <mini-site-hero
-      :title="`Welcome to: ${displayHeadline}`"
+      :title="`Welcome to ${displayHeadline}`"
       :subtitle="tagline"
       :image="heroImage"
     />
