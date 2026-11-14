@@ -47,6 +47,12 @@ git pull origin ctc-production
 
 The target automatically selects `.env.ctc`, `clubs.config.ctc.json`, `deploy/caddy/Caddyfile.ctc`, and the CTC health-check hostname. The explicit file options remain available for exceptional deployments.
 
+Set `HLAS_SYNC_FILES_ON_STARTUP=false` in `.env.ctc` to prevent the backend's
+first-request hooks from replacing PostgreSQL beats and syncing filesystem logos
+and backgrounds. The default is `true` for compatibility; the setting only
+works with a backend image containing this startup control. Disabling these
+hooks does not disable migrations or other database writes.
+
 The build script defaults to fetching and resetting to the remote target branch. Use `--local --quick` only when intentionally deploying the checked-out local commit, and ensure the commit has been pushed first so a later remote deployment will retain it.
 
 ### 4. Verify the CTC Mini-Site

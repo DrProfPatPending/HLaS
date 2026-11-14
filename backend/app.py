@@ -960,11 +960,11 @@ def create_app():
         from routes.backup_routes import create_backup_routes
         create_backup_routes(app_instance, route_deps['get_current_principal'], route_deps['require_permission'])
 
-    # Register startup hook to sync beats from JSON to PostgreSQL
-    _register_beats_sync_startup(app_instance)
-    
-    # Register startup hook to sync logos and backgrounds from filesystem to PostgreSQL
-    _register_logos_sync_startup(app_instance)
+    if os.getenv('HLAS_SYNC_FILES_ON_STARTUP', 'true').lower() == 'true':
+        _register_beats_sync_startup(app_instance)
+        _register_logos_sync_startup(app_instance)
+    else:
+        app_instance.logger.info('Startup filesystem sync disabled; retaining PostgreSQL beats and images')
 
     return app_instance
 
