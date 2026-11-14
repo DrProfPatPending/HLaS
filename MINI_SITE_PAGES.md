@@ -345,6 +345,21 @@ Enabled pages use the same routes on mobile, with responsive navigation and layo
 - Logo left, menu center, login button right
 - On mobile, enabled menu items appear in rows of up to three, below the login button
 
+### Page Hero Images
+
+- **Club Settings > Club Mini Site:** Set the Home hero URL, then use
+  **Page Hero Images** to configure About, Waters, News, Join and Contact.
+- Each inner page has an optional `hero_image_url` and `hero_fallback`
+  (`home` or `banner`), stored in the existing PostgreSQL `pages` JSON.
+  HTTP(S) and site-relative image URLs are supported; no migration is needed.
+- Existing inner pages default to the Home hero. If a page image fails,
+  the configured fallback is tried. A missing or failed Home image falls
+  back to a light green banner. To show only the banner, leave the page
+  image empty and select the banner fallback.
+- All six pages use the same compact header (100px minimum, 90px on mobile,
+  expanding if text needs more space). Image headers use a dark overlay
+  and white text; plain banners use dark green text on a lighter green.
+
 ## Future Enhancements
 
 1. **Content Management**

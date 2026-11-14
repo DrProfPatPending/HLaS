@@ -167,7 +167,10 @@ def create_mini_site_routes(deps):
                     if isinstance(page, dict) and page.get('id') == 'contact':
                         page['display_mode'] = contact_display_mode
             
-            pages = normalize_pages_config(pages_input, club_short_name)
+            try:
+                pages = normalize_pages_config(pages_input, club_short_name)
+            except ValueError as exc:
+                return jsonify({'error': str(exc)}), 400
             social_links = payload.get('social_links', {}) if isinstance(payload.get('social_links'), dict) else {}
 
             # Check if mini site config exists
