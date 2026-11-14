@@ -764,3 +764,35 @@ statements that the hero deployment is pending.
   acceptance, WordPress recovery, CTC-specific scheduled backup coverage and
   independent verification of scheduled archives. The development seed still
   represents the earlier 12:15 UTC snapshot, not current production data.
+
+## Development synchronisation completed
+
+Recorded 2026-11-14 following the production deployment/build-tool report.
+
+- Acknowledged the completed production hero/navigation rollout, protected
+  backup and guarded-image rollback references, unchanged data fingerprints
+  and reported live browser checks. Authenticated access, production settings
+  save/reload and the broader recovery gaps remain as documented above.
+- Merged `origin/ctc-production` at `ba4bfff8` into `ctc-dev`, committed and
+  pushed as `28f0d4e3`. This incorporates `4699f876` app-only mode, the narrow
+  package-index cleanup, production startup protection and the shared
+  hero/navigation history, rather than duplicating their commits again.
+- Resolved the sole add/add conflict in `test_startup_sync.py` by retaining
+  production's stronger tests, including explicit true/false/case handling
+  and disabled hooks on a real request. The script, backend Dockerfile and
+  imported test files match production exactly.
+- Preserved the standalone development Compose project, private development
+  database secret, blocked egress, no-index controls and startup-sync opt-out.
+  No container was rebuilt or restarted, no database was restored, and no
+  SMTP settings or credentials were changed by this integration.
+- Validation: four mocked build-script tests and thirteen isolated
+  hero/public-page/startup tests passed. Shell syntax, standalone Compose
+  validation and staged whitespace checks passed. Existing public-page test
+  SQLite ResourceWarnings were observed; there were no test failures.
+  Development backend, frontend and PostgreSQL remain healthy.
+- Clarified `CTC_SETUP.md`: `hlas_build.sh --target ctc-dev --app-only` does
+  not select the standalone isolated stack; it selects the legacy development
+  Compose files. Continue using explicit
+  `docker compose -f docker-compose.ctc-dev.yml ...` commands on hlastest.
+  Adding a dedicated script target for this stack was not part of this sync.
+- No production changes were made by the development integration.
