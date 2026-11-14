@@ -686,3 +686,81 @@ is resolved and request to pull the accepted hero changes into production.
   is merely pulled or actually deployed. Report the backup/rollback baseline,
   built image identifiers, controlled rollout checks and any remaining manual
   acceptance gaps. Development has pushed the code, not claimed a live rollout.
+
+## Production hero and navigation deployment
+
+Recorded 2026-11-14 at approximately 16:45 UTC. This supersedes earlier
+statements that the hero deployment is pending.
+
+### Code and deployment
+
+- Production received the accepted hero change `e1c35ad2` and, at the user's
+  additional request, the mobile navigation change `9b21533b`. The remote hero
+  commit `949397da` and an equivalent independent cherry-pick were reconciled
+  by merge `de0ad164`, preserving both histories and one copy of the changes.
+- Production subsequently added build-script commit `4699f876` and backend
+  image-recipe commit `ba4bfff8`. The deployed production checkout is clean
+  at `ba4bfff8`, matching `origin/ctc-production`.
+- The user authorised deployment. Ran
+  `./hlas_build.sh --target ctc-production --directory . --local --quick --app-only --verbose`.
+  The backend and frontend images were rebuilt and only those two services
+  were recreated. PostgreSQL, WordPress, MySQL and Caddy were not restarted.
+  The script's service, backend, frontend/Caddy and WordPress/Nginx health
+  checks passed. `make` is absent on this host, so the script successfully
+  used its existing Python club-manifest validation fallback.
+- Running backend image ID:
+  `sha256:d92060a0a4bc8e3b0d5975f7e5dcd96526ee88dd99d8f388005e5c31945672c2`.
+  Running frontend image ID:
+  `sha256:fdcda67f3833e80a09fe65e1ca62e4da753faf6b3104d3debefa5b92ef54229f`.
+  Compared before/after, Python, the checked pinned backend libraries and
+  frontend Nginx reported the same versions.
+
+### Backup, rollback and checks
+
+- Immediately before deployment, made a mode-`0600` PostgreSQL custom-format
+  dump and separate CTC configuration archive under `/home/hlas/backups/`.
+  Archive list and full PostgreSQL decode and config archive integrity passed;
+  no restore was performed. These are not a fresh full WordPress/filesystem
+  backup. The pre-deployment database dump is
+  `pre-hero-deploy-20261114T164223Z.dump` (SHA-256
+  `ce1fd63f0e3b74ce1e028b35294569d93203c43d3335dbc51318a1a1516c32c2`);
+  the config archive is `pre-hero-deploy-20261114T164223Z-config.tar.gz`
+  (SHA-256 `87f1d0c28bc47d8e501d7f8f66a3a535b53b7af9a493dcc9d2fb3f1181fcfae9`).
+- Retained the immediately previous guarded app images as
+  `hlas-backend:before-hero-20261114t1642` and
+  `hlas-frontend:before-hero-20261114t1642`. The older
+  `pre-sync-guard` backend image does not have the startup guard and must not
+  be used casually. A database restore would also discard any later writes.
+- Confirmed the live backend uses the read-only CTC club-config mount and
+  `HLAS_SYNC_FILES_ON_STARTUP=false`, and connects to the same `hlas` database
+  and `hlas_postgres_data` volume. Pre/post fingerprints of beats, rotations,
+  logos and backgrounds matched.
+- Public Home, About, Contact, login, API, background and hero checks returned
+  HTTP 200; the WordPress gate returned HTTP 401 as expected. In a live browser
+  at 375px, Home, About and Contact rendered the same successfully loaded Home
+  hero and the navigation used three grid columns. A successful authenticated
+  member login, authenticated WordPress acceptance and live settings
+  save/reload were not tested. No production settings were changed.
+
+### Development synchronisation requested
+
+- Please reconcile `ctc-dev` with the latest `ctc-production`, particularly
+  `4699f876` and `ba4bfff8`, without overwriting development-only isolation,
+  SMTP sanitisation or the existing startup-sync guard. Test the integration
+  in the isolated development environment before future promotion.
+- `--app-only` builds both app images, requires a running healthy PostgreSQL
+  service, and starts backend and frontend separately with `--no-deps` and
+  health waits. For `ctc-production`, it also requires the rendered backend
+  environment   to set `HLAS_SYNC_FILES_ON_STARTUP=false`. Other services are not recreated
+  and are checked when health checks are enabled. The normal full-stack mode
+  remains available; the script's health retries now invoke commands directly
+  rather than constructing shell commands.
+- Four mocked build-script regression tests passed, including disabled-sync and
+  healthy-database preconditions and unchanged default full-stack behaviour.
+  Thirteen isolated hero, public-page and startup-guard tests passed; the
+  combined frontend build also succeeded. The production app-only script run
+  above exercised the real build and health checks.
+- Outstanding recovery work remains: authorised member login, visual beat-map
+  acceptance, WordPress recovery, CTC-specific scheduled backup coverage and
+  independent verification of scheduled archives. The development seed still
+  represents the earlier 12:15 UTC snapshot, not current production data.
