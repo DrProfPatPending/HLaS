@@ -537,3 +537,18 @@ Recorded 2026-11-14 after receipt of `f1777c9e`.
   investigated. Share conclusions/counts only, not personal data, credentials
   or backup contents. Record a proposed safe configuration/startup plan for
   user approval before any corrective production restart.
+
+## Hero user acceptance: PASS
+
+Recorded 2026-11-14 at approximately 16:05 UTC.
+
+- The user confirmed: "Hero testing is complete and it was a PASS!"
+  This completes user acceptance of the per-page hero changes deployed on
+  hlastest from `ctc-dev` commit `e1c35ad2`.
+- The earlier pending hero acceptance status is superseded by this result.
+  It does not complete the separate authenticated-login/beat-map recovery
+  checks or refreshed-infrastructure compatibility checks.
+- Production promotion remains on hold pending the configuration/mount and
+  startup-write investigation, an agreed safe deployment plan and explicit
+  deployment approval. This acceptance report authorizes no production
+  restart, volume change or data restore.
