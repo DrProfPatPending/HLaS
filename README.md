@@ -25,6 +25,8 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
 **See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions, rollback procedures, and best practices.**
 
 ## Current Application Highlights
+- Mini-site pages support individual hero image URLs, optional Home-image
+  fallback, and readable light-green banners via Club Settings.
 - Distinct member UI and admin UI entry points.
 - PostgreSQL-backed reads and writes for clubs, members, roles, newsletters, field order, and member photos.
 - PostgreSQL member password changes through the member or admin editor update the member record and, when linked, the central login account in the same transaction.

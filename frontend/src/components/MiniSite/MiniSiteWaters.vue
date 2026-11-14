@@ -1,9 +1,11 @@
 <template>
   <div class="mini-site-page waters-page">
-    <section class="page-header">
-      <h1>Our Waters</h1>
-      <p v-if="subheading" class="subheading">{{ subheading }}</p>
-    </section>
+    <mini-site-hero
+      title="Our Waters"
+      :subtitle="subheading"
+      :image="heroImage"
+      :fallback-image="heroFallbackImage"
+    />
 
     <section class="waters-content">
       <div class="waters-container">
@@ -53,9 +55,14 @@
 </template>
 
 <script>
+import MiniSiteHero from './MiniSiteHero.vue';
+
 export default {
   name: 'MiniSiteWaters',
+  components: { MiniSiteHero },
   props: {
+    heroImage: { type: String, default: '' },
+    heroFallbackImage: { type: String, default: '' },
     clubName: {
       type: String,
       required: true,
@@ -75,29 +82,6 @@ export default {
 <style scoped>
 .waters-page {
   width: 100%;
-}
-
-.page-header {
-  background: linear-gradient(135deg, #2d6a45 0%, #1a472a 100%);
-  color: white;
-  padding: 1rem;
-  text-align: center;
-  height: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 14pt;
-}
-
-.subheading {
-  margin: 0;
-  font-size: 10pt;
-  opacity: 0.9;
 }
 
 .waters-content {
@@ -177,14 +161,6 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    height: 90px;
-  }
-
-  .page-header h1 {
-    font-size: 12pt;
-  }
-
   .waters-content {
     padding: 2rem 1.5rem;
   }

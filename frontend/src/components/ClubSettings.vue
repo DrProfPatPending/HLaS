@@ -82,23 +82,22 @@
           </div>
 
           <div class="form-group">
-            <label for="mini-site-hero">Hero Image URL</label>
+            <label for="mini-site-hero">Home Hero Image URL</label>
             <input
               id="mini-site-hero"
               v-model="miniSite.hero_image_url"
-              type="url"
-              placeholder="https://..."
+              type="text"
+              placeholder="/api/club_hero/CTC or https://..."
               class="form-input"
             />
-            <p class="form-hint">URL to an image for the hero section (desktop view)</p>
+            <p class="form-hint">Home page image, also used by pages that select the Home hero fallback.</p>
           </div>
 
           <div class="mini-site-preview">
             <strong>Mini Site URL:</strong>
             <code>{{ miniSiteUrl }}</code>
             <p class="form-hint">
-              Desktop users: Full mini site<br />
-              Mobile/Responsive: Shows placeholder with redirect to login
+              Enabled pages are available on desktop and mobile.
             </p>
           </div>
 
@@ -117,6 +116,43 @@
                 <span>{{ page.title }}</span>
                 <span v-if="!page.canDisable" class="page-badge">Always enabled</span>
               </label>
+            </div>
+          </div>
+
+          <div class="pages-config">
+            <h4>Page Hero Images</h4>
+            <div class="form-group">
+              <label for="mini-site-hero-page">Page</label>
+              <select id="mini-site-hero-page" v-model="selectedHeroPage" class="form-input">
+                <option v-for="page in miniSiteHeroPages" :key="page.id" :value="page.id">
+                  {{ page.title }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="mini-site-page-hero">Page Image URL (optional)</label>
+              <input
+                id="mini-site-page-hero"
+                v-model="miniSite.page_configs[selectedHeroPage].hero_image_url"
+                type="text"
+                placeholder="/api/club_hero/CTC or https://..."
+                class="form-input"
+              />
+            </div>
+            <div class="form-group">
+              <label for="mini-site-page-hero-fallback">When the page image is empty or cannot load</label>
+              <select
+                id="mini-site-page-hero-fallback"
+                v-model="miniSite.page_configs[selectedHeroPage].hero_fallback"
+                class="form-input"
+              >
+                <option value="home">Use Home hero, then light green banner</option>
+                <option value="banner">Use light green banner</option>
+              </select>
+              <p class="form-hint">
+                Leave the page image empty and select the green banner to show no image.
+                Images use a dark overlay for readable text on desktop and mobile.
+              </p>
             </div>
           </div>
 
@@ -332,7 +368,10 @@ function defaultMiniSite() {
     show_learning: true,
     contact_display_mode: 'form',
     show_direct_email_link: true,
-    page_configs: {},
+    page_configs: Object.fromEntries(MINI_SITE_PAGES.map(page => [
+      page.id,
+      { hero_image_url: '', hero_fallback: 'home' },
+    ])),
     pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
   };
 }
@@ -350,6 +389,7 @@ export default {
       error: '',
       visibility: defaultVisibility(),
       miniSite: defaultMiniSite(),
+      selectedHeroPage: 'about',
       fieldOrder: {},
       selectedFieldOrderContext: '',
     };
@@ -358,6 +398,7 @@ export default {
     loggedInClub: () => store.loggedInClub,
     catchReturnFields: () => CATCH_RETURN_FIELDS,
     miniSitePages: () => MINI_SITE_PAGES,
+    miniSiteHeroPages: () => MINI_SITE_PAGES.filter(page => page.id !== 'home'),
     fieldOrderContextNames() {
       return Object.entries(this.fieldOrder || {})
         .filter(([, contextValue]) => Array.isArray(contextValue))
@@ -552,10 +593,10 @@ export default {
           const pages = Array.isArray(res?.data?.pages) ? res.data.pages : [];
           const pageConfigs = pages.reduce((acc, page) => {
             if (page && page.id) {
-              acc[page.id] = { ...page };
+              acc[page.id] = { ...acc[page.id], ...page };
             }
             return acc;
-          }, {});
+          }, defaultMiniSite().page_configs);
 
           const homePage = pageConfigs.home || {};
 
@@ -627,6 +668,11 @@ export default {
         if (page.id === 'contact') {
           pagePayload.display_mode = this.miniSite.contact_display_mode || 'form';
           pagePayload.show_direct_email_link = this.miniSite.show_direct_email_link !== false;
+        }
+
+        if (page.id !== 'home') {
+          pagePayload.hero_image_url = (existing.hero_image_url || '').trim();
+          pagePayload.hero_fallback = existing.hero_fallback || 'home';
         }
 
         return pagePayload;
