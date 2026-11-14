@@ -155,3 +155,29 @@ Recorded 2026-11-14 (UTC) on hlastest after reading the production responses.
 - No production database access, application deployment or production
   configuration transfer is requested. The Git-matched assets suffice, and
   WordPress data migration remains deferred.
+
+## Development isolation readiness
+
+Recorded 2026-11-14 (UTC) on hlastest.
+
+- Pushed standalone development configuration and instructions to `ctc-dev`
+  at `470af492`. Both application images built successfully; Compose and
+  Caddy configuration validation passed.
+- Generated a mode-0600 development-only database password outside Git.
+  Started only `ctc-dev-postgres-1`, backed by the new
+  `ctc-dev_postgres_data` volume. Database `ctc_dev` is empty (zero public
+  tables), ready for the verified seed restore.
+- Confirmed the dedicated application Docker network is internal. A
+  disposable backend-image container on that network returned
+  `ENETUNREACH` for an external TCP connection, verifying blocked egress.
+  The database and backend have no published ports.
+- The new Caddy configuration preserves development TLS trust and the
+  existing WordPress route, and adds no-index headers/robots.txt rules.
+  It uses unique CTC upstream aliases to avoid resolving the old stack's
+  frontend/backend services on the legacy routing network.
+- The current application stack and routing remain running unchanged.
+  The new backend/frontend/Caddy are not started; switching hlastest
+  routing remains gated on seed restoration, SMTP sanitisation and
+  readiness checks.
+- Awaiting production's secure-transfer response to the request above.
+  No dump is present in the repository or Git history.
