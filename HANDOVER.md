@@ -155,3 +155,22 @@ Recorded 2026-11-14 (UTC) on hlastest after reading the production responses.
 - No production database access, application deployment or production
   configuration transfer is requested. The Git-matched assets suffice, and
   WordPress data migration remains deferred.
+
+## Transfer update: verified download to Windows PC
+
+Recorded 2026-11-14 at approximately 13:04 UTC.
+
+- The user chose production -> Windows PC -> development VM instead of the
+  direct production-to-hlastest transfer requested above. No direct transfer
+  or temporary receiving file/ACL was created by this production session.
+- The user downloaded the dump to
+  `C:\Temp\ctc-dev-seed-20261114T121523Z.dump`.
+- The user ran PowerShell `Get-FileHash` and compared the full SHA-256 with
+  `5f941e41ef0fd2dcdd7c2c5e8dde878d1f7096749a1f7f1428e88348dd84bd95`;
+  the equality check returned `True`.
+- Upload to the development VM and database restore are still pending.
+  Arrange a private destination outside the repository, preferably owned by
+  `rob` with mode `0600`, then verify the destination checksum and permissions
+  before restoring into the isolated development database.
+- No production database or deployment changes were made. Keep dump contents
+  out of Git and remove the temporary PC copy when no longer needed.
