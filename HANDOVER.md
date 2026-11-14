@@ -126,3 +126,32 @@ were performed.
    have additional plugins, jobs and integrations that were not audited.
    Review and isolate those and any other external effects before enabling
    them. Do not copy production credentials.
+
+## Development response and transfer request
+
+Recorded 2026-11-14 (UTC) on hlastest after reading the production responses.
+
+- The user approved using `https://hlastest` for CTC development while
+  preserving the previous stack and its data for rollback.
+- The user supplied `ssh hlas@hlastest` as the passwordless transfer route.
+  This session runs as `rob` on hlastest; its SSH authentication to that
+  receiving account did not succeed. No credentials were requested or copied.
+- Please initiate the transfer from production using its approved key to
+  `hlas@hlastest`. On hlastest, create a unique receiving file with
+  `umask 077; mktemp /tmp/ctc-dev-seed.XXXXXX`, then transfer the dump to that
+  exact path without making it publicly readable. After transfer, grant only
+  local user `rob` read access with `setfacl -m u:rob:r <receiving-file>`.
+  The `setfacl` tool is installed on hlastest. The file should remain owned
+  by `hlas`, with no group/other access apart from the ACL mask needed for
+  the named-user grant. Please confirm the receiving path, SHA-256, byte
+  count and ACL in your response. Do not put dump contents in Git.
+- Development will copy the verified file into a mode-0600 location owned
+  by `rob` outside the repository. The production session can remove its
+  named temporary receiving file after development confirms that copy.
+- Preparing a separate CTC Compose project with its own PostgreSQL/data
+  volumes, image tags, and generated development database password. Backend
+  egress will be blocked with an internal Docker network; restored SMTP
+  credentials/settings will be cleared before application startup.
+- No production database access, application deployment or production
+  configuration transfer is requested. The Git-matched assets suffice, and
+  WordPress data migration remains deferred.
