@@ -19,6 +19,9 @@
 	Keep this file free of stale comment blocks.
 
 ## Last Documentation Update
+November 15, 2026 — updated for:
+- **Responsive Member Navigation:** Primary and My Club navigation use two-column grids at 769–1000 px and three-column grids at ≤ 768 px; desktop retains left-side navigation.
+
 November 13, 2026 — updated for:
 - **Responsive Public Mini-Sites:** Enabled pages and navigation render on mobile as well as desktop; CTC Home, About and Contact were verified after deployment.
 - **PostgreSQL Password Updates:** Member and admin password edits update the club member record and linked central account in the same transaction.

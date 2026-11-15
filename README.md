@@ -117,7 +117,7 @@ are documented in [CTC_SETUP.md](CTC_SETUP.md#ctc-development-on-hlastest).
    - CLI tool (`backup_cli.py`) for manual operations and cron scheduling.
    - REST API endpoints for programmatic access (gated by `app_admin`/`app_owner`).
    - See `BACKUP_SYSTEM.md` and `BACKUP_QUICK_START.md` for complete documentation.
-- **Mobile responsive navigation:** the main Navigation Bar now switches to a 2-column grid layout at ≤ 768 px, containing buttons sized to 80 % of the screen width, stacked above page content.
+- **Responsive member navigation:** the main Navigation Bar and My Club subnavigation sit above page content in a full-width 2-column grid at 769–1000 px and a compact 3-column grid at ≤ 768 px. Desktop navigation remains a left-side stack above 1000 px.
 - **Mobile full-width layout:** the application shell, nav card, subnav card, and all content containers now expand to 100 % window width in responsive mode, with content areas independently centred at 80 vw.
 - **Beat Details page restructure:** the read-only Beat Details page now shows:
    1. A compact 2-column quick-info bar with **River** and **Beat Name** at the top.
@@ -1232,8 +1232,8 @@ The application is optimised for mobile devices with the following responsive br
 
 | Breakpoint | Behaviour |
 |---|---|
-| ≤ 1 000 px | Navigation sidebar stacks above content; sticky positioning disabled |
-| ≤ 768 px | Navigation buttons switch to a 2-column grid layout at 80 vw; all content areas expand to 100 % window width and are centred at 80 vw |
+| ≤ 1 000 px | Navigation and My Club subnavigation use full-width 2-column grids above content; sticky positioning disabled |
+| ≤ 768 px | Navigation and subnavigation use 3-column grids; content areas expand to the available width |
 | ≤ 400 px | Home greeting font sizes reduced for very small screens |
 
 Responsive rules are all located in the `@media` blocks at the bottom of `frontend/App.vue`.
