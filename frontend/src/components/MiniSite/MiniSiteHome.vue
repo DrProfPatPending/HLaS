@@ -109,7 +109,7 @@ export default {
       if (props.headline) {
         return props.headline;
       }
-      return `Welcome to ${props.clubName} - a dedicated fly-fishing club with access to quality river water and a focus on sustainable angling.`;
+      return props.clubName;
     });
 
     const backgroundImageUrl = computed(() => {
