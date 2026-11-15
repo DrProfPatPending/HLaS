@@ -59,6 +59,7 @@ python3 backend/backup_cli.py status
 If you are rebuilding/deploying with `./hlas_build.sh`, note these CLI pairs:
 
 - `--clean` / `-c` enables post-build Docker prune
+- `--clean-only` runs the same host-wide Docker prune without a build
 - `--noclean` / `--no-clean` / `-C` explicitly disables post-build prune
 - `--verbose` / `-v` enables command output
 - `--quiet` / `-q` and `--noverbose` / `--no-verbose` / `-V` suppress command output
