@@ -19,6 +19,7 @@ class ClubPageSeoTests(unittest.TestCase):
             'clubs', metadata,
             Column('id', Integer, primary_key=True),
             Column('short_name', String),
+            Column('admin_email', String),
             Column('is_active', Boolean),
         )
         mini_sites = Table(
@@ -36,15 +37,24 @@ class ClubPageSeoTests(unittest.TestCase):
         session_factory = sessionmaker(engine)
         with engine.begin() as conn:
             conn.execute(clubs.insert(), [
-                {'id': 1, 'short_name': 'CTC', 'is_active': True},
-                {'id': 2, 'short_name': 'OFF', 'is_active': True},
+                {'id': 1, 'short_name': 'CTC', 'admin_email': 'ctc@example.org', 'is_active': True},
+                {'id': 2, 'short_name': 'OFF', 'admin_email': '', 'is_active': True},
             ])
             conn.execute(mini_sites.insert(), [
                 {
                     'club_id': 1, 'enabled': True, 'title': 'Cambridge "Trout" Club', 'tagline': '',
                     'description': 'We are <dedicated> to wild trout. ' * 10,
                     'hero_image_url': '/api/club_hero/CTC',
-                    'pages': [{'id': 'about', 'enabled': True}, {'id': 'news', 'enabled': False}],
+                    'pages': [
+                        {
+                            'id': 'about',
+                            'enabled': True,
+                            'headline': 'Our Club',
+                            'subheading': 'A short introduction',
+                            'content': 'About content',
+                        },
+                        {'id': 'news', 'enabled': False},
+                    ],
                 },
                 {
                     'club_id': 2, 'enabled': False, 'title': 'Off', 'tagline': '', 'description': '',
@@ -88,6 +98,14 @@ class ClubPageSeoTests(unittest.TestCase):
         self.assertIn('&lt;dedicated&gt;', body)
         self.assertIn('property="og:image" content="https://example.org/api/club_hero/CTC"', body)
         self.assertNotIn('noindex', body)
+
+    def test_public_mini_site_api_returns_per_page_content(self):
+        response = self.client.get('/club/CTC/mini-site')
+        self.assertEqual(response.status_code, 200)
+        pages = {page['id']: page for page in response.get_json()['pages']}
+        self.assertEqual(pages['about']['headline'], 'Our Club')
+        self.assertEqual(pages['about']['subheading'], 'A short introduction')
+        self.assertEqual(pages['about']['content'], 'About content')
 
     def test_description_is_truncated(self):
         _, body = self.get('/club-page/CTC/')

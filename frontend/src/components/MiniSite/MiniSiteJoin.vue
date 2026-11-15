@@ -1,7 +1,7 @@
 <template>
   <div class="mini-site-page join-page">
     <mini-site-hero
-      :title="`Join ${clubName}`"
+      :title="headline || `Join ${clubName}`"
       :subtitle="subheading"
       :image="heroImage"
       :fallback-image="heroFallbackImage"
@@ -9,7 +9,7 @@
 
     <section class="join-content">
       <div class="join-container">
-        <div v-if="content" class="join-text" v-html="content" />
+        <div v-if="content" class="join-text" v-html="safeContent" />
         <div v-else class="join-default">
           <h2>Become a Member</h2>
           <p>
@@ -60,6 +60,7 @@
 
 <script>
 import MiniSiteHero from './MiniSiteHero.vue';
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
 
 export default {
   name: 'MiniSiteJoin',
@@ -70,6 +71,10 @@ export default {
     clubName: {
       type: String,
       required: true,
+    },
+    headline: {
+      type: String,
+      default: '',
     },
     clubCode: {
       type: String,
@@ -85,6 +90,9 @@ export default {
     },
   },
   computed: {
+    safeContent() {
+      return sanitizeMiniSiteContent(this.content);
+    },
     contactUrl() {
       return `/club/${encodeURIComponent(this.clubCode)}/contact/`;
     },
@@ -111,6 +119,7 @@ export default {
   color: #333;
   line-height: 1.8;
   font-size: 1rem;
+  white-space: pre-line;
 }
 
 .join-default h2 {

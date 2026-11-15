@@ -42,6 +42,7 @@
         :club-code="clubCode"
         :club-name="miniSite.title || clubCode"
         :headline="getPageContent(currentPage, 'headline')"
+        :subheading="getPageContent(currentPage, 'subheading')"
         :tagline="miniSite.tagline"
         :description="miniSite.description"
         :hero-image="currentPage === 'home' ? miniSite.hero_image_url : getPageSetting(currentPage, 'hero_image_url', '')"
@@ -162,6 +163,8 @@ export default {
       switch (contentType) {
         case 'headline':
           return page.headline || '';
+        case 'subheading':
+          return page.subheading || '';
         case 'content':
           return page.content || '';
         default:

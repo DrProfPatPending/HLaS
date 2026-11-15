@@ -52,13 +52,14 @@ class MiniSiteHeroTests(unittest.TestCase):
         app.register_blueprint(create_mini_site_routes(deps))
         self.client = app.test_client()
 
-    def test_page_image_and_fallback_survive_save_and_reload(self):
+    def test_page_content_image_and_fallback_survive_save_and_reload(self):
         response = self.client.put('/mini-site', json={
             'club': 'CTC',
             'enabled': True,
             'hero_image_url': '/api/club_hero/CTC',
             'pages': [
-                {'id': 'about', 'enabled': True, 'content': 'About content',
+                {'id': 'about', 'enabled': True, 'headline': 'Our Club',
+                 'subheading': 'A short introduction', 'content': 'About content',
                  'hero_image_url': ' /images/about.jpg ', 'hero_fallback': 'banner'},
                 {'id': 'contact', 'enabled': True, 'hero_fallback': 'home'},
             ],
@@ -69,6 +70,8 @@ class MiniSiteHeroTests(unittest.TestCase):
         self.assertEqual(loaded['hero_image_url'], '/api/club_hero/CTC')
         self.assertEqual(pages['about']['hero_image_url'], '/images/about.jpg')
         self.assertEqual(pages['about']['hero_fallback'], 'banner')
+        self.assertEqual(pages['about']['headline'], 'Our Club')
+        self.assertEqual(pages['about']['subheading'], 'A short introduction')
         self.assertEqual(pages['about']['content'], 'About content')
         self.assertEqual(pages['contact']['hero_fallback'], 'home')
         with self.engine.connect() as conn:
