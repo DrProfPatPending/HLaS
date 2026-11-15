@@ -153,6 +153,7 @@ Supports a rich set of options for flexible deployment and iterative development
 | `--app-only` |  | | Rebuild and restart only backend and frontend without starting dependencies; PostgreSQL must already be healthy |
 | `--nohealth` | `-n` | | Skip post-start health checks |
 | `--clean` | `-c` | | Run `docker system prune -f` after a successful build |
+| `--clean-only` |  | | Run the same Docker prune without Git, build, service restart, or health checks |
 | `--noclean`, `--no-clean` | `-C` | ✓ | Disable Docker prune step (same effective default as not passing `--clean`) |
 | `--verbose` | `-v` | | Show full command output |
 | `--quiet` | `-q` | ✓ | Suppress command output (default) |
@@ -166,6 +167,9 @@ Examples:
 
 # Production deploy with layer cache cleanup after success
 ./hlas_build.sh --target production --clean
+
+# Clean unused Docker resources without deploying
+./hlas_build.sh --clean-only
 
 # Fast iterative dev rebuild from local working tree
 ./hlas_build.sh --target development --local --quick
@@ -187,7 +191,8 @@ The script also:
 - Selects the standalone `ctc-dev` Compose project for that target, without production environment files or WordPress services; see [CTC setup](CTC_SETUP.md#ctc-development-on-hlastest) for seed/secret prerequisites
 - Validates `Caddyfile.prod` exists before a production deploy
 - Runs the clubs split-config preflight check (`make clubs-check` or `python backend/build_clubs_config.py --check`)
-- Runs `docker system prune -f` only on success when `--clean` is given — a failed deploy never auto-prunes
+- Runs `docker system prune -f` after a successful build with `--clean`, or immediately with `--clean-only`; a failed deploy never auto-prunes. This is host-wide: it removes stopped containers, unused networks, dangling images and unused build cache, not just resources from this project. It does not prune volumes.
+- Cleanup flags retain last-flag-wins behavior. If `--noclean` or `-C` disables cleanup after `--clean-only`, the command fails without building or pruning.
 
 **`rebuild_frontend.sh`** — Frontend-only rebuild
 - Checks out `production` branch  

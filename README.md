@@ -48,6 +48,7 @@ are documented in [CTC_SETUP.md](CTC_SETUP.md#ctc-development-on-hlastest).
    - `--full` / `-f` (default): passes `--no-cache` to `docker compose build` — full layer rebuild, safe for production deploys
    - `--quick` / `-Q`: omits `--no-cache`, reusing Docker layer cache for significantly faster iterative dev rebuilds
    - `--clean` / `-c`: runs `docker system prune -f` after a successful build to remove dangling images; only fires on success
+   - `--clean-only`: runs the same host-wide Docker prune without checkout, build, service restarts, or health checks
    - `--noclean` / `--no-clean` / `-C`: explicitly disable cleanup (same effective default as omitting `--clean`)
    - `--nohealth` / `-n`: skips the post-start health checks; useful for CI or restricted network environments
    - `--local` / `-l`: skip `git fetch/reset` and build from the local working tree
