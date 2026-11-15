@@ -539,6 +539,7 @@ export function getExpiryDateStyle(dateString) {
 export function sectionDisplayName(sectionKey) {
   const names = {
     'club-information': 'Club Information',
+    'club-documents': 'Club Documents',
     'club-settings': 'Club Settings',
     'my-club': 'My Club',
     'club-store': 'Club Store',

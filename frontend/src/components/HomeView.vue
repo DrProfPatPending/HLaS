@@ -6,9 +6,10 @@
     </div>
 
     <section class="home-panels-grid">
-      <app-card class="home-news-card">
+      <app-card v-if="showNews" class="home-news-card">
         <h4>{{ clubNewsTitle }}</h4>
-        <table class="home-news-table">
+        <table class="home-news-table" :aria-label="clubNewsTitle">
+          <caption class="news-sort-caption">Sort by</caption>
           <thead>
             <tr>
               <th
@@ -67,15 +68,14 @@
                 </td>
               </tr>
               <!-- Normal display row -->
-              <tr v-else>
+              <tr v-else class="news-item-row" :class="{ 'news-single-meta': newsMetadataColumnCount === 1 }">
                 <td
                   v-for="column in visibleNewsColumns"
                   :key="`news-cell-${item.id}-${column.key}`"
-                  :class="{
-                    'news-actions-cell': column.key === 'Actions',
-                  }"
+                  :class="{ 'news-update-cell': column.key === 'Update' }"
                   :style="getColumnStyle('home_news', column.key)"
                 >
+                  <span class="news-mobile-label">{{ column.key === 'Date' ? 'Info' : column.label }}</span>
                   <template v-if="column.key === 'Date'">
                     <span>{{ formatNewsDate(item.date) }}</span>
                     <div class="news-date-status">
@@ -85,12 +85,10 @@
                   </template>
                   <span v-else-if="column.key === 'Category'">{{ item.category }}</span>
                   <span v-else-if="column.key === 'Update'">{{ item.update || item.message }}</span>
-                  <template v-else-if="column.key === 'Actions'">
-                    <div v-if="canManageNewsActions" class="news-actions-stack">
-                      <app-button type="button" size="sm" class="news-edit-btn news-action-btn" inherit-style @click="editNewsItem(item)">Edit</app-button>
-                      <app-button type="button" size="sm" class="news-delete-btn news-action-btn news-action-btn-delete" inherit-style :disabled="deleteNewsBusy === item.id" @click="deleteNewsItem(item)">{{ deleteNewsBusy === item.id ? 'Deleting...' : 'Delete' }}</app-button>
-                    </div>
-                  </template>
+                  <div v-if="column.key === newsActionsColumn && canManageNewsActions" class="news-actions-stack">
+                    <app-button type="button" size="sm" class="news-edit-btn news-action-btn" inherit-style @click="editNewsItem(item)">Edit</app-button>
+                    <app-button type="button" size="sm" class="news-delete-btn news-action-btn news-action-btn-delete" inherit-style :disabled="deleteNewsBusy === item.id" @click="deleteNewsItem(item)">{{ deleteNewsBusy === item.id ? 'Deleting...' : 'Delete' }}</app-button>
+                  </div>
                 </td>
               </tr>
             </template>
@@ -99,7 +97,7 @@
         <p v-if="newsError" class="home-news-note">{{ newsError }}</p>
       </app-card>
 
-      <app-card class="home-documents-card">
+      <app-card v-if="showDocuments" class="home-documents-card">
         <h4>{{ clubDocumentsTitle }}</h4>
 
         <form v-if="canManageDocuments" class="documents-upload-form" @submit.prevent="uploadDocument">
@@ -127,7 +125,8 @@
         <p v-if="uploadError" class="documents-error">{{ uploadError }}</p>
         <p v-if="documentsError" class="documents-error">{{ documentsError }}</p>
 
-        <table class="home-documents-table">
+        <table class="home-documents-table" :class="documentCompactClasses" :aria-label="clubDocumentsTitle">
+          <caption class="documents-sort-caption">Sort by</caption>
           <thead>
             <tr>
               <th
@@ -148,18 +147,20 @@
             <tr v-else-if="!documents.length">
               <td :colspan="documentsColumnCount">No documents uploaded yet.</td>
             </tr>
-            <tr v-else v-for="(doc, docIndex) in sortedDocuments" :key="doc.id">
+            <tr v-else v-for="(doc, docIndex) in sortedDocuments" :key="doc.id" class="documents-item-row">
               <td
                 v-for="column in visibleDocumentsColumns"
                 :key="`docs-cell-${doc.id}-${column.key}`"
                 :class="{
                   'documents-title-cell': column.key === 'Title',
+                  'documents-size-cell': column.key === 'Size',
                   'documents-position-cell': column.key === 'Position',
                   'documents-file-cell': column.key === 'File',
-                  'documents-actions-cell': column.key === 'Actions',
+                  'documents-extra-cell': column.key === 'File' || column.key === 'Uploaded',
                 }"
                 :style="getColumnStyle('home_documents', column.key)"
               >
+                <span v-if="column.key === 'Size' || column.key === 'Position'" class="documents-mobile-label">{{ column.label }}</span>
                 <template v-if="column.key === 'Title'">
                   <div class="documents-title-wrap">
                     <app-button
@@ -203,43 +204,41 @@
                   </div>
                   <span v-else>{{ Number(doc.displayOrder || (docIndex + 1)) }}</span>
                 </template>
-                <template v-else-if="column.key === 'Actions'">
-                  <div class="documents-actions-stack">
-                    <app-button
-                      v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
-                      type="button"
-                      size="sm"
-                      class="documents-link-btn documents-action-btn"
-                      inherit-style
-                      :disabled="orderUpdateBusyId === doc.id || docIndex === 0"
-                      @click="moveDocument(doc, -1, docIndex)"
-                    >
-                      Move Up
-                    </app-button>
-                    <app-button
-                      v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
-                      type="button"
-                      size="sm"
-                      class="documents-link-btn documents-action-btn"
-                      inherit-style
-                      :disabled="orderUpdateBusyId === doc.id || docIndex === (sortedDocuments.length - 1)"
-                      @click="moveDocument(doc, 1, docIndex)"
-                    >
-                      Move Down
-                    </app-button>
-                    <app-button type="button" size="sm" class="documents-link-btn documents-action-btn" inherit-style @click="downloadDocument(doc)">Download</app-button>
-                    <app-button
-                      v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
-                      type="button"
-                      size="sm"
-                      class="documents-delete-btn documents-action-btn documents-action-btn-delete"
-                      inherit-style
-                      @click="deleteDocument(doc)"
-                    >
-                      Delete
-                    </app-button>
-                  </div>
-                </template>
+                <div v-if="column.key === documentsActionsColumn" class="documents-actions-stack">
+                  <app-button
+                    v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
+                    type="button"
+                    size="sm"
+                    class="documents-link-btn documents-action-btn"
+                    inherit-style
+                    :disabled="orderUpdateBusyId === doc.id || docIndex === 0"
+                    @click="moveDocument(doc, -1, docIndex)"
+                  >
+                    Move Up
+                  </app-button>
+                  <app-button
+                    v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
+                    type="button"
+                    size="sm"
+                    class="documents-link-btn documents-action-btn"
+                    inherit-style
+                    :disabled="orderUpdateBusyId === doc.id || docIndex === (sortedDocuments.length - 1)"
+                    @click="moveDocument(doc, 1, docIndex)"
+                  >
+                    Move Down
+                  </app-button>
+                  <app-button type="button" size="sm" class="documents-link-btn documents-action-btn" inherit-style @click="downloadDocument(doc)">Download</app-button>
+                  <app-button
+                    v-if="canManageDocuments && !isHomeDocumentsFieldReadOnly('Actions')"
+                    type="button"
+                    size="sm"
+                    class="documents-delete-btn documents-action-btn documents-action-btn-delete"
+                    inherit-style
+                    @click="deleteDocument(doc)"
+                  >
+                    Delete
+                  </app-button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -278,6 +277,14 @@ export default {
     contentScope: {
       type: String,
       default: 'home',
+    },
+    showNews: {
+      type: Boolean,
+      default: true,
+    },
+    showDocuments: {
+      type: Boolean,
+      default: true,
     },
   },
   data() {
@@ -376,15 +383,11 @@ export default {
       return `${clubDetails.value.shortName || store.loggedInClub || 'Club'} Documents`;
     },
     newsColumns() {
-      const cols = [
+      return [
         { key: 'Date', label: 'Date' },
         { key: 'Category', label: 'Category' },
         { key: 'Update', label: 'Update' },
       ];
-      if (this.canManageNewsActions) {
-        cols.push({ key: 'Actions', label: 'Actions' });
-      }
-      return cols;
     },
     documentColumns() {
       // Only show File and Uploaded columns if VerboseDebug is true
@@ -392,7 +395,6 @@ export default {
         { key: 'Title', label: 'Title' },
         { key: 'Size', label: 'Size' },
         { key: 'Position', label: 'Position' },
-        { key: 'Actions', label: 'Actions' },
       ];
       if (this.VerboseDebug) {
         cols.splice(1, 0, { key: 'File', label: 'File' });
@@ -403,8 +405,26 @@ export default {
     visibleNewsColumns() {
       return this.getVisibleColumns('home_news', this.newsColumns);
     },
+    newsMetadataColumnCount() {
+      return this.visibleNewsColumns.filter(column => column.key !== 'Update').length;
+    },
     visibleDocumentsColumns() {
       return this.getVisibleColumns('home_documents', this.documentColumns);
+    },
+    documentCompactClasses() {
+      const keys = new Set(this.visibleDocumentsColumns.map(column => column.key));
+      return {
+        'documents-compact-table': keys.has('Title') && (keys.has('Size') || keys.has('Position')),
+        'documents-both-details': keys.has('Size') && keys.has('Position'),
+      };
+    },
+    newsActionsColumn() {
+      return this.visibleNewsColumns.find(column => column.key === 'Date')?.key
+        || this.visibleNewsColumns[0]?.key;
+    },
+    documentsActionsColumn() {
+      return this.visibleDocumentsColumns.find(column => column.key === 'Title')?.key
+        || this.visibleDocumentsColumns[0]?.key;
     },
     newsColumnCount() {
       return this.visibleNewsColumns.length || 1;
@@ -619,7 +639,6 @@ export default {
         ? this.fieldOrder[contextKey]
         : fallbackColumns.map(column => column.key);
 
-      // Filter out Actions from visibility checks - it's always visible
       const ordered = configuredOrder
         .map(key => fallbackMap.get(key))
         .filter(Boolean)
@@ -633,14 +652,8 @@ export default {
         }
       }
 
-      // Always include Actions column at the end, regardless of Field Order settings
-      const actionsColumn = fallbackMap.get('Actions');
-      if (actionsColumn) {
-        ordered.push(actionsColumn);
-      }
-
       if (ordered.length) return ordered;
-      return fallbackColumns.filter(column => column.key !== 'Actions') || [];
+      return fallbackColumns;
     },
     getColumnStyle(contextKey, columnKey) {
       // First check if a width is specified in the widths configuration
@@ -901,14 +914,14 @@ export default {
   },
   mounted() {
     this.loadFieldOrder();
-    this.fetchNewsUpdates();
-    this.fetchDocuments();
+    if (this.showNews) this.fetchNewsUpdates();
+    if (this.showDocuments) this.fetchDocuments();
   },
   watch: {
     loggedInClub() {
       this.loadFieldOrder();
-      this.fetchNewsUpdates();
-      this.fetchDocuments();
+      if (this.showNews) this.fetchNewsUpdates();
+      if (this.showDocuments) this.fetchDocuments();
     },
   },
 };
@@ -964,6 +977,13 @@ export default {
   table-layout: fixed;
 }
 
+.news-sort-caption,
+.news-mobile-label,
+.documents-sort-caption,
+.documents-mobile-label {
+  display: none;
+}
+
 .home-news-table th,
 .home-news-table td {
   padding: 10px 12px;
@@ -992,12 +1012,6 @@ export default {
   margin-left: 4px;
 }
 
-.home-news-table th.news-actions-cell,
-.home-news-table td.news-actions-cell {
-  text-align: center;
-  vertical-align: middle;
-}
-
 .news-date-status {
   margin-top: 6px;
   display: inline-flex;
@@ -1007,7 +1021,8 @@ export default {
   gap: 6px;
 }
 
-.news-date-status .content-scope-badge {
+.news-date-status .content-scope-badge,
+.documents-title-wrap .content-scope-badge {
   max-width: 100%;
   box-sizing: border-box;
   white-space: normal;
@@ -1030,24 +1045,37 @@ export default {
 }
 
 .documents-title-wrap {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-}
-
-.news-actions-stack {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
   gap: 6px;
   max-width: 100%;
 }
 
-.home-news-table :deep(.news-edit-btn.app-button.is-sm),
-.home-news-table :deep(.news-delete-btn.app-button.is-sm) {
-  font-size: 6pt;
-  line-height: 1.15;
-  padding: 2px 2px;
+.news-actions-stack,
+.documents-actions-stack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 100%;
+  margin-top: 6px;
+}
+
+.home-news-table .news-actions-stack :deep(.news-action-btn.app-button.is-sm),
+.home-documents-table .documents-actions-stack :deep(.documents-action-btn.app-button.is-sm) {
+  margin: 0 !important;
+  min-height: 24px;
+  height: 24px;
+  font-size: 8pt !important;
+  line-height: 1.1;
+  padding: 2px 6px !important;
+}
+
+.news-actions-stack :deep(.news-action-btn.app-button .v-btn__content),
+.documents-actions-stack :deep(.documents-action-btn.app-button .v-btn__content) {
+  font-size: 8pt;
+  line-height: 1.1;
 }
 
 .news-edit-row td {
@@ -1222,12 +1250,6 @@ export default {
   text-align: left;
 }
 
-.home-documents-table th.documents-actions-cell,
-.home-documents-table td.documents-actions-cell {
-  text-align: center;
-  vertical-align: middle;
-}
-
 .home-documents-table thead th {
   background: #eaf2f8;
   color: #17324d;
@@ -1244,18 +1266,6 @@ export default {
 
 .home-documents-table tbody tr:nth-child(even) {
   background: #f8fbfd;
-}
-
-.documents-actions-cell {
-  white-space: normal;
-}
-
-.documents-actions-stack {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  max-width: 100%;
 }
 
 .documents-position-controls {
@@ -1297,8 +1307,9 @@ export default {
 
 .documents-title-link {
   display: inline-flex;
-  width: 100%;
+  min-width: 0;
   max-width: 100%;
+  height: auto;
   justify-content: flex-start;
   text-align: left;
   font-family: inherit !important;
@@ -1308,7 +1319,6 @@ export default {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
-  max-width: 100%;
   color: var(--app-color-link) !important;
 }
 
@@ -1455,12 +1465,129 @@ export default {
     gap: 4px;
   }
 
-  .documents-actions-stack {
-    flex-direction: row;
+}
+
+@media (max-width: 600px) {
+  .news-sort-caption,
+  .documents-compact-table .documents-sort-caption {
+    display: block;
+    padding-bottom: 6px;
+    text-align: left;
+    color: #17324d;
+    font-size: 8pt;
+    font-weight: 600;
+  }
+
+  .home-news-table,
+  .home-news-table thead,
+  .home-news-table tbody,
+  .home-news-table tbody tr:not(.news-item-row),
+  .home-news-table tbody tr:not(.news-item-row) td {
+    display: block;
+  }
+
+  .home-news-table thead tr {
+    display: flex;
+  }
+
+  .home-news-table thead th {
+    flex: 1 1 0;
+    width: auto !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .home-news-table tbody .news-item-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 10px;
+  }
+
+  .home-news-table tbody .news-item-row td {
+    width: auto !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .home-news-table .news-item-row .news-update-cell {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+
+  .home-news-table .news-single-meta td:not(.news-update-cell) {
+    grid-column: 1 / -1;
+  }
+
+  .news-mobile-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #17324d;
+    font-weight: 600;
+  }
+
+  .documents-compact-table,
+  .documents-compact-table thead,
+  .documents-compact-table tbody,
+  .documents-compact-table tbody tr:not(.documents-item-row),
+  .documents-compact-table tbody tr:not(.documents-item-row) td {
+    display: block;
+  }
+
+  .documents-compact-table thead tr {
+    display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+  }
+
+  .documents-compact-table thead th {
+    flex: 1 1 0;
+    width: auto !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .documents-compact-table tbody .documents-item-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(88px, 30%);
+    margin-top: 10px;
+  }
+
+  .documents-compact-table .documents-item-row td {
+    width: auto !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .documents-compact-table .documents-title-cell {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .documents-compact-table.documents-both-details .documents-title-cell {
+    grid-row: 1 / span 2;
+  }
+
+  .documents-compact-table .documents-size-cell,
+  .documents-compact-table .documents-position-cell {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .documents-compact-table.documents-both-details .documents-position-cell {
+    grid-row: 2;
+  }
+
+  .documents-compact-table .documents-extra-cell {
+    grid-column: 1 / -1;
+  }
+
+  .documents-compact-table .documents-mobile-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #17324d;
+    font-weight: 600;
   }
 }
+
 .access-error {
   margin-top: 18px;
   color: #b42318;
