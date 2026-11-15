@@ -181,7 +181,7 @@
                 id="mini-site-page-headline"
                 v-model="miniSite.page_configs[selectedContentPage].headline"
                 type="text"
-                placeholder="Leave blank to use the built-in heading"
+                :placeholder="selectedContentPage === 'home' ? 'Text shown after Welcome to:' : 'Leave blank to use the built-in heading'"
                 class="form-input"
               />
             </div>
