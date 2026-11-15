@@ -876,3 +876,35 @@ development target in app-only mode.
   The successful retry does not establish a token name or expiration date.
 - The other fourteen backlog items are not changed by this follow-up.
   Continue tracking status and decisions in the linked GitHub issues.
+
+## Approved Documents navigation and responsive tables
+
+Recorded 2026-11-15 on hlastest for the CTC production handover.
+
+- The user tested and approved `ctc-dev` commit
+  `1690b7190b142497fc4fbcb87a9c3a02020ed289`. The member Home page now
+  contains News and Updates, and a separate `<Club> Documents` navigation
+  entry follows Health and Safety. Existing Home-scoped documents move to
+  that page; Health and Safety keeps its own scoped news and documents.
+- Actions appear under the news date and document title. On narrow screens,
+  news information and category sit above a full-width update; document size
+  and position share a column beside the title. Sorting, field visibility,
+  access permissions and document management controls are retained.
+- Frontend production builds and focused panel/permission and greeting tests
+  passed. Browser checks covered responsive layouts, sorting and edit/cancel;
+  the user approved the tested result. No production deployment was performed.
+- At handover, `origin/ctc-production` is
+  `f82accb5c78ff2ec90f4662f0de46c775d204097`. It and `ctc-dev` have
+  diverged; do not fast-forward or blindly merge the development branch.
+  Review and selectively integrate or port the approved Documents commit
+  in the production checkout, resolve any conflicts, and retest before
+  deployment. Preserve the production-only CTC news and beat snapshots.
+- The `ctc-dev` push also includes npm upgrade commit `de63d905`, but
+  production already has its separately ported equivalent `06683f16`.
+  Production also already has the per-page mini-site and responsive
+  navigation fixes; avoid duplicating those changes.
+- This change presents the existing document inventory; it does not add
+  or certify the requested Catch & Release Guidelines or River Management
+  Plan. Confirm approved versions, access and ownership separately before
+  publishing missing documents. Do not copy development data or credentials
+  into production.
