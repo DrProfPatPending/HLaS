@@ -247,6 +247,60 @@ Some deployments may include Alembic database schema migrations:
    docker exec hlas-postgres-1 psql -U hlas -d hlas -c "SELECT * FROM alembic_version;"
    ```
 
+### CTC News Snapshot and Fresh-Database Restore
+
+News posts are stored in PostgreSQL `app_settings` (`scope=club:CTC`,
+`key=news_updates`). Edits also update `/data/news_updates.json` in the persistent
+backend volume. The version-controlled `backend/news_updates.json` is a recovery
+snapshot, separate from `clubs.config.json`; it includes all destinations and
+statuses, not just the posts visible on Home.
+
+To refresh the CTC snapshot from the live database:
+
+```bash
+docker exec hlas-backend-1 python -c '
+import json, os
+from sqlalchemy import create_engine, text
+engine = create_engine(os.environ["DATABASE_URL"])
+with engine.connect() as connection:
+    posts = connection.execute(
+        text("SELECT value FROM app_settings WHERE scope = :scope AND key = :key"),
+        {"scope": "club:CTC", "key": "news_updates"},
+    ).scalar_one()
+print(json.dumps({"CTC": posts}, indent=2))
+engine.dispose()
+' > backend/news_updates.json
+```
+
+Review and commit the refreshed snapshot. It is not automatically imported during
+startup. After initializing a fresh database and its club records, restore it with:
+
+```bash
+docker exec -i hlas-backend-1 python -c '
+import json, os, sys
+from sqlalchemy import create_engine, text
+snapshot = json.load(sys.stdin)
+posts = snapshot["CTC"]
+assert isinstance(posts, list), "CTC news snapshot must be a list"
+engine = create_engine(os.environ["DATABASE_URL"])
+with engine.begin() as connection:
+    result = connection.execute(
+        text("""
+            INSERT INTO app_settings (scope, key, value)
+            VALUES (:scope, :key, CAST(:value AS jsonb))
+            ON CONFLICT (scope, key) DO NOTHING
+        """),
+        {"scope": "club:CTC", "key": "news_updates", "value": json.dumps(posts)},
+    )
+    print("Restored CTC news snapshot." if result.rowcount else
+          "CTC news already exists; left unchanged.")
+engine.dispose()
+' < backend/news_updates.json
+```
+
+This preserves post IDs, dates, statuses, text and destinations. Existing database
+news is never overwritten by this restore command.
+
 ### Best Practices
 
 1. ✅ **Always test on `main` before promoting to `production`**

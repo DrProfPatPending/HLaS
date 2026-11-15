@@ -1,0 +1,31 @@
+{
+  "CTC": [
+    {
+      "id": "be98127f3664a30f",
+      "date": "2026-07-30",
+      "status": "Published",
+      "update": "Health and Safety is an important element of all volunteer organisations and clubs. Cambridge Trout Club has set out a series of guidelines for members to ensure that they are able to enjoy their fishing in safety, and also participate in activities such as work parties in an equally safe manner.",
+      "category": "Health and Safety information for the club.",
+      "createdAt": "2026-07-30T20:13:25Z",
+      "content_scope": "health-safety"
+    },
+    {
+      "id": "765c1f7b6cecceb1",
+      "date": "2026-06-14",
+      "status": "Published",
+      "update": "This is a short history of CTC...\n\n<To Be Completed>",
+      "category": "Club History and General Information",
+      "createdAt": "2026-06-14T16:19:34Z",
+      "content_scope": "home"
+    },
+    {
+      "id": "95a43950b1dbdab7",
+      "date": "2026-05-02",
+      "status": "Published",
+      "update": "Latest version of Cambridgetroutclub.Org website released . This is a new release of the cambridgetroutclub.org website with updated information for the forthcoming 2027 fishing season.",
+      "category": "News",
+      "createdAt": "2026-05-02T05:19:40Z",
+      "content_scope": "home"
+    }
+  ]
+}
