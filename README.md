@@ -587,23 +587,23 @@ Each context configuration supports: field order (sequence), `show_columns`, `di
 ### Frontend
 Frontend tooling now targets:
 
-- Node.js 20+
-- npm `11.12.1`
+- Node.js `22.22.2+` (Docker build uses `node:22.22.2-alpine`)
+- npm `12.2.2`
 
-The frontend package metadata declares `packageManager: npm@11.12.1`, and the startup scripts use that npm version explicitly.
+The repository `.nvmrc` pins Node.js `22.22.2` for local development; with nvm, run `nvm install` and `nvm use` from the repository root. The frontend package metadata and startup scripts use npm `12.2.2`. npm 12 supports Node.js `^22.22.2`, `^24.15.0`, or `>=26.0.0`.
 
-1. Install Node.js dependencies using npm `11.12.1`:
+1. Install Node.js dependencies using npm `12.2.2`:
    ```bash
    cd frontend
-   npx --yes npm@11.12.1 install
+   npx --yes npm@12.2.2 install
    ```
 2. Start the Vue.js development server:
    ```bash
-   npx --yes npm@11.12.1 run dev
+   npx --yes npm@12.2.2 run dev
    ```
 3. Build the production frontend bundle:
    ```bash
-   npx --yes npm@11.12.1 run build
+   npx --yes npm@12.2.2 run build
    ```
 
 ### Browser tab icon (favicon)
@@ -657,7 +657,7 @@ Example using cert files:
 Behavior:
 - Starts backend, waits `DelayMs`, checks backend URL, prints `Backend Running` on success.
 - Prints `Server Not Running` and aborts if backend health check fails.
-- Starts frontend with `npx --yes npm@11.12.1 run dev`, waits the same delay, checks frontend URL, prints `Server Running` on success.
+- Starts frontend with `npx --yes npm@12.2.2 run dev`, waits the same delay, checks frontend URL, prints `Server Running` on success.
 - Prints `Server Not Running` if frontend health check fails.
 
 Optional URL overrides:
