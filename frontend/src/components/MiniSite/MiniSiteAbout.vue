@@ -1,7 +1,7 @@
 <template>
   <div class="mini-site-page about-page">
     <mini-site-hero
-      :title="`About ${clubName}`"
+      :title="headline || `About ${clubName}`"
       :subtitle="subheading"
       :image="heroImage"
       :fallback-image="heroFallbackImage"
@@ -9,7 +9,7 @@
 
     <section class="about-content">
       <div class="about-container">
-        <div v-if="content" class="about-text" v-html="content" />
+        <div v-if="content" class="about-text" v-html="safeContent" />
         <div v-else class="about-default">
           <p>
             Welcome to {{ clubName }}. We are a dedicated community of fly fishing enthusiasts with access to fishing on the River Cam upstream of the historic city of Cambridge.
@@ -35,6 +35,7 @@
 
 <script>
 import MiniSiteHero from './MiniSiteHero.vue';
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
 
 export default {
   name: 'MiniSiteAbout',
@@ -46,6 +47,10 @@ export default {
       type: String,
       required: true,
     },
+    headline: {
+      type: String,
+      default: '',
+    },
     content: {
       type: String,
       default: '',
@@ -53,6 +58,11 @@ export default {
     subheading: {
       type: String,
       default: '',
+    },
+  },
+  computed: {
+    safeContent() {
+      return sanitizeMiniSiteContent(this.content);
     },
   },
 };
@@ -77,6 +87,7 @@ export default {
   color: #333;
   line-height: 1.8;
   font-size: 1rem;
+  white-space: pre-line;
 }
 
 .about-default p {

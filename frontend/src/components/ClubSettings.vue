@@ -156,26 +156,63 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="mini-site-home-headline">Home Headline</label>
-            <input
-              id="mini-site-home-headline"
-              v-model="miniSite.home_headline"
-              type="text"
-              placeholder="Shown as the main heading on the Home page"
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="mini-site-home-body">Home Body Text</label>
-            <textarea
-              id="mini-site-home-body"
-              v-model="miniSite.home_body"
-              placeholder="Main welcome paragraph shown on the Home page"
-              class="form-input"
-              rows="4"
-            />
+          <div class="pages-config">
+            <h4>Page Content</h4>
+            <p class="pages-description">
+              Leave fields blank to use the page's built-in text. Basic HTML such as paragraphs, headings,
+              emphasis, lists and links is supported; scripts, styles and unsupported tags are removed.
+            </p>
+            <div class="form-group">
+              <label for="mini-site-content-page">Page</label>
+              <select id="mini-site-content-page" v-model="selectedContentPage" class="form-input">
+                <option v-for="page in miniSitePages" :key="page.id" :value="page.id">
+                  {{ page.title }}
+                </option>
+              </select>
+            </div>
+            <p class="form-hint" role="status">
+              {{ pageContentStatus(selectedContentPage) }}
+            </p>
+            <div class="form-group">
+              <label for="mini-site-page-headline">
+                {{ selectedContentPage === 'home' ? 'Home Headline' : 'Page Heading' }}
+              </label>
+              <input
+                id="mini-site-page-headline"
+                v-model="miniSite.page_configs[selectedContentPage].headline"
+                type="text"
+                placeholder="Leave blank to use the built-in heading"
+                class="form-input"
+              />
+            </div>
+            <div class="form-group">
+              <label for="mini-site-page-subheading">Page Subheading</label>
+              <input
+                id="mini-site-page-subheading"
+                v-model="miniSite.page_configs[selectedContentPage].subheading"
+                type="text"
+                placeholder="Optional short line beneath the heading"
+                class="form-input"
+              />
+            </div>
+            <div class="form-group">
+              <label for="mini-site-page-content">Page Body Text</label>
+              <textarea
+                id="mini-site-page-content"
+                v-model="miniSite.page_configs[selectedContentPage].content"
+                placeholder="Leave blank to use the built-in page text"
+                class="form-input"
+                rows="8"
+              />
+            </div>
+            <button
+              type="button"
+              class="reset-page-content-button"
+              :disabled="!hasCustomPageContent(selectedContentPage)"
+              @click="resetPageContent(selectedContentPage)"
+            >
+              Reset to built-in text
+            </button>
           </div>
 
           <div class="form-group">
@@ -361,8 +398,6 @@ function defaultMiniSite() {
     tagline: '',
     description: '',
     hero_image_url: '',
-    home_headline: '',
-    home_body: '',
     show_exclusive_access: true,
     show_community: true,
     show_learning: true,
@@ -370,7 +405,13 @@ function defaultMiniSite() {
     show_direct_email_link: true,
     page_configs: Object.fromEntries(MINI_SITE_PAGES.map(page => [
       page.id,
-      { hero_image_url: '', hero_fallback: 'home' },
+      {
+        hero_image_url: '',
+        hero_fallback: 'home',
+        headline: '',
+        subheading: '',
+        content: '',
+      },
     ])),
     pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
   };
@@ -389,6 +430,7 @@ export default {
       error: '',
       visibility: defaultVisibility(),
       miniSite: defaultMiniSite(),
+      selectedContentPage: 'home',
       selectedHeroPage: 'about',
       fieldOrder: {},
       selectedFieldOrderContext: '',
@@ -417,6 +459,28 @@ export default {
     this.loadSettings();
   },
   methods: {
+    pageContentStatus(pageId) {
+      if (this.hasCustomPageContent(pageId)) {
+        return 'Custom text is set; blank fields use their built-in defaults.';
+      }
+      if (pageId === 'home') {
+        return 'The Home body uses the site description or built-in text.';
+      }
+      return 'This page is using its built-in text.';
+    },
+    hasCustomPageContent(pageId) {
+      const page = this.miniSite.page_configs?.[pageId];
+      return ['headline', 'subheading', 'content'].some(field => (
+        typeof page?.[field] === 'string' && page[field].trim() !== ''
+      ));
+    },
+    resetPageContent(pageId) {
+      const page = this.miniSite.page_configs?.[pageId];
+      if (!page) return;
+      page.headline = '';
+      page.subheading = '';
+      page.content = '';
+    },
     resolveClubSettingsSaveErrorMessage(err) {
       const statusCode = err?.response?.status;
       if (statusCode === 401) {
@@ -611,8 +675,6 @@ export default {
             tagline: res?.data?.tagline || '',
             description: res?.data?.description || '',
             hero_image_url: res?.data?.hero_image_url || '',
-            home_headline: homePage.headline || '',
-            home_body: homePage.content || '',
             show_exclusive_access: homePage.show_exclusive_access !== false,
             show_community: homePage.show_community !== false,
             show_learning: homePage.show_learning !== false,
@@ -642,7 +704,7 @@ export default {
         },
       };
 
-      // Build full page configs for API so page-level content (home headline/body) is persisted.
+      // Build full page configs for API so page-specific content and settings are persisted.
       const enabledPages = new Set(this.miniSite.pages || []);
       const pagesArray = MINI_SITE_PAGES.map(page => {
         const existing = this.miniSite.page_configs?.[page.id] || {};
@@ -651,15 +713,13 @@ export default {
           enabled: page.id === 'home' ? true : enabledPages.has(page.id),
         };
 
-        for (const field of ['content', 'headline', 'body_text']) {
-          if (existing[field] !== undefined && existing[field] !== null) {
+        for (const field of ['content', 'headline', 'subheading', 'body_text']) {
+          if (typeof existing[field] === 'string' && existing[field].trim() !== '') {
             pagePayload[field] = existing[field];
           }
         }
 
         if (page.id === 'home') {
-          pagePayload.headline = this.miniSite.home_headline || '';
-          pagePayload.content = this.miniSite.home_body || '';
           pagePayload.show_exclusive_access = this.miniSite.show_exclusive_access !== false;
           pagePayload.show_community = this.miniSite.show_community !== false;
           pagePayload.show_learning = this.miniSite.show_learning !== false;
@@ -881,6 +941,20 @@ export default {
   word-break: break-all;
   font-family: monospace;
   color: #2d6a45;
+}
+
+.reset-page-content-button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #999;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  cursor: pointer;
+}
+
+.reset-page-content-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 /* Pages Configuration */

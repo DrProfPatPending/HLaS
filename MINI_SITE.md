@@ -8,7 +8,7 @@ Club Mini Sites are optional, public-facing marketing websites for individual cl
 - **Per-club configuration** - Enabled/disabled on a club-by-club basis
 - **Public access** - No authentication required; accessible worldwide
 - **Device-responsive** - Enabled mini-site pages and navigation adapt to desktop and mobile widths
-- **Customizable** - Clubs can set title, tagline, description, and hero image
+- **Customizable** - Clubs can set title, tagline, description, hero images, and page-specific headings, subheadings, and body text in Club Settings
 - **Flexible media storage** - Hero images can be external URLs or served from internal PostgreSQL-backed endpoints
 - **Future-extensible** - Ready for galleries, event calendars, contact forms
 - **API-accessible** - Public endpoint for external integrations

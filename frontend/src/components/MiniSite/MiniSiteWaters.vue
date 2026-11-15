@@ -1,7 +1,7 @@
 <template>
   <div class="mini-site-page waters-page">
     <mini-site-hero
-      title="Our Waters"
+      :title="headline || 'Our Waters'"
       :subtitle="subheading"
       :image="heroImage"
       :fallback-image="heroFallbackImage"
@@ -9,7 +9,7 @@
 
     <section class="waters-content">
       <div class="waters-container">
-        <div v-if="content" class="waters-text" v-html="content" />
+        <div v-if="content" class="waters-text" v-html="safeContent" />
         <div v-else class="waters-default">
           <p>
             {{ clubName }} has exclusive access to some of the finest fly fishing waters in the UK.
@@ -56,6 +56,7 @@
 
 <script>
 import MiniSiteHero from './MiniSiteHero.vue';
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
 
 export default {
   name: 'MiniSiteWaters',
@@ -67,6 +68,10 @@ export default {
       type: String,
       required: true,
     },
+    headline: {
+      type: String,
+      default: '',
+    },
     content: {
       type: String,
       default: '',
@@ -74,6 +79,11 @@ export default {
     subheading: {
       type: String,
       default: '',
+    },
+  },
+  computed: {
+    safeContent() {
+      return sanitizeMiniSiteContent(this.content);
     },
   },
 };
@@ -98,6 +108,7 @@ export default {
   color: #333;
   line-height: 1.8;
   font-size: 1rem;
+  white-space: pre-line;
 }
 
 .waters-default p {

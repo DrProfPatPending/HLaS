@@ -2,7 +2,7 @@
   <div class="mini-site-page home-page">
     <mini-site-hero
       :title="`Welcome to: ${displayHeadline}`"
-      :subtitle="tagline"
+      :subtitle="subheading || tagline"
       :image="heroImage"
     />
 
@@ -17,7 +17,7 @@
     <section class="home-welcome">
       <div class="welcome-container">
         <!-- <h2>{{ clubName }}</h2> Temporarily commented out -->
-        <p class="welcome-text">{{ displayBody }}</p>
+        <div class="welcome-text" v-html="safeContent" />
       </div>
     </section>
 
@@ -47,6 +47,7 @@
 import { computed } from 'vue';
 import { API_BASE_URL } from '../../store.js';
 import MiniSiteHero from './MiniSiteHero.vue';
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
 
 export default {
   name: 'MiniSiteHome',
@@ -61,6 +62,10 @@ export default {
       required: true,
     },
     headline: {
+      type: String,
+      default: '',
+    },
+    subheading: {
       type: String,
       default: '',
     },
@@ -125,6 +130,7 @@ export default {
     const showExclusiveAccess = computed(() => toBool(props.showExclusiveAccess));
     const showCommunity = computed(() => toBool(props.showCommunity));
     const showLearning = computed(() => toBool(props.showLearning));
+    const safeContent = computed(() => sanitizeMiniSiteContent(displayBody.value));
     const showAnyFeature = computed(() => {
       return showExclusiveAccess.value || showCommunity.value || showLearning.value;
     });
@@ -132,6 +138,7 @@ export default {
     return {
       displayHeadline,
       displayBody,
+      safeContent,
       backgroundImageUrl,
       showExclusiveAccess,
       showCommunity,
@@ -172,6 +179,7 @@ export default {
   line-height: 1.6;
   max-width: 700px;
   margin: 0 auto;
+  white-space: pre-line;
 }
 
 /* Background Section */

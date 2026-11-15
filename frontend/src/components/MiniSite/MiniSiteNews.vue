@@ -1,7 +1,7 @@
 <template>
   <div class="mini-site-page news-page">
     <mini-site-hero
-      title="News &amp; Updates"
+      :title="headline || 'News & Updates'"
       :subtitle="subheading"
       :image="heroImage"
       :fallback-image="heroFallbackImage"
@@ -9,7 +9,7 @@
 
     <section class="news-content">
       <div class="news-container">
-        <div v-if="content" class="news-text" v-html="content" />
+        <div v-if="content" class="news-text" v-html="safeContent" />
         <div v-else class="news-default">
           <div class="news-item">
             <div class="news-date">Recent Updates</div>
@@ -43,6 +43,7 @@
 
 <script>
 import MiniSiteHero from './MiniSiteHero.vue';
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
 
 export default {
   name: 'MiniSiteNews',
@@ -54,6 +55,10 @@ export default {
       type: String,
       required: true,
     },
+    headline: {
+      type: String,
+      default: '',
+    },
     content: {
       type: String,
       default: '',
@@ -61,6 +66,11 @@ export default {
     subheading: {
       type: String,
       default: '',
+    },
+  },
+  computed: {
+    safeContent() {
+      return sanitizeMiniSiteContent(this.content);
     },
   },
 };
@@ -85,6 +95,7 @@ export default {
   color: #333;
   line-height: 1.8;
   font-size: 1rem;
+  white-space: pre-line;
 }
 
 .news-item {
