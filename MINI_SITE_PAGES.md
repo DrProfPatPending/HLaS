@@ -252,6 +252,11 @@ enabled pages → nav links → click → currentPage update → component switc
 - Pages grid layout (responsive)
 - Save with mini site config
 
+**Page Content:**
+- Select any of the six pages and edit its heading, subheading and body copy
+- Blank fields keep the page's built-in text; reset clears the selected page's custom copy
+- Basic inline HTML is sanitized before rendering; scripts, styles and unsupported tags/attributes are removed
+
 **UI Features:**
 - Page checkbox grid (repeats auto-fit minmax 150px)
 - Disabled state for Home page
@@ -328,7 +333,8 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 
 ### Page Content
 - Each page has default placeholder content
-- Customizable content fields in database schema (future use)
+- Per-club heading, subheading and body overrides are saved in the existing `club_mini_sites.pages` JSON configuration
+- Empty overrides continue to use the page template's built-in copy
 - Contact page has empty form fields for club to populate
 
 ## Styling
@@ -352,9 +358,8 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 
 ## Future Enhancements
 
-1. **Content Management**
-   - Admin UI text editors for page content
-   - Rich text editor for About, News, Join pages
+1. **Expanded Content Management**
+   - Rich text editor for page content
    - Image uploads for Water details
 
 2. **Contact Form Integration**

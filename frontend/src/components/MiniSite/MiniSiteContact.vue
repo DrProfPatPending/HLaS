@@ -1,15 +1,15 @@
 <template>
   <div class="mini-site-page contact-page">
     <section class="page-header">
-      <h1>Contact Us</h1>
+      <h1>{{ headline || 'Contact Us' }}</h1>
       <p v-if="subheading" class="subheading">{{ subheading }}</p>
     </section>
 
     <section class="contact-content">
       <div class="contact-container">
-        <div v-if="content" class="contact-text" v-html="content" />
-        <div v-else class="contact-default">
-          <p>Get in touch with {{ clubName }}. We'd love to hear from you.</p>
+        <div v-if="content" class="contact-text" v-html="safeContent" />
+        <div class="contact-default">
+          <p v-if="!content">Get in touch with {{ clubName }}. We'd love to hear from you.</p>
 
           <div class="contact-info">
             <div v-if="contactEmail" class="contact-method">
@@ -72,12 +72,18 @@
 </template>
 
 <script>
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
+
 export default {
   name: 'MiniSiteContact',
   props: {
     clubName: {
       type: String,
       required: true,
+    },
+    headline: {
+      type: String,
+      default: '',
     },
     content: {
       type: String,
@@ -109,6 +115,9 @@ export default {
     },
   },
   computed: {
+    safeContent() {
+      return sanitizeMiniSiteContent(this.content);
+    },
     showContactForm() {
       return this.contactDisplayMode !== 'email';
     },
@@ -192,6 +201,8 @@ export default {
   color: #333;
   line-height: 1.8;
   font-size: 1rem;
+  white-space: pre-line;
+  margin-bottom: 2rem;
 }
 
 .contact-default p:first-of-type {

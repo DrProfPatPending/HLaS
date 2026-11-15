@@ -216,6 +216,9 @@ For `/club/{clubCode}/...` routes (including `/club/{clubCode}/login/`), favicon
 - **Description field** - Text area, 500+ chars supported
 - **Hero Image URL** - External URL input
 - **Device info** - Shows `/club/{CODE}/` URL and access patterns
+- **Page Content** - Select Home, About Us, Our Waters, News, Join Us or Contact to edit its heading, subheading and body text
+- Blank page fields use the built-in template text; **Reset to built-in text** clears all custom copy for the selected page
+- Basic inline HTML is supported in body text and sanitized before display; scripts, styles and unsupported tags/attributes are removed
 - **Status** - Displays if enabled or not configured
 
 **Permissions:** Club Admin+ (requires `club.update`)
@@ -299,9 +302,8 @@ For CTC production, the standard configuration is:
 
 ## Future Enhancements
 
-### Phase 2: Content Management
+### Phase 2: Expanded Content Management
 
-- Admin UI for adding/editing custom pages
 - Rich text editor for page content
 - Gallery/media management
 - Page publishing workflow (draft/published)

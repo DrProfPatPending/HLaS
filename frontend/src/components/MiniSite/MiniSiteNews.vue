@@ -1,13 +1,13 @@
 <template>
   <div class="mini-site-page news-page">
     <section class="page-header">
-      <h1>News & Updates</h1>
+      <h1>{{ headline || 'News & Updates' }}</h1>
       <p v-if="subheading" class="subheading">{{ subheading }}</p>
     </section>
 
     <section class="news-content">
       <div class="news-container">
-        <div v-if="content" class="news-text" v-html="content" />
+        <div v-if="content" class="news-text" v-html="safeContent" />
         <div v-else class="news-default">
           <div class="news-item">
             <div class="news-date">Recent Updates</div>
@@ -40,12 +40,18 @@
 </template>
 
 <script>
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
+
 export default {
   name: 'MiniSiteNews',
   props: {
     clubName: {
       type: String,
       required: true,
+    },
+    headline: {
+      type: String,
+      default: '',
     },
     content: {
       type: String,
@@ -54,6 +60,11 @@ export default {
     subheading: {
       type: String,
       default: '',
+    },
+  },
+  computed: {
+    safeContent() {
+      return sanitizeMiniSiteContent(this.content);
     },
   },
 };
@@ -101,6 +112,7 @@ export default {
   color: #333;
   line-height: 1.8;
   font-size: 1rem;
+  white-space: pre-line;
 }
 
 .news-item {

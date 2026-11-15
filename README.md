@@ -101,6 +101,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
    - Mobile/Responsive: Placeholder with message to view on desktop, with link to login.
    - Public access via `/club/{clubCode}/` (no authentication required).
    - Admin UI in Club Settings to manage mini site configuration.
+   - Per-club page headings, subheadings and body text can be edited in Club Settings; supported inline HTML is sanitized before rendering.
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration.
    - Club background image storage in PostgreSQL with admin upload capability.
    - Club hero image storage in PostgreSQL via `/api/club_hero/<club>` with filesystem fallback to `<CLUB>_hero.png`.

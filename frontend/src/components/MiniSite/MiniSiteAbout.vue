@@ -1,13 +1,13 @@
 <template>
   <div class="mini-site-page about-page">
     <section class="page-header">
-      <h1>About {{ clubName }}</h1>
+      <h1>{{ headline || `About ${clubName}` }}</h1>
       <p v-if="subheading" class="subheading">{{ subheading }}</p>
     </section>
 
     <section class="about-content">
       <div class="about-container">
-        <div v-if="content" class="about-text" v-html="content" />
+        <div v-if="content" class="about-text" v-html="safeContent" />
         <div v-else class="about-default">
           <p>
             Welcome to {{ clubName }}. We are a dedicated community of fly fishing enthusiasts with access to
@@ -34,12 +34,18 @@
 </template>
 
 <script>
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
+
 export default {
   name: 'MiniSiteAbout',
   props: {
     clubName: {
       type: String,
       required: true,
+    },
+    headline: {
+      type: String,
+      default: '',
     },
     content: {
       type: String,
@@ -48,6 +54,11 @@ export default {
     subheading: {
       type: String,
       default: '',
+    },
+  },
+  computed: {
+    safeContent() {
+      return sanitizeMiniSiteContent(this.content);
     },
   },
 };
@@ -95,6 +106,7 @@ export default {
   color: #333;
   line-height: 1.8;
   font-size: 1rem;
+  white-space: pre-line;
 }
 
 .about-default p {

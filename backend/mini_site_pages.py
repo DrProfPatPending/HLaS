@@ -112,6 +112,7 @@ def normalize_pages_config(raw_pages, club_name=''):
         for field in [
             'content',
             'headline',
+            'subheading',
             'body_text',
             'display_mode',
             'show_direct_email_link',

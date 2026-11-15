@@ -14,7 +14,7 @@
       <div class="hero-overlay" />
       <div class="hero-content">
         <h1>{{ displayHeadline }}</h1>
-        <p v-if="tagline" class="hero-tagline">{{ tagline }}</p>
+        <p v-if="subheading || tagline" class="hero-tagline">{{ subheading || tagline }}</p>
       </div>
     </div>
 
@@ -29,7 +29,7 @@
     <section class="home-welcome">
       <div class="welcome-container">
         <!-- <h2>{{ clubName }}</h2> Temporarily commented out -->
-        <p class="welcome-text">{{ displayBody }}</p>
+        <div class="welcome-text" v-html="safeContent" />
       </div>
     </section>
 
@@ -58,6 +58,7 @@
 <script>
 import { computed } from 'vue';
 import { API_BASE_URL } from '../../store.js';
+import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
 
 export default {
   name: 'MiniSiteHome',
@@ -71,6 +72,10 @@ export default {
       required: true,
     },
     headline: {
+      type: String,
+      default: '',
+    },
+    subheading: {
       type: String,
       default: '',
     },
@@ -132,6 +137,7 @@ export default {
       return 'We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers through responsible fishing, stewardship, and a welcoming member community.';
     });
 
+    const safeContent = computed(() => sanitizeMiniSiteContent(displayBody.value));
     const showExclusiveAccess = computed(() => toBool(props.showExclusiveAccess));
     const showCommunity = computed(() => toBool(props.showCommunity));
     const showLearning = computed(() => toBool(props.showLearning));
@@ -142,6 +148,7 @@ export default {
     return {
       displayHeadline,
       displayBody,
+      safeContent,
       backgroundImageUrl,
       showExclusiveAccess,
       showCommunity,
@@ -250,6 +257,7 @@ export default {
   line-height: 1.6;
   max-width: 700px;
   margin: 0 auto;
+  white-space: pre-line;
 }
 
 /* Background Section */
