@@ -113,6 +113,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
    - REST API endpoints for programmatic access (gated by `app_admin`/`app_owner`).
    - See `BACKUP_SYSTEM.md` and `BACKUP_QUICK_START.md` for complete documentation.
 - **Responsive member navigation:** the main Navigation Bar and My Club subnavigation sit above page content in a full-width 2-column grid at 769–1000 px and a compact 3-column grid at ≤ 768 px. Desktop navigation remains a left-side stack above 1000 px.
+- **Home news labels:** Status and admin-only destination labels wrap within the Date column on narrow screens without overlapping the Category column.
 - **Mobile full-width layout:** the application shell, nav card, subnav card, and all content containers now expand to 100 % window width in responsive mode, with content areas independently centred at 80 vw.
 - **Beat Details page restructure:** the read-only Beat Details page now shows:
    1. A compact 2-column quick-info bar with **River** and **Beat Name** at the top.
