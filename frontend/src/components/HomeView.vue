@@ -1001,8 +1001,17 @@ export default {
 .news-date-status {
   margin-top: 6px;
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   align-items: center;
   gap: 6px;
+}
+
+.news-date-status .content-scope-badge {
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .content-scope-badge {
