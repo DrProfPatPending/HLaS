@@ -908,3 +908,29 @@ Recorded 2026-11-15 on hlastest for the CTC production handover.
   Plan. Confirm approved versions, access and ownership separately before
   publishing missing documents. Do not copy development data or credentials
   into production.
+
+## Documents and responsive tables deployed to production
+
+Recorded 2026-11-15 on the CTC production server.
+
+- Selectively cherry-picked approved commit `1690b719` into `ctc-production`
+  as `dc3580b0` and pushed it. No development infrastructure, data or credentials
+  were copied. Production news and A beat JSON snapshots were preserved.
+- The frontend build and both focused tests (`home-panels.test.mjs` and
+  `mini-site-home.test.mjs`) passed using the existing production Node/npm pins.
+- Deployed only the frontend with CTC Compose settings, `--no-deps` and a
+  successful health wait. Backend, databases, WordPress and Caddy were not
+  restarted. The running backend image was no longer available by its original
+  image ID for rollback tagging; no backend deployment was necessary or performed.
+- Retained the previous frontend image as
+  `hlas-frontend:pre-documents-dc3580b0`. Backend and member-app HTTPS probes
+  returned HTTP 200; production services remained healthy.
+- Live signed-in browser checks verified Home news-only presentation, the
+  separate CTC Documents page with four existing Home-scoped documents, and
+  Health and Safety retaining both scoped panels. Sorting and news edit/cancel
+  passed without saving or changing live content.
+- Actual news and document page layouts were checked at 375, 390, 600, 601,
+  856 and 1200 px. Narrow news updates span the row; document size and position
+  stack beside the title; labels and action buttons stay within their cells.
+- Production user acceptance of this deployment remains pending. This update
+  does not add any missing guidelines or river-management documents.
