@@ -934,3 +934,28 @@ Recorded 2026-11-15 on the CTC production server.
   stack beside the title; labels and action buttons stay within their cells.
 - Production user acceptance of this deployment remains pending. This update
   does not add any missing guidelines or river-management documents.
+
+## Clean-only Docker maintenance mode
+
+Recorded 2026-11-15 on hlastest.
+
+- The user tested and approved `./hlas_build.sh --clean-only`. It runs the
+  existing `docker system prune -f` cleanup without Git checkout/reset,
+  configuration preflight, build, service restarts or health checks.
+- Published the change to `ctc-dev` as `094b69e1`; a selective port to
+  `main` is `dd0db00c`. The main port does not include CTC development
+  deployment changes.
+- Cleanup is Docker-host-wide, not scoped to the target project: stopped
+  containers, unused networks, dangling images and unused build cache can
+  be removed. Volumes are not pruned. Review rollback images and other
+  workloads before running it on a shared or production host.
+- `--clean` still prunes only after a successful build. Cleanup flags use
+  last-flag-wins semantics; `--clean-only --noclean` fails without pruning
+  or building. Docker failures return a nonzero status and an error.
+- The development build-script suite passed 15 mocked tests. The main port
+  passed four focused mocked tests and shell syntax validation. No real
+  Docker prune was run by the assistant during validation.
+- `origin/ctc-production` was at `dc3580b0` when this was recorded. Review
+  and selectively integrate `094b69e1` or port the change to that branch;
+  retain its production deployment behavior and retest before use. No
+  production code, deployment or data was changed for this update.
