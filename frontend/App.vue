@@ -33,6 +33,14 @@
             <button
               type="button"
               class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'club-documents' }"
+              @click="navigate('club-documents')"
+            >
+              {{ clubShortName }} Documents
+            </button>
+            <button
+              type="button"
+              class="app-member-nav-button"
               :class="{ 'is-active': activeSection === 'my-club' }"
               @click="navigate('my-club')"
             >
@@ -122,7 +130,8 @@
       </div>
 
       <main class="app-member-content">
-        <home-view v-if="activeSection === 'home'" />
+        <home-view v-if="activeSection === 'home'" :show-documents="false" />
+        <home-view v-else-if="activeSection === 'club-documents'" :show-news="false" />
           <health-safety-view v-else-if="activeSection === 'health-safety'" />
         <membership-admin v-else-if="activeSection === 'membership-admin'" />
         <club-information v-else-if="activeSection === 'club-information'" />

@@ -334,12 +334,12 @@ The system uses a priority-based approach:
 **Example configuration** (home_documents table):
 ```json
 {
-  "home_documents": ["Title", "Size", "Actions"],
+  "home_documents": ["Title", "Size", "Position", "Actions"],
   "widths": {
     "home_documents": {
       "Title": "flex",
       "Size": "80px",
-      "Actions": "120px"
+      "Position": "92px"
     }
   }
 }
@@ -347,7 +347,12 @@ The system uses a priority-based approach:
 This creates a layout where:
 - **Title**  column is flexible and takes remaining space
 - **Size** column stays fixed at 80px
-- **Actions** column stays fixed at 120px
+- **Position** column stays fixed at 92px
+
+The member Home page shows News and Updates, while **<Club> Documents** in the member navigation shows Home-scoped documents. Health and Safety retains its own scoped news and documents. News actions appear below the date; document actions appear below the title. If the configured date or title is hidden, actions appear in the first visible column. The existing `Actions` read-only setting still controls management actions.
+
+On narrow screens, news items show their information and category above a full-width update, with column headers retained as sorting controls.
+Document tables place size and position beside the title in a compact details column when those fields are visible.
 
 **Persistence:**
 
@@ -567,7 +572,7 @@ Field ordering and column visibility are stored **per-club** in the `club_field_
 | `fishing_beats` | Fishing Beats list table |
 | `beat_details` | Beat Details detail table |
 | `home_news` | Home News & Updates panel |
-| `home_documents` | Home Documents panel |
+| `home_documents` | Club Documents and Health & Safety Documents panels |
 | `news_updates` | News/Updates section |
 | `club_information_officers` | Club Information officers table |
 
