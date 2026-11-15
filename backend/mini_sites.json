@@ -1,0 +1,78 @@
+{
+  "CTC": {
+    "enabled": true,
+    "title": "Cambridge Trout Club",
+    "tagline": "A small fly-fishing club on the upper River Cam",
+    "description": "We are dedicated to maintaining the wild trout population and enjoying the natural beauty and ecological health of our local rivers. We do this through maintaining a small and like-minded membership, and by a program of careful river management with a long-term plan to ensure the sustainability of the river for current and future generations of anglers.",
+    "hero_image_url": "/api/club_hero/CTC",
+    "pages": [
+      {
+        "id": "home",
+        "type": "home",
+        "title": "Home",
+        "content": "We are a small fly-fishing club focused on maintaining the wild trout population and enjoying the natural beauty and ecological health of our local rivers. Our close-knit, like-minded membership follows a programme of careful river management, with a long-term plan to ensure the sustainability of the river for current and future generations of anglers.",
+        "enabled": true,
+        "headline": "Cambridge Trout Club",
+        "canDisable": false,
+        "description": "Club home page with hero image and welcome message",
+        "show_learning": false,
+        "show_community": false,
+        "show_exclusive_access": false
+      },
+      {
+        "id": "about",
+        "type": "about",
+        "title": "About Us",
+        "content": "We are a dedicated community of fly-fishing enthusiasts with access to fishing on the River Cam upstream of the historic city of Cambridge.\n\nThe club has a long history and offers its members a rare opportunity to fish for wild brown trout in the Essex/Cambridgeshire borders.\n\nWe are first and foremost fly fishers, but we are also guided by principles of conservation and sustainability, and are committed to protecting our rivers so that they remain a source of joy for years to come.\n\n<b>Our Values</b>\n<ul>\n<li><b>Sustainability:</b> Protecting the River Cam and maintaining it as a legacy for future generations</li>\n<li><b>Community:</b> Supporting and mentoring fellow anglers within the club</li>\n<li><b>Enjoyment:</b> Ensuring that our local river is a source of tranquillity and pleasure for our members</li>\n</ul>\n",
+        "enabled": true,
+        "canDisable": true,
+        "description": "Information about your club, history, and mission",
+        "hero_fallback": "home",
+        "hero_image_url": ""
+      },
+      {
+        "id": "waters",
+        "type": "waters",
+        "title": "Our Waters",
+        "enabled": false,
+        "canDisable": true,
+        "description": "Details about your fishing waters, beats, and access information",
+        "hero_fallback": "home",
+        "hero_image_url": ""
+      },
+      {
+        "id": "news",
+        "type": "news",
+        "title": "News",
+        "enabled": false,
+        "canDisable": true,
+        "description": "Club news, updates, and announcements",
+        "hero_fallback": "home",
+        "hero_image_url": ""
+      },
+      {
+        "id": "join",
+        "type": "join",
+        "title": "Join",
+        "enabled": false,
+        "canDisable": true,
+        "description": "Membership information and how to join",
+        "hero_fallback": "home",
+        "hero_image_url": ""
+      },
+      {
+        "id": "contact",
+        "type": "contact",
+        "title": "Contact Us",
+        "enabled": true,
+        "canDisable": true,
+        "description": "Contact form and club information",
+        "display_mode": "email",
+        "hero_fallback": "home",
+        "hero_image_url": "",
+        "show_direct_email_link": false
+      }
+    ],
+    "social_links": {}
+  }
+}
