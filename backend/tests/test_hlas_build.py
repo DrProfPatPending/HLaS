@@ -16,7 +16,10 @@ import sys
 args = sys.argv[1:]
 with open(os.environ['MOCK_DOCKER_LOG'], 'a') as log:
     log.write(json.dumps(args) + '\\n')
-if args[0] == 'inspect':
+if args == ['system', 'prune', '-f'] and os.environ.get('MOCK_PRUNE_FAIL') == 'true':
+    print('mock prune failure', file=sys.stderr)
+    sys.exit(1)
+elif args[0] == 'inspect':
     print(os.environ.get('MOCK_PG_HEALTH', 'healthy'))
 elif 'config' in args:
     print(json.dumps({'services': {'backend': {'environment': {
@@ -39,6 +42,9 @@ class BuildScriptTests(unittest.TestCase):
             ('docker', DOCKER_STUB),
             ('make', '#!/bin/sh\nexit 1\n'),
             ('curl', '#!/bin/sh\nprintf 200\n'),
+            ('git', '#!/usr/bin/python3\nimport json, os, sys\n'
+             'with open(os.environ["MOCK_GIT_LOG"], "a") as log:\n'
+             '    log.write(json.dumps(sys.argv[1:]) + "\\n")\n'),
         ):
             executable = self.directory / name
             executable.write_text(content)
@@ -51,12 +57,14 @@ class BuildScriptTests(unittest.TestCase):
         (self.directory / 'caddyfile').write_text('test')
         (self.directory / 'clubs.json').write_text('{}')
         self.log = self.directory / 'docker.log'
+        self.git_log = self.directory / 'git.log'
 
     def run_build(self, *args, **extra_env):
         env = os.environ.copy()
         env.update({
             'PATH': f'{self.directory}:/usr/bin:/bin',
             'MOCK_DOCKER_LOG': str(self.log),
+            'MOCK_GIT_LOG': str(self.git_log),
             **extra_env,
         })
         result = subprocess.run(
@@ -98,6 +106,47 @@ class BuildScriptTests(unittest.TestCase):
         self.assertEqual([call[-1] for call in up_calls],
                          ['wordpress-db', 'frontend', 'wordpress-web', 'caddy'])
         self.assertFalse(any('--no-deps' in call for call in up_calls))
+
+    def test_clean_only_prunes_without_deployment_prerequisites(self):
+        (self.directory / '.env.ctc').unlink()
+        result, calls = self.run_build(
+            '--remote', '--directory', str(self.directory / 'missing'), '--clean-only',
+            PATH=str(self.directory),
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(calls, [['system', 'prune', '-f']])
+        self.assertFalse(self.git_log.exists())
+        self.assertIn('across the Docker host', result.stdout)
+        self.assertNotIn('Build complete', result.stdout)
+
+    def test_clean_only_reports_prune_failure(self):
+        result, calls = self.run_build('--clean-only', MOCK_PRUNE_FAIL='true')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(calls, [['system', 'prune', '-f']])
+        self.assertIn('Docker cleanup failed', result.stderr)
+        self.assertNotIn('clean complete', result.stdout)
+
+    def test_clean_only_respects_cleanup_flag_order_without_building(self):
+        result, calls = self.run_build('--clean-only', '--noclean')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('--clean-only cannot run', result.stderr)
+        self.assertEqual(calls, [])
+        self.assertFalse(self.git_log.exists())
+
+        result, calls = self.run_build('--noclean', '--clean-only')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(calls, [['system', 'prune', '-f']])
+
+    def test_post_build_clean_still_runs_after_success(self):
+        result, calls = self.run_build('--clean')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(calls[-1], ['system', 'prune', '-f'])
+        self.assertTrue(any('build' in call for call in calls))
+
+    def test_post_build_clean_does_not_run_on_failure(self):
+        result, calls = self.run_build('--app-only', '--clean', MOCK_SYNC='true')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn(['system', 'prune', '-f'], calls)
 
 
 if __name__ == '__main__':

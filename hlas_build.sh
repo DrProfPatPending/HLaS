@@ -7,6 +7,7 @@ VERBOSE=0
 USE_REMOTE=1
 NO_CACHE=1
 RUN_CLEAN=0
+CLEAN_ONLY=0
 SKIP_HEALTH=0
 APP_ONLY=0
 ALLOW_HTTP_401=0
@@ -16,15 +17,6 @@ CADDYFILE_OVERRIDE=""
 HEALTH_HOST_OVERRIDE=""
 CLUBS_CONFIG_FILE_OVERRIDE=""
 INITIAL_PWD="$(pwd)"
-
-if command -v python >/dev/null 2>&1; then
-    PYTHON_BIN="python"
-elif command -v python3 >/dev/null 2>&1; then
-    PYTHON_BIN="python3"
-else
-    echo "✗ ERROR: Neither 'python' nor 'python3' was found in PATH" >&2
-    exit 1
-fi
 
 usage() {
     cat <<EOF
@@ -40,6 +32,7 @@ Options:
   -f, --full                Full rebuild: pass --no-cache to docker build (default)
   -Q, --quick               Quick rebuild: use Docker layer cache (faster for dev)
   -c, --clean               Run 'docker system prune -f' after successful build
+      --clean-only          Run Docker prune without checkout, build or health checks
     -C                        Alias for --noclean (disable Docker prune step)
       --noclean, --no-clean Disable Docker prune step (default)
   -n, --nohealth            Skip post-start health checks
@@ -66,6 +59,7 @@ Examples:
     $0 --target production --verbose --noverbose
   $0 --target development --quick --local  # fast dev rebuild using cache
   $0 --target production --clean           # deploy and prune dangling images
+  $0 --clean-only                          # prune unused Docker resources without a build
     $0 -t production --clean -C              # -C disables clean (last flag wins)
     $0 --target production --clean --noclean # last flag wins (no prune)
     $0 --target production --quiet --log-file /tmp/hlas-build.log
@@ -100,6 +94,11 @@ while (($#)); do
             shift
             ;;
         -c|--clean)
+            RUN_CLEAN=1
+            shift
+            ;;
+        --clean-only)
+            CLEAN_ONLY=1
             RUN_CLEAN=1
             shift
             ;;
@@ -191,15 +190,6 @@ while (($#)); do
     esac
 done
 
-if command -v python >/dev/null 2>&1; then
-    PYTHON_BIN="python"
-elif command -v python3 >/dev/null 2>&1; then
-    PYTHON_BIN="python3"
-else
-    echo "✗ ERROR: Neither 'python' nor 'python3' was found in PATH" >&2
-    exit 1
-fi
-
 if [ -n "$LOG_FILE" ] && [ "${LOG_FILE#/}" = "$LOG_FILE" ]; then
     LOG_FILE="$INITIAL_PWD/$LOG_FILE"
 fi
@@ -243,6 +233,33 @@ run_step() {
         "$@" >/dev/null 2>&1
     fi
 }
+
+run_docker_cleanup() {
+    log "Pruning unused Docker objects across the Docker host (docker system prune -f)..."
+    if ! run_step "  Removing dangling images and unused resources..." docker system prune -f; then
+        log_err "✗ ERROR: Docker cleanup failed; use --verbose or --log-file for details"
+        return 1
+    fi
+    log "✓ Docker system clean complete"
+}
+
+if [ "$CLEAN_ONLY" -eq 1 ]; then
+    if [ "$RUN_CLEAN" -eq 0 ]; then
+        log_err "✗ ERROR: --clean-only cannot run when cleanup is disabled by --noclean"
+        exit 1
+    fi
+    run_docker_cleanup
+    exit 0
+fi
+
+if command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+else
+    log_err "✗ ERROR: Neither 'python' nor 'python3' was found in PATH"
+    exit 1
+fi
 
 require_env_vars() {
     local env_file="$1"
@@ -488,7 +505,5 @@ fi
 log "✓ Build complete"
 
 if [ "$RUN_CLEAN" -eq 1 ]; then
-    log "Pruning unused Docker objects (docker system prune -f)..."
-    run_step "  Removing dangling images and unused resources..." docker system prune -f
-    log "✓ Docker system clean complete"
+    run_docker_cleanup
 fi
