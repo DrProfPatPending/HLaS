@@ -475,7 +475,7 @@ cp deploy/caddy/Caddyfile.ctc.example deploy/caddy/Caddyfile.ctc
      - `sync_beats_postgres_to_json.py` - exports PostgreSQL beats to JSON config (local dev)
      - `sync_beats_via_api.py` - API-based export/import (local dev)
      - `sync_beats_json_to_postgres.py` - imports JSON beats to PostgreSQL: seeds clubs with no beats by default; `--replace` overwrites existing clubs' beats
-   - **Automatic startup seeding:** Backend startup hook runs `sync_beats_json_to_postgres.py` automatically (when `HLAS_SYNC_FILES_ON_STARTUP` is true and PostgreSQL is enabled)
+   - **Automatic startup seeding:** Backend startup hook runs `sync_beats_json_to_postgres.py` automatically (when PostgreSQL is enabled; the CTC branches can turn this off with `HLAS_SYNC_FILES_ON_STARTUP=false`)
      - Only clubs with no beats in `club_beats` are filled from `clubs.config.json`; existing beats, including edits made in the app, are never overwritten on restart
      - Non-blocking (catches and logs errors)
 

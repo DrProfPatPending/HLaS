@@ -1214,7 +1214,7 @@ After pulling the updated main branch on the VPS:
    ```
 
 2. **Beats are seeded on startup:**
-   - Backend startup hook runs `sync_beats_json_to_postgres.py` (when `HLAS_SYNC_FILES_ON_STARTUP` is true)
+   - Backend startup hook runs `sync_beats_json_to_postgres.py` (when PostgreSQL is enabled; the CTC branches can turn this off with `HLAS_SYNC_FILES_ON_STARTUP=false`)
    - Only clubs with **no** beats in PostgreSQL are filled from `clubs.config.json`; clubs that already have beats keep them, so edits made in the app survive restarts and rebuilds
    - Check container logs for sync status: `docker compose logs backend | grep -i beats`
 

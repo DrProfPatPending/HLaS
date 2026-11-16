@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -191,6 +191,7 @@ def create_mini_site_routes(deps):
                         description=description,
                         pages=pages,
                         social_links=social_links,
+                        updated_at=func.now(),
                     )
                 )
             else:

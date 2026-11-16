@@ -1,7 +1,7 @@
 import unittest
 
 from flask import Flask
-from sqlalchemy import JSON, Boolean, Column, Integer, MetaData, String, Table, create_engine, select
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, MetaData, String, Table, create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from mini_site_pages import normalize_pages_config
@@ -29,6 +29,7 @@ class MiniSiteHeroTests(unittest.TestCase):
             Column('hero_image_url', String),
             Column('pages', JSON),
             Column('social_links', JSON),
+            Column('updated_at', DateTime),
         )
         metadata.create_all(engine)
         with engine.begin() as conn:
