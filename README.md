@@ -419,6 +419,7 @@ This project is a web application for managing the membership of a fishing club.
 - `backend/` - Flask API and database
 - `frontend/` - Vue.js app
 - `Utilities/` - reusable SQL and operational helper assets
+- `CLAUDE.md` - AI agent instructions (commands, rules, architecture, data storage)
 - `.github/copilot-instructions.md` - Workspace instructions
 
 ## Local checks
@@ -1212,20 +1213,22 @@ After pulling the updated main branch on the VPS:
    docker compose up -d backend
    ```
 
-2. **Beats automatically sync on startup:**
-   - Backend startup hook runs `sync_beats_json_to_postgres.py`
-   - PostgreSQL `club_beats` table is populated from `clubs.config.json`
+2. **Beats are seeded on startup:**
+   - Backend startup hook runs `sync_beats_json_to_postgres.py` (when `HLAS_SYNC_FILES_ON_STARTUP` is true)
+   - Only clubs with **no** beats in PostgreSQL are filled from `clubs.config.json`; clubs that already have beats keep them, so edits made in the app survive restarts and rebuilds
    - Check container logs for sync status: `docker compose logs backend | grep -i beats`
 
 3. **Manual sync (optional):**
-   
-   If you need to resync without restarting:
+
+   To push beats changed in `clubs.config.json` into a club that already has beats, use `--replace`. This deletes and re-inserts that club's beats, so first export any edits made in the app (`sync_beats_postgres_to_json.py`):
    ```bash
-   # Dry-run first to preview changes
+   # Seed clubs that have no beats yet (dry-run first to preview)
    docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --dry-run
-   
-   # Actually sync beats
    docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
+
+   # Overwrite existing clubs' beats from the JSON (export app edits first)
+   docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --replace --dry-run
+   docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --replace
    ```
 
 ### API Endpoints

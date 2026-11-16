@@ -474,10 +474,9 @@ cp deploy/caddy/Caddyfile.ctc.example deploy/caddy/Caddyfile.ctc
    - Helper scripts for programmatic sync:
      - `sync_beats_postgres_to_json.py` - exports PostgreSQL beats to JSON config (local dev)
      - `sync_beats_via_api.py` - API-based export/import (local dev)
-     - `sync_beats_json_to_postgres.py` - imports JSON beats to PostgreSQL (VPS production)
-   - **Automatic startup sync:** Backend startup hook runs `sync_beats_json_to_postgres.py` automatically
-     - Ensures PostgreSQL club_beats table always matches `clubs.config.json` on container start
-     - Only runs if PostgreSQL writes are enabled
+     - `sync_beats_json_to_postgres.py` - imports JSON beats to PostgreSQL: seeds clubs with no beats by default; `--replace` overwrites existing clubs' beats
+   - **Automatic startup seeding:** Backend startup hook runs `sync_beats_json_to_postgres.py` automatically (when `HLAS_SYNC_FILES_ON_STARTUP` is true and PostgreSQL is enabled)
+     - Only clubs with no beats in `club_beats` are filled from `clubs.config.json`; existing beats, including edits made in the app, are never overwritten on restart
      - Non-blocking (catches and logs errors)
 
 - **Club Settings API Endpoints:**
@@ -697,11 +696,16 @@ After deploying backend code that includes beats export/import and automatic sta
    python3 sync_beats_via_api.py
    ```
 
-   **Option B: Direct database sync (requires DATABASE_URL)**
+   **Option B: Direct database export (inside the backend container)**
    ```bash
    cd /opt/hlas
-   docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
+   docker exec hlas-backend-1 python3 /app/sync_beats_postgres_to_json.py --mode both
+   # The export is written inside the container; copy it back to the repo
+   docker cp hlas-backend-1:/app/clubs.config.json backend/clubs.config.json
+   docker cp hlas-backend-1:/app/clubs/. backend/clubs/
    ```
+
+   The export writes only the clubs active in that database, rewriting the config and `backend/clubs/manifest.json` to match, and includes each club's SMTP password. Use this only against a database holding every club. Otherwise, follow the safe export pattern in CLAUDE.md (export to temp paths and merge in just the club you need). Before committing, check that no `smtp` block contains a password.
 
 3. Commit updated beats to git:
    ```bash
@@ -730,20 +734,24 @@ After deploying backend code that includes beats export/import and automatic sta
 > **Note**: The `production` branch is the deployed codebase on the VPS. Promote changes to production only after testing on the `main` branch.
 
 3. Backend startup hook automatically runs `sync_beats_json_to_postgres.py`:
-   - PostgreSQL `club_beats` table is populated from `clubs.config.json`
-   - Beats synced for all active clubs
+   - Active clubs with **no** beats in PostgreSQL are seeded from `clubs.config.json`
+   - Clubs that already have beats are kept as they are, so a restart does not apply beat changes from git; use `--replace` below for that
    - Check container logs: `docker compose logs backend | grep -i beats`
 
 **Manual sync (if needed):**
 
 You can also manually sync beats at any time without restarting:
 
-```bash
-# Test without writing (dry-run)
-docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --dry-run
+Default runs only seed clubs with no beats. `--replace` deletes and re-inserts existing clubs' beats from the JSON, so export any edits made in the production app first.
 
-# Actually sync beats to PostgreSQL
+```bash
+# Seed clubs that have no beats yet (dry-run first to preview)
+docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --dry-run
 docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
+
+# Overwrite existing clubs' beats from the JSON (export app edits first)
+docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --replace --dry-run
+docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --replace
 ```
 
 Or via API (requires admin token):
