@@ -207,7 +207,7 @@ For `/club/{clubCode}/...` routes (including `/club/{clubCode}/login/`), favicon
 - **Tagline field** - 255 chars max
 - **Description field** - Text area, 500+ chars supported
 - **Hero Image URL** - External URL input
-- **Page Content** - Select any of the six pages to edit its heading, subheading, and plain-text body
+- **Page Content** - Select any of the six pages to edit its heading, subheading, and body text (basic HTML is supported)
 - Blank page content uses that page's built-in template copy; reset clears the club-specific override
 - Existing page visibility, page hero image/fallback, Home feature, and Contact display controls remain available
 - **Device info** - Shows `/club/{CODE}/` URL and access patterns

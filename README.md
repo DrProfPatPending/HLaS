@@ -29,8 +29,7 @@ to `ctc-production`. The isolated hlastest stack and routing rollback procedure
 are documented in [CTC_SETUP.md](CTC_SETUP.md#ctc-development-on-hlastest).
 
 ## Current Application Highlights
-- Mini-site pages support individual hero image URLs, optional Home-image
-  fallback, readable light-green banners, and per-page editable text with sanitized HTML formatting via Club Settings.
+- Mini-site pages support individual hero image URLs, optional Home-image fallback, readable light-green banners, per-page editable text with sanitised HTML formatting via Club Settings, and per-club SEO tags plus `/sitemap.xml`.
 - Distinct member UI and admin UI entry points.
 - PostgreSQL-backed reads and writes for clubs, members, roles, newsletters, field order, and member photos.
 - PostgreSQL member password changes through the member or admin editor update the member record and, when linked, the central login account in the same transaction.
@@ -40,7 +39,7 @@ are documented in [CTC_SETUP.md](CTC_SETUP.md#ctc-development-on-hlastest).
 - Field Order (column order, visibility, display names, widths, read-only flags) is now stored **per-club** in the `club_field_order` table — each club configures its own layout independently.
 - Fishing Beats field order, visibility, and minimum width settings are configurable per club.
 - Beat Details now has its own dedicated field-order and visibility configuration context per club.
-- The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
+- The post-login home page uses a dashboard layout with a left-side action stack on desktop and a top navigation grid above content on tablets and phones.
 
 ## Recent Changes
 - **Build Script Enhancements (May 2026):**
@@ -108,6 +107,9 @@ are documented in [CTC_SETUP.md](CTC_SETUP.md#ctc-development-on-hlastest).
    - Desktop and mobile: The same enabled pages, navigation and login link, with a responsive layout.
    - Public access via `/club/{clubCode}/` (no authentication required).
    - Admin UI in Club Settings to manage mini site configuration.
+   - Per-club page headings, subheadings and body text can be edited in Club Settings; supported inline HTML is sanitized before rendering.
+   - Inner pages can each set a hero image, falling back to the Home hero or a plain banner.
+   - Mini-site pages are served with per-club `<title>`, description, canonical and Open Graph tags; `/sitemap.xml` lists enabled pages (see MINI_SITE.md, SEO).
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration.
    - Club background image storage in PostgreSQL with admin upload capability.
    - Club hero image storage in PostgreSQL via `/api/club_hero/<club>` with filesystem fallback to `<CLUB>_hero.png`.
