@@ -30,3 +30,6 @@ hlas_pg*_dump_*.sql
 *.lck
 # Python virtual environments
 backend-venv/
+
+# Machine-specific Claude Code notes
+CLAUDE.local.md
