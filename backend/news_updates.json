@@ -1,6 +1,15 @@
 {
   "CTC": [
     {
+      "id": "78dc17bd06684eeb",
+      "date": "2026-11-16",
+      "status": "Published",
+      "update": "CTC has access to 2.5 miles of the upper River Cam between the A505 at Whittlesford and the southern end of the Wellcome Genome Campus close to the A11/M11 spur. Fishing is mainly for Brown Trout, but there are good numbers of Chub and Dace within our beats, and the occasional Pike. CTC is a member of the Wild Trout Trust (membership number: 1325). CTC is a member of the Angling Trust (including access to Fish Legal services) and has insurance provided by AT and underwritten by Howden. Member Clubs/Syndicates of the Angling Trust Underwritten by: Hiscox Insurance Company Ltd, JRP Underwriting & Ortus Underwriting Policy Numbers: HU PIB 8121816 (Public Liability and Professional Indemnity) B1161S25DT822 (XOL PL/Prods \u00a35m over \u00a310m) ORT/ASTCPA/10193339 (Personal Accident Period of Insurance: 25th October 2026 to 24th October 2027.",
+      "category": "Club Info",
+      "createdAt": "2026-11-16T21:20:46Z",
+      "content_scope": "home"
+    },
+    {
       "id": "be98127f3664a30f",
       "date": "2026-07-30",
       "status": "Published",
@@ -14,7 +23,7 @@
       "date": "2026-06-14",
       "status": "Published",
       "update": "This is a short history of CTC... Cambridge Trout club can trace its roots back over 100 hundred years and has been fishing the upper reaches of the River Cam throughout that time. The club has a small (and limited by Constitution) membership. The club's waters stretch from the A505 bridge (close to Whittlesford Station) and go south/upstream to the railway line close to Duxford village. There is then a short gap (through Duxford village, where the river is to the west of the Cambridge-London Liverpool Street railway line) before fishing access starts again from the railway line (with the river now on the East side of the tracks) upstream through Hinxton village and on into the Wellcome Genome Campus. The fishing extends to the southern limit of the Genome Campus as the river flows under the A11/M11 spur.",
-      "category": "Club History and General Information",
+      "category": "Club History",
       "createdAt": "2026-06-14T16:19:34Z",
       "content_scope": "home"
     },
