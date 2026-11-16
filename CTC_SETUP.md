@@ -11,6 +11,102 @@ This branch:
 
 ---
 
+## CTC Development on hlastest
+
+Use `ctc-dev` for CTC changes, starting from the pushed production baseline.
+Test there before merging into `ctc-production`; do not deploy directly from
+`main` or the handover branch. Configuration and content stored in PostgreSQL
+are not transferred by Git.
+
+`docker-compose.ctc-dev.yml` is a standalone development stack, not an override
+for the production Compose file. It uses separate `ctc-dev` database/application
+volumes and local image tags. The backend has only an internal Docker network,
+with no external egress, and PostgreSQL has no published port. WordPress data
+is not cloned: Caddy retains the existing `wordpress.hlastest` route over
+`hlas_default`. Only the existing development TLS data volume is shared, so
+trusted development certificates continue working. Do not use this file on
+production.
+
+For routine application updates after the isolated stack has been set up:
+
+```bash
+./hlas_build.sh --target ctc-dev --directory . --local --quick --app-only
+```
+
+The explicit `ctc-dev` target selects only `docker-compose.ctc-dev.yml` and
+project `ctc-dev`, without loading a production/legacy environment file or
+requiring WordPress credentials. It requires the existing development database
+secret, a healthy PostgreSQL service and disabled startup sync. Only backend
+and frontend are recreated; backend health is checked inside its private
+network. The existing Caddy must be running for the HTTPS health check.
+Configuration-file overrides are rejected for this fixed isolated target.
+Without `--local`, the script fetches and resets to `origin/ctc-dev` using its
+existing remote-deployment behaviour; push changes before using that mode.
+Without `--app-only`, it starts the four-service development stack, not
+WordPress. Initial seed restoration and the routing cutover still require
+the manual setup below.
+
+The stack sets `HLAS_SYNC_FILES_ON_STARTUP=false` so first-request hooks cannot
+replace restored PostgreSQL beats or images with filesystem defaults. Other
+deployments retain the existing default (`true`). Backup API routes are also
+disabled with `ENABLE_BACKUPS=false`; no production backup schedule is copied.
+
+Before starting:
+
+1. Securely transfer the approved custom-format dump outside the repository.
+   Verify its SHA-256, byte count and restricted permissions.
+2. Generate a development-only database password once:
+   ```bash
+   (umask 077; test ! -e deploy/.ctc-dev-postgres-password &&
+     openssl rand -hex -out deploy/.ctc-dev-postgres-password 32)
+   ```
+   Keep this ignored file private and do not regenerate it for an existing
+   database volume.
+3. Validate and build the standalone stack:
+   ```bash
+   docker compose -f docker-compose.ctc-dev.yml config --quiet
+   docker compose -f docker-compose.ctc-dev.yml build backend frontend
+   docker compose -f docker-compose.ctc-dev.yml up -d --wait postgres
+   ```
+4. Verify PostgreSQL is using a new `ctc-dev` volume and an empty database.
+   Restore only into that database with `pg_restore --no-owner --no-acl
+   --exit-on-error --single-transaction`. Before starting the backend, clear
+   `host`, `username`, `password` and `from_email` in its restored
+   `club_smtp_settings` table, truncate `member_sessions` and
+   `member_refresh_sessions`, and review other production-specific settings.
+   Do not copy production environment files or credentials.
+5. Start and check `backend` and `frontend` first. Neither service publishes
+   a host port; run readiness checks inside their internal Docker network.
+   For example:
+   ```bash
+   docker compose -f docker-compose.ctc-dev.yml exec -T frontend \
+     wget -q -O /dev/null http://127.0.0.1/club/CTC/
+   ```
+   Verify blocked backend egress before switching public development routing.
+6. Only after readiness checks, stop the old development Caddy and start
+   the CTC Caddy:
+   ```bash
+   docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml stop caddy
+   docker compose -f docker-compose.ctc-dev.yml up -d caddy
+   ```
+   Verify `https://hlastest/club/CTC/`, its enabled pages, login, and the
+   `X-Robots-Tag`/robots.txt indexing restrictions. The original databases and
+   other services remain untouched.
+
+To roll back routing without deleting either stack's data:
+```bash
+docker compose -f docker-compose.ctc-dev.yml stop caddy
+docker compose -f docker-compose.prod.yml -f docker-compose.dev.yml start caddy
+```
+
+Exchange non-sensitive progress and questions in `HANDOVER.md` on
+`sync-handover`, not on the deployment branches. Fetch before updating it and
+push responses without including dumps or secrets. While the stack is running,
+update the handover branch without switching the deployment checkout: its
+branch-specific files are bind-mounted into running containers.
+
+---
+
 ## Initial Setup on VPS
 
 ### 1. Create External Config File
@@ -103,6 +199,14 @@ git push origin ctc-production
 ### Configuration Changes
 
 Keep environment values in `.env.ctc`, club data in `clubs.config.ctc.json`, and Caddy routing/authentication in `deploy/caddy/Caddyfile.ctc`. These files are ignored and selected explicitly by `hlas_build.sh`.
+
+### Live Data and the Startup Sync
+
+- The CTC production PostgreSQL holds only the CTC club. The backend container is `hlas-backend-1`.
+- Keep `HLAS_SYNC_FILES_ON_STARTUP=false` in `.env.ctc`. If it is on, the first request after a restart runs `sync_beats_json_to_postgres.py`. Unless that script on the deployed branch only seeds clubs that have no beats, it deletes and re-inserts CTC's beats from the JSON baked into the image, and beat edits made in the app are lost. Check the script before changing the setting.
+- Running `sync_beats_postgres_to_json.py` against the production database drops every other club from the generated config and manifest, and its output includes SMTP passwords. Follow the safe export pattern in CLAUDE.md.
+- To record live CTC data in Git, update both `backend/clubs/CTC/club.json` and the CTC entry in `backend/clubs.config.json`, leave the other clubs untouched, and check the `smtp` block has no password before committing.
+- On the CTC branches, CLAUDE.md arrives from `main`. Keep CTC-only guidance here, not in CLAUDE.md.
 
 ---
 

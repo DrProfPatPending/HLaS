@@ -324,12 +324,14 @@ Enabled pages use the same routes on mobile, with responsive navigation and layo
 
 ### Headline Text
 - Automatic generation: `"Welcome to {Club Name} - a small fishing club which offers access to some of the prettiest rivers and finest fly fishing in the UK."`
-- Can be overridden per club in future via admin UI
+- Can be overridden per club in **Club Settings → Club Mini Site → Page Content**
 
 ### Page Content
 - Each page has default placeholder content
-- Customizable content fields in database schema (future use)
-- Contact page has empty form fields for club to populate
+- Club admins can override each page's heading, subheading, and body text in **Club Settings → Club Mini Site → Page Content**
+- Blank overrides use the built-in page text; resetting clears the per-club override
+- Page body text supports a restricted, sanitized subset of HTML (paragraphs, headings, emphasis, lists and links); scripts and inline styles are removed
+- Contact details and form/email display remain available when custom introductory text is set
 
 ## Styling
 
@@ -351,6 +353,7 @@ Enabled pages use the same routes on mobile, with responsive navigation and layo
 
 ### Page Hero Images
 
+- The Home hero prefixes its configured headline with `Welcome to `, without a colon.
 - **Club Settings > Club Mini Site:** Set the Home hero URL, then use
   **Page Hero Images** to configure About, Waters, News, Join and Contact.
 - Each inner page has an optional `hero_image_url` and `hero_fallback`
@@ -367,8 +370,8 @@ Enabled pages use the same routes on mobile, with responsive navigation and layo
 ## Future Enhancements
 
 1. **Content Management**
-   - Admin UI text editors for page content
-   - Rich text editor for About, News, Join pages
+   - Rich text editor for page content
+   - Custom page layouts and section management
    - Image uploads for Water details
 
 2. **Contact Form Integration**

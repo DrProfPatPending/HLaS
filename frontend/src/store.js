@@ -97,7 +97,7 @@ export const store = reactive({
   totalMembers: 0,
   currentPage: 1,
   pageSize: 10,
-  sortKey: 'ID',
+  sortKey: 'Last_Name',
   sortOrder: 'asc',
   filterDebounceTimer: null,
   filterDebounceMs: 250,

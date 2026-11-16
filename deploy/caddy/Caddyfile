@@ -4,23 +4,44 @@
 # macOS System Keychain so that Safari trusts the dev server.
 
 hlastest {
-    tls internal
+	tls internal
 
-    encode zstd gzip
+	encode zstd gzip
 
-    handle_path /api/* {
-        reverse_proxy backend:5050
-    }
+	# Dev server must never be indexed by search engines.
+	header X-Robots-Tag "noindex, nofollow"
 
-    handle {
-        reverse_proxy frontend:80
-    }
+	handle /robots.txt {
+		header Content-Type text/plain
+		respond <<TXT
+			User-agent: *
+			Disallow: /
+			TXT 200
+	}
+
+	handle_path /api/* {
+		reverse_proxy backend:5050
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
 }
 
 wordpress.hlastest {
-    tls internal
+	tls internal
 
-    encode zstd gzip
+	encode zstd gzip
 
-    reverse_proxy wordpress-web:80
+	header X-Robots-Tag "noindex, nofollow"
+
+	handle /robots.txt {
+		header Content-Type text/plain
+		respond <<TXT
+			User-agent: *
+			Disallow: /
+			TXT 200
+	}
+
+	reverse_proxy wordpress-web:80
 }

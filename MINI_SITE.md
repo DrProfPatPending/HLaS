@@ -62,7 +62,7 @@ CREATE TABLE club_mini_sites (
     tagline       VARCHAR(255) NOT NULL DEFAULT '',
     hero_image_url VARCHAR(255) NOT NULL DEFAULT '',
     description   TEXT NOT NULL DEFAULT '',
-    pages         JSONB NOT NULL DEFAULT '[]',           -- Reserved for future use
+    pages         JSONB NOT NULL DEFAULT '[]',           -- Per-page visibility, content, and presentation
     social_links  JSONB NOT NULL DEFAULT '{}',           -- Facebook, Twitter, Instagram URLs
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -207,6 +207,9 @@ For `/club/{clubCode}/...` routes (including `/club/{clubCode}/login/`), favicon
 - **Tagline field** - 255 chars max
 - **Description field** - Text area, 500+ chars supported
 - **Hero Image URL** - External URL input
+- **Page Content** - Select any of the six pages to edit its heading, subheading, and body text (basic HTML is supported)
+- Blank page content uses that page's built-in template copy; reset clears the club-specific override
+- Existing page visibility, page hero image/fallback, Home feature, and Contact display controls remain available
 - **Device info** - Shows `/club/{CODE}/` URL and access patterns
 - **Status** - Displays if enabled or not configured
 
@@ -359,7 +362,7 @@ For CTC production, the standard configuration is:
 ### Data Validation
 
 - Title/tagline: Limited to 255 chars, XSS-safe Vue escaping
-- Description: Text only, no HTML/Markdown for now
+- Site description is plain text. Page content permits a restricted, sanitized subset of HTML formatting; scripts, styles, and unsupported tags are removed.
 - Hero image URL: Validated as proper URL format
 - Social links: Restricted to known platforms
 

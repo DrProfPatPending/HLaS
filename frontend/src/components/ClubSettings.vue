@@ -662,8 +662,6 @@ export default {
             return acc;
           }, defaultMiniSite().page_configs);
 
-          const homePage = pageConfigs.home || {};
-
           // Extract enabled page IDs from the pages array
           const enabledPageIds = pages.length
             ? pages.filter(p => p.enabled).map(p => p.id)
@@ -675,9 +673,9 @@ export default {
             tagline: res?.data?.tagline || '',
             description: res?.data?.description || '',
             hero_image_url: res?.data?.hero_image_url || '',
-            show_exclusive_access: homePage.show_exclusive_access !== false,
-            show_community: homePage.show_community !== false,
-            show_learning: homePage.show_learning !== false,
+            show_exclusive_access: pageConfigs.home?.show_exclusive_access !== false,
+            show_community: pageConfigs.home?.show_community !== false,
+            show_learning: pageConfigs.home?.show_learning !== false,
             contact_display_mode: res?.data?.contact_display_mode || 'form',
             show_direct_email_link: pageConfigs.contact?.show_direct_email_link !== false,
             page_configs: pageConfigs,
@@ -943,20 +941,6 @@ export default {
   color: #2d6a45;
 }
 
-.reset-page-content-button {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #999;
-  border-radius: 4px;
-  background: white;
-  color: #333;
-  cursor: pointer;
-}
-
-.reset-page-content-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
 /* Pages Configuration */
 .pages-config {
   background: white;
@@ -976,6 +960,20 @@ export default {
   margin: 0 0 1rem 0;
   color: #666;
   font-size: 0.9rem;
+}
+
+.reset-page-content-button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #999;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  cursor: pointer;
+}
+
+.reset-page-content-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .pages-grid {

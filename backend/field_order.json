@@ -309,7 +309,8 @@
       "First_Name": "First Name",
       "Member_Type": "Membership Type",
       "Full_Address": "Address",
-      "Members_Name": "Member"
+      "Members_Name": "Member",
+      "E_Mail": "Email"
     }
   },
   "club_information_officers": [

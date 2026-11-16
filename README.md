@@ -24,9 +24,12 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
 
 **See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions, rollback procedures, and best practices.**
 
+For the CTC-specific workflow, develop and test on `ctc-dev` before promoting
+to `ctc-production`. The isolated hlastest stack and routing rollback procedure
+are documented in [CTC_SETUP.md](CTC_SETUP.md#ctc-development-on-hlastest).
+
 ## Current Application Highlights
-- Mini-site pages support individual hero image URLs, optional Home-image
-  fallback, and readable light-green banners via Club Settings.
+- Mini-site pages support individual hero image URLs, optional Home-image fallback, readable light-green banners, per-page editable text with sanitised HTML formatting via Club Settings, and per-club SEO tags plus `/sitemap.xml`.
 - Distinct member UI and admin UI entry points.
 - PostgreSQL-backed reads and writes for clubs, members, roles, newsletters, field order, and member photos.
 - PostgreSQL member password changes through the member or admin editor update the member record and, when linked, the central login account in the same transaction.
@@ -36,7 +39,7 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
 - Field Order (column order, visibility, display names, widths, read-only flags) is now stored **per-club** in the `club_field_order` table — each club configures its own layout independently.
 - Fishing Beats field order, visibility, and minimum width settings are configurable per club.
 - Beat Details now has its own dedicated field-order and visibility configuration context per club.
-- The post-login home page now uses a dashboard layout with a left-side action stack and a central club news/update panel.
+- The post-login home page uses a dashboard layout with a left-side action stack on desktop and a top navigation grid above content on tablets and phones.
 
 ## Recent Changes
 - **Build Script Enhancements (May 2026):**
@@ -104,6 +107,9 @@ This runs `docker compose ps`, service runtime checks, HTTPS smoke probes (main/
    - Desktop and mobile: The same enabled pages, navigation and login link, with a responsive layout.
    - Public access via `/club/{clubCode}/` (no authentication required).
    - Admin UI in Club Settings to manage mini site configuration.
+   - Per-club page headings, subheadings and body text can be edited in Club Settings; supported inline HTML is sanitized before rendering.
+   - Inner pages can each set a hero image, falling back to the Home hero or a plain banner.
+   - Mini-site pages are served with per-club `<title>`, description, canonical and Open Graph tags; `/sitemap.xml` lists enabled pages (see MINI_SITE.md, SEO).
    - Separate public API endpoint `/api/club/{id}/mini-site` for external integration.
    - Club background image storage in PostgreSQL with admin upload capability.
    - Club hero image storage in PostgreSQL via `/api/club_hero/<club>` with filesystem fallback to `<CLUB>_hero.png`.
@@ -413,6 +419,7 @@ This project is a web application for managing the membership of a fishing club.
 - `backend/` - Flask API and database
 - `frontend/` - Vue.js app
 - `Utilities/` - reusable SQL and operational helper assets
+- `CLAUDE.md` - AI agent instructions (commands, rules, architecture, data storage)
 - `.github/copilot-instructions.md` - Workspace instructions
 
 ## Local checks
@@ -1206,20 +1213,22 @@ After pulling the updated main branch on the VPS:
    docker compose up -d backend
    ```
 
-2. **Beats automatically sync on startup:**
-   - Backend startup hook runs `sync_beats_json_to_postgres.py`
-   - PostgreSQL `club_beats` table is populated from `clubs.config.json`
+2. **Beats are seeded on startup:**
+   - Backend startup hook runs `sync_beats_json_to_postgres.py` (when `HLAS_SYNC_FILES_ON_STARTUP` is true)
+   - Only clubs with **no** beats in PostgreSQL are filled from `clubs.config.json`; clubs that already have beats keep them, so edits made in the app survive restarts and rebuilds
    - Check container logs for sync status: `docker compose logs backend | grep -i beats`
 
 3. **Manual sync (optional):**
-   
-   If you need to resync without restarting:
+
+   To push beats changed in `clubs.config.json` into a club that already has beats, use `--replace`. This deletes and re-inserts that club's beats, so first export any edits made in the app (`sync_beats_postgres_to_json.py`):
    ```bash
-   # Dry-run first to preview changes
+   # Seed clubs that have no beats yet (dry-run first to preview)
    docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --dry-run
-   
-   # Actually sync beats
    docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py
+
+   # Overwrite existing clubs' beats from the JSON (export app edits first)
+   docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --replace --dry-run
+   docker exec hlas-backend-1 python3 /app/sync_beats_json_to_postgres.py --replace
    ```
 
 ### API Endpoints

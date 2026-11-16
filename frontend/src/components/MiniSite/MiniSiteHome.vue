@@ -127,10 +127,10 @@ export default {
       return 'We are dedicated to enjoying and maintaining the natural beauty and ecological health of our local rivers through responsible fishing, stewardship, and a welcoming member community.';
     });
 
+    const safeContent = computed(() => sanitizeMiniSiteContent(displayBody.value));
     const showExclusiveAccess = computed(() => toBool(props.showExclusiveAccess));
     const showCommunity = computed(() => toBool(props.showCommunity));
     const showLearning = computed(() => toBool(props.showLearning));
-    const safeContent = computed(() => sanitizeMiniSiteContent(displayBody.value));
     const showAnyFeature = computed(() => {
       return showExclusiveAccess.value || showCommunity.value || showLearning.value;
     });

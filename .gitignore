@@ -19,6 +19,7 @@ deploy/caddy/Caddyfile.ctc
 deploy/.ctc-dev-postgres-password
 deploy/.env*
 !deploy/.env*.example
+deploy/.ctc-dev-postgres-password
 *.pyc
 .backend.pid
 .frontend.pid
@@ -30,3 +31,6 @@ hlas_pg*_dump_*.sql
 *.lck
 # Python virtual environments
 backend-venv/
+
+# Machine-specific Claude Code notes
+CLAUDE.local.md

@@ -1,0 +1,16 @@
+{
+  "clubs": [
+    {
+      "shortName": "CTC",
+      "fullName": "Cambridge Trout Club",
+      "websiteUrl": "https://hlastest/club/CTC/",
+      "logoUrl": "/club_logo/CTC",
+      "smtp": {
+        "host": "",
+        "username": "",
+        "password": "",
+        "fromEmail": ""
+      }
+    }
+  ]
+}

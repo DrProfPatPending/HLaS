@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from sqlalchemy import JSON, Column, Integer, MetaData, String, Table, and_, create_engine, select
+from sqlalchemy import JSON, Boolean, Column, Integer, MetaData, String, Table, and_, create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from routes import field_order_routes
@@ -212,6 +212,72 @@ class FieldOrderRoutesPersistenceTests(unittest.TestCase):
         self.assertEqual(loaded['show_columns']['home_news']['Update'], False)
         self.assertEqual(loaded['read_only']['home_news']['Update'], True)
         self.assertEqual(loaded['read_only']['custom_context']['Some_Field'], True)
+
+
+
+class MembershipAdminDefaultDisplayNameTests(unittest.TestCase):
+    """The shipped field_order.json labels E_Mail, and club rows keep overrides."""
+
+    def setUp(self):
+        engine = create_engine('sqlite+pysqlite:///:memory:', future=True)
+        metadata = MetaData()
+        self.clubs_table = Table(
+            'clubs',
+            metadata,
+            Column('id', Integer, primary_key=True),
+            Column('short_name', String(32), nullable=False),
+            Column('is_active', Boolean, nullable=False),
+        )
+        self.club_field_order_table = Table(
+            'club_field_order',
+            metadata,
+            Column('id', Integer, primary_key=True, autoincrement=True),
+            Column('club_id', Integer, nullable=False),
+            Column('config', JSON, nullable=False),
+        )
+        metadata.create_all(engine)
+        self.session_factory = sessionmaker(bind=engine, future=True)
+
+    def _store_club_config(self, short_name, config):
+        session = self.session_factory()
+        try:
+            session.execute(self.clubs_table.insert().values(id=1, short_name=short_name, is_active=True))
+            session.execute(self.club_field_order_table.insert().values(club_id=1, config=config))
+            session.commit()
+        finally:
+            session.close()
+
+    def _load(self, short_name):
+        deps = {
+            'is_postgres_reads_enabled': lambda: True,
+            'get_postgres_backend': lambda: {
+                'session_factory': self.session_factory,
+                'clubs_table': self.clubs_table,
+                'club_field_order_table': self.club_field_order_table,
+            },
+        }
+        return field_order_routes.load_field_order_config(deps, short_name)
+
+    def test_club_without_email_label_gets_default_email_label(self):
+        self._store_club_config('CTC', {
+            'membership_admin': ['Members_Name', 'E_Mail'],
+            'display_names': {'membership_admin': {'Members_Name': 'Member'}},
+        })
+
+        labels = self._load('CTC')['display_names']['membership_admin']
+
+        self.assertEqual(labels['E_Mail'], 'Email')
+        self.assertEqual(labels['Members_Name'], 'Member')
+
+    def test_club_email_label_override_is_kept(self):
+        self._store_club_config('CTC', {
+            'membership_admin': ['Members_Name', 'E_Mail'],
+            'display_names': {'membership_admin': {'E_Mail': 'Email address'}},
+        })
+
+        labels = self._load('CTC')['display_names']['membership_admin']
+
+        self.assertEqual(labels['E_Mail'], 'Email address')
 
 
 if __name__ == '__main__':
