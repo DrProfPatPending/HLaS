@@ -1,22 +1,10 @@
 <template>
   <div class="mini-site-page home-page">
-    <div class="home-hero">
-      <img
-        v-if="heroImage"
-        :src="heroImage"
-        :alt="clubName"
-        class="hero-image"
-      />
-      <div v-else class="hero-placeholder">
-        <div class="river-icon">🌊</div>
-      </div>
-      
-      <div class="hero-overlay" />
-      <div class="hero-content">
-        <h1>{{ displayHeadline }}</h1>
-        <p v-if="subheading || tagline" class="hero-tagline">{{ subheading || tagline }}</p>
-      </div>
-    </div>
+    <mini-site-hero
+      :title="`Welcome to ${displayHeadline}`"
+      :subtitle="subheading || tagline"
+      :image="heroImage"
+    />
 
     <section v-if="backgroundImageUrl" class="home-background-section">
       <img
@@ -58,10 +46,12 @@
 <script>
 import { computed } from 'vue';
 import { API_BASE_URL } from '../../store.js';
+import MiniSiteHero from './MiniSiteHero.vue';
 import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
 
 export default {
   name: 'MiniSiteHome',
+  components: { MiniSiteHero },
   props: {
     clubCode: {
       type: String,
@@ -119,7 +109,7 @@ export default {
       if (props.headline) {
         return props.headline;
       }
-      return `Welcome to ${props.clubName} - a dedicated fly-fishing club with access to quality river water and a focus on sustainable angling.`;
+      return props.clubName;
     });
 
     const backgroundImageUrl = computed(() => {
@@ -162,74 +152,6 @@ export default {
 <style scoped>
 .home-page {
   width: 100%;
-}
-
-/* Hero Section */
-.home-hero {
-  position: relative;
-  height: 100px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hero-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.hero-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #a8d5d9 0%, #5b9fb4 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.river-icon {
-  font-size: 4rem;
-  opacity: 0.3;
-}
-
-.hero-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  color: white;
-  max-width: 800px;
-  padding: 0.5rem;
-}
-
-.hero-content h1 {
-  font-size: 14pt;
-  margin: 0;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.hero-tagline {
-  font-size: 10pt;
-  margin: 0;
-  opacity: 0.9;
 }
 
 /* Welcome Section */
@@ -322,14 +244,6 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .home-hero {
-    height: 90px;
-  }
-
-  .hero-content h1 {
-    font-size: 12pt;
-  }
-
   .home-welcome h2 {
     font-size: 1.5rem;
   }

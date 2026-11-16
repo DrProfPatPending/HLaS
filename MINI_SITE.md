@@ -7,8 +7,8 @@ Club Mini Sites are optional, public-facing marketing websites for individual cl
 **Key Characteristics:**
 - **Per-club configuration** - Enabled/disabled on a club-by-club basis
 - **Public access** - No authentication required; accessible worldwide
-- **Device-responsive** - Desktop: full experience; Mobile/Responsive: placeholder with desktop prompt
-- **Customizable** - Clubs can set title, tagline, description, and hero image
+- **Device-responsive** - Enabled mini-site pages and navigation adapt to desktop and mobile widths
+- **Customizable** - Clubs can set title, tagline, description, hero images, and page-specific headings, subheadings, and body text in Club Settings
 - **Flexible media storage** - Hero images can be external URLs or served from internal PostgreSQL-backed endpoints
 - **Future-extensible** - Ready for galleries, event calendars, contact forms
 - **API-accessible** - Public endpoint for external integrations
@@ -37,8 +37,7 @@ Club Mini Sites are optional, public-facing marketing websites for individual cl
 
 ### 2) View Your Mini Site
 
-- **Desktop:** `https://yourdomain.org/club/{CLUB_CODE}/`
-- **Mobile:** Same URL shows placeholder with link to desktop
+- **Desktop and mobile:** `https://yourdomain.org/club/{CLUB_CODE}/`
 - **Login:** Always available at `https://yourdomain.org/club/{CLUB_CODE}/login/`
 
 ### 3) Disable Mini Site
@@ -63,7 +62,7 @@ CREATE TABLE club_mini_sites (
     tagline       VARCHAR(255) NOT NULL DEFAULT '',
     hero_image_url VARCHAR(255) NOT NULL DEFAULT '',
     description   TEXT NOT NULL DEFAULT '',
-    pages         JSONB NOT NULL DEFAULT '[]',           -- Reserved for future use
+    pages         JSONB NOT NULL DEFAULT '[]',           -- Per-page visibility, content, and presentation
     social_links  JSONB NOT NULL DEFAULT '{}',           -- Facebook, Twitter, Instagram URLs
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -168,24 +167,17 @@ Update mini site configuration.
 ```
 MiniSiteView.vue (Router/main entry)
 ├── MiniSiteContainer.vue (Main wrapper)
-│   ├── MiniSiteDesktop.vue (Full site, desktop only)
-│   │   ├── MiniSiteNavigation (top nav)
-│   │   ├── MiniSiteHero (hero section)
-│   │   ├── ContentSections (home, about, beats)
-│   │   └── MiniSiteFooter (social links, copyright)
-│   │
-│   └── MiniSitePlaceholder.vue (Mobile/responsive fallback)
-│       ├── Responsive nav
-│       ├── Mobile-friendly info
-│       └── "View on Desktop" prompt
+│   └── MiniSiteDesktop.vue (Full site, responsive layout)
+│       ├── Navigation and footer
+│       └── Page components (Home, About, Waters, News, Join and Contact)
 │
 └── LoginView (For /login/ route)
 ```
 
 ### Responsive Breakpoint
 
-- **Desktop (768px+):** Full mini site experience
-- **Mobile (<768px):** Responsive placeholder with desktop redirect prompt
+- The same configured pages are rendered at all viewport widths.
+- Navigation and page layouts adapt at the 768px CSS breakpoint.
 
 ### Entry Point Detection
 
@@ -215,10 +207,10 @@ For `/club/{clubCode}/...` routes (including `/club/{clubCode}/login/`), favicon
 - **Tagline field** - 255 chars max
 - **Description field** - Text area, 500+ chars supported
 - **Hero Image URL** - External URL input
+- **Page Content** - Select any of the six pages to edit its heading, subheading, and body text (basic HTML is supported)
+- Blank page content uses that page's built-in template copy; reset clears the club-specific override
+- Existing page visibility, page hero image/fallback, Home feature, and Contact display controls remain available
 - **Device info** - Shows `/club/{CODE}/` URL and access patterns
-- **Page Content** - Select Home, About Us, Our Waters, News, Join Us or Contact to edit its heading, subheading and body text
-- Blank page fields use the built-in template text; **Reset to built-in text** clears all custom copy for the selected page
-- Basic inline HTML is supported in body text and sanitized before display; scripts, styles and unsupported tags/attributes are removed
 - **Status** - Displays if enabled or not configured
 
 **Permissions:** Club Admin+ (requires `club.update`)
@@ -277,13 +269,13 @@ For CTC production, the standard configuration is:
 - Compact hero section: 100px height with background image overlay
 - Background image section: Full-width responsive, 100% width with max-width 1200px
 - Content container: max-width 1200px, centered
-- Mobile fallback: Responsive CSS at 768px breakpoint
+- Responsive layout adjustments at the 768px breakpoint
 
 ### Mobile & Responsive Design
 
 **Responsive Breakpoints:**
-- **Desktop (768px+):** Full mini site with navigation, hero, and content sections
-- **Mobile (<768px):** Placeholder with option to view on desktop
+- **Above 768px:** Full mini site with desktop navigation and content layout
+- **At and below 768px:** The same enabled pages with a stacked navigation and mobile layout
 
 **Mobile Color Scheme:**
 - Same primary green as desktop
@@ -300,10 +292,19 @@ For CTC production, the standard configuration is:
 
 ---
 
+## SEO (Crawler Metadata)
+
+- `/sitemap.xml` (backend) lists the enabled pages of every enabled mini site.
+- nginx routes `/club/{club}/` and `/club/{club}/{page}/` to the backend `/club-page/...` endpoint, which returns the SPA `index.html` with per-club tags injected: `<title>` (mini-site title), meta description (mini-site description, truncated to ~160 chars), canonical URL, Open Graph/Twitter tags and the hero image.
+- Login pages, clubs without an enabled mini site and unknown clubs are served with `noindex` (unknown clubs also return 404).
+- The backend fetches the shell from `HLAS_FRONTEND_SHELL_URL` (default `http://frontend:80/index.html`) and caches it for 60 seconds; if the frontend is unreachable nginx falls back to the plain SPA shell.
+- Tests: `backend/tests/test_club_page_seo.py`.
+
 ## Future Enhancements
 
-### Phase 2: Expanded Content Management
+### Phase 2: Content Management
 
+- Admin UI for adding/editing custom pages
 - Rich text editor for page content
 - Gallery/media management
 - Page publishing workflow (draft/published)
@@ -341,11 +342,11 @@ For CTC production, the standard configuration is:
 3. Check CORS headers if using external CDN
 4. Use HTTPS URLs for production
 
-### Mobile Shows Placeholder on Desktop
+### Mobile Layout or Navigation Problems
 
-1. Check CSS media query breakpoint (should be 768px)
-2. Test browser responsive mode (press F12 → toggle device mode)
-3. Check window.innerWidth in console for actual breakpoint
+1. Check the deployed frontend is up to date and reload the page.
+2. Test browser responsive mode on both sides of the 768px breakpoint.
+3. Check the browser console and network tab for errors.
 
 ### Admin Can't Save Mini Site Config
 
@@ -361,7 +362,7 @@ For CTC production, the standard configuration is:
 ### Data Validation
 
 - Title/tagline: Limited to 255 chars, XSS-safe Vue escaping
-- Description: Text only, no HTML/Markdown for now
+- Site description is plain text. Page content permits a restricted, sanitized subset of HTML formatting; scripts, styles, and unsupported tags are removed.
 - Hero image URL: Validated as proper URL format
 - Social links: Restricted to known platforms
 

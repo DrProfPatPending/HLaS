@@ -1,9 +1,11 @@
 <template>
   <div class="mini-site-page contact-page">
-    <section class="page-header">
-      <h1>{{ headline || 'Contact Us' }}</h1>
-      <p v-if="subheading" class="subheading">{{ subheading }}</p>
-    </section>
+    <mini-site-hero
+      :title="headline || 'Contact Us'"
+      :subtitle="subheading"
+      :image="heroImage"
+      :fallback-image="heroFallbackImage"
+    />
 
     <section class="contact-content">
       <div class="contact-container">
@@ -13,17 +15,26 @@
 
           <div class="contact-info">
             <div v-if="contactEmail" class="contact-method">
-              <h3>📧 Email</h3>
+              <h3>
+                <svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" /></svg>
+                <span>Email</span>
+              </h3>
               <a :href="`mailto:${contactEmail}`">{{ contactEmail }}</a>
             </div>
 
             <div v-if="contactPhone" class="contact-method">
-              <h3>📞 Phone</h3>
+              <h3>
+                <svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" /></svg>
+                <span>Phone</span>
+              </h3>
               <a :href="`tel:${contactPhone}`">{{ contactPhone }}</a>
             </div>
 
             <div v-if="contactAddress" class="contact-method">
-              <h3>📍 Address</h3>
+              <h3>
+                <svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" /></svg>
+                <span>Address</span>
+              </h3>
               <p>{{ contactAddress }}</p>
             </div>
           </div>
@@ -72,11 +83,15 @@
 </template>
 
 <script>
+import MiniSiteHero from './MiniSiteHero.vue';
 import { sanitizeMiniSiteContent } from './sanitizeMiniSiteContent.js';
 
 export default {
   name: 'MiniSiteContact',
+  components: { MiniSiteHero },
   props: {
+    heroImage: { type: String, default: '' },
+    heroFallbackImage: { type: String, default: '' },
     clubName: {
       type: String,
       required: true,
@@ -164,29 +179,6 @@ export default {
   width: 100%;
 }
 
-.page-header {
-  background: linear-gradient(135deg, #2d6a45 0%, #1a472a 100%);
-  color: white;
-  padding: 1rem;
-  text-align: center;
-  height: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 14pt;
-}
-
-.subheading {
-  margin: 0;
-  font-size: 10pt;
-  opacity: 0.9;
-}
-
 .contact-content {
   padding: 3rem 2rem;
   background: white;
@@ -226,9 +218,23 @@ export default {
 }
 
 .contact-method h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   margin: 0 0 0.75rem 0;
   color: #1a472a;
   font-size: 1.1rem;
+}
+
+.contact-icon {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #2d6a45;
+  fill: #fff;
 }
 
 .contact-method a {
@@ -329,14 +335,6 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    height: 90px;
-  }
-
-  .page-header h1 {
-    font-size: 12pt;
-  }
-
   .contact-content {
     padding: 2rem 1.5rem;
   }

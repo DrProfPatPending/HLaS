@@ -3,6 +3,7 @@ Mini site page definitions and utilities.
 
 Defines the template structure for all available pages and helper functions.
 """
+from urllib.parse import urlsplit
 
 # Available page templates with default configurations
 PAGE_TEMPLATES = {
@@ -73,7 +74,14 @@ DEFAULT_PAGES_CONFIG = [
 
 def get_default_pages():
     """Get list of default pages with template values."""
-    return [dict(page) for page in DEFAULT_PAGES_CONFIG]
+    return [
+        dict(page) if page['id'] == 'home' else {
+            **page,
+            'hero_image_url': '',
+            'hero_fallback': 'home',
+        }
+        for page in DEFAULT_PAGES_CONFIG
+    ]
 
 
 def normalize_pages_config(raw_pages, club_name=''):
@@ -91,7 +99,7 @@ def normalize_pages_config(raw_pages, club_name=''):
         return get_default_pages()
     
     # Start with template pages
-    normalized = {page['id']: dict(page) for page in DEFAULT_PAGES_CONFIG}
+    normalized = {page['id']: page for page in get_default_pages()}
     
     # Merge in user config
     for raw_page in raw_pages:
@@ -107,6 +115,23 @@ def normalize_pages_config(raw_pages, club_name=''):
             normalized[page_id]['enabled'] = True  # Home always enabled
         elif 'enabled' in raw_page:
             normalized[page_id]['enabled'] = bool(raw_page['enabled'])
+
+        if page_id != 'home':
+            hero_url = raw_page.get('hero_image_url', '')
+            if not isinstance(hero_url, str):
+                raise ValueError(f'{page_id}: hero image URL must be text')
+            hero_url = hero_url.strip()
+            parsed_url = urlsplit(hero_url)
+            if hero_url and not (
+                (hero_url.startswith('/') and not hero_url.startswith('//') and '\\' not in hero_url)
+                or (parsed_url.scheme in ('http', 'https') and parsed_url.hostname)
+            ):
+                raise ValueError(f'{page_id}: use an HTTP(S) or site-relative hero image URL')
+            fallback = raw_page.get('hero_fallback', 'home')
+            if fallback not in ('home', 'banner'):
+                raise ValueError(f'{page_id}: hero fallback must be home or banner')
+            normalized[page_id]['hero_image_url'] = hero_url
+            normalized[page_id]['hero_fallback'] = fallback
         
         # Update content fields
         for field in [

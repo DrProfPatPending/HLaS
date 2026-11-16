@@ -13,6 +13,7 @@ This log is intended to be maintained with the shared code on `main`; promote up
 | ID | Area | Issue / requested outcome | Origin | Open questions | Status |
 |---|---|---|---|---|---|
 | CORE-01 | Public mini-site / mobile | Make enabled mini-site pages usable on mobile viewports. The shared container now renders the club-configured mini-site at all viewport widths, using responsive navigation and page styling. Preserve desktop behaviour and per-club configuration. | CTC PUBLIC-01 in the CTC Chairman feedback log. | Complete real-device accessibility checks and verify loading/error behaviour and configured navigation for other clubs. | Implemented on main; CTC release verification pending |
+| CORE-02 | Public mini-site / content | Bring the shared mini-site work developed on `ctc-dev` back to `main`: per-page hero images with Home/banner fallback, per-page editable heading, subheading and sanitised body text (replacing the separate `main` implementation), the Home "Welcome to" heading fix, Contact page icons, and per-club SEO tags with `/sitemap.xml`. CTC-specific default text, navigation and logout behaviour stay on the CTC branches. | CTC PUBLIC-02 and the CTC mini-site content work in the CTC Chairman feedback log. | Verify the nginx `/club/...` SEO route and sitemap on the shared production stack, and check default pages for GAAFFS, LADFFA and TEST. | Ported to `main`; verification pending |
 
 ### CORE-01 verification
 

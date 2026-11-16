@@ -9,6 +9,10 @@
 
 The mini site system has been extended to support multiple template-based pages with full admin control. Clubs can now create a comprehensive marketing website with customizable pages while maintaining responsive mobile views.
 
+### Editing Page Content
+
+Club administrators can edit each page's heading, optional subheading and body text in **Club Settings → Club Mini Site → Page Content**. Leave a field blank to use that part of the page's built-in text, or reset all three fields for the selected page. Basic HTML formatting is supported; rendered content is sanitised to remove scripts, styles and unsupported tags.
+
 ## Architecture
 
 ### Page Templates
@@ -252,11 +256,6 @@ enabled pages → nav links → click → currentPage update → component switc
 - Pages grid layout (responsive)
 - Save with mini site config
 
-**Page Content:**
-- Select any of the six pages and edit its heading, subheading and body copy
-- Blank fields keep the page's built-in text; reset clears the selected page's custom copy
-- Basic inline HTML is sanitized before rendering; scripts, styles and unsupported tags/attributes are removed
-
 **UI Features:**
 - Page checkbox grid (repeats auto-fit minmax 150px)
 - Disabled state for Home page
@@ -272,7 +271,7 @@ enabled pages → nav links → click → currentPage update → component switc
 
 ## Routing and URLs
 
-### Desktop Views
+### Desktop and Mobile Views
 ```
 GET /club/CTC/              → MiniSiteContainer → MiniSiteDesktop (Home)
 GET /club/CTC/about/        → MiniSiteContainer → MiniSiteDesktop (About)
@@ -282,11 +281,7 @@ GET /club/CTC/join/         → MiniSiteContainer → MiniSiteDesktop (Join)
 GET /club/CTC/contact/      → MiniSiteContainer → MiniSiteDesktop (Contact)
 ```
 
-### Mobile Views
-```
-GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
-```
-(All paths show placeholder with login redirect)
+Enabled pages use the same routes on mobile, with responsive navigation and layout.
 
 ### Admin Access
 ```
@@ -329,13 +324,14 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 
 ### Headline Text
 - Automatic generation: `"Welcome to {Club Name} - a small fishing club which offers access to some of the prettiest rivers and finest fly fishing in the UK."`
-- Can be overridden per club in future via admin UI
+- Can be overridden per club in **Club Settings → Club Mini Site → Page Content**
 
 ### Page Content
 - Each page has default placeholder content
-- Per-club heading, subheading and body overrides are saved in the existing `club_mini_sites.pages` JSON configuration
-- Empty overrides continue to use the page template's built-in copy
-- Contact page has empty form fields for club to populate
+- Club admins can override each page's heading, subheading, and body text in **Club Settings → Club Mini Site → Page Content**
+- Blank overrides use the built-in page text; resetting clears the per-club override
+- Page body text supports a restricted, sanitized subset of HTML (paragraphs, headings, emphasis, lists and links); scripts and inline styles are removed
+- Contact details and form/email display remain available when custom introductory text is set
 
 ## Styling
 
@@ -346,9 +342,8 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 - **Text:** Dark grey `#333`, medium grey `#555`
 
 ### Responsive Breakpoints
-- **768px:** Mobile/responsive threshold
-- **At or below 768px:** Full mini site with a mobile navigation layout
-- **Above 768px:** Full mini site with desktop navigation
+- **At and below 768px:** Full mini-site with a mobile navigation grid
+- **Above 768px:** Full mini-site with desktop navigation and layout
 
 ### Navigation Header
 - Sticky positioning (top: 0, z-index: 100)
@@ -356,10 +351,27 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 - Logo left, menu center, login button right
 - On mobile, enabled menu items appear in rows of up to three, below the login button
 
+### Page Hero Images
+
+- The Home hero prefixes its configured headline with `Welcome to `, without a colon.
+- **Club Settings > Club Mini Site:** Set the Home hero URL, then use
+  **Page Hero Images** to configure About, Waters, News, Join and Contact.
+- Each inner page has an optional `hero_image_url` and `hero_fallback`
+  (`home` or `banner`), stored in the existing PostgreSQL `pages` JSON.
+  HTTP(S) and site-relative image URLs are supported; no migration is needed.
+- Existing inner pages default to the Home hero. If a page image fails,
+  the configured fallback is tried. A missing or failed Home image falls
+  back to a light green banner. To show only the banner, leave the page
+  image empty and select the banner fallback.
+- All six pages use the same compact header (100px minimum, 90px on mobile,
+  expanding if text needs more space). Image headers use a dark overlay
+  and white text; plain banners use dark green text on a lighter green.
+
 ## Future Enhancements
 
-1. **Expanded Content Management**
+1. **Content Management**
    - Rich text editor for page content
+   - Custom page layouts and section management
    - Image uploads for Water details
 
 2. **Contact Form Integration**
@@ -402,7 +414,7 @@ GET /club/CTC/*             → MiniSiteContainer → MiniSitePlaceholder
 - [ ] All page components render correctly with props
 - [ ] Logo displays correctly (or placeholder)
 - [ ] Login button navigates to `/club/{code}/login/`
-- [ ] Mobile view shows placeholder
+- [ ] Mobile view shows enabled pages and navigation without horizontal overflow
 - [ ] Desktop view shows full mini site
 - [ ] URL parsing detects current page correctly
 - [ ] Different page IDs load correct components
