@@ -663,6 +663,10 @@ export default {
       this.fishingBeatMapInstance = L.map(mapElement, {
         zoomControl: true,
         attributionControl: true,
+        // Let the page scroll past the map: no wheel zoom, and no one-finger
+        // panning on touch devices (pinch zoom and the +/- buttons remain).
+        scrollWheelZoom: false,
+        dragging: !L.Browser.mobile,
         rotate: true,
         bearing: 0,
       }).setView([54.5, -2.5], 6);
