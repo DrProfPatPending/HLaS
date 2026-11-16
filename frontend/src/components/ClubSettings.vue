@@ -159,7 +159,8 @@
           <div class="pages-config">
             <h4>Page Content</h4>
             <p class="pages-description">
-              Leave fields blank to use the page's built-in text. Basic HTML such as paragraphs, headings, emphasis, lists and links is supported; scripts, styles and unsupported tags are removed.
+              Leave fields blank to use the page's built-in text. Basic HTML such as paragraphs, headings,
+              emphasis, lists and links is supported; scripts, styles and unsupported tags are removed.
             </p>
             <div class="form-group">
               <label for="mini-site-content-page">Page</label>
@@ -404,7 +405,13 @@ function defaultMiniSite() {
     show_direct_email_link: true,
     page_configs: Object.fromEntries(MINI_SITE_PAGES.map(page => [
       page.id,
-      { headline: '', subheading: '', content: '', hero_image_url: '', hero_fallback: 'home' },
+      {
+        hero_image_url: '',
+        hero_fallback: 'home',
+        headline: '',
+        subheading: '',
+        content: '',
+      },
     ])),
     pages: ['home', 'about', 'waters', 'news', 'join', 'contact'], // All pages enabled by default
   };

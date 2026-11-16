@@ -3,8 +3,8 @@
     {
       "fullName": "Cambridge Trout Club",
       "shortName": "CTC",
-      "description": "CTC has access to c. 5 miles of the River Cam in Cambridgeshire. Fishing for Brown Trout.",
-      "websiteUrl": "https://scoffin.com/",
+      "description": "CTC has access to c. 2.5 miles of the River Cam in Cambridgeshire, split over 3 beats and running between the A505 at Whittlesford and the top of the Hinxton Genome Campus grounds. Fishing mainly for Brown Trout.\n\nCTC is a member of the Wild Trout Trust (membership number: 1325).\n\nCTC is a member of the Angling Trust (including access to Fish Legal services) and has insurance provided by AT and underwritten by Howden.\n\nMember Clubs/Syndicates of the Angling Trust\nUnderwritten by: Hiscox Insurance Company Ltd, JRP Underwriting & Ortus Underwriting\nPolicy Numbers: HU PIB 8121816 (Public Liability and Professional Indemnity)\nB1161S25DT822 (XOL PL/Prods \u00a35m over \u00a310m)\nORT/ASTCPA/10193339 (Personal Accident\nPeriod of Insurance: 25th October 2025 to 24th October 2026\nTerms for this policy may change as of the 25th October annually irrespective of your membership date",
+      "websiteUrl": "https://cambridgetroutclub.org/",
       "adminEmail": "committee@cambridgetroutclub.org",
       "smtp": {
         "host": "",
@@ -49,7 +49,7 @@
           "Beat_Upstream": "///tablets.loudly.sues",
           "Beat_Downstream": "///stuck.fits.subtitle",
           "Beat_Description": "Classic chalkstream style glide with weed beds and dry-fly opportunities.",
-          "Detailed_Description": "A beat runs through the grounds of the EMBL / Hinxton Hall / Genome Campus. The upper limit for CTC is the railway bridge at the south end of the campus, and the downstream limit is the road bridge (Ickleton Road) which is just at the northern boundary of the campus. Parking on the road close to the bridge, before the level crossing.",
+          "Detailed_Description": "A beat runs through the grounds of the Wellcome Genome Campus (also home of EMBL and Hinxton Hall. The land is owned by the Wellcome Trust and they are our landlords (licence managed by Bidwells). The upstream limit of 'A' beat for CTC members is the railway bridge at the south end of the campus, and the downstream limit is the road bridge (Ickleton Road) which is just at the northern boundary of the campus. There is parking on the road close to the bridge, before the level crossing. Going downstream, A beat is contiguous with B beat.",
           "Beat_Upstream_Latitude": "52.07322",
           "Beat_Upstream_Longitude": "0.18369",
           "Beat_Downstream_Latitude": "52.07880",
@@ -704,7 +704,7 @@
           "Position": "4",
           "Beat_Upstream": "///sweetly.chainsaw.fools",
           "Beat_Downstream": "///upper.travels.professes",
-          "Beat_Description": "Lower section of C beat from the railway line downstream to the A505. Some lovely pools and long glides, the central section is very wadable, with the upstream end being accessible after skipping a deep pool with a fallen willow. The downstream end is deep and slow as the river goes through a small wood - can be a tough wade.",
+          "Beat_Description": "Lower section of C beat from the railway line downstream to the A505. Some lovely pools and long glides, the central section is very wadable, with the upstream end being accessible after skipping a deep pool with a fallen willow. The downstream end is deep and slow as the river goes through a small wood - extreme caution is to be taken as the riverbanks are steep for entry and exit and the riverbed is very silty.",
           "Detailed_Description": "Bottom of the CTC section, some lovely fishing in the middle section - at the bottom it gets deep and a bit 'canalised' through the woods - some big fish in there, but hard to access...",
           "Beat_Upstream_Latitude": "52.09662",
           "Beat_Upstream_Longitude": "0.16495",
@@ -901,33 +901,35 @@
       ],
       "officers": [
         {
-          "name": "John Gandy",
-          "role": "Chairman",
-          "email": "chairman@cambridgetroutclub.org",
-          "mobile": "07717 111111"
-        },
-        {
           "name": "Rob Scoffin",
           "role": "Treasurer",
           "email": "treasurer@cambridgetroutclub.org",
           "mobile": "07717 154707"
         },
         {
+          "name": "John Gandy",
+          "role": "Chairman",
+          "email": "chairman@cambridgetroutclub.org",
+          "mobile": ""
+        },
+        {
           "name": "Richard Bowes",
           "role": "Secretary",
           "email": "secretary@cambridgetroutclub.org",
-          "mobile": "07717 111111"
-        }
-      ],
-      "whatsappGroups": "https://chat.whatsapp.com/FCAMNxPu2RFDQJWjMLWReR?mode=gi_t",
-      "socialMedia": [
-        {
-          "url": "https://www.facebook.com/rscoffin/",
-          "platform": "Facebook"
+          "mobile": ""
         },
         {
-          "url": "https://socials.com/ctc/",
-          "platform": "socials"
+          "name": "Charlie Neilson",
+          "role": "Committee",
+          "email": "charlie.neilson1974@gmail.com",
+          "mobile": ""
+        }
+      ],
+      "whatsappGroups": "https://chat.whatsapp.com/FCAMNxPu2RFDQJWjMLWReR",
+      "socialMedia": [
+        {
+          "url": "https://chat.whatsapp.com/FCAMNxPu2RFDQJWjMLWReR",
+          "platform": "WhatsApp"
         }
       ]
     },

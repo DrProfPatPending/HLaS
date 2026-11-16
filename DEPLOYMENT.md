@@ -256,6 +256,118 @@ Some deployments may include Alembic database schema migrations:
    docker exec hlas-postgres-1 psql -U hlas -d hlas -c "SELECT * FROM alembic_version;"
    ```
 
+### CTC News Snapshot and Fresh-Database Restore
+
+News posts are stored in PostgreSQL `app_settings` (`scope=club:CTC`,
+`key=news_updates`). Edits also update `/data/news_updates.json` in the persistent
+backend volume. The version-controlled `backend/news_updates.json` is a recovery
+snapshot, separate from `clubs.config.json`; it includes all destinations and
+statuses, not just the posts visible on Home.
+
+To refresh the CTC snapshot from the live database:
+
+```bash
+docker exec hlas-backend-1 python -c '
+import json, os
+from sqlalchemy import create_engine, text
+engine = create_engine(os.environ["DATABASE_URL"])
+with engine.connect() as connection:
+    posts = connection.execute(
+        text("SELECT value FROM app_settings WHERE scope = :scope AND key = :key"),
+        {"scope": "club:CTC", "key": "news_updates"},
+    ).scalar_one()
+print(json.dumps({"CTC": posts}, indent=2))
+engine.dispose()
+' > backend/news_updates.json
+```
+
+Review and commit the refreshed snapshot. It is not automatically imported during
+startup. After initializing a fresh database and its club records, restore it with:
+
+```bash
+docker exec -i hlas-backend-1 python -c '
+import json, os, sys
+from sqlalchemy import create_engine, text
+snapshot = json.load(sys.stdin)
+posts = snapshot["CTC"]
+assert isinstance(posts, list), "CTC news snapshot must be a list"
+engine = create_engine(os.environ["DATABASE_URL"])
+with engine.begin() as connection:
+    result = connection.execute(
+        text("""
+            INSERT INTO app_settings (scope, key, value)
+            VALUES (:scope, :key, CAST(:value AS jsonb))
+            ON CONFLICT (scope, key) DO NOTHING
+        """),
+        {"scope": "club:CTC", "key": "news_updates", "value": json.dumps(posts)},
+    )
+    print("Restored CTC news snapshot." if result.rowcount else
+          "CTC news already exists; left unchanged.")
+engine.dispose()
+' < backend/news_updates.json
+```
+
+This preserves post IDs, dates, statuses, text and destinations. Existing database
+news is never overwritten by this restore command.
+
+### CTC Mini-Site Snapshot and Fresh-Database Restore
+
+Editable mini-site content is stored in PostgreSQL `club_mini_sites`, not in
+`clubs.config.json`. The version-controlled `backend/mini_sites.json` captures the
+CTC title, tagline, description, page content, visibility, hero settings and
+contact preferences. It stores image URLs, not the image binaries; restore those
+from the database/media backups separately.
+
+To refresh the snapshot from production:
+
+```bash
+docker exec hlas-backend-1 python -c '
+import json, os
+from sqlalchemy import create_engine, text
+engine = create_engine(os.environ["DATABASE_URL"])
+with engine.connect() as connection:
+    config = connection.execute(text("""
+        SELECT m.enabled, m.title, m.tagline, m.description,
+               m.hero_image_url, m.pages, m.social_links
+        FROM club_mini_sites m JOIN clubs c ON c.id = m.club_id
+        WHERE c.short_name = :club
+    """), {"club": "CTC"}).mappings().one()
+print(json.dumps({"CTC": dict(config)}, indent=2))
+engine.dispose()
+' > backend/mini_sites.json
+```
+
+Review and commit the refreshed snapshot. Startup does not automatically import
+this file. After migrations and club initialization, restore a missing CTC
+mini-site configuration with:
+
+```bash
+docker exec -i hlas-backend-1 python -c '
+import json, os, sys
+from sqlalchemy import create_engine, select
+from sqlalchemy.dialects.postgresql import insert
+from db_models import clubs, club_mini_sites
+snapshot = json.load(sys.stdin)
+engine = create_engine(os.environ["DATABASE_URL"])
+with engine.begin() as connection:
+    club_id = connection.execute(
+        select(clubs.c.id).where(clubs.c.short_name == "CTC")
+    ).scalar_one()
+    result = connection.execute(
+        insert(club_mini_sites).values(club_id=club_id, **snapshot["CTC"])
+        .on_conflict_do_nothing(index_elements=["club_id"])
+        .returning(club_mini_sites.c.id)
+    )
+    restored_id = result.scalar_one_or_none()
+    print("Restored CTC mini-site snapshot." if restored_id is not None else
+          "CTC mini-site already exists; left unchanged.")
+engine.dispose()
+' < backend/mini_sites.json
+```
+
+This resolves the club ID in the new database and never overwrites an existing
+mini-site configuration.
+
 ### Best Practices
 
 1. ✅ **Always test on `main` before promoting to `production`**

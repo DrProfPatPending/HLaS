@@ -9,6 +9,10 @@
 
 The mini site system has been extended to support multiple template-based pages with full admin control. Clubs can now create a comprehensive marketing website with customizable pages while maintaining responsive mobile views.
 
+### Editing Page Content
+
+Club administrators can edit each page's heading, optional subheading and body text in **Club Settings → Club Mini Site → Page Content**. Leave a field blank to use that part of the page's built-in text, or reset all three fields for the selected page. Basic HTML formatting is supported; rendered content is sanitised to remove scripts, styles and unsupported tags.
+
 ## Architecture
 
 ### Page Templates
