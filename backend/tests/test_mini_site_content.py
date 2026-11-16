@@ -1,7 +1,8 @@
 import unittest
+from datetime import datetime
 
 from flask import Flask
-from sqlalchemy import JSON, Boolean, Column, Integer, MetaData, String, Table, create_engine, select
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, MetaData, String, Table, create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from mini_site_pages import normalize_pages_config
@@ -29,6 +30,7 @@ class MiniSiteContentTests(unittest.TestCase):
             Column('hero_image_url', String),
             Column('pages', JSON),
             Column('social_links', JSON),
+            Column('updated_at', DateTime),
         )
         metadata.create_all(engine)
         with engine.begin() as conn:
@@ -52,6 +54,22 @@ class MiniSiteContentTests(unittest.TestCase):
         app = Flask(__name__)
         app.register_blueprint(create_mini_site_routes(deps))
         self.client = app.test_client()
+
+    def test_saving_existing_mini_site_updates_timestamp(self):
+        old = datetime(2020, 1, 1)
+        with self.engine.begin() as conn:
+            conn.execute(self.mini_sites.insert(), {
+                'club_id': 1, 'enabled': True, 'title': 'Old', 'pages': [],
+                'social_links': {}, 'updated_at': old,
+            })
+
+        response = self.client.put('/mini-site', json={'club': 'CTC', 'enabled': True, 'title': 'New'})
+        self.assertEqual(response.status_code, 200)
+
+        with self.engine.connect() as conn:
+            row = conn.execute(select(self.mini_sites.c.title, self.mini_sites.c.updated_at)).one()
+        self.assertEqual(row.title, 'New')
+        self.assertGreater(row.updated_at, old)
 
     def test_page_copy_survives_save_and_reload(self):
         response = self.client.put('/mini-site', json={
