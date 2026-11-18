@@ -7,10 +7,10 @@
           <app-button type="button" inherit-style @click="navigate('club-information')">Club Information</app-button>
         </li>
         <li>
-          <app-button type="button" inherit-style @click="navigate('fishing-beats')">Fishing Beats</app-button>
-        </li>
-        <li>
           <app-button type="button" inherit-style @click="navigate('beat-details')">Beat Details</app-button>
+        </li>
+        <li v-if="canAccessBeatAdmin">
+          <app-button type="button" inherit-style @click="navigate('fishing-beats')">Beat Admin</app-button>
         </li>
         <li>
           <app-button type="button" inherit-style @click="navigate('club-store')">Club Store</app-button>
@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import { clubDetails, canAccessMembershipAdmin, navigateToSection } from '../store.js';
+import { clubDetails, canAccessMembershipAdmin, canAccessBeatAdmin, navigateToSection } from '../store.js';
 import AppButton from './ui/AppButton.vue';
 
 export default {
@@ -63,6 +63,9 @@ export default {
   computed: {
     clubShortName() {
       return clubDetails.value.shortName || 'Club';
+    },
+    canAccessBeatAdmin() {
+      return canAccessBeatAdmin.value;
     },
     canAccessMembershipAdmin() {
       return canAccessMembershipAdmin.value;

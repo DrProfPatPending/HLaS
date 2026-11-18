@@ -1,7 +1,7 @@
 <template>
   <div class="fishing-beats-container">
     <div class="fishing-beats-header">
-      <h2>{{ clubFullName }} - Fishing Beats</h2>
+      <h2>{{ clubFullName }} - Beat Admin</h2>
     </div>
     <div v-if="clubBeats.length" class="fishing-beats-layout">
       <table class="fishing-beats-table">
