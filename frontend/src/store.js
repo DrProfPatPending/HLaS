@@ -546,7 +546,7 @@ export function sectionDisplayName(sectionKey) {
   const names = {
     'club-information': 'Club Information',
     'club-settings': 'Club Settings',
-    'my-club': 'My Club',
+    'my-club': 'Member Info',
     'club-store': 'Club Store',
     newsletters: 'News and Updates',
     'fishing-beats': 'Beat Admin',

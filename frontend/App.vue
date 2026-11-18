@@ -112,10 +112,10 @@
         <aside
           v-if="showMyClubSubnav"
           class="app-member-subnav"
-          aria-label="My Club section navigation"
+          aria-label="Member Info section navigation"
         >
           <app-card class="app-member-subnav-card">
-            <div class="app-member-sidebar-title">My Club</div>
+            <div class="app-member-sidebar-title">Member Info</div>
             <button
               v-for="tab in myClubTabs"
               :key="tab.id"
