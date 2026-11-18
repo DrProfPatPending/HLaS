@@ -1,7 +1,7 @@
 import os
 import json
 from flask import Blueprint, jsonify, request
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 
 FIELD_ORDER_PATH = os.path.join(os.path.dirname(__file__), '../field_order.json')
 FIELD_ORDER_KEY = 'field_order'
@@ -169,7 +169,7 @@ def _save_field_order_to_postgres_for_club(club_short_name, normalized_data, dep
             session.execute(
                 club_field_order_table.update()
                 .where(club_field_order_table.c.id == existing[0])
-                .values(config=normalized_data)
+                .values(config=normalized_data, updated_at=func.now())
             )
         else:
             session.execute(
@@ -247,7 +247,7 @@ def save_field_order_config(data, deps=None):
                 session.execute(
                     app_settings_table.update()
                     .where(app_settings_table.c.id == existing[0])
-                    .values(value=normalized_data)
+                    .values(value=normalized_data, updated_at=func.now())
                 )
             else:
                 session.execute(

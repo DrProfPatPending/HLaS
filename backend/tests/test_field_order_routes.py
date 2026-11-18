@@ -2,8 +2,9 @@ import json
 import os
 import tempfile
 import unittest
+from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, Column, Integer, MetaData, String, Table, and_, create_engine, select
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, MetaData, String, Table, and_, create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from routes import field_order_routes
@@ -62,6 +63,7 @@ class FieldOrderRoutesPersistenceTests(unittest.TestCase):
             Column('scope', String(64), nullable=False),
             Column('key', String(128), nullable=False),
             Column('value', JSON, nullable=False),
+            Column('updated_at', DateTime),
         )
         metadata.create_all(engine)
 
@@ -95,6 +97,26 @@ class FieldOrderRoutesPersistenceTests(unittest.TestCase):
             return row[0] if row else None
         finally:
             session.close()
+
+    def test_saving_existing_global_field_order_updates_timestamp(self):
+        old = datetime(2020, 1, 1)
+        session = self.session_factory()
+        try:
+            session.execute(self.app_settings_table.insert().values(
+                scope='global', key='field_order', value=self.default_config, updated_at=old,
+            ))
+            session.commit()
+        finally:
+            session.close()
+
+        field_order_routes.save_field_order_config(self.default_config, self._deps())
+
+        session = self.session_factory()
+        try:
+            updated_at = session.execute(select(self.app_settings_table.c.updated_at)).scalar_one()
+        finally:
+            session.close()
+        self.assertGreater(updated_at, old)
 
     def test_save_field_order_persists_all_configurable_properties_to_postgres(self):
         payload = {
@@ -234,6 +256,7 @@ class MembershipAdminDefaultDisplayNameTests(unittest.TestCase):
             Column('id', Integer, primary_key=True, autoincrement=True),
             Column('club_id', Integer, nullable=False),
             Column('config', JSON, nullable=False),
+            Column('updated_at', DateTime),
         )
         metadata.create_all(engine)
         self.session_factory = sessionmaker(bind=engine, future=True)
@@ -257,6 +280,38 @@ class MembershipAdminDefaultDisplayNameTests(unittest.TestCase):
             },
         }
         return field_order_routes.load_field_order_config(deps, short_name)
+
+    def test_saving_existing_club_field_order_updates_timestamp(self):
+        old = datetime(2020, 1, 1)
+        self._store_club_config('CTC', {'my_club': ['Members_Name']})
+        session = self.session_factory()
+        try:
+            session.execute(self.club_field_order_table.update().values(updated_at=old))
+            session.commit()
+        finally:
+            session.close()
+
+        deps = {
+            'is_postgres_writes_enabled': lambda: True,
+            'get_postgres_backend': lambda: {
+                'session_factory': self.session_factory,
+                'clubs_table': self.clubs_table,
+                'club_field_order_table': self.club_field_order_table,
+            },
+        }
+        field_order_routes._save_field_order_to_postgres_for_club(
+            'CTC', {'my_club': ['Members_Name', 'E_Mail']}, deps,
+        )
+
+        session = self.session_factory()
+        try:
+            row = session.execute(
+                select(self.club_field_order_table.c.config, self.club_field_order_table.c.updated_at)
+            ).one()
+        finally:
+            session.close()
+        self.assertEqual(row.config, {'my_club': ['Members_Name', 'E_Mail']})
+        self.assertGreater(row.updated_at, old)
 
     def test_club_without_email_label_gets_default_email_label(self):
         self._store_club_config('CTC', {
