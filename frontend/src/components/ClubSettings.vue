@@ -5,6 +5,16 @@
       <p>Configure settings for {{ loggedInClub }}.</p>
     </div>
 
+    <!-- Repeated at the bottom of the page. -->
+    <div class="club-settings-actions club-settings-actions-top">
+      <app-button type="button" inherit-style :disabled="loading || saving" @click="loadSettings">
+        {{ loading ? 'Loading…' : 'Reload' }}
+      </app-button>
+      <app-button type="button" inherit-style :disabled="saving || loading" @click="saveSettings">
+        {{ saving ? 'Saving…' : 'Save Settings' }}
+      </app-button>
+    </div>
+
     <p v-if="status" class="club-settings-status">{{ status }}</p>
     <p v-if="error" class="club-settings-error">{{ error }}</p>
 
@@ -337,6 +347,8 @@
       <app-button type="button" inherit-style :disabled="saving || loading" @click="saveSettings">
         {{ saving ? 'Saving…' : 'Save Settings' }}
       </app-button>
+      <span v-if="status" class="club-settings-status club-settings-actions-message">{{ status }}</span>
+      <span v-if="error" class="club-settings-error club-settings-actions-message">{{ error }}</span>
     </div>
   </div>
 </template>
@@ -1054,7 +1066,17 @@ export default {
 .club-settings-actions {
   margin-top: 12px;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+}
+
+.club-settings-actions-top {
+  margin: 0 0 12px;
+}
+
+.club-settings-actions .club-settings-actions-message {
+  margin: 0 0 0 4px;
 }
 
 .club-settings-status {
