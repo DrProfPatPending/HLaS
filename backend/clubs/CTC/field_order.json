@@ -110,7 +110,9 @@
       "Last_Name": "Surname",
       "Member_Type": "Membership Type",
       "Members_Name": "Member",
+      "New_Member_2026": "New Member?",
       "Number": "#",
+      "Paid_Up_2026": "Paid Up?",
       "username": "Username"
     },
     "my_club": {
