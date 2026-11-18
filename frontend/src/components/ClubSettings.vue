@@ -833,7 +833,7 @@ export default {
 .section-description {
   margin: 0 0 1rem 0;
   color: #666;
-  font-size: 0.95rem;
+  font-size: 9.5pt;
 }
 
 .club-settings-table {
@@ -891,13 +891,13 @@ export default {
 .toggle-label {
   font-weight: 600;
   color: #1a472a;
-  font-size: 1rem;
+  font-size: 10.5pt;
 }
 
 .mini-site-hint {
   margin: 0 0 1rem 0;
   color: #666;
-  font-size: 0.9rem;
+  font-size: 9pt;
 }
 
 .form-group {
@@ -917,7 +917,7 @@ export default {
   border: 1px solid #d0d0d0;
   border-radius: 4px;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 10pt;
   box-sizing: border-box;
 }
 
@@ -930,7 +930,7 @@ export default {
 .form-hint {
   margin: 0.5rem 0 0 0;
   color: #999;
-  font-size: 0.85rem;
+  font-size: 8.5pt;
 }
 
 .mini-site-preview {
@@ -944,6 +944,7 @@ export default {
 .mini-site-preview strong {
   display: block;
   margin-bottom: 0.5rem;
+  font-size: 10pt;
   color: #17324d;
 }
 
@@ -954,6 +955,7 @@ export default {
   display: block;
   word-break: break-all;
   font-family: monospace;
+  font-size: 9.5pt;
   color: #2d6a45;
 }
 
@@ -969,13 +971,13 @@ export default {
 .pages-config h4 {
   margin: 0 0 0.5rem 0;
   color: #1a472a;
-  font-size: 1rem;
+  font-size: 10pt;
 }
 
 .pages-description {
   margin: 0 0 1rem 0;
   color: #666;
-  font-size: 0.9rem;
+  font-size: 9pt;
 }
 
 .reset-page-content-button {
@@ -1028,12 +1030,13 @@ export default {
 
 .page-checkbox span:first-of-type {
   flex: 1;
+  font-size: 10pt;
   font-weight: 500;
   color: #333;
 }
 
 .page-badge {
-  font-size: 0.75rem;
+  font-size: 7.5pt;
   background: #2d6a45;
   color: white;
   padding: 0.25rem 0.5rem;
@@ -1063,5 +1066,44 @@ export default {
   margin: 0 0 10px;
   color: #b42318;
   font-weight: 600;
+}
+
+/* Typography: one scale for the page. The #app prefix outranks the global
+   App.vue heading sizes and the #app .form-group rules written for
+   Newsletters (13px fields, monospace textareas). */
+.club-settings-container {
+  font-size: 10pt;
+}
+
+#app .club-settings-container h2 {
+  font-size: 13pt;
+}
+
+#app .club-settings-container h3 {
+  font-size: 11pt;
+}
+
+#app .club-settings-container h4 {
+  font-size: 10pt;
+}
+
+#app .club-settings-container .club-settings-header p {
+  font-size: 10pt;
+}
+
+#app .club-settings-container .form-group label {
+  margin-bottom: 4px;
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: #17324d;
+}
+
+#app .club-settings-container .form-group input,
+#app .club-settings-container .form-group textarea,
+#app .club-settings-container .form-group select,
+#app .club-settings-container .form-input {
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 10pt;
 }
 </style>
