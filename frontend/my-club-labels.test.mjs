@@ -61,9 +61,9 @@ test('Member Info uses configured my_club display names, falling back to field n
     const app = createSSRApp(Fixture);
     const html = await renderToString(app);
 
-    assert.match(html, /<td[^>]*>Date of Birth \(if under 18\)<\/td>/);
-    assert.match(html, /<td[^>]*>First Name<\/td>/);
-    assert.match(html, /<td[^>]*>Age<\/td>/, 'blank configured label falls back to the field name');
+    assert.match(html, /<th[^>]*>Date of Birth \(if under 18\)<\/th>/);
+    assert.match(html, /<th[^>]*>First Name<\/th>/);
+    assert.match(html, /<th[^>]*>Age<\/th>/, 'blank configured label falls back to the field name');
   } finally {
     delete globalThis.__myClubFieldOrder;
     await server.close();

@@ -547,7 +547,7 @@ export function sectionDisplayName(sectionKey) {
     'club-information': 'Club Information',
     'club-documents': 'Club Documents',
     'club-settings': 'Club Settings',
-    'my-club': 'My Club',
+    'my-club': 'Member Info',
     'club-store': 'Club Store',
     newsletters: 'News and Updates',
     'fishing-beats': 'Beat Admin',

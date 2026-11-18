@@ -41,7 +41,7 @@
       <summary @click.stop="openMenu($event)">My HLaS</summary>
       <ul class="member-top-menu-list">
         <li>
-          <app-button type="button" inherit-style @click="navigate('my-club')">My Club</app-button>
+          <app-button type="button" inherit-style @click="navigate('my-club')">Member Info</app-button>
         </li>
       </ul>
     </details>

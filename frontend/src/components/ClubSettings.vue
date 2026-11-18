@@ -35,7 +35,7 @@
           :disabled="loading || !fieldOrderContextNames.length"
         >
           <option v-for="contextName in fieldOrderContextNames" :key="contextName" :value="contextName">
-            {{ contextName }}
+            {{ fieldOrderContextLabel(contextName) }}
           </option>
         </select>
       </div>
@@ -380,6 +380,20 @@ const CATCH_RETURN_FIELDS = [
 // saves it, visibility falls back to the older catchReturnFieldVisibility setting.
 const CATCH_RETURN_FIELD_ORDER_CONTEXT = 'catch_return';
 
+// Friendly names for the Field Order contexts; the stored keys stay as they are.
+const FIELD_ORDER_CONTEXT_LABELS = {
+  my_club: 'Member Info',
+  membership_admin: 'Membership Admin',
+  catch_return: 'Catch Return',
+  home_news: 'Home and Health and Safety news',
+  home_documents: 'Documents',
+  news_updates: 'News/Updates',
+  beat_details: 'Beat Details',
+  fishing_beats: 'Beat Admin',
+  club_information_officers: 'Club Information officers',
+  default: 'Default',
+};
+
 const MINI_SITE_PAGES = [
   { id: 'home', title: 'Home', canDisable: false },
   { id: 'about', title: 'About Us', canDisable: true },
@@ -612,6 +626,10 @@ export default {
       const [entry] = nextFields.splice(index, 1);
       nextFields.push(entry);
       this.replaceSelectedFieldOrderFields(nextFields);
+    },
+    fieldOrderContextLabel(contextName) {
+      const label = FIELD_ORDER_CONTEXT_LABELS[contextName];
+      return label ? `${label} (${contextName})` : contextName;
     },
     seedCatchReturnVisibility() {
       if (!Array.isArray(this.fieldOrder?.[CATCH_RETURN_FIELD_ORDER_CONTEXT])) return;

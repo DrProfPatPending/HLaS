@@ -1,106 +1,92 @@
 <template>
   <div class="my-club-container">
-    <h2>{{ activeTabTitle }}</h2>
+    <div class="my-club-header">
+      <h2>{{ activeTabTitle }}</h2>
+      <div v-if="!loading && !error" class="my-club-actions">
+        <app-button v-if="!isEditing" type="button" inherit-style @click="startEdit">Edit Details</app-button>
+        <template v-else>
+          <app-button type="button" class="save-btn" inherit-style @click="saveEdit">Save Changes</app-button>
+          <app-button type="button" inherit-style @click="cancelEdit">Cancel</app-button>
+        </template>
+      </div>
+    </div>
 
     <div v-if="loading" class="my-club-status">Loading your member information…</div>
     <div v-else-if="error" class="error-msg">{{ error }}</div>
 
-    <div v-else>
-      <div class="member-edit-top-row">
-        <div class="member-edit-actions member-edit-actions-top">
-          <app-button v-if="!isEditing" type="button" class="my-club-edit-btn" inherit-style @click="startEdit">Edit Member Details</app-button>
-          <template v-else>
-            <app-button type="button" class="save-btn" inherit-style @click="saveEdit">Update Member</app-button>
-            <app-button type="button" inherit-style @click="cancelEdit">Cancel</app-button>
-          </template>
-          <span v-if="passwordError" class="my-club-password-inline-error">{{ passwordError }}</span>
-        </div>
+    <div v-else class="my-club-body">
+      <div class="my-club-details">
+        <p v-if="status" class="success-msg">{{ status }}</p>
+        <p v-if="passwordError" class="my-club-password-error">{{ passwordError }}</p>
 
-        <div v-if="memberPhotoSrc" class="member-edit-photo-panel">
-          <img
-            :src="memberPhotoSrc"
-            :alt="memberPhotoAlt"
-            class="member-edit-photo"
-            @error="hideMemberPhoto"
-          />
-          <div v-if="memberPhotoName" class="member-edit-photo-name">{{ memberPhotoName }}</div>
-        </div>
+        <table class="my-club-table">
+          <caption class="my-club-visually-hidden">{{ activeTabTitle }}</caption>
+          <tbody>
+            <tr v-if="showUsernameSection">
+              <th scope="row">{{ fieldLabel('username') }}</th>
+              <td>
+                <span v-if="!isEditing">{{ formatValue(memberData.username) }}</span>
+                <input
+                  v-else
+                  v-model="editData.username"
+                  class="my-club-input"
+                  :disabled="isReadOnlyField('username')"
+                />
+              </td>
+            </tr>
+
+            <tr v-if="showPasswordSection">
+              <th scope="row">New Password</th>
+              <td>
+                <input
+                  v-model="newPassword"
+                  type="password"
+                  class="my-club-input"
+                  :disabled="!isEditing"
+                  placeholder="Leave blank to keep current password"
+                />
+              </td>
+            </tr>
+
+            <tr v-if="showPasswordSection">
+              <th scope="row">Confirm New Password</th>
+              <td>
+                <input
+                  v-model="confirmPassword"
+                  type="password"
+                  class="my-club-input"
+                  :disabled="!isEditing"
+                />
+              </td>
+            </tr>
+
+            <tr v-for="key in activeTabFields" :key="key">
+              <th scope="row">{{ fieldLabel(key) }}</th>
+              <td>
+                <span v-if="!isEditing">{{ formatMemberFieldValue(key, memberData[key]) }}</span>
+                <input
+                  v-else-if="isDateOfBirthField(key)"
+                  type="date"
+                  :value="dateInputValue(editData[key])"
+                  class="my-club-input"
+                  :disabled="isReadOnlyField(key)"
+                  @input="editData[key] = $event.target.value"
+                />
+                <input
+                  v-else
+                  v-model="editData[key]"
+                  class="my-club-input"
+                  :disabled="isReadOnlyField(key)"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <div v-if="status" class="success-msg">{{ status }}</div>
-
-      <table class="member-detail-table">
-        <thead>
-          <tr>
-            <th>Field</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="showUsernameSection">
-            <td>{{ fieldLabel('username') }}</td>
-            <td>
-              <span v-if="!isEditing">{{ formatValue(memberData.username) }}</span>
-              <input
-                v-else
-                v-model="editData.username"
-                class="member-detail-input"
-                :disabled="isReadOnlyField('username')"
-              />
-            </td>
-          </tr>
-
-          <tr v-if="showPasswordSection">
-            <td>New Password</td>
-            <td>
-              <input
-                v-model="newPassword"
-                type="password"
-                class="member-detail-input"
-                :disabled="!isEditing"
-                placeholder="Leave blank to keep current password"
-              />
-            </td>
-          </tr>
-
-          <tr v-if="showPasswordSection">
-            <td>Confirm New Password</td>
-            <td>
-              <input
-                v-model="confirmPassword"
-                type="password"
-                class="member-detail-input"
-                :disabled="!isEditing"
-              />
-            </td>
-          </tr>
-
-          <tr v-for="key in activeTabFields" :key="key">
-            <td>{{ fieldLabel(key) }}</td>
-            <td>
-              <span v-if="!isEditing">{{ formatMemberFieldValue(key, memberData[key]) }}</span>
-              <input
-                v-else-if="isDateOfBirthField(key)"
-                type="date"
-                :value="dateInputValue(editData[key])"
-                class="member-detail-input"
-                :disabled="isReadOnlyField(key)"
-                @input="editData[key] = $event.target.value"
-              />
-              <input
-                v-else
-                v-model="editData[key]"
-                class="member-detail-input"
-                :disabled="isReadOnlyField(key)"
-              />
-            </td>
-          </tr>
-
-          <tr v-if="passwordError">
-            <td colspan="2" class="my-club-password-row-error">{{ passwordError }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <figure v-if="memberPhotoSrc" class="my-club-photo">
+        <img :src="memberPhotoSrc" :alt="memberPhotoAlt" @error="hideMemberPhoto" />
+      </figure>
     </div>
   </div>
 </template>
@@ -261,7 +247,7 @@ export default {
     activeTabTitle() {
       const activeTabId = store.myClubActiveTab;
       const matchedTab = MY_CLUB_TABS.find(tab => tab.id === activeTabId);
-      return matchedTab?.label || 'My Club';
+      return matchedTab?.label || 'Member Info';
     },
     showUsernameSection() {
       return store.myClubActiveTab === 'security' && this.editData.username !== undefined;
@@ -483,47 +469,144 @@ export default {
 </script>
 
 <style scoped>
+/* Own classes only: the admin Edit Member page shares the global member-detail styles. */
 .my-club-container {
-  max-width: 900px;
-  margin: 0 auto;
+  max-width: 860px;
+  margin: 0;
+  font-family: Helvetica, Arial, sans-serif;
 }
 
-.my-club-container h2 {
-  margin: 0 0 12px;
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 10pt;
+.my-club-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 10px;
+}
+
+#app .my-club-container .my-club-header h2 {
+  margin: 0;
+  font-size: 12pt;
   font-weight: 700;
   color: #17324d;
 }
 
-.my-club-container :deep(.my-club-edit-btn.app-button) {
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 8pt !important;
-  line-height: 1.2;
-  padding: 4px 8px !important;
-}
-
-.my-club-password-inline-error {
-  color: var(--app-color-state-danger);
-  margin-left: 15px;
-}
-
-.my-club-password-row-error {
-  color: var(--app-color-state-danger);
-  text-align: center;
-}
-
 .my-club-actions {
   display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 6px;
+}
+
+#app .my-club-container .my-club-actions button {
+  height: auto;
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 8.5pt;
+  line-height: 1.3;
+}
+
+.my-club-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.my-club-details {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 640px;
+}
+
+.my-club-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d8dde3;
+}
+
+.my-club-table th,
+.my-club-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #e6eaee;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 9.5pt;
+}
+
+.my-club-table th {
+  width: 38%;
+  font-weight: 600;
+  color: #475569;
+  background: #f6f8fa;
+}
+
+.my-club-table td {
+  color: #1f2937;
+  overflow-wrap: anywhere;
+}
+
+.my-club-table tr:last-child th,
+.my-club-table tr:last-child td {
+  border-bottom: none;
+}
+
+#app .my-club-container .my-club-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 3px 6px;
+  font: inherit;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+
+.my-club-photo {
+  flex: 0 0 140px;
+  margin: 0;
+}
+
+.my-club-photo img {
+  display: block;
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border: 1px solid #d8dde3;
+  border-radius: 6px;
+  background: #f0f0f0;
+}
+
+.my-club-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .my-club-status {
   margin-bottom: 10px;
 }
 
-.success-msg {
-  margin: 10px 0;
+.success-msg,
+.my-club-password-error {
+  margin: 0 0 8px;
+}
+
+.my-club-password-error {
+  color: var(--app-color-state-danger);
+}
+
+@media (max-width: 700px) {
+  .my-club-body {
+    flex-direction: column;
+  }
+
+  .my-club-photo {
+    order: -1;
+  }
+
+  .my-club-details {
+    width: 100%;
+    max-width: none;
+  }
 }
 </style>
