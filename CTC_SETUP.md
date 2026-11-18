@@ -206,6 +206,7 @@ Keep environment values in `.env.ctc`, club data in `clubs.config.ctc.json`, and
 - Keep `HLAS_SYNC_FILES_ON_STARTUP=false` in `.env.ctc`. If it is on, the first request after a restart runs `sync_beats_json_to_postgres.py`. Unless that script on the deployed branch only seeds clubs that have no beats, it deletes and re-inserts CTC's beats from the JSON baked into the image, and beat edits made in the app are lost. Check the script before changing the setting.
 - Running `sync_beats_postgres_to_json.py` against the production database drops every other club from the generated config and manifest, and its output includes SMTP passwords. Follow the safe export pattern in CLAUDE.md.
 - To record live CTC data in Git, update both `backend/clubs/CTC/club.json` and the CTC entry in `backend/clubs.config.json`, leave the other clubs untouched, and check the `smtp` block has no password before committing.
+- `backend/clubs/CTC/field_order.json` is a snapshot of CTC's `club_field_order` row (field order, Display As labels, visibility, widths), exported from hlastest. Nothing loads it automatically: `backend/field_order.json` stays the shared default for all clubs. Refresh it after changing Field Order in Club Settings on hlastest, and apply the changes to production in Club Settings or by updating that row, comparing with production's row first.
 - On the CTC branches, CLAUDE.md arrives from `main`. Keep CTC-only guidance here, not in CLAUDE.md.
 
 ---
