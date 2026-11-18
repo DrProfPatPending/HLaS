@@ -458,6 +458,7 @@ def create_headless_blueprint(deps):
                         'flies_used': str(row.flies_used or ''),
                         'weather': str(row.weather_conditions or ''),
                         'predator_damage': str(row.predator_damage or ''),
+                        'comments': str(row.comments or ''),
                     },
                     'created_at': str(row.created_at) if row.created_at else None,
                 }

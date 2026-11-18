@@ -215,6 +215,7 @@ catch_returns = Table(
     Column("flies_used", Text, nullable=False, server_default=""),
     Column("weather_conditions", Text, nullable=False, server_default=""),
     Column("predator_damage", Text, nullable=False, server_default=""),
+    Column("comments", Text, nullable=False, server_default=""),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )

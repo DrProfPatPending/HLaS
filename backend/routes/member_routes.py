@@ -145,6 +145,8 @@ def create_member_blueprint(deps):
         finally:
             session.close()
 
+    CATCH_RETURN_COMMENTS_MAX_LENGTH = 500
+
     CATCH_COUNT_FIELDS = (
         'small_trout',
         'medium_trout',
@@ -188,6 +190,7 @@ def create_member_blueprint(deps):
             'flies_used': row.flies_used or '',
             'weather_conditions': row.weather_conditions or '',
             'predator_damage': row.predator_damage or '',
+            'comments': row.comments or '',
             'created_at': row.created_at.isoformat() if row.created_at else None,
         }
 
@@ -209,11 +212,16 @@ def create_member_blueprint(deps):
                 flies_used TEXT NOT NULL DEFAULT '',
                 weather_conditions TEXT NOT NULL DEFAULT '',
                 predator_damage TEXT NOT NULL DEFAULT '',
+                comments TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """
         ))
+        # Tables created before comments existed need the column added.
+        columns = {row[1] for row in session.execute(text('PRAGMA table_info(catch_returns)')).fetchall()}
+        if 'comments' not in columns:
+            session.execute(text("ALTER TABLE catch_returns ADD COLUMN comments TEXT NOT NULL DEFAULT ''"))
 
     @bp.route('/login', methods=['POST'])
     def login():
@@ -600,6 +608,11 @@ def create_member_blueprint(deps):
         flies_used = str(data.get('flies_used', '')).strip()
         weather_conditions = str(data.get('weather_conditions', '')).strip()
         predator_damage = str(data.get('predator_damage', '')).strip()
+        comments = str(data.get('comments') or '').strip()
+        if len(comments) > CATCH_RETURN_COMMENTS_MAX_LENGTH:
+            return jsonify({
+                'error': f'Comments must be {CATCH_RETURN_COMMENTS_MAX_LENGTH} characters or fewer'
+            }), 400
 
         if is_postgres_writes_enabled():
             backend = get_postgres_backend()
@@ -622,6 +635,7 @@ def create_member_blueprint(deps):
                         flies_used=flies_used,
                         weather_conditions=weather_conditions,
                         predator_damage=predator_damage,
+                        comments=comments,
                         **counts,
                     ).returning(catch_returns_table.c.id)
                 )
@@ -655,6 +669,7 @@ def create_member_blueprint(deps):
                         flies_used,
                         weather_conditions,
                         predator_damage,
+                        comments,
                         created_at,
                         updated_at
                     ) VALUES (
@@ -671,6 +686,7 @@ def create_member_blueprint(deps):
                         :flies_used,
                         :weather_conditions,
                         :predator_damage,
+                        :comments,
                         CURRENT_TIMESTAMP,
                         CURRENT_TIMESTAMP
                     )
@@ -690,6 +706,7 @@ def create_member_blueprint(deps):
                     'flies_used': flies_used,
                     'weather_conditions': weather_conditions,
                     'predator_damage': predator_damage,
+                    'comments': comments,
                 }
             )
             session.commit()
@@ -768,6 +785,7 @@ def create_member_blueprint(deps):
                         flies_used,
                         weather_conditions,
                         predator_damage,
+                        comments,
                         created_at
                     FROM catch_returns
                     WHERE member_id = :member_id
@@ -792,6 +810,7 @@ def create_member_blueprint(deps):
                     'flies_used': str(row.flies_used or ''),
                     'weather_conditions': str(row.weather_conditions or ''),
                     'predator_damage': str(row.predator_damage or ''),
+                    'comments': str(row.comments or ''),
                     'created_at': str(row.created_at or ''),
                 }
                 for row in rows
