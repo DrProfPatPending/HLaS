@@ -8,6 +8,104 @@
     <p v-if="status" class="club-settings-status">{{ status }}</p>
     <p v-if="error" class="club-settings-error">{{ error }}</p>
 
+    <!-- Field Order Section -->
+    <section class="club-settings-section">
+      <h3>Field Order</h3>
+      <p class="section-description">
+        Configure column order, labels and visibility for this club. The Catch Return form fields are in the
+        <code>catch_return</code> context.
+      </p>
+
+      <div class="club-settings-inline-controls">
+        <label for="club-field-order-context">Context:</label>
+        <select
+          id="club-field-order-context"
+          v-model="selectedFieldOrderContext"
+          class="form-input"
+          :disabled="loading || !fieldOrderContextNames.length"
+        >
+          <option v-for="contextName in fieldOrderContextNames" :key="contextName" :value="contextName">
+            {{ contextName }}
+          </option>
+        </select>
+      </div>
+
+      <div v-if="fieldOrderContextNames.length" class="club-settings-field-order-table-wrap">
+        <table class="club-settings-table club-settings-field-order-table">
+          <thead>
+            <tr>
+              <th class="fo-num">#</th>
+              <th class="fo-field">Field</th>
+              <th class="fo-label">Display As</th>
+              <th class="fo-check">Show</th>
+              <template v-if="!isFormFieldOrderContext">
+                <th class="fo-check">Read Only</th>
+                <th class="fo-size">Min Width</th>
+                <th class="fo-size">Width</th>
+              </template>
+              <th class="fo-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(fieldName, index) in selectedFieldOrderFields" :key="`${selectedFieldOrderContext}-${fieldName}-${index}`">
+              <td class="fo-num">{{ index + 1 }}</td>
+              <td class="fo-field">{{ fieldName }}</td>
+              <td class="fo-label">
+                <input
+                  type="text"
+                  class="form-input"
+                  :value="getFieldOrderDisplayName(fieldName)"
+                  :placeholder="fieldName"
+                  @input="setFieldOrderDisplayName(fieldName, $event.target.value)"
+                />
+              </td>
+              <td class="fo-check">
+                <input
+                  type="checkbox"
+                  :checked="isFieldOrderFieldVisible(fieldName)"
+                  @change="setFieldOrderFieldVisible(fieldName, $event.target.checked)"
+                />
+              </td>
+              <template v-if="!isFormFieldOrderContext">
+                <td class="fo-check">
+                  <input
+                    type="checkbox"
+                    :checked="isFieldOrderFieldReadOnly(fieldName)"
+                    @change="setFieldOrderFieldReadOnly(fieldName, $event.target.checked)"
+                  />
+                </td>
+                <td class="fo-size">
+                  <input
+                    type="number"
+                    class="form-input"
+                    min="0"
+                    :value="getFieldOrderMinWidth(fieldName)"
+                    @input="setFieldOrderMinWidth(fieldName, $event.target.value)"
+                  />
+                </td>
+                <td class="fo-size">
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="flex"
+                    :value="getFieldOrderColumnWidth(fieldName)"
+                    @input="setFieldOrderColumnWidth(fieldName, $event.target.value)"
+                  />
+                </td>
+              </template>
+              <td class="club-settings-field-order-actions-cell">
+                <button type="button" :disabled="index === 0" @click="moveFieldOrderToTop(index)">Top</button>
+                <button type="button" :disabled="index === 0" @click="moveFieldOrderUp(index)">Up</button>
+                <button type="button" :disabled="index === selectedFieldOrderFields.length - 1" @click="moveFieldOrderDown(index)">Down</button>
+                <button type="button" :disabled="index === selectedFieldOrderFields.length - 1" @click="moveFieldOrderToBottom(index)">Bottom</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="section-description">No field-order contexts available for this club.</p>
+    </section>
+
     <!-- Mini Site Section -->
     <section class="club-settings-section">
       <h3>Club Mini Site</h3>
@@ -230,103 +328,6 @@
           </div>
         </template>
       </div>
-    </section>
-
-    <section class="club-settings-section">
-      <h3>Field Order</h3>
-      <p class="section-description">
-        Configure column order, labels and visibility for this club. The Catch Return form fields are in the
-        <code>catch_return</code> context.
-      </p>
-
-      <div class="club-settings-inline-controls">
-        <label for="club-field-order-context">Context:</label>
-        <select
-          id="club-field-order-context"
-          v-model="selectedFieldOrderContext"
-          class="form-input"
-          :disabled="loading || !fieldOrderContextNames.length"
-        >
-          <option v-for="contextName in fieldOrderContextNames" :key="contextName" :value="contextName">
-            {{ contextName }}
-          </option>
-        </select>
-      </div>
-
-      <div v-if="fieldOrderContextNames.length" class="club-settings-field-order-table-wrap">
-        <table class="club-settings-table club-settings-field-order-table">
-          <thead>
-            <tr>
-              <th class="fo-num">#</th>
-              <th class="fo-field">Field</th>
-              <th class="fo-label">Display As</th>
-              <th class="fo-check">Show</th>
-              <template v-if="!isFormFieldOrderContext">
-                <th class="fo-check">Read Only</th>
-                <th class="fo-size">Min Width</th>
-                <th class="fo-size">Width</th>
-              </template>
-              <th class="fo-actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(fieldName, index) in selectedFieldOrderFields" :key="`${selectedFieldOrderContext}-${fieldName}-${index}`">
-              <td class="fo-num">{{ index + 1 }}</td>
-              <td class="fo-field">{{ fieldName }}</td>
-              <td class="fo-label">
-                <input
-                  type="text"
-                  class="form-input"
-                  :value="getFieldOrderDisplayName(fieldName)"
-                  :placeholder="fieldName"
-                  @input="setFieldOrderDisplayName(fieldName, $event.target.value)"
-                />
-              </td>
-              <td class="fo-check">
-                <input
-                  type="checkbox"
-                  :checked="isFieldOrderFieldVisible(fieldName)"
-                  @change="setFieldOrderFieldVisible(fieldName, $event.target.checked)"
-                />
-              </td>
-              <template v-if="!isFormFieldOrderContext">
-                <td class="fo-check">
-                  <input
-                    type="checkbox"
-                    :checked="isFieldOrderFieldReadOnly(fieldName)"
-                    @change="setFieldOrderFieldReadOnly(fieldName, $event.target.checked)"
-                  />
-                </td>
-                <td class="fo-size">
-                  <input
-                    type="number"
-                    class="form-input"
-                    min="0"
-                    :value="getFieldOrderMinWidth(fieldName)"
-                    @input="setFieldOrderMinWidth(fieldName, $event.target.value)"
-                  />
-                </td>
-                <td class="fo-size">
-                  <input
-                    type="text"
-                    class="form-input"
-                    placeholder="flex"
-                    :value="getFieldOrderColumnWidth(fieldName)"
-                    @input="setFieldOrderColumnWidth(fieldName, $event.target.value)"
-                  />
-                </td>
-              </template>
-              <td class="club-settings-field-order-actions-cell">
-                <button type="button" :disabled="index === 0" @click="moveFieldOrderToTop(index)">Top</button>
-                <button type="button" :disabled="index === 0" @click="moveFieldOrderUp(index)">Up</button>
-                <button type="button" :disabled="index === selectedFieldOrderFields.length - 1" @click="moveFieldOrderDown(index)">Down</button>
-                <button type="button" :disabled="index === selectedFieldOrderFields.length - 1" @click="moveFieldOrderToBottom(index)">Bottom</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p v-else class="section-description">No field-order contexts available for this club.</p>
     </section>
 
     <div class="club-settings-actions">
