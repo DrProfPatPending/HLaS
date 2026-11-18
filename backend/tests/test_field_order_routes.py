@@ -324,6 +324,19 @@ class MembershipAdminDefaultDisplayNameTests(unittest.TestCase):
         self.assertEqual(labels['E_Mail'], 'Email')
         self.assertEqual(labels['Members_Name'], 'Member')
 
+    def test_catch_return_context_has_default_labels_and_no_visibility(self):
+        # A club row saved before catch_return existed still gets the context from the defaults.
+        self._store_club_config('CTC', {'my_club': ['Members_Name']})
+
+        config = self._load('CTC')
+
+        self.assertEqual(config['catch_return'][:3], ['sessionDate', 'beatId', 'smallTrout'])
+        self.assertIn('comments', config['catch_return'])
+        self.assertEqual(config['display_names']['catch_return']['smallTrout'], 'Small Trout')
+        # No catch_return visibility by default, so the form falls back to the older
+        # catchReturnFieldVisibility club setting.
+        self.assertNotIn('catch_return', config.get('show_columns', {}))
+
     def test_club_email_label_override_is_kept(self):
         self._store_club_config('CTC', {
             'membership_admin': ['Members_Name', 'E_Mail'],

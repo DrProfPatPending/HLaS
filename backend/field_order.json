@@ -311,6 +311,21 @@
       "Full_Address": "Address",
       "Members_Name": "Member",
       "E_Mail": "Email"
+    },
+    "catch_return": {
+      "sessionDate": "Date",
+      "beatId": "Beat ID",
+      "smallTrout": "Small Trout",
+      "mediumTrout": "Medium Trout",
+      "largeTrout": "Large Trout",
+      "smallGrayling": "Small Grayling",
+      "mediumGrayling": "Medium Grayling",
+      "largeGrayling": "Large Grayling",
+      "otherFish": "Other Fish",
+      "weatherConditions": "Weather Conditions",
+      "fliesUsed": "Flies Used",
+      "predatorDamage": "Predator Damage",
+      "comments": "Comments"
     }
   },
   "club_information_officers": [
@@ -421,5 +436,20 @@
     "Date_of_Birth",
     "Age",
     "New_Member_2026"
+  ],
+  "catch_return": [
+    "sessionDate",
+    "beatId",
+    "smallTrout",
+    "mediumTrout",
+    "largeTrout",
+    "smallGrayling",
+    "mediumGrayling",
+    "largeGrayling",
+    "otherFish",
+    "weatherConditions",
+    "fliesUsed",
+    "predatorDamage",
+    "comments"
   ]
 }
