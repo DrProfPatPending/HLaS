@@ -254,26 +254,26 @@
       </div>
 
       <div v-if="fieldOrderContextNames.length" class="club-settings-field-order-table-wrap">
-        <table class="club-settings-table">
+        <table class="club-settings-table club-settings-field-order-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Field</th>
-              <th>Display As</th>
-              <th>Show</th>
+              <th class="fo-num">#</th>
+              <th class="fo-field">Field</th>
+              <th class="fo-label">Display As</th>
+              <th class="fo-check">Show</th>
               <template v-if="!isFormFieldOrderContext">
-                <th>Read Only</th>
-                <th>Min Width</th>
-                <th>Width</th>
+                <th class="fo-check">Read Only</th>
+                <th class="fo-size">Min Width</th>
+                <th class="fo-size">Width</th>
               </template>
-              <th>Actions</th>
+              <th class="fo-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(fieldName, index) in selectedFieldOrderFields" :key="`${selectedFieldOrderContext}-${fieldName}-${index}`">
-              <td>{{ index + 1 }}</td>
-              <td>{{ fieldName }}</td>
-              <td>
+              <td class="fo-num">{{ index + 1 }}</td>
+              <td class="fo-field">{{ fieldName }}</td>
+              <td class="fo-label">
                 <input
                   type="text"
                   class="form-input"
@@ -282,7 +282,7 @@
                   @input="setFieldOrderDisplayName(fieldName, $event.target.value)"
                 />
               </td>
-              <td>
+              <td class="fo-check">
                 <input
                   type="checkbox"
                   :checked="isFieldOrderFieldVisible(fieldName)"
@@ -290,14 +290,14 @@
                 />
               </td>
               <template v-if="!isFormFieldOrderContext">
-                <td>
+                <td class="fo-check">
                   <input
                     type="checkbox"
                     :checked="isFieldOrderFieldReadOnly(fieldName)"
                     @change="setFieldOrderFieldReadOnly(fieldName, $event.target.checked)"
                   />
                 </td>
-                <td>
+                <td class="fo-size">
                   <input
                     type="number"
                     class="form-input"
@@ -306,7 +306,7 @@
                     @input="setFieldOrderMinWidth(fieldName, $event.target.value)"
                   />
                 </td>
-                <td>
+                <td class="fo-size">
                   <input
                     type="text"
                     class="form-input"
@@ -1105,5 +1105,67 @@ export default {
   padding: 6px 8px;
   font-family: inherit;
   font-size: 10pt;
+}
+
+/* Field Order table: size columns to their content so it fits a 1080p screen. */
+#app .club-settings-field-order-table {
+  table-layout: auto;
+}
+
+#app .club-settings-field-order-table th,
+#app .club-settings-field-order-table td {
+  padding: 4px 6px;
+  vertical-align: middle;
+}
+
+#app .club-settings-field-order-table th {
+  font-size: 9pt;
+  white-space: nowrap;
+}
+
+#app .club-settings-field-order-table .fo-num,
+#app .club-settings-field-order-table .fo-check,
+#app .club-settings-field-order-table .fo-size,
+#app .club-settings-field-order-table .fo-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+#app .club-settings-field-order-table .fo-num {
+  text-align: right;
+  color: #64748b;
+}
+
+#app .club-settings-field-order-table .fo-check {
+  text-align: center;
+}
+
+#app .club-settings-field-order-table .fo-check input {
+  margin: 0;
+}
+
+#app .club-settings-field-order-table .fo-field {
+  overflow-wrap: anywhere;
+}
+
+#app .club-settings-field-order-table .form-input {
+  min-width: 0;
+  padding: 3px 6px;
+  font-size: 9.5pt;
+}
+
+#app .club-settings-field-order-table .fo-label .form-input {
+  min-width: 140px;
+}
+
+#app .club-settings-field-order-table .fo-size .form-input {
+  width: 70px;
+}
+
+#app .club-settings-field-order-table .club-settings-field-order-actions-cell button {
+  margin: 0 2px 0 0;
+  padding: 2px 7px;
+  font-size: 8.5pt;
+  line-height: 1.4;
 }
 </style>
