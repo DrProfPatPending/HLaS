@@ -6,6 +6,12 @@ from flask import Blueprint, Response, current_app, jsonify, request
 from sqlalchemy import Date, Float, Integer, String, and_, case, cast, func, or_, select, text
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from core.common import LEGACY_TO_POSTGRES_MEMBER_COLUMNS
+from routes.field_order_routes import load_field_order_config
+
+# Fields a member can never change on their own record, whatever the club's settings.
+ALWAYS_READ_ONLY_FOR_SELF = frozenset({'Number'})
+
 
 def create_member_blueprint(deps):
     bp = Blueprint('member', __name__)
@@ -819,9 +825,27 @@ def create_member_blueprint(deps):
         finally:
             session.close()
 
+    def _next_member_number(existing_numbers):
+        """One more than the highest whole-number membership number (1 if none)."""
+        numeric = [int(str(value).strip()) for value in existing_numbers if str(value or '').strip().isdigit()]
+        return str(max(numeric) + 1) if numeric else '1'
+
+    def _resolve_new_member_number(data, existing_numbers):
+        """Fill in a blank Number, or reject one another member already has.
+
+        Returns (number, error_response). Every existing member counts, including resigned
+        ones, so numbers are never reused.
+        """
+        requested = str(data.get('Number') or '').strip()
+        if not requested:
+            return _next_member_number(existing_numbers), None
+        if requested in {str(value or '').strip() for value in existing_numbers}:
+            return None, (jsonify({'error': f'Membership number {requested} is already in use'}), 409)
+        return requested, None
+
     @bp.route('/members', methods=['POST'])
     def add_member():
-        data = request.json or {}
+        data = dict(request.json or {})
         club = data.get('club', 'TEST')
         auth_error = require_permission('member.club.create', club)
         if auth_error:
@@ -834,6 +858,15 @@ def create_member_blueprint(deps):
                 club_id = _resolve_postgres_club_id(session, club)
                 if club_id is None:
                     return jsonify({'error': 'Invalid club selection'}), 400
+
+                members_table = backend['members_table']
+                existing_numbers = session.execute(
+                    select(members_table.c.number).where(members_table.c.club_id == club_id)
+                ).scalars().all()
+                number, number_error = _resolve_new_member_number(data, existing_numbers)
+                if number_error:
+                    return number_error
+                data['Number'] = number
 
                 values = _build_postgres_member_values(data)
                 defaults = {}
@@ -853,6 +886,14 @@ def create_member_blueprint(deps):
             members_table = db_info['members_table']
             Member = db_info['Member']
 
+            number_column = get_column('Number', members_table)
+            if number_column is not None:
+                existing_numbers = session.execute(select(number_column)).scalars().all()
+                number, number_error = _resolve_new_member_number(data, existing_numbers)
+                if number_error:
+                    return number_error
+                data['Number'] = number
+
             member = Member()
             for field_name in ('Members_Name', 'Number', 'Member_Type', 'Paid_Up_2026'):
                 if get_column(field_name, members_table) is not None:
@@ -860,7 +901,49 @@ def create_member_blueprint(deps):
 
             session.add(member)
             session.commit()
-        return jsonify({'status': 'success'})
+        return jsonify({'status': 'success', 'number': data.get('Number')})
+
+    def _is_member_admin(club):
+        principal = get_current_principal(club) or {}
+        return 'member.club.update' in (principal.get('permissions') or [])
+
+    def _self_edit_read_only_fields(club):
+        """Fields a member may not change on their own record (Field Order my_club Read Only)."""
+        try:
+            config = load_field_order_config(deps, club) or {}
+        except Exception:
+            config = {}
+        configured = (config.get('read_only') or {}).get('my_club') or {}
+        locked = {name for name, is_locked in configured.items() if is_locked is True}
+        return locked | ALWAYS_READ_ONLY_FOR_SELF
+
+    def _comparable(value):
+        if value is None:
+            return ''
+        if hasattr(value, 'isoformat'):
+            return value.isoformat()
+        return str(value).strip()
+
+    def _read_only_changes(data, locked_fields, current_value):
+        """Locked fields in the request whose value differs from the stored one.
+
+        current_value(field) returns (known, value); fields the store doesn't have are skipped,
+        because the update would ignore them anyway.
+        """
+        changed = []
+        for field_name in sorted(locked_fields):
+            if field_name not in data or field_name in {'club', 'ID', 'id'}:
+                continue
+            known, stored = current_value(field_name)
+            if known and _comparable(data[field_name]) != _comparable(stored):
+                changed.append(field_name)
+        return changed
+
+    def _read_only_error(changed):
+        return jsonify({
+            'error': f"You can't change these fields: {', '.join(changed)}. Please ask a club administrator.",
+            'fields': changed,
+        }), 403
 
     @bp.route('/members/<int:member_id>', methods=['PUT'])
     def update_member(member_id):
@@ -869,6 +952,8 @@ def create_member_blueprint(deps):
         auth_error = require_self_or_permission(member_id, 'member.club.update', club)
         if auth_error:
             return auth_error
+        # Members editing their own record can't change Read Only fields; admins can.
+        locked_fields = set() if _is_member_admin(club) else _self_edit_read_only_fields(club)
         log_database_target(club)
         if is_postgres_writes_enabled():
             backend = get_postgres_backend()
@@ -877,6 +962,27 @@ def create_member_blueprint(deps):
                 club_id = _resolve_postgres_club_id(session, club)
                 if club_id is None:
                     return jsonify({'error': 'Invalid club selection'}), 400
+
+                if locked_fields:
+                    members_table = backend['members_table']
+                    current = session.execute(
+                        select(members_table).where(
+                            and_(members_table.c.club_id == club_id, members_table.c.id == member_id)
+                        )
+                    ).first()
+                    if current is None:
+                        return jsonify({'error': 'Member not found'}), 404
+                    current_row = current._mapping
+
+                    def current_value(field_name):
+                        column = LEGACY_TO_POSTGRES_MEMBER_COLUMNS.get(field_name)
+                        if not column or column not in current_row:
+                            return False, None
+                        return True, current_row[column]
+
+                    changed = _read_only_changes(data, locked_fields, current_value)
+                    if changed:
+                        return _read_only_error(changed)
 
                 member_data = {k: v for k, v in data.items() if k not in {'club', 'ID', 'id'}}
                 if 'password' in member_data and not member_data['password']:
@@ -939,6 +1045,17 @@ def create_member_blueprint(deps):
             member = session.scalars(select(Member).where(id_column == member_id)).first()
             if member is None:
                 return jsonify({'error': 'Member not found'}), 404
+
+            if locked_fields:
+                def current_value(field_name):
+                    column = get_column(field_name, members_table)
+                    if column is None:
+                        return False, None
+                    return True, getattr(member, column.name, None)
+
+                changed = _read_only_changes(data, locked_fields, current_value)
+                if changed:
+                    return _read_only_error(changed)
 
             reserved_fields = {'club', 'ID', 'id'}
             for field_name, field_value in data.items():
