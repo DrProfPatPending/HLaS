@@ -161,6 +161,7 @@
 import axios from 'axios';
 import { store, clubDetails, API_BASE_URL, loadClubs, fieldOrderConfig, loadFieldOrderConfig } from '../store.js';
 import AppButton from './ui/AppButton.vue';
+import { columnWidthStyle } from '../columnWidth.js';
 
 export default {
   name: 'ClubInformation',
@@ -330,16 +331,10 @@ export default {
       store.activeSection = 'home';
     },
     getOfficerColumnStyle(col) {
-      const configuredWidth = fieldOrderConfig.order?.widths?.club_information_officers?.[col];
-      if (configuredWidth) {
-        const w = String(configuredWidth).trim().toLowerCase();
-        if (w === 'flex' || w === 'auto') return {};
-        return { width: w };
-      }
-      const rawMin = fieldOrderConfig.order?.minimum_widths?.club_information_officers?.[col];
-      const minWidth = Number(rawMin);
-      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
-      return { minWidth: `${minWidth}px` };
+      return columnWidthStyle(
+        fieldOrderConfig.order?.widths?.club_information_officers?.[col],
+        fieldOrderConfig.order?.minimum_widths?.club_information_officers?.[col],
+      );
     },
     getOfficerColumnLabel(col) {
       return this.officersDisplayNames[col] || col.charAt(0).toUpperCase() + col.slice(1);

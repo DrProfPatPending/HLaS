@@ -258,6 +258,7 @@ import { VerboseDebug } from '../localConfig.js';
 import AppCard from './ui/AppCard.vue';
 import AppButton from './ui/AppButton.vue';
 import AppStatusBadge from './ui/AppStatusBadge.vue';
+import { columnWidthStyle } from '../columnWidth.js';
 
 export default {
   name: 'HomeView',
@@ -643,27 +644,11 @@ export default {
       return fallbackColumns.filter(column => column.key !== 'Actions') || [];
     },
     getColumnStyle(contextKey, columnKey) {
-      // First check if a width is specified in the widths configuration
-      const configuredWidth = this.fieldOrder?.widths?.[contextKey]?.[columnKey];
-      if (configuredWidth) {
-        const widthStr = String(configuredWidth).trim().toLowerCase();
-        
-        // Handle 'flex' - for now return empty and let CSS handle it
-        // In a future enhancement, this could calculate proportional widths
-        if (widthStr === 'flex' || widthStr === 'auto') {
-          return {};
-        }
-        
-        // Return the width value directly (e.g., '80px', '50%')
-        return { width: widthStr };
-      }
-      
-      // Fall back to minimum_widths if weight is not specified
-      const rawMinWidth = this.fieldOrder?.minimum_widths?.[contextKey]?.[columnKey];
-      const minWidth = Number(rawMinWidth);
-      if (Number.isFinite(minWidth) && minWidth > 0) {
-        return { minWidth: `${minWidth}px` };
-      }
+      const style = columnWidthStyle(
+        this.fieldOrder?.widths?.[contextKey]?.[columnKey],
+        this.fieldOrder?.minimum_widths?.[contextKey]?.[columnKey],
+      );
+      if (Object.keys(style).length) return style;
 
       // Compact default for Position keeps this column close to Actions width
       if (contextKey === 'home_documents' && columnKey === 'Position') {

@@ -349,6 +349,7 @@ import axios from 'axios';
 import { store, API_BASE_URL, memberIdentity, formatConfiguredDate } from '../store.js';
 import { fieldOrderConfig, loadFieldOrderConfig } from '../store.js';
 import AppButton from './ui/AppButton.vue';
+import { columnWidthStyle } from '../columnWidth.js';
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
@@ -513,25 +514,7 @@ export default {
       return 'Home';
     },
     getColumnStyle(contextKey, columnKey) {
-      // First check if a width is specified in the widths configuration
-      const configuredWidth = this.newsUpdatesWidths?.[columnKey];
-      if (configuredWidth) {
-        const widthStr = String(configuredWidth).trim().toLowerCase();
-        
-        // Handle 'flex' - return empty and let CSS handle it
-        if (widthStr === 'flex' || widthStr === 'auto') {
-          return {};
-        }
-        
-        // Return the width value directly (e.g., '80px', '50%')
-        return { width: widthStr };
-      }
-      
-      // Fall back to minimum_widths if width is not specified
-      const rawMinWidth = this.newsUpdatesMinimumWidths?.[columnKey];
-      const minWidth = Number(rawMinWidth);
-      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
-      return { minWidth: `${minWidth}px` };
+      return columnWidthStyle(this.newsUpdatesWidths?.[columnKey], this.newsUpdatesMinimumWidths?.[columnKey]);
     },
     fetchNewsUpdates() {
       this.newsUpdatesLoading = true;

@@ -135,6 +135,7 @@
 <script>
 import axios from 'axios';
 import AppButton from './ui/AppButton.vue';
+import { columnWidthStyle } from '../columnWidth.js';
 import {
   API_BASE_URL,
   store,
@@ -290,25 +291,7 @@ export default {
       return {};
     },
     getColumnStyle(contextKey, columnKey) {
-      // First check if a width is specified in the widths configuration
-      const configuredWidth = this.membershipWidths?.[columnKey];
-      if (configuredWidth) {
-        const widthStr = String(configuredWidth).trim().toLowerCase();
-        
-        // Handle 'flex' - return empty and let CSS handle it
-        if (widthStr === 'flex' || widthStr === 'auto') {
-          return {};
-        }
-        
-        // Return the width value directly (e.g., '80px', '50%')
-        return { width: widthStr };
-      }
-      
-      // Fall back to minimum_widths if width is not specified
-      const rawMinWidth = this.membershipMinimumWidths?.[columnKey];
-      const minWidth = Number(rawMinWidth);
-      if (!Number.isFinite(minWidth) || minWidth <= 0) return {};
-      return { minWidth: `${minWidth}px` };
+      return columnWidthStyle(this.membershipWidths?.[columnKey], this.membershipMinimumWidths?.[columnKey]);
     },
     getExpiryDateStyle,
     isFieldVisible(field) {

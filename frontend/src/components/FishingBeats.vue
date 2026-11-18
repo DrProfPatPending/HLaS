@@ -272,6 +272,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate/dist/leaflet-rotate.js';
 import { store, clubDetails, API_BASE_URL } from '../store.js';
 import AppButton from './ui/AppButton.vue';
+import { columnWidthValue } from '../columnWidth.js';
 
 export default {
   name: 'FishingBeats',
@@ -497,13 +498,9 @@ export default {
     },
     columnMinWidthStyle(columnKey) {
       // First check if a width is specified
-      const configuredWidth = this.fishingBeatsWidths?.[columnKey];
-      if (configuredWidth) {
-        const widthStr = String(configuredWidth).trim().toLowerCase();
-        if (widthStr === 'flex' || widthStr === 'auto') {
-          return {};
-        }
-        return { width: widthStr };
+      const width = columnWidthValue(this.fishingBeatsWidths?.[columnKey]);
+      if (width) {
+        return { width };
       }
       
       // Fall back to minimum_widths
