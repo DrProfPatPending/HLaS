@@ -57,14 +57,6 @@
             <button
               type="button"
               class="app-member-nav-button"
-              :class="{ 'is-active': activeSection === 'fishing-beats' }"
-              @click="navigate('fishing-beats')"
-            >
-              Fishing Beats
-            </button>
-            <button
-              type="button"
-              class="app-member-nav-button"
               :class="{ 'is-active': activeSection === 'catch-return' }"
               @click="navigate('catch-return')"
             >
@@ -86,6 +78,15 @@
               @click="navigate('newsletters')"
             >
               News/Updates
+            </button>
+            <button
+              v-if="canAccessBeatAdmin"
+              type="button"
+              class="app-member-nav-button"
+              :class="{ 'is-active': activeSection === 'fishing-beats', 'is-admin': true }"
+              @click="navigate('fishing-beats')"
+            >
+              Beat Admin
             </button>
             <button
               v-if="canAccessMembershipAdmin"
@@ -183,6 +184,7 @@ import {
   fetchMembers,
   canAccessMembershipAdmin,
   canAccessNewsletters,
+  canAccessBeatAdmin,
   clubDetails,
   loadAppSettings,
   syncActiveTheme,
@@ -222,6 +224,7 @@ export default {
     activeSection: () => store.activeSection,
     canAccessMembershipAdmin: () => canAccessMembershipAdmin.value,
     canAccessNewsletters: () => canAccessNewsletters.value,
+    canAccessBeatAdmin: () => canAccessBeatAdmin.value,
     clubShortName: () => clubDetails.value.shortName || store.loggedInClub || 'Club',
     myClubTabs: () => MY_CLUB_TABS,
     myClubActiveTab: () => store.myClubActiveTab,

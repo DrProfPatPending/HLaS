@@ -246,6 +246,12 @@ export const canAccessNewsletters = computed(() =>
   store.memberPermissions.includes('newsletter.send')
 );
 
+// Beat Admin (the all-beats table, section 'fishing-beats') is for committee members and
+// above, like Membership Admin; members use Beat Details.
+export const canAccessBeatAdmin = computed(() =>
+  store.memberPermissions.includes('member.club.list')
+);
+
 export const editMemberIndex = computed(() => {
   if (!store.editNavigationMembers.length || store.editMemberId == null) return -1;
   return store.editNavigationMembers.findIndex(m => memberIdentity(m) === store.editMemberId);
@@ -544,7 +550,7 @@ export function sectionDisplayName(sectionKey) {
     'my-club': 'My Club',
     'club-store': 'Club Store',
     newsletters: 'News and Updates',
-    'fishing-beats': 'Fishing Beats',
+    'fishing-beats': 'Beat Admin',
     'beat-details': 'Beat Details',
     'catch-return': 'Catch Return',
     'health-safety': 'Health and Safety',
@@ -1061,6 +1067,7 @@ export function canNavigateToSection(sectionKey) {
   if (sectionKey === 'membership-admin') return canAccessMembershipAdmin.value;
   if (sectionKey === 'club-settings') return canAccessMembershipAdmin.value;
   if (sectionKey === 'newsletters') return canAccessNewsletters.value;
+  if (sectionKey === 'fishing-beats') return canAccessBeatAdmin.value;
   return true;
 }
 
