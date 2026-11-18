@@ -14,6 +14,7 @@ import sys
 import base64
 from pathlib import Path
 from typing import List, Dict, Any
+from datetime import datetime
 from sqlalchemy import create_engine, select, delete, insert
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -45,6 +46,24 @@ def load_documents_from_json(json_path: Path) -> Dict[str, List[Dict[str, Any]]]
     return documents_data if isinstance(documents_data, dict) else {}
 
 
+def _known_user_id(raw_value, known_user_ids):
+    try:
+        user_id = int(raw_value)
+    except (TypeError, ValueError):
+        return None
+    return user_id if user_id in known_user_ids else None
+
+
+def _parse_created_at(raw_value):
+    """ISO text from the JSON as a datetime; None lets the database default apply."""
+    if not raw_value:
+        return None
+    try:
+        return datetime.fromisoformat(str(raw_value).replace('Z', '+00:00'))
+    except ValueError:
+        return None
+
+
 def sync_documents_to_postgres(json_path: str = None, dry_run: bool = False, 
                                verbose: bool = True) -> bool:
     """Sync documents from JSON to PostgreSQL database
@@ -68,13 +87,16 @@ def sync_documents_to_postgres(json_path: str = None, dry_run: bool = False,
     try:
         # Setup path and imports
         sys.path.insert(0, os.path.dirname(__file__))
-        from db_models import clubs as clubs_table, club_documents as club_documents_table
+        from db_models import app_users as app_users_table, clubs as clubs_table, club_documents as club_documents_table
         
         # Create engine
         engine = create_engine(db_url)
         
         # Load documents from JSON
-        json_file = Path(json_path or os.path.dirname(__file__)) / 'documents.json'
+        # -f may name the file itself or the folder holding documents.json.
+        json_file = Path(json_path or os.path.dirname(__file__))
+        if json_file.is_dir() or not json_file.suffix:
+            json_file = json_file / 'documents.json'
         
         if not json_file.exists():
             if verbose:
@@ -101,6 +123,11 @@ def sync_documents_to_postgres(json_path: str = None, dry_run: bool = False,
             
             # Create a map of club short_name to club_id
             club_id_map = {club_row.short_name: club_row.id for club_row in clubs_rows}
+
+            # uploaded_by_user_id references app_users; an uploader that doesn't exist in this
+            # database (e.g. a snapshot from another server) is stored as unknown instead of
+            # failing the insert.
+            known_user_ids = set(connection.execute(select(app_users_table.c.id)).scalars().all())
             
             for club_name, docs in documents_by_club.items():
                 if club_name not in club_id_map:
@@ -142,10 +169,13 @@ def sync_documents_to_postgres(json_path: str = None, dry_run: bool = False,
                             'file_size': doc.get('fileSize', 0),
                             'mime_type': doc.get('mimeType', ''),
                             'file_data': file_data,
-                            'uploaded_by_user_id': doc.get('uploadedBy', 'system'),
-                            'created_at': doc.get('createdAt', ''),
+                            'uploaded_by_user_id': _known_user_id(doc.get('uploadedBy'), known_user_ids),
+                            'created_at': _parse_created_at(doc.get('createdAt')),
                         }
                         
+                        if doc_insert['created_at'] is None:
+                            doc_insert.pop('created_at')
+
                         if not dry_run:
                             connection.execute(
                                 insert(club_documents_table).values(**doc_insert)
@@ -186,7 +216,7 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser(description='Sync club documents from JSON to PostgreSQL')
-    parser.add_argument('-f', '--file', help='Path to documents.json (default: ./documents.json)')
+    parser.add_argument('-f', '--file', help='documents.json, or the folder containing it (default: ./documents.json)')
     parser.add_argument('-u', '--database-url', help='PostgreSQL connection URL (defaults to DATABASE_URL env if set)')
     parser.add_argument('-d', '--dry-run', action='store_true', help='Run without making changes')
     parser.add_argument('-v', '--verbose', action='store_true', default=True, help='Verbose output')

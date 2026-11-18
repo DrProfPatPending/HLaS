@@ -15,7 +15,7 @@ import sys
 import base64
 from pathlib import Path
 from typing import List, Dict, Any
-from sqlalchemy import create_engine, select
+from sqlalchemy import case, create_engine, select
 from sqlalchemy.exc import SQLAlchemyError
 
 
@@ -58,7 +58,13 @@ def load_documents_from_postgres(db_url: str) -> Dict[str, List[Dict[str, Any]]]
             documents_result = connection.execute(
                 select(club_documents_table)
                 .where(club_documents_table.c.club_id == club_id)
-                .order_by(club_documents_table.c.created_at.desc())
+                # Same order as the app shows them: Home first, then by scope and display order.
+                .order_by(
+                    case((club_documents_table.c.content_scope == 'home', 0), else_=1),
+                    club_documents_table.c.content_scope,
+                    club_documents_table.c.display_order,
+                    club_documents_table.c.id,
+                )
             )
             documents_rows = documents_result.fetchall()
             
@@ -79,6 +85,7 @@ def load_documents_from_postgres(db_url: str) -> Dict[str, List[Dict[str, Any]]]
                 # Build document JSON
                 doc_json = {
                     'contentScope': doc_dict.get('content_scope', 'home') or 'home',
+                    'displayOrder': int(doc_dict.get('display_order') or 0),
                     'title': doc_dict.get('title', ''),
                     'fileName': doc_dict.get('file_name', ''),
                     'fileExt': doc_dict.get('file_ext', ''),
