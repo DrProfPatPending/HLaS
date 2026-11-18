@@ -12,6 +12,21 @@
     "Beat_Downstream_Coords",
     "Parking_Locations"
   ],
+  "catch_return": [
+    "sessionDate",
+    "beatId",
+    "smallTrout",
+    "mediumTrout",
+    "largeTrout",
+    "smallGrayling",
+    "mediumGrayling",
+    "largeGrayling",
+    "otherFish",
+    "weatherConditions",
+    "fliesUsed",
+    "predatorDamage",
+    "comments"
+  ],
   "club_information_officers": [
     "name",
     "email",
@@ -64,6 +79,21 @@
     "password"
   ],
   "display_names": {
+    "catch_return": {
+      "beatId": "Beat Fished",
+      "comments": "Comments",
+      "fliesUsed": "Flies Used",
+      "largeGrayling": "Large Grayling",
+      "largeTrout": "Trout > 12\"",
+      "mediumGrayling": "Medium Grayling",
+      "mediumTrout": "Trout 6\" - 12\"",
+      "otherFish": "Other Fish e.g. 1 Chub",
+      "predatorDamage": "Predator Damage",
+      "sessionDate": "Date",
+      "smallGrayling": "Small Grayling",
+      "smallTrout": "Trout < 6\"",
+      "weatherConditions": "Weather Conditions"
+    },
     "club_information_officers": {
       "email": "Email",
       "mobile": "Mobile",
@@ -261,6 +291,7 @@
   ],
   "read_only": {
     "beat_details": {},
+    "catch_return": {},
     "club_information_officers": {},
     "default": {},
     "fishing_beats": {},
@@ -314,6 +345,21 @@
       "Parking_Locations": true,
       "Position": true,
       "River": true
+    },
+    "catch_return": {
+      "beatId": true,
+      "comments": true,
+      "fliesUsed": true,
+      "largeGrayling": false,
+      "largeTrout": true,
+      "mediumGrayling": false,
+      "mediumTrout": true,
+      "otherFish": true,
+      "predatorDamage": true,
+      "sessionDate": true,
+      "smallGrayling": false,
+      "smallTrout": true,
+      "weatherConditions": true
     },
     "club_information_officers": {
       "email": true,
