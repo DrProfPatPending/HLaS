@@ -37,6 +37,17 @@
             <span>Predator Damage</span>
             <textarea v-model="form.predatorDamage" rows="2" placeholder="Optional"></textarea>
           </label>
+
+          <label v-if="isFieldVisible('comments')" class="catch-return-field">
+            <span>Comments</span>
+            <textarea
+              v-model="form.comments"
+              rows="3"
+              :maxlength="commentsMaxLength"
+              placeholder="Optional"
+            ></textarea>
+            <small class="catch-return-field-hint">{{ form.comments.length }} / {{ commentsMaxLength }}</small>
+          </label>
         </div>
 
         <div v-if="filteredCountFields.length" class="catch-return-right-column">
@@ -195,7 +206,10 @@ const DEFAULT_FIELD_VISIBILITY = {
   fliesUsed: true,
   weatherConditions: true,
   predatorDamage: true,
+  comments: true,
 };
+
+const COMMENTS_MAX_LENGTH = 500;
 
 function defaultFieldVisibility() {
   return { ...DEFAULT_FIELD_VISIBILITY };
@@ -232,10 +246,12 @@ export default {
         fliesUsed: '',
         weatherConditions: '',
         predatorDamage: '',
+        comments: '',
       },
     };
   },
   computed: {
+    commentsMaxLength: () => COMMENTS_MAX_LENGTH,
     filteredCountFields() {
       return COUNT_FIELDS.filter(field => this.isFieldVisible(field.key));
     },
@@ -245,6 +261,7 @@ export default {
         this.isFieldVisible('fliesUsed') ? 'flies_used' : '',
         this.isFieldVisible('weatherConditions') ? 'weather_conditions' : '',
         this.isFieldVisible('predatorDamage') ? 'predator_damage' : '',
+        this.isFieldVisible('comments') ? 'comments' : '',
       ].filter(Boolean);
       if (!notesFields.length) {
         return false;
@@ -366,6 +383,7 @@ export default {
         flies_used: String(this.form.fliesUsed || '').trim(),
         weather_conditions: String(this.form.weatherConditions || '').trim(),
         predator_damage: String(this.form.predatorDamage || '').trim(),
+        comments: String(this.form.comments || '').trim(),
       };
 
       this.submitting = true;
@@ -383,6 +401,7 @@ export default {
           this.form.fliesUsed = '';
           this.form.weatherConditions = '';
           this.form.predatorDamage = '';
+          this.form.comments = '';
           this.loadRecentReturns();
         })
         .catch(err => {
@@ -418,6 +437,7 @@ export default {
         this.isFieldVisible('fliesUsed') ? row.flies_used : '',
         this.isFieldVisible('weatherConditions') ? row.weather_conditions : '',
         this.isFieldVisible('predatorDamage') ? row.predator_damage : '',
+        this.isFieldVisible('comments') ? row.comments : '',
       ]
         .filter(Boolean)
         .join(' | ');
@@ -476,6 +496,12 @@ export default {
   font-size: 9.5pt;
   font-weight: 600;
   color: #1f2937;
+}
+
+.catch-return-field-hint {
+  align-self: flex-end;
+  font-size: 7.5pt;
+  color: #6b7280;
 }
 
 .catch-return-field input,

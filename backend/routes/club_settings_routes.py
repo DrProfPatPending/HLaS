@@ -19,6 +19,7 @@ CATCH_RETURN_FIELD_KEYS = (
     'fliesUsed',
     'weatherConditions',
     'predatorDamage',
+    'comments',
 )
 DEFAULT_CATCH_RETURN_FIELD_VISIBILITY = {
     field_key: True for field_key in CATCH_RETURN_FIELD_KEYS

@@ -371,6 +371,7 @@ def ensure_postgres_catch_returns_table(engine):
                 flies_used        TEXT NOT NULL DEFAULT '',
                 weather_conditions TEXT NOT NULL DEFAULT '',
                 predator_damage   TEXT NOT NULL DEFAULT '',
+                comments          TEXT NOT NULL DEFAULT '',
                 created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 CONSTRAINT ck_catch_returns_small_trout_nonneg CHECK (small_trout >= 0),
@@ -381,6 +382,12 @@ def ensure_postgres_catch_returns_table(engine):
                 CONSTRAINT ck_catch_returns_large_grayling_nonneg CHECK (large_grayling >= 0),
                 CONSTRAINT ck_catch_returns_other_fish_nonneg CHECK (other_fish >= 0)
             )
+            """
+        ),
+        text(
+            """
+            ALTER TABLE catch_returns
+            ADD COLUMN IF NOT EXISTS comments TEXT NOT NULL DEFAULT ''
             """
         ),
         text(

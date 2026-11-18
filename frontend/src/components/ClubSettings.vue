@@ -376,6 +376,7 @@ const CATCH_RETURN_FIELDS = [
   { key: 'fliesUsed', label: 'Flies Used' },
   { key: 'weatherConditions', label: 'Weather Conditions' },
   { key: 'predatorDamage', label: 'Predator Damage' },
+  { key: 'comments', label: 'Comments' },
 ];
 
 const MINI_SITE_PAGES = [
