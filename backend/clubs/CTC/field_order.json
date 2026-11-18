@@ -222,7 +222,7 @@
       "Uploaded": 120
     },
     "home_news": {
-      "Category": 120,
+      "Category": 90,
       "Date": 110,
       "Status": 90,
       "Update": 260
@@ -476,6 +476,11 @@
       "Actions": "120px",
       "Size": "80px",
       "Title": "flex"
+    },
+    "home_news": {
+      "Category": "90px",
+      "Date": "90px",
+      "Status": "75px"
     },
     "membership_admin": {
       "E_Mail": "200px",
