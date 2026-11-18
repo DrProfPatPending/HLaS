@@ -2,19 +2,19 @@
   <div class="catch-return-container">
     <h2>Catch Return</h2>
     <p class="catch-return-intro">
-      Record your fishing session quickly. Required fields are Date, Beat ID, and catch counts.
+      Record your fishing session quickly. Required fields are {{ fieldLabel('sessionDate') }}, {{ fieldLabel('beatId') }}, and catch counts.
     </p>
 
     <form class="catch-return-form" @submit.prevent="submitCatchReturn">
       <div class="catch-return-form-layout">
         <div class="catch-return-left-column">
           <label v-if="isFieldVisible('sessionDate')" class="catch-return-field">
-            <span>Date *</span>
+            <span>{{ fieldLabel('sessionDate') }} *</span>
             <input v-model="form.sessionDate" type="date" required />
           </label>
 
           <label v-if="isFieldVisible('beatId')" class="catch-return-field">
-            <span>Beat ID *</span>
+            <span>{{ fieldLabel('beatId') }} *</span>
             <select v-model="form.beatId" required>
               <option value="">Select Beat</option>
               <option v-for="option in beatOptions" :key="option.value" :value="option.value">
@@ -23,30 +23,17 @@
             </select>
           </label>
 
-          <label v-if="isFieldVisible('weatherConditions')" class="catch-return-field">
-            <span>Weather Conditions</span>
-            <textarea v-model="form.weatherConditions" rows="2" placeholder="Optional"></textarea>
-          </label>
-
-          <label v-if="isFieldVisible('fliesUsed')" class="catch-return-field">
-            <span>Flies Used</span>
-            <textarea v-model="form.fliesUsed" rows="2" placeholder="Optional"></textarea>
-          </label>
-
-          <label v-if="isFieldVisible('predatorDamage')" class="catch-return-field">
-            <span>Predator Damage</span>
-            <textarea v-model="form.predatorDamage" rows="2" placeholder="Optional"></textarea>
-          </label>
-
-          <label v-if="isFieldVisible('comments')" class="catch-return-field">
-            <span>Comments</span>
+          <label v-for="field in visibleTextFields" :key="field.key" class="catch-return-field">
+            <span>{{ field.label }}</span>
             <textarea
-              v-model="form.comments"
-              rows="3"
-              :maxlength="commentsMaxLength"
+              v-model="form[field.key]"
+              :rows="field.key === 'comments' ? 3 : 2"
+              :maxlength="field.key === 'comments' ? commentsMaxLength : null"
               placeholder="Optional"
             ></textarea>
-            <small class="catch-return-field-hint">{{ form.comments.length }} / {{ commentsMaxLength }}</small>
+            <small v-if="field.key === 'comments'" class="catch-return-field-hint">
+              {{ form.comments.length }} / {{ commentsMaxLength }}
+            </small>
           </label>
         </div>
 
@@ -145,15 +132,9 @@
           <table class="catch-return-table">
             <thead>
               <tr>
-                <th v-if="isFieldVisible('sessionDate')">Date</th>
-                <th v-if="isFieldVisible('beatId')">Beat</th>
-                <th v-if="isFieldVisible('smallTrout')">S.Trout</th>
-                <th v-if="isFieldVisible('mediumTrout')">M.Trout</th>
-                <th v-if="isFieldVisible('largeTrout')">L.Trout</th>
-                <th v-if="isFieldVisible('smallGrayling')">S.Grayling</th>
-                <th v-if="isFieldVisible('mediumGrayling')">M.Grayling</th>
-                <th v-if="isFieldVisible('largeGrayling')">L.Grayling</th>
-                <th v-if="isFieldVisible('otherFish')">Other</th>
+                <th v-if="isFieldVisible('sessionDate')">{{ fieldLabel('sessionDate') }}</th>
+                <th v-if="isFieldVisible('beatId')">{{ fieldLabel('beatId') }}</th>
+                <th v-for="field in filteredCountFields" :key="field.key">{{ field.label }}</th>
                 <th v-if="hasNotesColumn">Notes</th>
               </tr>
             </thead>
@@ -161,13 +142,7 @@
               <tr v-for="row in recentReturns" :key="row.id">
                 <td v-if="isFieldVisible('sessionDate')">{{ formatDateValue(row.session_date) }}</td>
                 <td v-if="isFieldVisible('beatId')">{{ row.beat_id }}</td>
-                <td v-if="isFieldVisible('smallTrout')">{{ row.small_trout }}</td>
-                <td v-if="isFieldVisible('mediumTrout')">{{ row.medium_trout }}</td>
-                <td v-if="isFieldVisible('largeTrout')">{{ row.large_trout }}</td>
-                <td v-if="isFieldVisible('smallGrayling')">{{ row.small_grayling }}</td>
-                <td v-if="isFieldVisible('mediumGrayling')">{{ row.medium_grayling }}</td>
-                <td v-if="isFieldVisible('largeGrayling')">{{ row.large_grayling }}</td>
-                <td v-if="isFieldVisible('otherFish')">{{ row.other_fish }}</td>
+                <td v-for="field in filteredCountFields" :key="field.key">{{ row[field.column] }}</td>
                 <td v-if="hasNotesColumn">{{ notesFor(row) }}</td>
               </tr>
             </tbody>
@@ -180,18 +155,48 @@
 
 <script>
 import axios from 'axios';
-import { clubDetails, store, API_BASE_URL, formatConfiguredDate } from '../store.js';
+import {
+  clubDetails,
+  store,
+  API_BASE_URL,
+  formatConfiguredDate,
+  fieldOrderConfig,
+  loadFieldOrderConfig,
+} from '../store.js';
 import AppButton from './ui/AppButton.vue';
 
+// Labels, order and visibility come from the club's catch_return Field Order context.
+const FIELD_ORDER_CONTEXT = 'catch_return';
+
+const DEFAULT_LABELS = {
+  sessionDate: 'Date',
+  beatId: 'Beat ID',
+  smallTrout: 'Small Trout',
+  mediumTrout: 'Medium Trout',
+  largeTrout: 'Large Trout',
+  smallGrayling: 'Small Grayling',
+  mediumGrayling: 'Medium Grayling',
+  largeGrayling: 'Large Grayling',
+  otherFish: 'Other Fish',
+  weatherConditions: 'Weather Conditions',
+  fliesUsed: 'Flies Used',
+  predatorDamage: 'Predator Damage',
+  comments: 'Comments',
+};
+
 const COUNT_FIELDS = [
-  { key: 'smallTrout', label: 'Small Trout' },
-  { key: 'mediumTrout', label: 'Medium Trout' },
-  { key: 'largeTrout', label: 'Large Trout' },
-  { key: 'smallGrayling', label: 'Small Grayling' },
-  { key: 'mediumGrayling', label: 'Medium Grayling' },
-  { key: 'largeGrayling', label: 'Large Grayling' },
-  { key: 'otherFish', label: 'Other Fish' },
+  { key: 'smallTrout', column: 'small_trout' },
+  { key: 'mediumTrout', column: 'medium_trout' },
+  { key: 'largeTrout', column: 'large_trout' },
+  { key: 'smallGrayling', column: 'small_grayling' },
+  { key: 'mediumGrayling', column: 'medium_grayling' },
+  { key: 'largeGrayling', column: 'large_grayling' },
+  { key: 'otherFish', column: 'other_fish' },
 ];
+
+const TEXT_FIELD_KEYS = ['weatherConditions', 'fliesUsed', 'predatorDamage', 'comments'];
+
+const DEFAULT_FIELD_ORDER = Object.keys(DEFAULT_LABELS);
 
 const DEFAULT_FIELD_VISIBILITY = {
   sessionDate: true,
@@ -252,8 +257,20 @@ export default {
   },
   computed: {
     commentsMaxLength: () => COMMENTS_MAX_LENGTH,
+    fieldOrderPositions() {
+      const configured = fieldOrderConfig.order?.[FIELD_ORDER_CONTEXT];
+      const order = Array.isArray(configured) && configured.length ? configured : DEFAULT_FIELD_ORDER;
+      return Object.fromEntries(order.map((key, index) => [key, index]));
+    },
     filteredCountFields() {
-      return COUNT_FIELDS.filter(field => this.isFieldVisible(field.key));
+      return this.sortByFieldOrder(COUNT_FIELDS)
+        .filter(field => this.isFieldVisible(field.key))
+        .map(field => ({ ...field, label: this.fieldLabel(field.key) }));
+    },
+    visibleTextFields() {
+      return this.sortByFieldOrder(TEXT_FIELD_KEYS.map(key => ({ key })))
+        .filter(field => this.isFieldVisible(field.key))
+        .map(field => ({ ...field, label: this.fieldLabel(field.key) }));
     },
     loggedInClub: () => store.loggedInClub,
     hasNotesColumn() {
@@ -323,6 +340,7 @@ export default {
       this.form.beatId = this.beatOptions[0].value;
     }
     this.loadCatchReturnFieldVisibility();
+    loadFieldOrderConfig(this.loggedInClub);
     this.loadRecentReturns();
   },
   methods: {
@@ -337,7 +355,21 @@ export default {
       return normalized;
     },
     isFieldVisible(fieldKey) {
+      const configured = fieldOrderConfig.order?.show_columns?.[FIELD_ORDER_CONTEXT];
+      if (configured && typeof configured === 'object') {
+        return configured[fieldKey] !== false;
+      }
+      // Clubs that haven't saved catch_return Field Order yet keep the older setting.
       return Boolean(this.fieldVisibility[fieldKey]);
+    },
+    fieldLabel(fieldKey) {
+      const configured = fieldOrderConfig.order?.display_names?.[FIELD_ORDER_CONTEXT]?.[fieldKey];
+      return typeof configured === 'string' && configured.trim() ? configured.trim() : DEFAULT_LABELS[fieldKey];
+    },
+    sortByFieldOrder(fields) {
+      const positions = this.fieldOrderPositions;
+      const position = key => (key in positions ? positions[key] : Number.MAX_SAFE_INTEGER);
+      return [...fields].sort((a, b) => position(a.key) - position(b.key));
     },
     loadCatchReturnFieldVisibility() {
       return axios

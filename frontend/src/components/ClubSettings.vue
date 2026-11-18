@@ -8,31 +8,6 @@
     <p v-if="status" class="club-settings-status">{{ status }}</p>
     <p v-if="error" class="club-settings-error">{{ error }}</p>
 
-    <!-- Catch Return Fields Section -->
-    <section class="club-settings-section">
-      <h3>Catch Return Fields</h3>
-      <p class="section-description">Show/hide fields in the Catch Return form for club members.</p>
-      <table class="club-settings-table">
-        <thead>
-          <tr>
-            <th>Field</th>
-            <th>Visible</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="field in catchReturnFields" :key="field.key">
-            <td>{{ field.label }}</td>
-            <td>
-              <label class="club-settings-toggle">
-                <input v-model="visibility[field.key]" type="checkbox" />
-                <span>{{ visibility[field.key] ? 'Yes' : 'No' }}</span>
-              </label>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
     <!-- Mini Site Section -->
     <section class="club-settings-section">
       <h3>Club Mini Site</h3>
@@ -259,7 +234,10 @@
 
     <section class="club-settings-section">
       <h3>Field Order</h3>
-      <p class="section-description">Configure column order and visibility for this club.</p>
+      <p class="section-description">
+        Configure column order, labels and visibility for this club. The Catch Return form fields are in the
+        <code>catch_return</code> context.
+      </p>
 
       <div class="club-settings-inline-controls">
         <label for="club-field-order-context">Context:</label>
@@ -283,9 +261,11 @@
               <th>Field</th>
               <th>Display As</th>
               <th>Show</th>
-              <th>Read Only</th>
-              <th>Min Width</th>
-              <th>Width</th>
+              <template v-if="!isFormFieldOrderContext">
+                <th>Read Only</th>
+                <th>Min Width</th>
+                <th>Width</th>
+              </template>
               <th>Actions</th>
             </tr>
           </thead>
@@ -309,31 +289,33 @@
                   @change="setFieldOrderFieldVisible(fieldName, $event.target.checked)"
                 />
               </td>
-              <td>
-                <input
-                  type="checkbox"
-                  :checked="isFieldOrderFieldReadOnly(fieldName)"
-                  @change="setFieldOrderFieldReadOnly(fieldName, $event.target.checked)"
-                />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  class="form-input"
-                  min="0"
-                  :value="getFieldOrderMinWidth(fieldName)"
-                  @input="setFieldOrderMinWidth(fieldName, $event.target.value)"
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  class="form-input"
-                  placeholder="flex"
-                  :value="getFieldOrderColumnWidth(fieldName)"
-                  @input="setFieldOrderColumnWidth(fieldName, $event.target.value)"
-                />
-              </td>
+              <template v-if="!isFormFieldOrderContext">
+                <td>
+                  <input
+                    type="checkbox"
+                    :checked="isFieldOrderFieldReadOnly(fieldName)"
+                    @change="setFieldOrderFieldReadOnly(fieldName, $event.target.checked)"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    class="form-input"
+                    min="0"
+                    :value="getFieldOrderMinWidth(fieldName)"
+                    @input="setFieldOrderMinWidth(fieldName, $event.target.value)"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="flex"
+                    :value="getFieldOrderColumnWidth(fieldName)"
+                    @input="setFieldOrderColumnWidth(fieldName, $event.target.value)"
+                  />
+                </td>
+              </template>
               <td class="club-settings-field-order-actions-cell">
                 <button type="button" :disabled="index === 0" @click="moveFieldOrderToTop(index)">Top</button>
                 <button type="button" :disabled="index === 0" @click="moveFieldOrderUp(index)">Up</button>
@@ -378,6 +360,10 @@ const CATCH_RETURN_FIELDS = [
   { key: 'predatorDamage', label: 'Predator Damage' },
   { key: 'comments', label: 'Comments' },
 ];
+
+// Catch Return labels and visibility live in this Field Order context. Until a club
+// saves it, visibility falls back to the older catchReturnFieldVisibility setting.
+const CATCH_RETURN_FIELD_ORDER_CONTEXT = 'catch_return';
 
 const MINI_SITE_PAGES = [
   { id: 'home', title: 'Home', canDisable: false },
@@ -439,13 +425,16 @@ export default {
   },
   computed: {
     loggedInClub: () => store.loggedInClub,
-    catchReturnFields: () => CATCH_RETURN_FIELDS,
     miniSitePages: () => MINI_SITE_PAGES,
     miniSiteHeroPages: () => MINI_SITE_PAGES.filter(page => page.id !== 'home'),
     fieldOrderContextNames() {
       return Object.entries(this.fieldOrder || {})
         .filter(([, contextValue]) => Array.isArray(contextValue))
         .map(([contextName]) => contextName);
+    },
+    isFormFieldOrderContext() {
+      // Forms have no columns, so Read Only and widths don't apply.
+      return this.selectedFieldOrderContext === CATCH_RETURN_FIELD_ORDER_CONTEXT;
     },
     selectedFieldOrderFields() {
       const fields = this.fieldOrder?.[this.selectedFieldOrderContext];
@@ -609,6 +598,27 @@ export default {
       nextFields.push(entry);
       this.replaceSelectedFieldOrderFields(nextFields);
     },
+    seedCatchReturnVisibility() {
+      if (!Array.isArray(this.fieldOrder?.[CATCH_RETURN_FIELD_ORDER_CONTEXT])) return;
+      const showColumns = this.fieldOrder.show_columns || {};
+      const existing = showColumns[CATCH_RETURN_FIELD_ORDER_CONTEXT];
+      if (existing && typeof existing === 'object') return;
+      this.fieldOrder = {
+        ...this.fieldOrder,
+        show_columns: {
+          ...showColumns,
+          [CATCH_RETURN_FIELD_ORDER_CONTEXT]: this.normalizeVisibility(this.visibility),
+        },
+      };
+    },
+    catchReturnVisibilityForSave() {
+      // Keep the older setting in step with Field Order, so older code still shows the same fields.
+      const configured = this.fieldOrder?.show_columns?.[CATCH_RETURN_FIELD_ORDER_CONTEXT];
+      if (!configured || typeof configured !== 'object') {
+        return this.normalizeVisibility(this.visibility);
+      }
+      return Object.fromEntries(CATCH_RETURN_FIELDS.map(field => [field.key, configured[field.key] !== false]));
+    },
     loadSettings() {
       this.loading = true;
       this.error = '';
@@ -617,8 +627,9 @@ export default {
       this.fieldOrder = {};
       this.selectedFieldOrderContext = '';
 
-      // Load catch return settings
-      axios
+      // Load the older catch return visibility and the field order together, so the
+      // catch_return context can be seeded from the older setting.
+      const visibilityRequest = axios
         .get(`${API_BASE_URL}/club-settings`, {
           params: { club: this.loggedInClub },
         })
@@ -631,7 +642,7 @@ export default {
           this.error = err?.response?.data?.error || 'Unable to load club settings.';
         });
 
-      axios
+      const fieldOrderRequest = axios
         .get(`${API_BASE_URL}/club-field-order`, {
           params: { club: this.loggedInClub },
         })
@@ -648,6 +659,10 @@ export default {
             this.error = err?.response?.data?.error || 'Unable to load club field-order settings.';
           }
         });
+
+      Promise.all([visibilityRequest, fieldOrderRequest]).then(() => {
+        this.seedCatchReturnVisibility();
+      });
 
       // Load mini site settings
       axios
@@ -699,7 +714,7 @@ export default {
       const catchReturnPayload = {
         club: this.loggedInClub,
         settings: {
-          catchReturnFieldVisibility: this.normalizeVisibility(this.visibility),
+          catchReturnFieldVisibility: this.catchReturnVisibilityForSave(),
         },
       };
 
