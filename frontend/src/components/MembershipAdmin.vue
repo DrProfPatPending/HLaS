@@ -19,22 +19,20 @@
         <thead>
           <tr>
             <th v-for="field in orderedMemberFields" :key="field" :style="getColumnStyle('membership_admin', field)">
-              <div>
+              <div class="member-th-label">
                 <span>{{ getFieldDisplayName(field) }}</span>
                 <span
                   class="sort-arrow"
                   :class="{ active: sortKey === field && sortOrder === 'asc' }"
+                  title="Sort ascending"
                   @click="setSort(field, 'asc')"
-                >
-                  ▲
-                </span>
+                >▲</span>
                 <span
                   class="sort-arrow"
                   :class="{ active: sortKey === field && sortOrder === 'desc' }"
+                  title="Sort descending"
                   @click="setSort(field, 'desc')"
-                >
-                  ▼
-                </span>
+                >▼</span>
               </div>
               <input
                 v-model="columnFilters[field]"
@@ -79,30 +77,29 @@
       </table>
     </div>
     <div v-else class="membership-no-columns">No member columns configured.</div>
-    <div class="pagination-controls">
-      <app-button :disabled="currentPage === 1" @click="firstPage" inherit-style>First Page</app-button>
-      <app-button :disabled="currentPage === 1" @click="prevPage" inherit-style>Previous Page</app-button>
-      <span>Page {{ currentPage }} of {{ totalPages }}&nbsp;</span>
-      <app-button :disabled="currentPage === totalPages" @click="nextPage" inherit-style>Next Page</app-button>
-      <app-button :disabled="currentPage === totalPages" @click="lastPage" inherit-style>Last Page</app-button>
-      <select v-model.number="pageSize" @change="onPageSizeChange" class="records-per-page-select">
-        <option value="10">10 per page</option>
-        <option value="25">25 per page</option>
-        <option value="50">50 per page</option>
-        <option value="100">100 per page</option>
-      </select>
-    </div>
-    <div class="page-numbers">
+    <div class="membership-pagination">
+      <app-button :disabled="currentPage === 1" @click="firstPage" inherit-style>First</app-button>
+      <app-button :disabled="currentPage === 1" @click="prevPage" inherit-style>Previous</app-button>
       <app-button
         v-for="pageNum in visiblePages"
         :key="pageNum"
         type="button"
         inherit-style
+        class="membership-page-number"
         :class="{ 'active': pageNum === currentPage }"
         @click="goToPage(pageNum)"
       >
         {{ pageNum }}
       </app-button>
+      <app-button :disabled="currentPage === totalPages" @click="nextPage" inherit-style>Next</app-button>
+      <app-button :disabled="currentPage === totalPages" @click="lastPage" inherit-style>Last</app-button>
+      <span class="membership-page-status">Page {{ currentPage }} of {{ totalPages }}</span>
+      <select v-model.number="pageSize" @change="onPageSizeChange" class="records-per-page-select" aria-label="Members per page">
+        <option value="10">10 per page</option>
+        <option value="25">25 per page</option>
+        <option value="50">50 per page</option>
+        <option value="100">100 per page</option>
+      </select>
     </div>
     <hr />
     <div v-if="showMembershipDetails">
@@ -434,53 +431,154 @@ export default {
 
 .membership-table-scroll {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  border: 1px solid #d8dde3;
+  border-radius: 4px;
 }
 
-.membership-table-scroll .member-table {
-  min-width: 100%;
+/* #app prefix: outranks the shared #app .member-table rules in App.vue */
+#app .membership-admin-header {
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
-.membership-table-scroll .member-table th {
+#app .membership-admin-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+#app .membership-export-controls button {
+  height: auto;
+  margin: 0;
+  padding: 3px 10px;
+  font-size: 8.5pt;
+}
+
+#app .membership-table-scroll .member-table {
+  width: 100%;
+  min-width: max-content;
+  margin: 0;
+  border-collapse: collapse;
+  border-style: hidden;
+}
+
+#app .membership-table-scroll .member-table th,
+#app .membership-table-scroll .member-table td {
+  min-width: 0;
+  border: 1px solid #e3e7eb;
+  text-align: left;
+}
+
+#app .membership-table-scroll .member-table th {
+  padding: 4px 6px 5px;
+  font-size: 8pt;
+  font-weight: 600;
+  color: #334;
+  vertical-align: bottom;
+  white-space: nowrap;
+  background: #f3f5f7;
+  border-bottom-color: #cfd5db;
+}
+
+#app .membership-table-scroll .member-table td {
+  padding: 3px 6px;
+  font-size: 8pt;
+  line-height: 1.35;
+  vertical-align: top;
+}
+
+#app .membership-table-scroll .member-table tbody tr:nth-child(even) td {
+  background: #fafbfc;
+}
+
+#app .membership-table-scroll .member-table tbody tr:hover td {
+  background: #eef5ff;
+}
+
+.member-th-label {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.member-th-label > span:first-child {
+  margin-right: 3px;
+}
+
+#app .membership-table-scroll .sort-arrow {
+  margin: 0;
+  padding: 0 1px;
+  font-size: 6.5pt;
+  line-height: 1;
+  color: #a0a8b0;
+}
+
+#app .membership-table-scroll .sort-arrow:hover,
+#app .membership-table-scroll .sort-arrow.active {
+  color: #0056b3;
+}
+
+#app .membership-table-scroll .member-table .column-filter {
+  min-width: 60px;
+  height: 20px;
+  margin: 3px 0 0;
+  padding: 1px 4px;
+  font-size: 7.5pt;
+  font-weight: normal;
+  border-color: #d0d6dc;
+}
+
+#app .membership-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 10px 0 4px;
   font-size: 8pt;
 }
 
-.membership-table-scroll .member-table td {
-  font-size: 6pt;
+#app .membership-pagination button {
+  height: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 9px;
+  font-size: 8pt;
+  line-height: 1.4;
 }
 
-@media (max-width: 1000px) {
-  .membership-table-scroll {
-    overflow-x: visible;
-  }
-
-  .membership-table-scroll .member-table {
-    min-width: 100%;
-  }
-
-  .membership-table-scroll .member-table th {
-    font-size: 8pt;
-    min-width: 0 !important;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .membership-table-scroll .member-table td {
-    font-size: 6pt;
-    min-width: 0 !important;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
+#app .membership-pagination .membership-page-number {
+  min-width: 26px;
+  padding: 3px 6px;
+  color: #007bff;
+  background: #fff;
+  border-color: #b8d4f5;
 }
 
-@media (min-width: 1001px) {
-  .membership-table-scroll {
-    overflow-x: auto;
-  }
+#app .membership-pagination .membership-page-number.active {
+  color: #fff;
+  background: #007bff;
+  border-color: #0056b3;
+}
 
-  .membership-table-scroll .member-table {
-    min-width: max-content;
-  }
+#app .membership-pagination .membership-page-number:hover:not(.active) {
+  background: #eef5ff;
+}
+
+.membership-page-status {
+  margin: 0 6px 0 8px;
+  color: var(--app-color-text-muted);
+}
+
+#app .membership-pagination .records-per-page-select {
+  margin-left: 0;
+  padding: 2px 4px;
+}
+
+#app .membership-admin-container > hr {
+  margin: 12px 0;
 }
 </style>
