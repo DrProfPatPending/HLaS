@@ -38,7 +38,7 @@
         </thead>
         <tbody>
           <tr v-if="showUsernameSection">
-            <td>{{ formatFieldName('username') }}</td>
+            <td>{{ fieldLabel('username') }}</td>
             <td>
               <span v-if="!isEditing">{{ formatValue(memberData.username) }}</span>
               <input
@@ -76,7 +76,7 @@
           </tr>
 
           <tr v-for="key in activeTabFields" :key="key">
-            <td>{{ formatFieldName(key) }}</td>
+            <td>{{ fieldLabel(key) }}</td>
             <td>
               <span v-if="!isEditing">{{ formatMemberFieldValue(key, memberData[key]) }}</span>
               <input
@@ -153,6 +153,10 @@ export default {
     },
     myClubReadOnlyColumns() {
       const configured = fieldOrderConfig.order?.read_only?.my_club;
+      return configured && typeof configured === 'object' ? configured : {};
+    },
+    myClubDisplayNames() {
+      const configured = fieldOrderConfig.order?.display_names?.my_club;
       return configured && typeof configured === 'object' ? configured : {};
     },
     hasAdminRole() {
@@ -292,6 +296,12 @@ export default {
     isAgeField,
     calculateAgeFromDOB,
     dateInputValue: normalizeDateInputValue,
+    fieldLabel(field) {
+      const configured = this.myClubDisplayNames?.[field];
+      return typeof configured === 'string' && configured.trim()
+        ? configured.trim()
+        : this.formatFieldName(field);
+    },
     isFieldVisible(field) {
       const configured = this.myClubShowColumns?.[field];
       return configured !== false;
