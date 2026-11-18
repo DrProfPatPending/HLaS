@@ -478,9 +478,9 @@
       "Title": "flex"
     },
     "home_news": {
-      "Category": "90px",
-      "Date": "90px",
-      "Status": "75px"
+      "Category": "100px",
+      "Date": "110px",
+      "Status": "100px"
     },
     "membership_admin": {
       "E_Mail": "200px",
