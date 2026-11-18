@@ -96,6 +96,14 @@ test('Home and Documents panels retain compact actions and permissions', async (
     assert.match(updateOnly, /class="news-update-cell"[^>]*>[\s\S]*?Update[\s\S]*?news-actions-stack/);
     assert.doesNotMatch(updateOnly, /news-single-meta/);
 
+    // Field Order widths typed as bare numbers are pixels (the Width box accepts "90").
+    const sized = await render({ showDocuments: false }, {
+      widths: { home_news: { Date: '90', Category: 'flex' } },
+      minimum_widths: { home_news: { Category: 120 } },
+    });
+    assert.match(sized, /<th[^>]*style="[^"]*width:90px[^"]*"[^>]*>(?:(?!<\/th>)[\s\S])*?Date/);
+    assert.match(sized, /<th[^>]*style="[^"]*min-width:120px[^"]*"[^>]*>(?:(?!<\/th>)[\s\S])*?Category/);
+
     globalThis.__homeTestStore.memberRoles = [];
     const readOnly = await render({}, {
       read_only: { home_news: { Actions: true }, home_documents: { Actions: true } },

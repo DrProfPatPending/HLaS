@@ -98,6 +98,7 @@
                     type="text"
                     class="form-input"
                     placeholder="flex"
+                    title="Column width, e.g. 90 (pixels), 90px or 12%. Leave blank or 'flex' to size automatically."
                     :value="getFieldOrderColumnWidth(fieldName)"
                     @input="setFieldOrderColumnWidth(fieldName, $event.target.value)"
                   />
