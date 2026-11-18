@@ -89,6 +89,7 @@
                     type="number"
                     class="form-input"
                     min="0"
+                    title="Minimum column width in pixels."
                     :value="getFieldOrderMinWidth(fieldName)"
                     @input="setFieldOrderMinWidth(fieldName, $event.target.value)"
                   />
