@@ -45,6 +45,11 @@ def _client(principal, **overrides):
 
 class ReadOnlySelfEditPostgresTests(unittest.TestCase):
     def setUp(self):
+        # The SQLite stand-in has no RBAC tables, and the account seed SQL is
+        # PostgreSQL-only: record the membership hooks instead (CORE-35).
+        self.seed_accounts = mock.patch('routes.member_routes.seed_member_accounts').start()
+        self.sync_roles = mock.patch('routes.member_routes.sync_member_roles', return_value={'granted': 0, 'revoked': 0}).start()
+        self.addCleanup(mock.patch.stopall)
         engine = _memory_engine()
         self.addCleanup(engine.dispose)
         metadata = MetaData()

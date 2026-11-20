@@ -40,6 +40,11 @@ def _client(**overrides):
 
 class MemberNumberPostgresTests(unittest.TestCase):
     def setUp(self):
+        # The SQLite stand-in has no RBAC tables, and the account seed SQL is
+        # PostgreSQL-only: record the membership hooks instead (CORE-35).
+        self.seed_accounts = mock.patch('routes.member_routes.seed_member_accounts').start()
+        self.sync_roles = mock.patch('routes.member_routes.sync_member_roles', return_value={'granted': 0, 'revoked': 0}).start()
+        self.addCleanup(mock.patch.stopall)
         engine = _memory_engine()
         self.addCleanup(engine.dispose)
         metadata = MetaData()
@@ -85,6 +90,10 @@ class MemberNumberPostgresTests(unittest.TestCase):
         response = self.client.post('/members', json={'club': 'CTC', 'Members_Name': 'New', 'Number': '100'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self._numbers()[-1], '100')
+        # CORE-35: the account, link and member role are created straight away.
+        self.seed_accounts.assert_called_once()
+        self.assertEqual(self.sync_roles.call_count, 1)
+        self.assertIsNotNone(self.sync_roles.call_args.kwargs['club_id'])
 
     def test_duplicate_number_is_rejected(self):
         response = self.client.post('/members', json={'club': 'CTC', 'Members_Name': 'New', 'Number': '41'})

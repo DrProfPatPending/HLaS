@@ -3,7 +3,7 @@ from sqlalchemy import and_, select
 
 from auth.session_tokens import extract_bearer_token, get_member_session_from_token
 from db import get_postgres_backend, is_postgres_reads_enabled
-from security.permissions import DEFAULT_ROLE_CODE, has_permission, list_permissions
+from security.permissions import MEMBER_ROLE_CODE, has_permission, list_permissions
 
 
 GLOBAL_ADMIN_ROLES = {'app_admin', 'app_owner'}
@@ -44,12 +44,9 @@ def load_member_roles(member_id, club_short_name='', user_id=None):
     member_id_int = _safe_int(member_id)
 
     if not is_postgres_reads_enabled():
-        return {
-            'global_roles': [],
-            'club_roles': [DEFAULT_ROLE_CODE],
-            'effective_roles': [DEFAULT_ROLE_CODE],
-            'permissions': list_permissions({DEFAULT_ROLE_CODE}),
-        }
+        # SQLite/JSON fallback mode has no RBAC tables: a members-table login
+        # is the membership record, so `member` is implied here and only here.
+        return _roles_payload(set(), {MEMBER_ROLE_CODE})
 
     backend = get_postgres_backend()
     session = backend['session_factory']()
@@ -64,13 +61,9 @@ def load_member_roles(member_id, club_short_name='', user_id=None):
         user_id_int = _resolve_user_id_for_member(session, links_table, member_id_int)
 
     if user_id_int is None:
+        # No linked account: nothing recorded, so no roles (deny on absence).
         session.close()
-        return {
-            'global_roles': [],
-            'club_roles': [DEFAULT_ROLE_CODE],
-            'effective_roles': [DEFAULT_ROLE_CODE],
-            'permissions': list_permissions({DEFAULT_ROLE_CODE}),
-        }
+        return _roles_payload(set(), set())
 
     global_roles = set()
     club_roles = set()
@@ -110,16 +103,31 @@ def load_member_roles(member_id, club_short_name='', user_id=None):
     finally:
         session.close()
 
-    effective_roles = {DEFAULT_ROLE_CODE}
-    effective_roles.update(global_roles)
-    effective_roles.update(club_roles)
+    # Club roles are layered on the base `member` role: committee/admin roles
+    # held in a club count only while the user is an active member of it, so
+    # resigning (which revokes `member`) also suspends any elevated club role.
+    if MEMBER_ROLE_CODE not in club_roles:
+        club_roles = set()
 
+    return _roles_payload(global_roles, club_roles)
+
+
+def _roles_payload(global_roles, club_roles):
+    effective_roles = set(global_roles) | set(club_roles)
     return {
         'global_roles': sorted(global_roles),
         'club_roles': sorted(club_roles),
         'effective_roles': sorted(effective_roles),
         'permissions': list_permissions(effective_roles),
     }
+
+
+def has_club_membership(roles_payload):
+    """True if the roles grant access to the club they were loaded for:
+    an active `member` role there, or a global admin role."""
+    if set(roles_payload.get('global_roles', [])) & GLOBAL_ADMIN_ROLES:
+        return True
+    return MEMBER_ROLE_CODE in set(roles_payload.get('club_roles', []))
 
 
 def get_current_principal(club_short_name=''):
@@ -165,58 +173,23 @@ def get_current_principal(club_short_name=''):
     return principal
 
 
-def _user_can_access_club(user_id_int, club_short_name):
-    """Return True if the user has a member_user_links row for the given club."""
-    if not user_id_int or not club_short_name:
-        return False
-    if not is_postgres_reads_enabled():
-        return False
-    try:
-        backend = get_postgres_backend()
-        links_table = backend.get('member_user_links_table')
-        clubs_table = backend.get('clubs_table')
-        if links_table is None or clubs_table is None:
-            return False
-        session = backend['session_factory']()
-        try:
-            result = session.execute(
-                select(links_table.c.id)
-                .select_from(
-                    links_table.join(clubs_table, links_table.c.club_id == clubs_table.c.id)
-                )
-                .where(
-                    and_(
-                        links_table.c.user_id == user_id_int,
-                        clubs_table.c.short_name == club_short_name,
-                    )
-                )
-            ).scalar_one_or_none()
-            return result is not None
-        finally:
-            session.close()
-    except Exception:
-        return False
-
-
 def require_authenticated(club_short_name=''):
     principal = get_current_principal(club_short_name)
     if principal is None:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    expected_club = str(club_short_name or '').strip()
-    actual_club = str(principal.get('club_short_name', '')).strip()
-    effective_roles = set(principal.get('effective_roles', []))
     user_type = principal.get('user_type', 'member')
 
     # Admin/system users can access any club or no club
     if user_type == 'admin':
         return None
 
-    if expected_club and expected_club != actual_club and not effective_roles.intersection(GLOBAL_ADMIN_ROLES):
-        # Allow access if user has a membership link to the requested club
-        user_id_int = _safe_int(principal.get('user_id'))
-        if not _user_can_access_club(user_id_int, expected_club):
-            return jsonify({'error': 'Forbidden for selected club'}), 403
+    # The principal's roles were loaded for the requested club (or the
+    # session's club when none was requested). Access needs a positive grant
+    # there: an active `member` role, or a global admin role. This covers the
+    # session's own club too, so a member who resigns mid-session is refused.
+    if not has_club_membership(principal):
+        return jsonify({'error': 'Forbidden for selected club'}), 403
 
     return None
 

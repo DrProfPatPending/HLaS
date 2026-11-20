@@ -3,7 +3,7 @@ from sqlalchemy import and_, func, or_, select
 
 
 ROLE_RANK = {
-    'user': 1,
+    'member': 1,
     'committee': 2,
     'club_admin': 2,
     'club_manager': 3,
@@ -561,7 +561,9 @@ def create_role_blueprint(deps):
 
             session.execute(
                 assignments_table.update().where(assignments_table.c.id == assignment_id).values(
-                    revoked_at=func.now()
+                    revoked_at=func.now(),
+                    # Admin override: sync_member_roles won't re-grant a role an admin revoked.
+                    source='admin',
                 )
             )
 

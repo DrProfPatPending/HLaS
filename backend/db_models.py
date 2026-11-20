@@ -281,6 +281,9 @@ member_role_assignments = Table(
     Column("granted_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     # NULL = active; set to revoke without deleting history
     Column("revoked_at", DateTime(timezone=True), nullable=True),
+    # 'auto' = managed from membership by sync_member_roles (the `member` role);
+    # 'admin' = granted or revoked in the user/role screens (left alone by the sync).
+    Column("source", String(16), nullable=False, server_default="admin"),
     # Uniqueness is enforced via partial indexes in the migration,
     # not a standard UniqueConstraint, due to nullable club_id.
 )

@@ -1,5 +1,5 @@
 from security.permissions import (
-    DEFAULT_ROLE_CODE,
+    MEMBER_ROLE_CODE,
     PERMISSIONS,
     ROLE_CODES,
     ROLE_HIERARCHY,
@@ -9,7 +9,7 @@ from security.permissions import (
 )
 
 __all__ = [
-    'DEFAULT_ROLE_CODE',
+    'MEMBER_ROLE_CODE',
     'ROLE_CODES',
     'ROLE_HIERARCHY',
     'PERMISSIONS',

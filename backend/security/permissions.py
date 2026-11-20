@@ -1,7 +1,13 @@
-DEFAULT_ROLE_CODE = 'user'
+# Base club role (CORE-35, #62). Every club member holds it as an explicit,
+# club-scoped assignment, granted and revoked automatically from membership
+# (see db.postgres_backend.sync_member_roles) with an admin override.
+# Committee and admin roles are layered on top of it. Nothing grants it by
+# default: no role means no permissions. The only exception is the
+# non-PostgreSQL fallback mode, which has no RBAC tables (auth.principal).
+MEMBER_ROLE_CODE = 'member'
 
 ROLE_CODES = (
-    'user',
+    'member',
     'committee',
     'club_admin',
     'club_manager',
@@ -10,17 +16,17 @@ ROLE_CODES = (
 )
 
 ROLE_HIERARCHY = {
-    'user': {'user'},
-    'committee': {'user', 'committee'},
-    'club_admin': {'user', 'club_admin'},
-    'club_manager': {'user', 'club_admin', 'club_manager'},
-    'app_admin': {'user', 'club_admin', 'club_manager', 'app_admin'},
-    'app_owner': {'user', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
+    'member': {'member'},
+    'committee': {'member', 'committee'},
+    'club_admin': {'member', 'club_admin'},
+    'club_manager': {'member', 'club_admin', 'club_manager'},
+    'app_admin': {'member', 'club_admin', 'club_manager', 'app_admin'},
+    'app_owner': {'member', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
 }
 
 PERMISSIONS = {
-    'member.self.read': {'user', 'committee', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
-    'member.self.update': {'user', 'committee', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
+    'member.self.read': {'member', 'committee', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
+    'member.self.update': {'member', 'committee', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'member.club.list': {'committee', 'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'member.club.create': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
     'member.club.update': {'club_admin', 'club_manager', 'app_admin', 'app_owner'},
@@ -47,8 +53,6 @@ def expand_role_codes(role_codes):
     expanded = set()
     for role_code in (role_codes or set()):
         expanded.update(ROLE_HIERARCHY.get(str(role_code), {str(role_code)}))
-    if not expanded:
-        expanded.add(DEFAULT_ROLE_CODE)
     return expanded
 
 

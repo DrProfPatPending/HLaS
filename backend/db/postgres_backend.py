@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime
 
@@ -12,6 +13,8 @@ _postgres_cache = {}
 # Transaction-scoped advisory lock used to serialize one-time global-user bootstrap
 # work across concurrent app workers/processes during startup.
 GLOBAL_USER_BOOTSTRAP_LOCK_KEY = 2026051601
+
+_logger = logging.getLogger('hlas.rbac')
 
 
 def is_postgres_reads_enabled():
@@ -177,6 +180,22 @@ def ensure_postgres_rbac_tables(engine):
             ON member_role_assignments (club_id, role_id)
             """
         ),
+        # 'auto' rows are managed by sync_member_roles(); 'admin' rows were
+        # granted or revoked in the user/role screens and the sync leaves them
+        # alone (admin override). Mirrors migration 20261120_0001.
+        text(
+            """
+            ALTER TABLE member_role_assignments
+            ADD COLUMN IF NOT EXISTS source VARCHAR(16) NOT NULL DEFAULT 'admin'
+            """
+        ),
+        # Base role renamed 'user' -> 'member' (CORE-35). Mirrors migration 20261120_0001.
+        text(
+            """
+            UPDATE roles SET code = 'member', name = 'Member'
+            WHERE code = 'user' AND NOT EXISTS (SELECT 1 FROM roles WHERE code = 'member')
+            """
+        ),
         text(
             """
             CREATE TABLE IF NOT EXISTS security_audit_log (
@@ -264,12 +283,24 @@ def ensure_postgres_global_user_tables(engine):
             ON member_user_links (club_id)
             """
         ),
-        # Seed app_users + member_user_links together for members that are not yet linked.
-        # Uses a CTE with ROW_NUMBER to correlate inserted user IDs back to member IDs without
-        # needing a legacy_member_id backlink column.
-        # For fully-migrated databases this is a no-op (WHERE NOT EXISTS short-circuits).
-        text(
-            """
+    ]
+    with engine.begin() as conn:
+        # Multiple Gunicorn workers may call this bootstrap path concurrently during
+        # startup. Serialize the DDL/seed sequence so the seed CTE cannot deadlock
+        # while creating/linking `app_users` and `member_user_links` rows.
+        conn.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {'lock_key': GLOBAL_USER_BOOTSTRAP_LOCK_KEY},
+        )
+        for stmt in statements:
+            conn.execute(stmt)
+        seed_member_accounts(conn, lock=False)
+
+
+# Seed app_users + member_user_links together for members that are not yet
+# linked. A CTE with ROW_NUMBER correlates inserted user IDs back to member IDs
+# without a backlink column. A no-op once every member is linked.
+SEED_MEMBER_ACCOUNTS_SQL = """
             WITH members_without_users AS (
                 SELECT
                     m.id       AS member_id,
@@ -303,18 +334,81 @@ def ensure_postgres_global_user_tables(engine):
             JOIN ranked_members rm ON rm.rn = rnu.rn
             ON CONFLICT DO NOTHING
             """
-        ),
-    ]
-    with engine.begin() as conn:
-        # Multiple Gunicorn workers may call this bootstrap path concurrently during
-        # startup. Serialize the DDL/seed sequence so the seed CTE cannot deadlock
-        # while creating/linking `app_users` and `member_user_links` rows.
-        conn.execute(
-            text("SELECT pg_advisory_xact_lock(:lock_key)"),
-            {'lock_key': GLOBAL_USER_BOOTSTRAP_LOCK_KEY},
-        )
-        for stmt in statements:
-            conn.execute(stmt)
+
+MEMBER_ROLE_SYNC_LOCK_KEY = 2026112001
+
+# A member counts as resigned if either the flag or the member type says so,
+# so access is revoked whichever field an admin updates.
+_MEMBER_IS_RESIGNED_SQL = (
+    "(UPPER(TRIM(COALESCE(m.resigned, ''))) IN ('Y', 'YES', 'TRUE', '1') "
+    "OR LOWER(TRIM(COALESCE(m.member_type, ''))) = 'resigned')"
+)
+
+
+def seed_member_accounts(conn, lock=True):
+    """Create the app_users account and member_user_links row for any member
+    without one (e.g. straight after a member is added). PostgreSQL only."""
+    if lock:
+        conn.execute(text("SELECT pg_advisory_xact_lock(:lock_key)"), {'lock_key': GLOBAL_USER_BOOTSTRAP_LOCK_KEY})
+    conn.execute(text(SEED_MEMBER_ACCOUNTS_SQL))
+
+
+def sync_member_roles(conn, club_id=None):
+    """Grant or revoke the club-scoped `member` role from membership (CORE-35).
+
+    Every (user, club) with a linked member who has not resigned gets an
+    active `member` assignment (source 'auto'); 'auto' assignments with no
+    such member are revoked. Rows whose latest state was set by an admin
+    (source 'admin') are left alone. Idempotent; pass club_id to limit it to
+    one club. Returns {'granted': n, 'revoked': n}.
+    """
+    if conn.dialect.name == 'postgresql':
+        conn.execute(text("SELECT pg_advisory_xact_lock(:lock_key)"), {'lock_key': MEMBER_ROLE_SYNC_LOCK_KEY})
+    role_id = conn.execute(text("SELECT id FROM roles WHERE code = 'member'")).scalar()
+    if role_id is None:
+        return {'granted': 0, 'revoked': 0}
+    params = {'role_id': role_id}
+    link_club_filter = ''
+    assignment_club_filter = ''
+    if club_id is not None:
+        params['club_id'] = club_id
+        link_club_filter = 'AND l.club_id = :club_id'
+        assignment_club_filter = 'AND member_role_assignments.club_id = :club_id'
+
+    granted = conn.execute(text(f"""
+        INSERT INTO member_role_assignments (user_id, role_id, club_id, source, granted_at)
+        SELECT DISTINCT l.user_id, :role_id, l.club_id, 'auto', CURRENT_TIMESTAMP
+        FROM member_user_links l
+        JOIN members m ON m.id = l.member_id
+        WHERE NOT {_MEMBER_IS_RESIGNED_SQL}
+          {link_club_filter}
+          AND NOT EXISTS (
+                SELECT 1 FROM member_role_assignments a
+                WHERE a.user_id = l.user_id AND a.club_id = l.club_id
+                  AND a.role_id = :role_id AND a.revoked_at IS NULL)
+          AND COALESCE((
+                SELECT a2.source FROM member_role_assignments a2
+                WHERE a2.user_id = l.user_id AND a2.club_id = l.club_id AND a2.role_id = :role_id
+                ORDER BY a2.id DESC LIMIT 1), 'auto') <> 'admin'
+        ON CONFLICT DO NOTHING
+    """), params).rowcount
+
+    revoked = conn.execute(text(f"""
+        UPDATE member_role_assignments
+        SET revoked_at = CURRENT_TIMESTAMP
+        WHERE role_id = :role_id
+          AND revoked_at IS NULL
+          AND source = 'auto'
+          AND club_id IS NOT NULL
+          {assignment_club_filter}
+          AND NOT EXISTS (
+                SELECT 1 FROM member_user_links l
+                JOIN members m ON m.id = l.member_id
+                WHERE l.user_id = member_role_assignments.user_id
+                  AND l.club_id = member_role_assignments.club_id
+                  AND NOT {_MEMBER_IS_RESIGNED_SQL})
+    """), params).rowcount
+    return {'granted': granted or 0, 'revoked': revoked or 0}
 
 
 def ensure_postgres_member_photos_table(engine):
@@ -580,6 +674,15 @@ def get_postgres_backend():
         ensure_postgres_catch_returns_table(engine)
         ensure_postgres_club_documents_table(engine)
         ensure_postgres_club_field_order_table(engine)
+        try:
+            with engine.begin() as conn:
+                result = sync_member_roles(conn)
+            if result['granted'] or result['revoked']:
+                _logger.warning('member role sync at startup: %s', result)
+        except Exception:
+            # Existing assignments still apply; a failed sync must not take the
+            # backend down, but it must be visible.
+            _logger.exception('member role sync at startup failed')
         metadata = MetaData()
         metadata.reflect(
             bind=engine,

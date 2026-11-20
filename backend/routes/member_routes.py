@@ -6,7 +6,9 @@ from flask import Blueprint, Response, current_app, jsonify, request
 from sqlalchemy import Date, Float, Integer, String, and_, case, cast, func, or_, select, text
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from auth.principal import has_club_membership
 from core.common import LEGACY_TO_POSTGRES_MEMBER_COLUMNS
+from db.postgres_backend import seed_member_accounts, sync_member_roles
 from routes.field_order_routes import load_field_order_config
 
 # Fields a member can never change on their own record, whatever the club's settings.
@@ -112,8 +114,12 @@ def create_member_blueprint(deps):
 
         user_id = au_row.id
         member_id = link_row.member_id
-        token_payload = issue_member_token_pair(member_id, club, au_row.username, user_id=user_id, user_type="member")
+        # A link alone isn't enough: the member role must be active for the
+        # club (revoked on resignation or by an admin), or a global admin role.
         role_payload = load_member_roles(member_id, club, user_id=user_id)
+        if not has_club_membership(role_payload):
+            return jsonify({'success': False, 'error': 'Your membership of the selected club is not active'}), 403
+        token_payload = issue_member_token_pair(member_id, club, au_row.username, user_id=user_id, user_type="member")
         return jsonify({
             'success': True,
             'userId': user_id,
@@ -248,7 +254,14 @@ def create_member_blueprint(deps):
         if app_user_response is not None:
             return app_user_response
 
-        # --- Fallback: per-club members table (transition period / empty username) ---
+        # In PostgreSQL mode app_users is the only login. The members-table
+        # fallback (sign-in by full name or members.username) was retired
+        # (CORE-35, #62): it skipped the account's active flag, could accept
+        # an outdated members-table password, and bypassed role checks.
+        if is_postgres_reads_enabled():
+            return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+
+        # --- SQLite/JSON fallback mode only: per-club members table ---
         log_database_target(club)
         db_info = get_read_db_for_club(club)
         session = db_info['session']
@@ -335,6 +348,18 @@ def create_member_blueprint(deps):
 
         refresh_session = get_member_refresh_session_from_token(refresh_token_value)
         if refresh_session is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        role_payload = load_member_roles(
+            refresh_session.get('member_id'),
+            refresh_session.get('club_short_name'),
+            user_id=refresh_session.get('user_id'),
+        )
+        if not has_club_membership(role_payload):
+            try:
+                revoke_member_refresh_token(refresh_token_value)
+            except Exception:
+                current_app.logger.warning('Failed to revoke refresh token for inactive membership', exc_info=True)
             return jsonify({'error': 'Unauthorized'}), 401
 
         try:
@@ -874,6 +899,11 @@ def create_member_blueprint(deps):
                     if required_key not in values:
                         defaults[required_key] = ''
                 session.execute(backend['members_table'].insert().values(club_id=club_id, **defaults, **values))
+                # Account, link and `member` role now, not at the next restart:
+                # app_users is the only login in PostgreSQL mode.
+                connection = session.connection()
+                seed_member_accounts(connection)
+                sync_member_roles(connection, club_id=club_id)
                 session.commit()
             except Exception as exc:
                 session.rollback()
@@ -999,12 +1029,21 @@ def create_member_blueprint(deps):
                 if updated.rowcount == 0:
                     return jsonify({'error': 'Member not found'}), 404
 
+                # Keep the linked app_users account in step: it is the only
+                # login in PostgreSQL mode, so a password or username set here
+                # must reach it.
+                account_values = {}
                 password_hash = values.get('password')
                 if password_hash:
+                    account_values['password_hash'] = password_hash
+                new_username = str(values.get('username') or '').strip() if 'username' in values else None
+                if new_username:
+                    account_values['username'] = new_username
+                if account_values:
                     app_users_table = backend.get('app_users_table')
                     links_table = backend.get('member_user_links_table')
                     if app_users_table is None or links_table is None:
-                        raise RuntimeError('PostgreSQL account tables are unavailable for password synchronization')
+                        raise RuntimeError('PostgreSQL account tables are unavailable for account synchronization')
 
                     user_id = session.execute(
                         select(links_table.c.user_id).where(
@@ -1016,14 +1055,28 @@ def create_member_blueprint(deps):
                     ).scalar_one_or_none()
 
                     if user_id is not None:
+                        if new_username:
+                            clash = session.execute(
+                                select(app_users_table.c.id).where(
+                                    and_(
+                                        func.lower(app_users_table.c.username) == new_username.lower(),
+                                        app_users_table.c.id != user_id,
+                                    )
+                                )
+                            ).first()
+                            if clash is not None:
+                                session.rollback()
+                                return jsonify({'error': 'That username is already in use'}), 409
                         user_updated = session.execute(
                             app_users_table.update().where(
                                 app_users_table.c.id == user_id
-                            ).values(password_hash=password_hash)
+                            ).values(**account_values)
                         )
                         if user_updated.rowcount == 0:
-                            raise RuntimeError('Linked application account was not found during password synchronization')
+                            raise RuntimeError('Linked application account was not found during account synchronization')
 
+                # Resigned / member type may have changed: re-derive the member role.
+                sync_member_roles(session.connection(), club_id=club_id)
                 session.commit()
             except Exception as exc:
                 session.rollback()
@@ -1092,6 +1145,7 @@ def create_member_blueprint(deps):
                 )
                 if deleted.rowcount == 0:
                     return jsonify({'error': 'Member not found'}), 404
+                sync_member_roles(session.connection(), club_id=club_id)
                 session.commit()
             except Exception as exc:
                 session.rollback()

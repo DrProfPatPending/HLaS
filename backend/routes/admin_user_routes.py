@@ -563,7 +563,8 @@ def create_admin_user_blueprint(deps):
             now = datetime.now(timezone.utc)
             session.execute(text("""
                 UPDATE member_role_assignments
-                SET revoked_at = :now
+                SET revoked_at = :now,
+                    source = 'admin'  -- admin override: sync_member_roles won't re-grant
                 WHERE id = :assignment_id
             """), {'now': now, 'assignment_id': assignment_id})
             session.commit()
