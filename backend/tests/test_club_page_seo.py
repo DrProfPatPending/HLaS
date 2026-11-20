@@ -67,6 +67,7 @@ class ClubPageSeoTests(unittest.TestCase):
             for key in [
                 'load_clubs_config', 'normalize_what3words_words', 'get_valid_club_short_names',
                 'APP_DATA_DIR', 'get_read_db_for_club', 'get_column', 'get_club_logo_path', 'CLUB_LOGOS_DIR',
+                'require_authenticated',
             ]
         }
         deps['get_postgres_backend'] = lambda: {

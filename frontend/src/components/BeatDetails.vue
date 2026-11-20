@@ -1238,9 +1238,15 @@ export default {
       });
     },
     persistBeats(updatedBeats, successMessage, selectedKeyAfterSave = '') {
+      this.beatEditSuccess = '';
+      // The save replaces the whole beat list, so refuse unless it was loaded
+      // from the signed-in club details (see fetchSignedInClubDetails).
+      if (!clubDetails.value.detailsLoaded) {
+        this.beatEditError = 'Beat details have not loaded, so nothing was saved. Please reload the page and try again.';
+        return Promise.resolve();
+      }
       this.isSaving = true;
       this.beatEditError = '';
-      this.beatEditSuccess = '';
 
       const payload = {
         fullName: clubDetails.value.fullName || '',

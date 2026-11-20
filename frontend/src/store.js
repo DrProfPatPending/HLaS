@@ -185,6 +185,7 @@ export const clubDetails = computed(() => {
       socialMedia: [],
       officers: [],
       beats: [],
+      detailsLoaded: false,
     };
   }
   return {
@@ -198,6 +199,7 @@ export const clubDetails = computed(() => {
     socialMedia: Array.isArray(matchedClub.socialMedia) ? matchedClub.socialMedia : [],
     officers: Array.isArray(matchedClub.officers) ? matchedClub.officers : [],
     beats: Array.isArray(matchedClub.beats) ? matchedClub.beats : [],
+    detailsLoaded: matchedClub.detailsLoaded === true,
   };
 });
 
@@ -725,9 +727,32 @@ export function teardownAuthInterceptor() {
 // ---------------------------------------------------------------------------
 // Club loading
 // ---------------------------------------------------------------------------
+// The public /clubs list carries only public fields. Officers, WhatsApp/social
+// links and beats come from /clubs/<club>/details, which needs a signed-in
+// session for that club. A club record with `detailsLoaded: true` has them;
+// editors must not save club data without it, or they would overwrite the
+// stored officers/beats with empty lists.
+async function fetchSignedInClubDetails() {
+  const clubShortName = String(store.loggedInClub || '').trim();
+  if (!store.loggedIn || !store.memberAuthToken || !clubShortName) return null;
+  try {
+    const res = await axios.get(`${API_BASE_URL}/clubs/${encodeURIComponent(clubShortName)}/details`);
+    const club = res.data?.club;
+    return club && typeof club === 'object' && club.shortName === clubShortName ? club : null;
+  } catch {
+    return null;
+  }
+}
+
 export function loadClubs() {
-  const normalizeAndApplyClubs = clubs => {
-    const sortedClubs = [...clubs].sort((a, b) => {
+  const normalizeAndApplyClubs = async clubs => {
+    const details = await fetchSignedInClubDetails();
+    const mergedClubs = clubs.map(club => (
+      details && club.shortName === details.shortName
+        ? { ...club, ...details, detailsLoaded: true }
+        : club
+    ));
+    const sortedClubs = mergedClubs.sort((a, b) => {
       const aName = String(a.shortName || '').toUpperCase();
       const bName = String(b.shortName || '').toUpperCase();
       return aName.localeCompare(bName);
@@ -750,7 +775,7 @@ export function loadClubs() {
   return axios.get(`${API_BASE_URL}/clubs`).then(async res => {
     const primaryClubs = Array.isArray(res.data?.clubs) ? res.data.clubs : null;
     if (primaryClubs !== null) {
-      normalizeAndApplyClubs(primaryClubs);
+      await normalizeAndApplyClubs(primaryClubs);
       return;
     }
 
@@ -758,13 +783,13 @@ export function loadClubs() {
     if (contentType.includes('text/html')) {
       try {
         const fallbackClubs = await tryFallbackApiRoute();
-        normalizeAndApplyClubs(fallbackClubs);
+        await normalizeAndApplyClubs(fallbackClubs);
         return;
       } catch {
       }
     }
 
-    normalizeAndApplyClubs([]);
+    await normalizeAndApplyClubs([]);
   }).catch(() => {
     store.clubs = [];
     syncActiveTheme();

@@ -31,6 +31,7 @@ def create_public_blueprint(deps):
     is_postgres_reads_enabled = deps['is_postgres_reads_enabled']
     get_club_logo_path = deps['get_club_logo_path']
     CLUB_LOGOS_DIR = deps['CLUB_LOGOS_DIR']
+    require_authenticated = deps['require_authenticated']
 
     def _send_member_photo_from_file(club, filename):
         photo_dir = os.path.join(APP_DATA_DIR, 'ID_photos', club)
@@ -102,9 +103,45 @@ def create_public_blueprint(deps):
     def _meta(attr, key, value):
         return f'  <meta {attr}="{html.escape(key)}" content="{html.escape(value, quote=True)}">'
 
+    # The unauthenticated /clubs endpoint serves only what the login page, the
+    # mini-site and theming need. Add a field here only if it is safe for anyone
+    # on the internet to read. Officers, WhatsApp/social links and beats are
+    # served by /clubs/<club>/details to signed-in users; SMTP settings are
+    # never served outside the admin-only /admin/clubs/<club>/smtp routes.
+    PUBLIC_CLUB_FIELDS = (
+        'shortName', 'fullName', 'description', 'websiteUrl', 'adminEmail', 'logoUrl',
+        'cssVariables', 'themeVariables', 'theme', 'branding',
+    )
+    NEVER_SERVED_CLUB_FIELDS = frozenset({'smtp'})
+
+    def _public_club_fields(club):
+        return {key: club[key] for key in PUBLIC_CLUB_FIELDS if key in club}
+
     @bp.route('/clubs', methods=['GET'])
     def get_clubs():
-        return jsonify({'clubs': load_clubs_config()})
+        clubs = [club for club in (load_clubs_config() or []) if isinstance(club, dict)]
+        return jsonify({'clubs': [_public_club_fields(club) for club in clubs]})
+
+    @bp.route('/clubs/<club_short_name>/details', methods=['GET'])
+    def get_club_details(club_short_name):
+        """Signed-in only: full club record (officers, links, beats), minus SMTP."""
+        auth_error = require_authenticated(club_short_name)
+        if auth_error is not None:
+            return auth_error
+        club = next(
+            (
+                c for c in (load_clubs_config() or [])
+                if isinstance(c, dict) and c.get('shortName') == club_short_name
+            ),
+            None,
+        )
+        if club is None:
+            return jsonify({'error': 'Club not found'}), 404
+        response = jsonify({
+            'club': {key: value for key, value in club.items() if key not in NEVER_SERVED_CLUB_FIELDS},
+        })
+        response.headers['Cache-Control'] = 'private, no-store'
+        return response
 
     @bp.route('/club/<club_short_name>/mini-site', methods=['GET'])
     def get_club_mini_site_config(club_short_name):

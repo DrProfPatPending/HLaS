@@ -188,6 +188,9 @@ export default {
   computed: {
     clubDetails: () => clubDetails.value,
     canEditClubInformation() {
+      // Saving replaces officers and links, so only offer editing once the
+      // signed-in club details have loaded (see fetchSignedInClubDetails).
+      if (!this.clubDetails.detailsLoaded) return false;
       const roles = Array.isArray(store.memberRoles) ? store.memberRoles : [];
       return roles.includes('club_admin') || roles.includes('app_admin') || roles.includes('app_owner');
     },
@@ -257,6 +260,10 @@ export default {
         this.saveError = 'Please finish editing the current officer row first.';
         return;
       }
+      if (!this.clubDetails.detailsLoaded) {
+        this.saveError = 'Club details have not loaded, so nothing was saved. Please reload the page and try again.';
+        return;
+      }
       this.saveError = '';
       this.saveSuccess = '';
       this.isSaving = true;
@@ -277,7 +284,7 @@ export default {
           role: String(o.role || '').trim(),
         })),
         logoUrl: this.clubDetails.logoUrl || '',
-        beats: Array.isArray(this.clubDetails.beats) ? this.clubDetails.beats : [],
+        // beats omitted on purpose: the server keeps the stored beats.
       };
 
       return axios.put(
