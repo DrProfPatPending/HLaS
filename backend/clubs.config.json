@@ -899,39 +899,9 @@
           ]
         }
       ],
-      "officers": [
-        {
-          "name": "Rob Scoffin",
-          "role": "Treasurer",
-          "email": "treasurer@cambridgetroutclub.org",
-          "mobile": "07717 154707"
-        },
-        {
-          "name": "John Gandy",
-          "role": "Chairman",
-          "email": "chairman@cambridgetroutclub.org",
-          "mobile": ""
-        },
-        {
-          "name": "Richard Bowes",
-          "role": "Secretary",
-          "email": "secretary@cambridgetroutclub.org",
-          "mobile": ""
-        },
-        {
-          "name": "Charlie Neilson",
-          "role": "Committee",
-          "email": "charlie.neilson1974@gmail.com",
-          "mobile": ""
-        }
-      ],
-      "whatsappGroups": "https://chat.whatsapp.com/FCAMNxPu2RFDQJWjMLWReR",
-      "socialMedia": [
-        {
-          "url": "https://chat.whatsapp.com/FCAMNxPu2RFDQJWjMLWReR",
-          "platform": "WhatsApp"
-        }
-      ]
+      "officers": [],
+      "whatsappGroups": "",
+      "socialMedia": []
     },
     {
       "fullName": "Grantham AA Fly Fishing Section",
@@ -1390,20 +1360,7 @@
           "Waypoints": []
         }
       ],
-      "officers": [
-        {
-          "name": "Rob Scoffin",
-          "role": "Treasurer",
-          "email": "treasurer@gaaffs.org",
-          "mobile": "07717 154707"
-        },
-        {
-          "name": "Paul Kittson",
-          "role": "Chairman",
-          "email": "chairman@gaaffs.org",
-          "mobile": "07717 111111"
-        }
-      ],
+      "officers": [],
       "whatsappGroups": "",
       "socialMedia": [
         {
@@ -1465,14 +1422,7 @@
           "Waypoints": []
         }
       ],
-      "officers": [
-        {
-          "name": "Rob Scoffin",
-          "role": "Treasurer",
-          "email": "rob@scoffin.com",
-          "mobile": "07717 154707"
-        }
-      ],
+      "officers": [],
       "whatsappGroups": "",
       "socialMedia": [
         {
@@ -1517,14 +1467,7 @@
           "Waypoints": []
         }
       ],
-      "officers": [
-        {
-          "name": "Rob Scoffin",
-          "role": "Treasurer",
-          "email": "rob@scoffin.com",
-          "mobile": "07717 154707"
-        }
-      ],
+      "officers": [],
       "whatsappGroups": "",
       "socialMedia": [
         {

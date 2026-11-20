@@ -455,20 +455,7 @@
       "Waypoints": []
     }
   ],
-  "officers": [
-    {
-      "name": "Rob Scoffin",
-      "role": "Treasurer",
-      "email": "treasurer@gaaffs.org",
-      "mobile": "07717 154707"
-    },
-    {
-      "name": "Paul Kittson",
-      "role": "Chairman",
-      "email": "chairman@gaaffs.org",
-      "mobile": "07717 111111"
-    }
-  ],
+  "officers": [],
   "whatsappGroups": "",
   "socialMedia": [
     {
