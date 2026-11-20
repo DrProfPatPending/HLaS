@@ -244,6 +244,12 @@ export const canAccessMembershipAdmin = computed(() =>
   store.memberPermissions.includes('member.club.list')
 );
 
+// Club Settings (field order, catch-return options, mini site) is for club admins
+// and above; committee members get Membership Admin and Beat Admin but not this.
+export const canAccessClubSettings = computed(() =>
+  store.memberPermissions.includes('club.update')
+);
+
 export const canAccessNewsletters = computed(() =>
   store.memberPermissions.includes('newsletter.send')
 );
@@ -1090,7 +1096,7 @@ export function cancelEdit() {
 // ---------------------------------------------------------------------------
 export function canNavigateToSection(sectionKey) {
   if (sectionKey === 'membership-admin') return canAccessMembershipAdmin.value;
-  if (sectionKey === 'club-settings') return canAccessMembershipAdmin.value;
+  if (sectionKey === 'club-settings') return canAccessClubSettings.value;
   if (sectionKey === 'newsletters') return canAccessNewsletters.value;
   if (sectionKey === 'fishing-beats') return canAccessBeatAdmin.value;
   return true;

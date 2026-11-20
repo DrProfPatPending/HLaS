@@ -184,7 +184,8 @@ def create_club_settings_blueprint(deps):
     def set_club_settings():
         payload = request.json or {}
         requested_club = str(payload.get('club') or request.args.get('club') or '').strip()
-        auth_error = require_permission('member.club.list', requested_club)
+        # Club admins and above (CORE-41); committee members could save before.
+        auth_error = require_permission('club.update', requested_club)
         if auth_error:
             return auth_error
 

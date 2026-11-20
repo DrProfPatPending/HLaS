@@ -23,12 +23,10 @@
             Membership Admin
           </app-button>
         </li>
-        <li>
+        <li v-if="canAccessClubSettings">
           <app-button
             type="button"
             inherit-style
-            :disabled="!canAccessMembershipAdmin"
-            :title="canAccessMembershipAdmin ? '' : 'Requires Membership Admin permission'"
             @click="navigate('club-settings')"
           >
             Club Settings
@@ -49,7 +47,7 @@
 </template>
 
 <script>
-import { clubDetails, canAccessMembershipAdmin, canAccessBeatAdmin, navigateToSection } from '../store.js';
+import { clubDetails, canAccessMembershipAdmin, canAccessClubSettings, canAccessBeatAdmin, navigateToSection } from '../store.js';
 import AppButton from './ui/AppButton.vue';
 
 export default {
@@ -66,6 +64,9 @@ export default {
     },
     canAccessMembershipAdmin() {
       return canAccessMembershipAdmin.value;
+    },
+    canAccessClubSettings() {
+      return canAccessClubSettings.value;
     },
   },
   mounted() {

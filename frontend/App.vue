@@ -98,7 +98,7 @@
               Membership Admin
             </button>
             <button
-              v-if="canAccessMembershipAdmin"
+              v-if="canAccessClubSettings"
               type="button"
               class="app-member-nav-button"
               :class="{ 'is-active': activeSection === 'club-settings', 'is-admin': true }"
@@ -189,6 +189,7 @@ import {
   loadClubs,
   fetchMembers,
   canAccessMembershipAdmin,
+  canAccessClubSettings,
   canAccessNewsletters,
   canAccessBeatAdmin,
   clubDetails,
@@ -229,6 +230,7 @@ export default {
     selectedClub: () => store.selectedClub,
     activeSection: () => store.activeSection,
     canAccessMembershipAdmin: () => canAccessMembershipAdmin.value,
+    canAccessClubSettings: () => canAccessClubSettings.value,
     canAccessNewsletters: () => canAccessNewsletters.value,
     canAccessBeatAdmin: () => canAccessBeatAdmin.value,
     clubShortName: () => clubDetails.value.shortName || store.loggedInClub || 'Club',
