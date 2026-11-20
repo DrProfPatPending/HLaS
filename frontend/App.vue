@@ -258,17 +258,6 @@ export default {
   },
   methods: {
     sectionDisplayName,
-    resolveClubFaviconUrl(clubShortName) {
-      const normalizedClub = String(clubShortName || '').trim();
-      if (!normalizedClub) return '/favicon.ico';
-
-      const apiBase = String(store.apiBaseUrl || '/api').trim() || '/api';
-      const absoluteApiBase = /^https?:\/\//i.test(apiBase)
-        ? apiBase
-        : `${window.location.origin}${apiBase.startsWith('/') ? '' : '/'}${apiBase}`;
-
-      return `${absoluteApiBase}/club_logo/${encodeURIComponent(normalizedClub)}`;
-    },
     // CTC branches run single-tenant: the static CTC favicons in public/ are
     // kept (no swap to the club logo endpoint) and the tab shows the club
     // code alone instead of "HLaS - <club>".
