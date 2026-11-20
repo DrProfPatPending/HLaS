@@ -603,6 +603,23 @@ def get_identifier_column(members_table):
     return id_column
 
 
+# Query parameters whose values are safe to log. Anything else (e.g. the
+# Membership Admin column filters such as Members_Name=*smith*) is logged by
+# name only, so member data typed into searches stays out of the logs.
+LOGGABLE_QUERY_PARAMS = frozenset({
+    'club', 'limit', 'offset', 'page', 'per_page', 'scope', 'all',
+    'sort', 'sortKey', 'sort_key', 'sortDir', 'sort_dir', 'order',
+})
+
+
+def _loggable_query_args(args):
+    return {
+        key: (args.getlist(key) if len(args.getlist(key)) > 1 else args.get(key))
+        if key in LOGGABLE_QUERY_PARAMS else '***'
+        for key in args.keys()
+    }
+
+
 def configure_logging(app_context=None):
     """Configure logging for the Flask application.
     
@@ -671,7 +688,7 @@ def _register_infrastructure_hooks(app_instance):
             'event': 'http.request',
             'method': request.method,
             'path': request.path,
-            'query_string': request.query_string.decode('utf-8'),
+            'query': _loggable_query_args(request.args),
             'status_code': response.status_code,
             'duration_ms': duration_ms,
         }))
@@ -878,6 +895,11 @@ def create_app():
                and infrastructure hooks installed.
     """
     app_instance = Flask(__name__)
+    # Set the app logger level here, not only under `python app.py`: under
+    # gunicorn the level was never set, so it stayed at Python's default
+    # WARNING and every INFO line (database.selected, smtp.sent, ...) was
+    # dropped. gunicorn's --log-level only affects gunicorn's own logger.
+    configure_logging(app_instance)
     CORS(app_instance)
 
     # Build dependency injection dictionary for routes
