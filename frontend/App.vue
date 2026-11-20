@@ -150,9 +150,15 @@
     </div>
     <footer class="app-footer">
       <img src="./logos/HLaS.png" alt="HLaS logo" class="app-footer-logo" />
-      <span>(c) 2026 - ScoffySoft</span>
+      <span class="app-footer-text">
+        {{ footerSiteName }} website has been developed on the "Hook, Line &amp; Sinker" (HLaS) platform,
+        which is (c) 2026 - ScoffySoft
+      </span>
       <span class="app-footer-separator">|</span>
-      <a :href="`mailto:robbie.scoff@gmail.com?subject=${encodeURIComponent(clubShortName + ' - HLaS App Enquiry')}`">Contact Us</a>
+      <span class="app-footer-text">
+        For any queries regarding the HLaS platform, please contact
+        <a :href="`mailto:robbie.scoff@gmail.com?subject=${encodeURIComponent(clubShortName + ' - HLaS App Enquiry')}`">ScoffySoft</a>
+      </span>
     </footer>
   </v-app>
 </template>
@@ -225,6 +231,13 @@ export default {
     canAccessNewsletters: () => canAccessNewsletters.value,
     canAccessBeatAdmin: () => canAccessBeatAdmin.value,
     clubShortName: () => clubDetails.value.shortName || store.loggedInClub || 'Club',
+    // "The <club full name>" in the footer; "This" when there is no club context
+    // (clubDetails returns an ADMIN placeholder when no clubs are loaded).
+    footerSiteName: () => {
+      const details = clubDetails.value;
+      const name = details.shortName === 'ADMIN' ? '' : String(details.fullName || '').trim();
+      return name ? `The ${name}` : 'This';
+    },
     myClubTabs: () => MY_CLUB_TABS,
     myClubActiveTab: () => store.myClubActiveTab,
     showMyClubSubnav: () => store.activeSection === 'my-club',
@@ -1046,6 +1059,12 @@ export default {
   font-family: Helvetica, Arial, sans-serif;
   font-size: 9pt;
   color: #444;
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+#app .app-footer-text {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 #app .app-footer-logo {
   height: 28px;
