@@ -1,6 +1,6 @@
 import re
-import smtplib
 import json
+import logging
 import os
 import secrets
 
@@ -9,6 +9,7 @@ from datetime import datetime
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy import String, and_, cast, select
 
+from core.smtp_send import log_batch_summary, send_message, smtp_connection
 from core.content_scopes import DEFAULT_CONTENT_SCOPE, normalize_content_scope
 
 
@@ -33,6 +34,18 @@ def create_newsletter_blueprint(deps):
     NEWSLETTER_TEMPLATES = deps['NEWSLETTER_TEMPLATES']
     NEWSLETTER_TEMPLATE_TAGS = deps['NEWSLETTER_TEMPLATE_TAGS']
     get_smtp_config_for_club = deps['get_smtp_config_for_club']
+
+    def _first_column(members_table, *names):
+        """First of ``names`` that exists on the table, else None.
+
+        Don't chain ``get_column(a) or get_column(b)``: SQLAlchemy columns
+        raise TypeError when tested for truth.
+        """
+        for name in names:
+            column = get_column(name, members_table)
+            if column is not None:
+                return column
+        return None
     require_authenticated = deps['require_authenticated']
     get_current_principal = deps['get_current_principal']
 
@@ -335,14 +348,14 @@ def create_newsletter_blueprint(deps):
         members_table = db_info['members_table']
         Member = db_info['Member']
 
-        id_column = get_column('id', members_table) or get_column('ID', members_table) or get_column('Number', members_table)
+        id_column = _first_column(members_table, 'id', 'ID', 'Number')
         if id_column is None:
             return jsonify({'error': 'No identifier column available in members table'}), 500
 
         matched_members = session.scalars(select(Member).where(cast(id_column, String).in_(list(selected_ids)))).all()
 
-        email_column = get_column('E_Mail', members_table) or get_column('email', members_table)
-        name_column = get_column('Members_Name', members_table) or get_column('name', members_table)
+        email_column = _first_column(members_table, 'E_Mail', 'email')
+        name_column = _first_column(members_table, 'Members_Name', 'name')
         number_column = get_column('Number', members_table)
         member_type_column = get_column('Member_Type', members_table)
         paid_up_column = get_column('Paid_Up_2026', members_table)
@@ -657,13 +670,8 @@ def create_newsletter_blueprint(deps):
 
         smtp_cfg = get_smtp_config_for_club(club)
         smtp_host = smtp_cfg['host']
-        smtp_port = smtp_cfg['port']
-        smtp_username = smtp_cfg['username']
-        smtp_password = smtp_cfg['password']
         smtp_from_email = smtp_cfg['fromEmail']
         smtp_from_name = smtp_cfg['fromName']
-        smtp_use_ssl = smtp_cfg['useSsl']
-        smtp_use_tls = smtp_cfg['useTls']
 
         if not smtp_host or not smtp_from_email:
             return jsonify({'error': f'SMTP is not configured for club {club}. Set host and fromEmail in the club SMTP settings or via environment variables.'}), 503
@@ -699,8 +707,8 @@ def create_newsletter_blueprint(deps):
 
         matched_members = session.scalars(members_query).all()
 
-        email_column = get_column('E_Mail', members_table) or get_column('email', members_table)
-        name_column = get_column('Members_Name', members_table) or get_column('name', members_table)
+        email_column = _first_column(members_table, 'E_Mail', 'email')
+        name_column = _first_column(members_table, 'Members_Name', 'name')
         number_column = get_column('Number', members_table)
 
         recipients = []
@@ -737,17 +745,7 @@ def create_newsletter_blueprint(deps):
         failed_deliveries = []
 
         try:
-            if smtp_use_ssl:
-                smtp_client = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20)
-            else:
-                smtp_client = smtplib.SMTP(smtp_host, smtp_port, timeout=20)
-
-            with smtp_client as server:
-                if not smtp_use_ssl and smtp_use_tls:
-                    server.starttls()
-                if smtp_username:
-                    server.login(smtp_username, smtp_password)
-
+            with smtp_connection(smtp_cfg, club=club, purpose='newsletter') as server:
                 for recipient in recipients:
                     render_ctx = recipient['context']
                     subject = render_newsletter_template(template['subject'], render_ctx)
@@ -760,12 +758,26 @@ def create_newsletter_blueprint(deps):
                     message.set_content(body)
 
                     try:
-                        server.send_message(message)
+                        # Per-recipient success is DEBUG; the batch summary below is INFO.
+                        send_message(
+                            server, message, club=club, purpose='newsletter',
+                            member_id=recipient['memberId'], success_level=logging.DEBUG,
+                        )
                         sent_count += 1
                     except Exception as exc:
                         failed_deliveries.append({'email': recipient['email'], 'error': str(exc)})
         except Exception as exc:
+            log_batch_summary(
+                club=club, purpose='newsletter', sent=sent_count,
+                failed=len(recipients) - sent_count, total=len(recipients),
+                template_id=template_id, scope=scope, aborted=True,
+            )
             return jsonify({'error': f'Failed to connect or authenticate with SMTP server: {exc}'}), 502
+
+        log_batch_summary(
+            club=club, purpose='newsletter', sent=sent_count, failed=len(failed_deliveries),
+            total=len(recipients), template_id=template_id, scope=scope,
+        )
 
         return jsonify({
             'club': club,

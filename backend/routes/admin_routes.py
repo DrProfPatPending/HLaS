@@ -1,12 +1,13 @@
 import os
 import re
-import smtplib
 import logging
 
 from email.message import EmailMessage
 from flask import Blueprint, jsonify, request, current_app
 from sqlalchemy import select, text
 from werkzeug.security import check_password_hash
+
+from core.smtp_send import send_message, smtp_connection
 
 logger = logging.getLogger(__name__)
 
@@ -346,17 +347,8 @@ def create_admin_blueprint(deps):
             message['To'] = to_email
             message.set_content(f'This is a test email from the HLaS application for club {short_name}.\n\nIf you received this, SMTP is configured correctly.')
 
-            if smtp_cfg['useSsl']:
-                server = smtplib.SMTP_SSL(smtp_cfg['host'], smtp_cfg['port'], timeout=20)
-            else:
-                server = smtplib.SMTP(smtp_cfg['host'], smtp_cfg['port'], timeout=20)
-
-            with server:
-                if not smtp_cfg['useSsl'] and smtp_cfg['useTls']:
-                    server.starttls()
-                if smtp_cfg['username']:
-                    server.login(smtp_cfg['username'], smtp_cfg['password'])
-                server.send_message(message)
+            with smtp_connection(smtp_cfg, club=short_name, purpose='test') as server:
+                send_message(server, message, club=short_name, purpose='test')
 
             return jsonify({'success': True, 'message': f'Test email sent to {to_email}'})
         except Exception as exc:

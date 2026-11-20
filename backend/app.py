@@ -76,7 +76,6 @@ from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from email.message import EmailMessage
-import smtplib
 from sqlalchemy import (
     create_engine,
     MetaData,
