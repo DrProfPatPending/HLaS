@@ -38,7 +38,8 @@ test('Catch Return uses catch_return Field Order labels, order and visibility', 
   globalThis.__catchReturnFieldOrder = fieldOrder;
   try {
     const { default: CatchReturn } = await server.ssrLoadModule('/src/components/CatchReturn.vue');
-    const render = async (order, legacyVisibility = {}) => {
+    const defaultReturns = [{ id: 1, session_date: '2026-05-01', beat_id: 'A', small_trout: 2, large_trout: 1 }];
+    const render = async (order, legacyVisibility = {}, returns = defaultReturns) => {
       fieldOrder.order = order;
       const Fixture = {
         ...CatchReturn,
@@ -47,7 +48,7 @@ test('Catch Return uses catch_return Field Order labels, order and visibility', 
           return {
             ...data,
             fieldVisibility: { ...data.fieldVisibility, ...legacyVisibility },
-            recentReturns: [{ id: 1, session_date: '2026-05-01', beat_id: 'A', small_trout: 2, large_trout: 1 }],
+            recentReturns: returns,
           };
         },
         methods: {
@@ -87,6 +88,25 @@ test('Catch Return uses catch_return Field Order labels, order and visibility', 
     const legacy = await render({ display_names: { catch_return: { comments: 'Notes' } } }, { comments: false, smallGrayling: false });
     assert.doesNotMatch(legacy, /<span>Notes<\/span>|Small Grayling/);
     assert.match(legacy, /<span>Medium Grayling<\/span>/);
+
+    // My Catch Summary follows visibility: a species column shows when any of its fields is visible,
+    // and Total adds up only the columns shown.
+    const summaryReturns = [
+      { id: 1, session_date: '2026-05-01', beat_id: 'A', small_trout: 2, large_trout: 1, small_grayling: 4, other_fish: 1 },
+      { id: 2, session_date: '2026-05-09', beat_id: 'A', medium_trout: 3 },
+    ];
+    const noFragments = html => html.replace(/<!--[\[\]]-->/g, '');
+    const summaryHeader = html => noFragments(html.match(/<th>Beat<\/th>(.*?)<\/tr>/)[1]);
+    const beatRow = html => noFragments(html.match(/<tr><td>A<\/td>(.*?)<\/tr>/)[1]);
+    const troutOnly = await render({
+      show_columns: { catch_return: { smallGrayling: false, mediumGrayling: false, largeGrayling: false } },
+    }, {}, summaryReturns);
+    assert.equal(summaryHeader(troutOnly), '<th>Sessions</th><th>Trout</th><th>Other Fish</th><th>Total</th>');
+    assert.equal(beatRow(troutOnly), '<td>2</td><td>6</td><td>1</td><td class="analytics-total-cell">7</td>');
+    assert.doesNotMatch(troutOnly, /<th>Grayling<\/th>/);
+    const allSpecies = await render({}, {}, summaryReturns);
+    assert.equal(summaryHeader(allSpecies), '<th>Sessions</th><th>Trout</th><th>Grayling</th><th>Other Fish</th><th>Total</th>');
+    assert.equal(beatRow(allSpecies), '<td>2</td><td>6</td><td>4</td><td>1</td><td class="analytics-total-cell">11</td>');
   } finally {
     delete globalThis.__catchReturnFieldOrder;
     await server.close();

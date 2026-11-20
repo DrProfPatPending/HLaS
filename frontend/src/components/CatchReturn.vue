@@ -72,9 +72,7 @@
                 <tr>
                   <th>Beat</th>
                   <th>Sessions</th>
-                  <th>Trout</th>
-                  <th>Grayling</th>
-                  <th>Other</th>
+                  <th v-for="column in summaryColumns" :key="column.key">{{ column.label }}</th>
                   <th>Total</th>
                 </tr>
               </thead>
@@ -82,9 +80,7 @@
                 <tr v-for="row in totalsByBeat" :key="row.beat">
                   <td>{{ row.beat }}</td>
                   <td>{{ row.sessions }}</td>
-                  <td>{{ row.trout }}</td>
-                  <td>{{ row.grayling }}</td>
-                  <td>{{ row.other }}</td>
+                  <td v-for="column in summaryColumns" :key="column.key">{{ row[column.key] }}</td>
                   <td class="analytics-total-cell">{{ row.total }}</td>
                 </tr>
               </tbody>
@@ -99,9 +95,7 @@
                 <tr>
                   <th>Month</th>
                   <th>Sessions</th>
-                  <th>Trout</th>
-                  <th>Grayling</th>
-                  <th>Other</th>
+                  <th v-for="column in summaryColumns" :key="column.key">{{ column.label }}</th>
                   <th>Total</th>
                 </tr>
               </thead>
@@ -109,9 +103,7 @@
                 <tr v-for="row in totalsByMonth" :key="row.month">
                   <td>{{ formatMonth(row.month) }}</td>
                   <td>{{ row.sessions }}</td>
-                  <td>{{ row.trout }}</td>
-                  <td>{{ row.grayling }}</td>
-                  <td>{{ row.other }}</td>
+                  <td v-for="column in summaryColumns" :key="column.key">{{ row[column.key] }}</td>
                   <td class="analytics-total-cell">{{ row.total }}</td>
                 </tr>
               </tbody>
@@ -192,6 +184,13 @@ const COUNT_FIELDS = [
   { key: 'mediumGrayling', column: 'medium_grayling' },
   { key: 'largeGrayling', column: 'large_grayling' },
   { key: 'otherFish', column: 'other_fish' },
+];
+
+// My Catch Summary columns: a species column is shown when any of its form fields is visible.
+const SUMMARY_SPECIES = [
+  { key: 'trout', label: 'Trout', fields: ['smallTrout', 'mediumTrout', 'largeTrout'] },
+  { key: 'grayling', label: 'Grayling', fields: ['smallGrayling', 'mediumGrayling', 'largeGrayling'] },
+  { key: 'other', label: 'Other Fish', fields: ['otherFish'] },
 ];
 
 const TEXT_FIELD_KEYS = ['weatherConditions', 'fliesUsed', 'predatorDamage', 'comments'];
@@ -287,38 +286,16 @@ export default {
         (row) => notesFields.some(fieldName => row[fieldName]),
       );
     },
+    summaryColumns() {
+      return SUMMARY_SPECIES.filter(species => species.fields.some(key => this.isFieldVisible(key)));
+    },
     totalsByBeat() {
-      const map = {};
-      for (const row of this.recentReturns) {
-        const beat = row.beat_id || '(unknown)';
-        if (!map[beat]) map[beat] = { beat, trout: 0, grayling: 0, other: 0, total: 0, sessions: 0 };
-        const trout = (row.small_trout || 0) + (row.medium_trout || 0) + (row.large_trout || 0);
-        const grayling = (row.small_grayling || 0) + (row.medium_grayling || 0) + (row.large_grayling || 0);
-        const other = row.other_fish || 0;
-        map[beat].trout += trout;
-        map[beat].grayling += grayling;
-        map[beat].other += other;
-        map[beat].total += trout + grayling + other;
-        map[beat].sessions += 1;
-      }
-      return Object.values(map).sort((a, b) => b.total - a.total);
+      return this.summariseReturns(row => row.beat_id || '(unknown)', 'beat')
+        .sort((a, b) => b.total - a.total);
     },
     totalsByMonth() {
-      const map = {};
-      for (const row of this.recentReturns) {
-        const month = String(row.session_date || '').slice(0, 7);
-        if (!month) continue;
-        if (!map[month]) map[month] = { month, trout: 0, grayling: 0, other: 0, total: 0, sessions: 0 };
-        const trout = (row.small_trout || 0) + (row.medium_trout || 0) + (row.large_trout || 0);
-        const grayling = (row.small_grayling || 0) + (row.medium_grayling || 0) + (row.large_grayling || 0);
-        const other = row.other_fish || 0;
-        map[month].trout += trout;
-        map[month].grayling += grayling;
-        map[month].other += other;
-        map[month].total += trout + grayling + other;
-        map[month].sessions += 1;
-      }
-      return Object.values(map).sort((a, b) => b.month.localeCompare(a.month));
+      return this.summariseReturns(row => String(row.session_date || '').slice(0, 7), 'month')
+        .sort((a, b) => b.month.localeCompare(a.month));
     },
     beatOptions() {
       const beats = Array.isArray(clubDetails.value.beats) ? clubDetails.value.beats : [];
@@ -353,6 +330,27 @@ export default {
         }
       }
       return normalized;
+    },
+    // Groups returns by groupKey; Total adds up only the species columns shown.
+    summariseReturns(groupKeyOf, groupName) {
+      const columnFor = Object.fromEntries(COUNT_FIELDS.map(field => [field.key, field.column]));
+      const columns = this.summaryColumns;
+      const map = {};
+      for (const row of this.recentReturns) {
+        const group = groupKeyOf(row);
+        if (!group) continue;
+        if (!map[group]) {
+          map[group] = { [groupName]: group, sessions: 0, total: 0 };
+          for (const column of columns) map[group][column.key] = 0;
+        }
+        map[group].sessions += 1;
+        for (const column of columns) {
+          const count = column.fields.reduce((sum, key) => sum + (Number(row[columnFor[key]]) || 0), 0);
+          map[group][column.key] += count;
+          map[group].total += count;
+        }
+      }
+      return Object.values(map);
     },
     isFieldVisible(fieldKey) {
       const configured = fieldOrderConfig.order?.show_columns?.[FIELD_ORDER_CONTEXT];
