@@ -269,23 +269,14 @@ export default {
 
       return `${absoluteApiBase}/club_logo/${encodeURIComponent(normalizedClub)}`;
     },
+    // CTC branches run single-tenant: the static CTC favicons in public/ are
+    // kept (no swap to the club logo endpoint) and the tab shows the club
+    // code alone instead of "HLaS - <club>".
     updateClubFavicon() {
       try {
         const activeClub = store.loggedIn ? store.loggedInClub : store.selectedClub;
-        const faviconHref = this.resolveClubFaviconUrl(activeClub);
-
-        let link = document.getElementById('club-favicon-link');
-        if (!link) {
-          link = document.createElement('link');
-          link.id = 'club-favicon-link';
-          link.rel = 'icon';
-          link.type = 'image/png';
-          document.head.appendChild(link);
-        }
-        link.href = faviconHref;
-
         const resolvedClub = String(activeClub || '').trim();
-        document.title = resolvedClub ? `HLaS - ${resolvedClub}` : 'HLaS Member login';
+        document.title = resolvedClub || 'CTC';
       } catch {
       }
     },

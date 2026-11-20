@@ -30,6 +30,26 @@ Capture the Chairman's website feedback as a backlog for discussion and planning
 | [FORM-01 / #17](https://github.com/DrProfPatPending/HLaS/issues/17) | Application forms / member records | Collect car registration number(s) on future application forms. The Chairman directed this request to Richard. | Confirm the form owner, number of vehicles allowed, how existing members can update details, and who may access the data. | Needs owner / requirements |
 | [NOTICE-01 / #18](https://github.com/DrProfPatPending/HLaS/issues/18) | News and Notices | Consider a **Notices** or **News and Notices** tab. Publishing a notice should email every member, especially for urgent river closures or pollution. | Decide the section name, who can publish, recipient and consent rules, delivery method, urgent-notice workflow, and handling of failed or bounced emails. | Untriaged |
 
+## Secretary feedback, 19 November 2026
+
+Feedback from the CTC Secretary after reviewing the development site. Repeated
+requests are linked to existing issues rather than duplicated.
+
+| ID / GitHub issue | Area | Feedback / requested outcome | Open questions for planning | Status when recorded |
+|---|---|---|---|---|
+| [APP-01 / #43](https://github.com/DrProfPatPending/HLaS/issues/43) | Member app / browser tab | The browser tab shows **HLaS - CTC**; show the club name instead. | Agree the wording and whether the login page shows it. Shared code: use each club's full name (CORE row when implemented). | Untriaged |
+| [CATCH-03 / #44](https://github.com/DrProfPatPending/HLaS/issues/44) | Catch Return | The catch report shows **Grayling**; CTC is a trout club. | The My Catch Summary tables hard-code a Grayling column; the form fields are already controlled by Field Order. Confirm which part was seen. | Untriaged |
+| [NAV-09 / #45](https://github.com/DrProfPatPending/HLaS/issues/45) | Member navigation | Move **News & Updates** to directly below Health and Safety. | Confirm this means the navigation order, the full resulting order and the label wording; coordinate with NOTICE-01 (#18). | Needs clarification |
+| [NAV-10 / #46](https://github.com/DrProfPatPending/HLaS/issues/46) | Weather | Add a weather button linking to the [BBC forecast](https://www.bbc.co.uk/weather/2646840). | Placement, external link or embed, and whether the URL should be a club setting. | Untriaged |
+| [ADMIN-05 / #47](https://github.com/DrProfPatPending/HLaS/issues/47) | Membership Admin / CTC Members | Mirror the current membership spreadsheet's column titles and order, and add a **membership season/year** field. | Obtain the spreadsheet headings; define the season field and how it relates to Paid_Up_2026. | Needs information |
+| [ADMIN-02 / #16](https://github.com/DrProfPatPending/HLaS/issues/16) | Membership Admin / CTC Members | Repeated request for a **Year joined** field. | Already tracked; comment added to the issue. | Existing issue |
+
+**Not raised as issues:** "PWD changed", "Document uploaded" and "Members
+detail change\added" were read as checks the Secretary carried out
+successfully (changing a password, uploading a document, editing and adding
+member details). If they were meant as requests, for example notification
+emails for these events, raise them separately.
+
 ## Historical beta feedback
 
 The user supplied this earlier beta feedback retrospectively on November 14,
