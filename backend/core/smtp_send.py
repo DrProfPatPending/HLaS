@@ -12,6 +12,7 @@ addresses are masked (``r***@example.org``).
 
 import json
 import logging
+import re
 import smtplib
 import time
 from contextlib import contextmanager
@@ -39,6 +40,15 @@ def mask_email(address):
     return f'{local[0]}***@{domain}'
 
 
+_ADDRESS_IN_TEXT = re.compile(r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}')
+
+
+def scrub_addresses(text):
+    """Mask every email address inside free text, e.g. SMTP rejection messages
+    such as ``550 5.1.1 <name@example.org>: Recipient address rejected``."""
+    return _ADDRESS_IN_TEXT.sub(lambda match: mask_email(match.group(0)), str(text or ''))
+
+
 def transport_mode(cfg):
     if cfg.get('useSsl'):
         return 'ssl'
@@ -54,13 +64,13 @@ def _exception_fields(exc):
         fields['smtp_code'] = code
     response = getattr(exc, 'smtp_error', None)
     if response is not None:
-        fields['smtp_response'] = (
+        fields['smtp_response'] = scrub_addresses(
             response.decode('utf-8', 'replace') if isinstance(response, bytes) else str(response)
         )[:500]
     if isinstance(exc, smtplib.SMTPRecipientsRefused):
         fields['refused'] = _refused_summary(exc.recipients)
     else:
-        fields['error'] = str(exc)[:500]
+        fields['error'] = scrub_addresses(str(exc))[:500]
     return fields
 
 
@@ -70,7 +80,7 @@ def _refused_summary(refused):
         code, response = (detail + (None, None))[:2] if isinstance(detail, tuple) else (None, detail)
         if isinstance(response, bytes):
             response = response.decode('utf-8', 'replace')
-        summary.append({'recipient': mask_email(address), 'smtp_code': code, 'smtp_response': str(response or '')[:200]})
+        summary.append({'recipient': mask_email(address), 'smtp_code': code, 'smtp_response': scrub_addresses(response)[:200]})
     return summary
 
 

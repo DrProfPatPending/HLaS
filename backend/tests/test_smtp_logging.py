@@ -144,6 +144,28 @@ class SmtpHelperTests(unittest.TestCase):
             {'recipient': 'r***@members.example', 'smtp_code': 550, 'smtp_response': '5.1.1 User unknown'}])
         self._assert_no_secrets(logs)
 
+    def test_scrub_addresses(self):
+        self.assertEqual(
+            smtp_send.scrub_addresses('550 5.1.1 <robert@members.example>: Recipient address rejected'),
+            '550 5.1.1 <r***@members.example>: Recipient address rejected')
+        self.assertEqual(smtp_send.scrub_addresses(None), '')
+
+    def test_addresses_quoted_in_server_responses_are_masked(self):
+        # Mail servers usually quote the full address in rejections.
+        refused = smtplib.SMTPRecipientsRefused(
+            {'robert@members.example': (550, b'5.1.1 <robert@members.example>: Recipient address rejected')})
+        data_error = smtplib.SMTPDataError(554, b'Message to robert@members.example rejected as spam')
+        for exc in (refused, data_error):
+            with self.subTest(error=type(exc).__name__):
+                client = _fake_smtp(send_message=exc)
+                with self.assertLogs(self.app.logger, level='ERROR') as logs:
+                    with self.assertRaises(type(exc)):
+                        smtp_send.send_message(client, self._message(), club='CTC', purpose='newsletter')
+                output = '\n'.join(r.getMessage() for r in logs.records)
+                self.assertNotIn('robert@members.example', output)
+                self.assertIn('r***@members.example', output)
+        self._assert_no_secrets(logs)
+
     def test_quit_failure_after_send_is_only_logged(self):
         client = _fake_smtp(quit=smtplib.SMTPServerDisconnected('gone'))
         with mock.patch.object(smtp_send.smtplib, 'SMTP', return_value=client), \
