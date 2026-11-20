@@ -3,10 +3,11 @@
     <tbody>
       <tr>
         <td class="admin-header-logo-cell">
-          <img src="/logos/HLaS.png" alt="HLaS logo" class="admin-header-logo" />
+          <!-- CTC branches run single-tenant: club branding instead of HLaS. -->
+          <img src="/logos/CTC_badge.png" alt="CTC logo" class="admin-header-logo" />
         </td>
         <td class="admin-header-title-cell">
-          <span class="admin-header-title">HLaS Application Administration</span>
+          <span class="admin-header-title">CTC Application Administration</span>
         </td>
         <td class="admin-header-spacer"></td>
         <td v-if="loggedIn" class="admin-header-logout-cell">
@@ -54,6 +55,7 @@ export default {
   font-size: 18pt;
   font-weight: bold;
   color: #333;
+  white-space: nowrap;
 }
 
 .admin-header-spacer {
